@@ -1,0 +1,25 @@
+{
+  "name": "logosophe",
+  "private": true,
+  "packageManager": "yarn@4.5.3",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "yarn workspace worker dev",
+    "build": "yarn workspace worker build",
+    "preview": "yarn workspace worker preview",
+    "deploy": "yarn workspace worker deploy",
+    "upload": "yarn workspace worker upload",
+    "deploy:email": "yarn workspace email-worker deploy",
+    "tunnel": "cloudflared tunnel run local-dev"
+  },
+  "devDependencies": {
+    "@opennextjs/cloudflare": "latest",
+    "wrangler": "^4.24.0"
+  },
+  "installConfig": {
+    "hoistingLimits": "workspaces"
+  }
+} 
