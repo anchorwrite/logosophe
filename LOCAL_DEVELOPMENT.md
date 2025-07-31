@@ -54,7 +54,7 @@ NEXTAUTH_URL=https://local-dev.logosophe.com
 AUTH_URL=https://local-dev.logosophe.com
 AUTH_REDIRECT_PROXY_URL=https://local-dev.logosophe.com
 CLOUDFLARE_API_TOKEN=your_api_token
-CLOUDFLARE_ACCOUNT_ID=your_account_id
+CLOUDFLARE_ACCOUNT_ID=911edf2379732c1038a6a894cae9bee5
 ```
 
 ## URLs
