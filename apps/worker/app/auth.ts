@@ -5,9 +5,25 @@ import Apple from "next-auth/providers/apple"
 import Resend from "next-auth/providers/resend"
 import Credentials from "next-auth/providers/credentials"
 import bcrypt from 'bcryptjs'
+import type { D1Database } from '@cloudflare/workers-types'
+
+// Extend the User interface to include role
+declare module "next-auth" {
+  interface User {
+    role?: string
+  }
+}
+
+function getD1Database(): D1Database | undefined {
+  const db = (process.env as any).DB;
+  if (db && typeof db !== 'string') {
+    return db as D1Database;
+  }
+  return undefined;
+}
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  adapter: D1Adapter(process.env.DB),
+  adapter: getD1Database() ? D1Adapter(getD1Database()!) : undefined,
   providers: [
     // OAuth providers for Harbor
     Google({
@@ -29,24 +45,36 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
-        // Custom D1 adapter for credentials
-        const db = process.env.DB
-        
-        // Verify credentials against D1 database
+        const db = (process.env as any).DB;
+        if (!db || typeof db === 'string') {
+          console.error('Database not available');
+          return null;
+        }
+        // db is now a D1Database
         const user = await db.prepare(`
           SELECT * FROM Subscribers 
           WHERE Email = ? AND Active = TRUE AND Banned = FALSE
-        `).bind(credentials?.email).first()
+        `).bind(credentials?.email).first();
         
-        if (user && await bcrypt.compare(credentials?.password || '', user.PasswordHash)) {
-          return {
-            id: user.Email,
-            email: user.Email,
-            name: user.Name,
-            role: user.Role
+        if (
+          user &&
+          typeof user === 'object' &&
+          Object.keys(user).length > 0
+        ) {
+          const typedUser = user as { PasswordHash: string; Email: string; Name: string; Role: string };
+          if (
+            typeof typedUser.PasswordHash === 'string' &&
+            await (bcrypt.compare as any)(credentials?.password || '', typedUser.PasswordHash)
+          ) {
+            return {
+              id: typedUser.Email,
+              email: typedUser.Email,
+              name: typedUser.Name,
+              role: typedUser.Role
+            }
           }
         }
-        return null
+        return null;
       }
     })
   ],
@@ -59,7 +87,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
     async session({ session, token }) {
       if (token) {
-        session.user.role = token.role
+        session.user.role = typeof token.role === 'string' ? token.role : undefined
       }
       return session
     }
