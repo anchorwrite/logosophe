@@ -27,11 +27,11 @@
    ingress:
      - hostname: local-dev.logosophe.com
        path: /worker/*
-       service: https://localhost:8787
+       service: https://localhost:9797
        originRequest:
          noTLSVerify: true
      - hostname: local-dev.logosophe.com
-       service: https://localhost:8788
+       service: https://localhost:9798
        originRequest:
          noTLSVerify: true
      - service: http_status:404

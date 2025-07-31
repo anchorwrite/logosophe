@@ -13,7 +13,9 @@
     "deploy": "yarn workspace worker deploy",
     "upload": "yarn workspace worker upload",
     "deploy:email": "yarn workspace email-worker deploy",
-    "tunnel": "cloudflared tunnel run local-dev"
+    "tunnel": "cloudflared tunnel run local-dev",
+    "tunnel:logosophe-dev": "bash -c 'cp ~/.cloudflared/config-logosophe-dev.yml ~/.cloudflared/config.yml && cloudflared tunnel run local-dev'",
+    "tunnel:logosophe-preview": "bash -c 'cp ~/.cloudflared/config-logosophe-preview.yml ~/.cloudflared/config.yml && cloudflared tunnel run local-dev'"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20250731.0",
