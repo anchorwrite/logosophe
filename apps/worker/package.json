@@ -42,7 +42,8 @@
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20250708.0",
     "@next/eslint-plugin-next": "^15.3.5",
-    "@opennextjs/cloudflare": "latest",
+    "@opennextjs/cloudflare": "^1.6.2",
+    "esbuild": "^0.20.0",
     "@types/bcryptjs": "^3.0.0",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/negotiator": "^0.6.4",
