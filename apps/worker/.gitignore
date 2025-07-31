@@ -36,4 +36,7 @@ yarn-error.log*
 next-env.d.ts
 
 # OpenNext build output
-.open-next 
+.open-next
+
+# Yarn PnP files (large binary files)
+.yarn/ 
