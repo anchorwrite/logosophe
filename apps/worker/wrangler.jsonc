@@ -34,18 +34,5 @@
       "database_id": "f30db2b2-6f09-4d4d-8dd3-d1e6e3af3bf4",
     },
   ],
-  "durable_objects": [
-    {
-      "name": "WORKFLOW_DO",
-      "class_name": "WorkflowDurableObject",
-    },
-    {
-      "name": "USER_NOTIFICATIONS_DO",
-      "class_name": "UserNotificationsDurableObject",
-    },
-    {
-      "name": "COMMENT_DO",
-      "class_name": "CommentDurableObject",
-    },
-  ],
+
 } 
