@@ -1,20 +1,23 @@
 import React from 'react'
+import { Container, Heading, Text } from '@radix-ui/themes'
 
 interface HarborPageProps {
-  params: {
+  params: Promise<{
     lang: string
-  }
+  }>
 }
 
-export default function HarborPage({ params }: HarborPageProps) {
+export default async function HarborPage({ params }: HarborPageProps) {
+  const { lang } = await params
+  
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-6">
-        Harbor - {params.lang}
-      </h1>
-      <p className="text-gray-600">
-        This is the authenticated content creation section for language: {params.lang}
-      </p>
-    </div>
+    <Container size="4" style={{ padding: '2rem 0' }}>
+      <Heading size="6" style={{ marginBottom: '1.5rem' }}>
+        Harbor - {lang}
+      </Heading>
+      <Text color="gray">
+        This is the authenticated content creation section for language: {lang}
+      </Text>
+    </Container>
   )
 } 

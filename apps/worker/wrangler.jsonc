@@ -20,7 +20,7 @@
   "r2_buckets": [
     {
       "binding": "MEDIA_BUCKET",
-      "bucket_name": "logosophe-local-dev-media",
+      "bucket_name": "logosophe-media",
     },
     {
       "binding": "NEXT_INC_CACHE_R2_BUCKET",
@@ -30,8 +30,8 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "logosophe-local-dev",
-      "database_id": "local-dev-database-id",
+      "database_name": "logosophe",
+      "database_id": "f30db2b2-6f09-4d4d-8dd3-d1e6e3af3bf4",
     },
   ],
   "durable_objects": [

@@ -1,39 +1,35 @@
 import Link from 'next/link'
+import { Container, Heading, Text, Button, Flex } from '@radix-ui/themes'
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      <div className="container mx-auto px-4 py-16">
-        <div className="text-center">
-          <h1 className="text-6xl font-bold text-gray-900 mb-6">
-            Logosophe
-          </h1>
-          <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-            A modern content publishing platform built with OpenNext and Cloudflare Workers
-          </p>
-          
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link 
-              href="/content/en" 
-              className="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition-colors"
-            >
+    <Container size="4" style={{ minHeight: '100vh', padding: '4rem 0' }}>
+      <Flex direction="column" align="center" justify="center" style={{ minHeight: '100vh' }}>
+        <Heading size="8" style={{ marginBottom: '1.5rem' }}>
+          Logosophe
+        </Heading>
+        <Text size="5" color="gray" style={{ marginBottom: '2rem', maxWidth: '32rem', textAlign: 'center' }}>
+          A modern content publishing platform built with OpenNext and Cloudflare Workers
+        </Text>
+        
+        <Flex gap="4" direction={{ initial: 'column', sm: 'row' }} justify="center">
+          <Button asChild size="3">
+            <Link href="/content/en">
               View Content
             </Link>
-            <Link 
-              href="/harbor/en" 
-              className="bg-green-600 text-white px-8 py-3 rounded-lg hover:bg-green-700 transition-colors"
-            >
+          </Button>
+          <Button asChild size="3" color="green">
+            <Link href="/harbor/en">
               Create Content
             </Link>
-            <Link 
-              href="/dashboard" 
-              className="bg-purple-600 text-white px-8 py-3 rounded-lg hover:bg-purple-700 transition-colors"
-            >
+          </Button>
+          <Button asChild size="3" color="purple">
+            <Link href="/dashboard">
               Dashboard
             </Link>
-          </div>
-        </div>
-      </div>
-    </div>
+          </Button>
+        </Flex>
+      </Flex>
+    </Container>
   )
 } 

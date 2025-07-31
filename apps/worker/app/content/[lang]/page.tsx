@@ -1,20 +1,23 @@
 import React from 'react'
+import { Container, Heading, Text } from '@radix-ui/themes'
 
 interface ContentPageProps {
-  params: {
+  params: Promise<{
     lang: string
-  }
+  }>
 }
 
-export default function ContentPage({ params }: ContentPageProps) {
+export default async function ContentPage({ params }: ContentPageProps) {
+  const { lang } = await params
+  
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-6">
-        Content - {params.lang}
-      </h1>
-      <p className="text-gray-600">
-        This is the public content section for language: {params.lang}
-      </p>
-    </div>
+    <Container size="4" style={{ padding: '2rem 0' }}>
+      <Heading size="6" style={{ marginBottom: '1.5rem' }}>
+        Content - {lang}
+      </Heading>
+      <Text color="gray">
+        This is the public content section for language: {lang}
+      </Text>
+    </Container>
   )
 } 
