@@ -1,0 +1,72 @@
+{
+  "name": "worker",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
+    "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
+    "upload": "opennextjs-cloudflare build && opennextjs-cloudflare upload",
+    "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts"
+  },
+  "dependencies": {
+    "@auth/core": "^0.40.0",
+    "@auth/d1-adapter": "^1.10.0",
+    "@formatjs/intl-localematcher": "^0.6.1",
+    "@radix-ui/react-icons": "^1.3.2",
+    "@radix-ui/react-toast": "^1.2.14",
+    "@radix-ui/themes": "^2.0.3",
+    "bcryptjs": "^3.0.2",
+    "clsx": "^2.1.1",
+    "date-fns": "^4.1.0",
+    "date-fns-tz": "^3.2.0",
+    "i18next": "^25.3.1",
+    "i18next-browser-languagedetector": "^8.2.0",
+    "i18next-http-backend": "^3.0.2",
+    "jsonwebtoken": "^9.0.2",
+    "lucide-react": "^0.513.0",
+    "negotiator": "^1.0.0",
+    "next": "15.3.5",
+    "next-auth": "^5.0.0",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "react-dropzone": "^14.3.8",
+    "react-file-icon": "^1.6.0",
+    "react-hot-toast": "^2.5.2",
+    "react-i18next": "^15.6.0",
+    "react-is": "^19.1.0",
+    "react-toastify": "^11.0.5",
+    "tailwind-merge": "^3.3.1",
+    "uuid": "^11.1.0"
+  },
+  "devDependencies": {
+    "@opennextjs/cloudflare": "latest",
+    "@cloudflare/workers-types": "^4.20250708.0",
+    "@next/eslint-plugin-next": "^15.3.5",
+    "@tailwindcss/typography": "^0.5.16",
+    "@types/bcryptjs": "^3.0.0",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/negotiator": "^0.6.4",
+    "@types/react": "19.1.8",
+    "@types/react-dom": "^19.1.6",
+    "@types/react-file-icon": "^1.0.4",
+    "@types/react-is": "^19.0.0",
+    "@types/uuid": "^10.0.0",
+    "@typescript-eslint/eslint-plugin": "^6.21.0",
+    "@typescript-eslint/parser": "^6.21.0",
+    "autoprefixer": "^10.4.21",
+    "eslint": "^8.57.1",
+    "eslint-config-next": "^15.3.5",
+    "eslint-config-prettier": "^9.1.0",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^4.1.11",
+    "typescript": "^5.8.3",
+    "wrangler": "^4.24.0"
+  },
+  "browser": {
+    "crypto": false
+  },
+  "optionalDependencies": {
+    "sharp": "^0.34.2"
+  }
+} 

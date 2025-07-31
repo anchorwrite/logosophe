@@ -1,0 +1,7 @@
+# Root wrangler configuration
+# This file is used for global settings and can be extended by individual workers
+
+compatibility_date = "2024-12-30"
+
+[env.local-dev]
+name = "logosophe-local-dev" 

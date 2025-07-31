@@ -1,0 +1,12 @@
+{
+  "name": "@logosophe/database",
+  "version": "1.0.0",
+  "main": "index.ts",
+  "types": "index.ts",
+  "dependencies": {
+    "@cloudflare/workers-types": "^4.20250708.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3"
+  }
+} 

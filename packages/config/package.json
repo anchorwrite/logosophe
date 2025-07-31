@@ -1,0 +1,14 @@
+{
+  "name": "@logosophe/config",
+  "version": "1.0.0",
+  "main": "index.ts",
+  "types": "index.ts",
+  "dependencies": {
+    "@auth/core": "^0.40.0",
+    "@auth/d1-adapter": "^1.10.0",
+    "next-auth": "^5.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3"
+  }
+} 

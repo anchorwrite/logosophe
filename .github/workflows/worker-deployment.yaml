@@ -1,0 +1,22 @@
+on: [push]
+jobs:
+  deploy-worker:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write
+    name: Deploy Worker to Cloudflare
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Enable Corepack
+        run: corepack enable
+      - name: Yarn Set Version
+        run: yarn set version latest --yarn-path
+      - name: Yarn Install
+        run: yarn install
+      - name: Deploy Worker
+        run: yarn workspace worker deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }} 
