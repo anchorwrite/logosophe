@@ -1,0 +1,593 @@
+# Logosophe Project Rules and Context
+
+## Project Structure
+- **Monorepo**: Uses Yarn workspaces with apps/* and packages/* structure
+- **Main App**: `apps/worker` - Next.js app using OpenNext for Cloudflare Workers
+- **Email Worker**: `apps/email-worker` - Separate Cloudflare Worker for email processing
+- **Packages**: `packages/common`, `packages/config`, `packages/database` for shared code
+
+## Development Setup
+- **Package Manager**: Yarn (not npm) - use `yarn` commands
+- **Local Development**: `yarn dev` starts the development server
+- **Tunnel**: `yarn tunnel:logosophe-dev` starts Cloudflare tunnel for local-dev.logosophe.com
+- **Database**: Cloudflare D1 database with local and remote instances
+
+## Database Configuration
+- **Database Name**: `logosophe`
+- **Database ID**: `fd7b2b89-eedd-4111-ba68-fdb05cdf2995`
+- **Binding**: `DB` in wrangler configuration
+- **Local Database**: Located at `.wrangler/state/v3/d1`
+- **Remote Database**: Cloudflare D1 instance
+
+## Database Commands
+- **List databases**: `yarn wrangler d1 list`
+- **Execute on local**: `yarn wrangler d1 execute logosophe --command "SQL"`
+- **Execute on remote**: `yarn wrangler d1 execute logosophe --remote --command "SQL"`
+- **Create database**: `yarn wrangler d1 create logosophe`
+- **Delete database**: `yarn wrangler d1 delete logosophe`
+
+## Wrangler Configuration
+- **Config file**: `apps/worker/wrangler.jsonc`
+- **Must run wrangler commands from**: `apps/worker/` directory
+- **Database binding**: Configured in `d1_databases` section
+- **Environment**: Uses production database by default, no local-dev environment configured
+
+## UI Framework
+- **No Tailwind CSS**: Project uses Radix-UI/Themes instead
+- **Components**: Located in `packages/common/components/`
+- **UI Components**: Radix-UI components in `packages/common/components/ui/`
+
+## Authentication
+- **Framework**: NextAuth v5 with D1Adapter
+- **Providers**: Google, Apple, Resend, Credentials
+- **Configuration**: `apps/worker/app/auth.ts`
+
+## Migration Context
+- **Source Project**: anchorwrite (uses Cloudflare Pages + Next.js from Vercel)
+- **Target Project**: logosophe (uses OpenNext + Cloudflare Workers)
+- **Migration Strategy**: Stage-by-stage migration from anchorwrite to logosophe
+- **Current Status**: Database setup complete, ready for schema migration
+
+## Key Files
+- **Main config**: `apps/worker/wrangler.jsonc`
+- **Auth config**: `apps/worker/app/auth.ts`
+- **Database utils**: `packages/common/utils/database.ts`
+- **Local dev setup**: `LOCAL_DEVELOPMENT.md`
+- **Project structure**: `Structure.md`
+
+## Development Workflow
+1. Start tunnel: `yarn tunnel:logosophe-dev`
+2. Start dev server: `yarn dev`
+3. Access at: https://local-dev.logosophe.com
+4. Database operations: Run from `apps/worker/` directory
+
+## Database Migration System
+- **Migration Location**: `packages/database/migrations/`
+- **Current Migration**: `001-initial-schema.sql` (applied to both local and remote)
+- **Migration Script**: `packages/database/migrations/apply-migration.sh`
+- **Documentation**: `packages/database/migrations/README.md`
+
+### Migration Commands
+- **Apply to local**: `./apply-migration.sh 001-initial-schema.sql`
+- **Apply to remote**: `./apply-migration.sh 001-initial-schema.sql --remote`
+- **Manual local**: `yarn wrangler d1 execute logosophe --file=../../packages/database/migrations/001-initial-schema.sql`
+- **Manual remote**: `yarn wrangler d1 execute logosophe --remote --file=../../packages/database/migrations/001-initial-schema.sql`
+
+### Database Schema Overview
+- **40+ Tables** organized by system (Authentication, Media, Messaging, Workflows, etc.)
+- **Foreign Key Constraints** for data integrity
+- **Performance Indexes** on frequently queried columns
+- **Initial Data** including roles, permissions, and access templates
+- **Soft Deletes** using IsDeleted flags where appropriate
+- **Audit Logging** via SystemLogs table
+
+### Key Database Tables
+- **Authentication**: Credentials, Subscribers, accounts, sessions, users, verification_tokens
+- **Tenant Management**: Tenants, TenantUsers, UserRoles
+- **Media Management**: MediaFiles, MediaAccess, MediaAccessTemplates, MediaShareLinks
+- **Messaging**: Messages, MessageRecipients, MessageAttachments, MessageThreads, MessageRateLimits, UserBlocks
+- **Workflows**: Workflows, WorkflowHistory, WorkflowMessages, WorkflowParticipants
+- **System**: SystemLogs, SystemSettings, UserActivity, UserAvatars, TestSessions
+- **Resources**: Resources, ResourceAccess, TenantResources, PublishedContent, Preferences
+
+### Migration Guidelines
+1. **Use IF NOT EXISTS** for CREATE TABLE statements
+2. **Use INSERT OR IGNORE** for INSERT statements
+3. **Include Indexes** for performance
+4. **Document Changes** in README.md
+5. **Test Locally First** before applying to remote 
+
+## Email Worker Deployment
+- After making changes to the email worker:
+  1. Navigate to the email worker directory: `cd apps/email-worker`
+  2. Run `yarn deploy` which:
+     - Builds the worker (`yarn build`)
+     - Deploys to Cloudflare (`wrangler deploy`)
+  3. This ensures the compiled JavaScript matches the TypeScript source
+  4. Required for changes to take effect in production
+
+## User Authentication & Roles
+- There are two types of users:
+  - Authenticated users who have signed in using an Auth JS v5 provider
+  - Non-Authenticated users who have not signed in using an Auth JS v5 provider
+- There are three types of authenticated users:
+  - Credentials provider users
+  - Non-Credentials provider users who have not opted in as subscribers
+  - Non-Credentials provider users who have opted in as subscribers
+ - Credentials provider users are administrative and are stored in the Credentials table:
+  - admin role: Full system access
+  - tenant role: Full access to their assigned tenants
+- Non-Credentials provider users who have not opted in as subscribers have limited access and are stored in the TenantUsers and UserRoles tables:
+  - TenantId: default
+  - RoleId: user
+- Non-Credentials provider users who have opted in as subscribers are also stored in the Subscribers table
+- Subscribers have enhanced access and can be assigned roles and tenants:
+  - Roles are in the Roles table
+  - Tenants are in the Tenants table
+  - Can have multiple different roles per tenant (e.g., author and editor in tenant-001, author in tenant-002)
+  - Tenant membership is stored in the TenantUsers table
+  - Role assignments are stored in the UserRoles table
+
+## Role-Based Permissions
+- Static permissions per role:
+  - author: write, view, upload, download, delete, link, share
+  - agent: view, download, link
+- Access types: 'view', 'download', 'edit', 'delete', 'upload', 'share', 'unshare', 'link', 'unlink'
+
+## Access Control Patterns
+- Use shared access control functions from @/lib/access:
+  - isSystemAdmin: Check if user has global admin privileges (Credentials user with admin role)
+  - isTenantAdminFor: Check if user has tenant admin privileges for a specific tenant
+  - withTenantPermission: Check tenant-specific permissions
+- Admin access patterns:
+  - Global admins (isSystemAdmin) have full access to all resources
+  - Credentials users with 'tenant' role:
+    - Have system admin-level control within their assigned tenants
+    - Can perform all operations (create, read, update, delete) for their tenants
+    - Cannot access resources from other tenants
+    - Cannot perform system-wide operations
+  - Regular users require explicit tenant membership and role assignments
+- Access control implementation:
+  - Check authentication first (session?.user?.email)
+  - Then check admin status using isSystemAdmin
+  - For Credentials tenant users:
+    - Check Credentials table for 'tenant' role
+    - Use isTenantAdminFor to verify tenant membership and role
+    - Grant full access within tenant scope
+  - Finally check tenant-specific permissions if needed
+- Role resolution:
+  - Auth flow directly checks Credentials and Subscribers tables
+  - Credentials table takes precedence for admin/tenant roles
+  - Subscribers table checked for subscriber role
+  - Default to 'user' role if no other roles found
+- Avoid duplicating admin checks:
+  - Use isSystemAdmin instead of direct Credentials table queries
+  - Use isTenantAdminFor for tenant-specific admin checks
+  - Keep admin check logic consistent across all routes
+  - Maintain single source of truth for admin status
+
+## Database Schema Verification
+- Always verify actual database schema using wrangler:
+- Don't rely solely on migration files:
+  - Migration files may be out of sync with actual schema
+  - Direct database queries show current state
+  - Helps identify discrepancies between environments
+- Common tables to verify:
+  - MediaFiles
+  - MediaShareLinks
+  - UserRoles
+  - TenantUsers
+  - MediaAccess
+  - Credentials
+  - Subscribers
+  - users
+- When debugging issues:
+  - Check schema first
+  - Compare local vs production
+  - Verify foreign key constraints
+  - Check indexes and unique constraints
+
+## Share Link Requirements
+- User must have:
+  - A role with 'link' permission
+  - Membership in at least one tenant that overlaps with the media file's tenants
+- Share links are viewable by any anonymous Internet user
+- No tenant context needed in the share URL
+- Access control happens at creation time
+- Share links are tenant-agnostic:
+  - Once created, they can be accessed by anyone with the valid token
+  - No tenant membership or authentication required to use the link
+  - Access is controlled solely by the share token and its properties (expiration, max uses)
+  - TenantId in MediaShareLinks is only used for creation permissions, not access control
+
+## Logging Requirements
+
+  logging_requirements:
+    unified_logging:
+      table: SystemLogs
+      log_types:
+        - ACTIVITY: System activity logs
+        - AUTH: Authentication events
+        - MEDIA_ACCESS: Media file access
+        - MEDIA_SHARE: Media sharing events
+      required_fields:
+        - LogType: Type of log entry
+        - Timestamp: When the event occurred
+        - UserEmail: Email of the user (or 'system_admin' for admin actions)
+        - TenantId: Associated tenant (if applicable)
+        - ActivityType: For activity logs
+        - AccessType: For media access logs
+        - TargetId: ID of the target resource
+        - TargetName: Name/description of the target
+        - IpAddress: Request IP address
+        - UserAgent: Request user agent
+        - Metadata: JSON string for additional context
+      rules:
+        - Never delete log entries (use IsDeleted flag instead)
+        - Always include user context when available
+        - Log all authentication events
+        - Log all media access attempts
+        - Log all system activities
+        - Include request context (IP, user agent) when available
+        - Use appropriate log type for each event
+        - Store additional context in Metadata field as JSON
+        - Use UUID v4 for generating unique IDs
+        - Log both successful and failed operations
+        - Preserve logs even if related entities are deleted
+
+    media_logging:
+      events:
+        - upload: When a file is uploaded
+        - view: When a file is viewed
+        - download: When a file is downloaded
+        - delete: When a file is deleted
+        - replace: When a file is replaced by a new version
+        - share: When a file is added to a tenant
+        - unshare: When a file is removed from a tenant
+        - link: When a link to a file is created
+        - unlink: When a link to a file is deleted
+      required_fields:
+        - userEmail: Who performed the action
+        - tenantId: Which tenant the file belongs to (null for system admins)
+        - accessType: Type of access (upload/view/download/delete/replace/share/unshare/link/unlink)
+        - targetId: ID of the media file
+        - targetName: Name of the media file
+        - ipAddress: Request IP address (optional)
+        - userAgent: Request user agent (optional)
+
+## Database Tables
+- MediaShareLinks:
+  - Id, MediaId, ShareToken, CreatedBy, TenantId, CreatedAt, ExpiresAt, MaxAccesses, AccessCount
+- MediaAccess:
+  - Id, MediaId, TenantId, RoleId, AccessType, GrantedAt, GrantedBy, ExpiresAt
+- TenantUsers:
+  - TenantId, Email, RoleId, CreatedAt, UpdatedAt
+- SystemLogs:
+  - Id, LogType, Timestamp, UserId, UserEmail, Provider, TenantId, ActivityType, AccessType, TargetId, TargetName, IpAddress, UserAgent, Metadata, IsDeleted
+
+## SQL Query Preferences
+- Prefer direct SQL queries over intermediate variables
+- Avoid storing query results in variables unless necessary for reuse
+- Let SQL errors propagate naturally rather than checking success flags
+- Keep SQL queries inline for better readability and debugging
+- Use template literals for multi-line SQL queries
+- Maintain consistent SQL formatting with proper indentation
+- Use descriptive table aliases (e.g., 't' for Tenants, 'tu' for TenantUsers)
+- Include all relevant fields in SELECT statements rather than using *
+
+## API Structure
+- All media-related endpoints should be under /api/media
+- Share link endpoints:
+  - /api/media/[id]/link - Create share links
+  - /api/media/share/[token] - Access shared media
+  - /api/media/share/[token]/download - Download shared media
+- Cache control headers for share links:
+  - Cache-Control: no-store, no-cache, must-revalidate, proxy-revalidate
+  - Pragma: no-cache
+  - Expires: 0
+
+access_control:
+  user_authentication:
+    - All users must be authenticated with a valid email
+    - Users except system admins must belong to at least one tenant
+    - New users are initially assigned to the default tenant as part of the subscriber opt-in flow
+    - Each tenant has its own set of roles and permissions
+    - Roles are tenant-specific and cannot be shared across tenants
+
+ 
+  access_control_patterns:
+    - Media files are always associated with a tenant
+    - Access is granted at the tenant level
+    - Users can only access media files from tenants they belong to
+    - Share links provide temporary or indefinite access to specific media files
+    - Share links can be restricted by expiration date and access count
+
+  database_schema:
+    - MediaFiles table must have TenantId column
+    - MediaAccess table must have MediaId, TenantId, and RoleId columns
+    - MediaShareLinks table must have MediaId, ShareToken, and TenantId columns
+
+  share_link_requirements:
+    - Must have a unique ShareToken
+    - Can be restricted by expiration date
+    - Can be restricted by maximum number of accesses
+    - Must be associated with a tenant
+    - Must track access count
+    - Must log all access attempts in SystemLogs
+
+# User Onboarding and Role Management
+tenant_users:
+  table: TenantUsers
+  primary_key: [TenantId, Email]
+  roles:
+    credentials_users:
+      - admin: Global admin role
+
+## TypeScript Database Query Patterns
+- Always type database query results explicitly:
+  ```typescript
+  const message = await db.prepare(`
+    SELECT SenderEmail, CreatedAt, IsRecalled FROM Messages WHERE Id = ?
+  `).bind(messageId).first() as { SenderEmail: string; CreatedAt: string; IsRecalled: boolean } | undefined;
+  ```
+- For array results, use proper typing:
+  ```typescript
+  const tenants = await db.prepare(`
+    SELECT Id FROM Tenants
+  `).all() as { results: { Id: string }[] };
+  ```
+- Import ResourceType from access module:
+  ```typescript
+  import { isSystemAdmin, isTenantAdminFor, hasPermission, type ResourceType } from './access';
+  ```
+
+## Messaging System Architecture
+- Database schema includes:
+  - Messages: Core message storage with tenant awareness
+  - MessageRecipients: Many-to-many relationship for message delivery
+  - MessageAttachments: Media file attachments for messages
+  - MessageThreads: Reply threading support
+  - UserBlocks: User blocking functionality
+  - MessageRateLimits: Rate limiting per user
+  - SystemSettings: System-wide messaging controls
+- Access control integration:
+  - Extends ResourceType to include 'message'
+  - Extends Action type to include 'send'
+  - Uses existing tenant-aware RBAC system
+  - System admins have full messaging access
+  - Tenant admins can send broadcast/announcement messages
+  - Regular users need explicit 'message:send' permission
+
+
+## Messaging Features
+- Real-time messaging with FIFO queue for offline users
+- Rate limiting (configurable, default 1 message per minute)
+- User blocking system with tenant scope
+- Message states: read, deleted, forwarded, saved, replied
+- Media file attachments with access control
+- Message recall within configurable window
+- System-wide enable/disable toggle
+- Admin controls for message management
+- Tenant-aware recipient selection
+- Message threading and replies
+
+## Rate Limiting Implementation
+- Uses MessageRateLimits table to track per-user limits
+- Configurable via SystemSettings table
+- Default: 60 seconds between messages
+- Tracks message count and reset time
+- Returns detailed rate limit information to clients
+
+## User Blocking System
+- Tenant-scoped blocking (users can only block within their tenants)
+- Admin users can see all blocks in their tenants
+- Regular users can only see their own blocks
+- Blocks prevent message delivery but don't delete existing messages
+- Soft delete pattern (IsActive flag)
+
+## System Controls
+- messaging_enabled: Global system toggle
+- messaging_rate_limit: Seconds between messages
+- messaging_max_recipients: Maximum recipients per message
+- messaging_recall_window: Seconds to recall messages
+- messaging_message_expiry: Days before message cleanup
+- All settings stored in SystemSettings table
+- Admin-only access to system controls
+
+## API Endpoint Structure
+- /api/messages: Main messaging (GET, POST)
+- /api/messages/[id]: Individual message operations (GET, PUT, DELETE, POST for recall)
+- /api/messages/blocks: User blocking (GET, POST, DELETE)
+- /api/messages/recipients: Recipient listing (GET)
+- /api/messages/system: System controls (GET, PUT, POST for cleanup)
+- All endpoints require authentication and proper tenant access
+- Consistent error handling and logging patterns
+
+## Logging Integration
+- Uses existing SystemLogs table for messaging activities
+- Log types: MESSAGING for all messaging-related events
+- Logs include: send, read, block, unblock, system changes
+- Maintains audit trail for compliance and debugging
+- Includes metadata for additional context
+
+## Development Patterns
+- Prefer minimal, targeted changes over sweeping modifications
+- Fix TypeScript errors incrementally
+- Use explicit type assertions for database results
+- Maintain consistency with existing access control patterns
+- Test API endpoints before building UI components
+- Follow existing error handling and logging patterns
+      - tenant: Tenant admin role
+    non_credentials_users:
+      - user: Default role in default tenant
+
+user_roles:
+  table: UserRoles
+  primary_key: [TenantId, Email, RoleId]
+  foreign_keys:
+    tenant_users:
+      columns: [TenantId, Email]
+      references: TenantUsers
+      on_delete: CASCADE
+    roles:
+      column: RoleId
+      references: Roles
+      on_delete: CASCADE
+  usage:
+    - Tracks additional roles
+    - Used for subscribers who have opted in
+    - Non-Credentials users get "subscriber" role after opt-in
+    - Enables additional role assignments
+
+onboarding_flow:
+  credentials_users:
+    - Get admin/tenant role in TenantUsers
+  non_credentials_users:
+    - Start with "user" role in TenantUsers
+    - Get "subscriber" role in UserRoles after opt-in
+    - Can receive additional roles in UserRoles
+
+user_addition_process:
+  steps:
+    1: Add user to TenantUsers with 'user' role
+    2: Add 'user' role to UserRoles for that user
+    3: Add any additional roles to UserRoles
+
+benefits:
+  - Clear separation between base roles and additional capabilities
+  - Proper user onboarding and role progression
+  - Flexible role assignment after initial onboarding
+  - Ensures all users have at least the 'user' role in both tables
+
+# Role Checking Logic
+- Role types for non-sysadmin and non-tenant-admin users are dynamically validated against the Roles table
+- All roles from the database are included in the UserRole type
+- Runtime validation ensures type safety and database consistency
+- Access control checks all user roles:
+  - Users get access if ANY of their roles are allowed
+  - No artificial hierarchy between roles
+  - Order of roles doesn't matter
+  - Special cases for admin and tenant roles are maintained
+  - Subscriber role is handled as a fallback
+- Role validation process:
+  1. Check for admin role first
+  2. Check for tenant role in Credentials
+  3. Check all roles in UserRoles table
+  4. Check Subscriber table as fallback
+- Access is granted if:
+  - User has admin role
+  - User has tenant role in Credentials and has a tenant in common with the resource tenant
+  - User has ANY role that matches allowedRoles
+- Access is denied only if:
+  - User has no roles
+  - None of user's roles are in allowedRoles
+  - User is not a subscriber (when subscriber role is required)
+
+## Subscriber Management
+- Subscriber opt-in process:
+  - Check for existing subscriber in Subscribers table
+  - Create subscriber record in Subscribers table
+  - Add subscriber role in UserRoles table
+  - Keep subscriber record creation and role assignment separate
+  - Handle opt-in at component level with sequential API calls
+- Role assignment:
+  - Subscriber role should only be added during opt-in
+  - Roles API handles role assignments
+
+## Code Change Guidelines
+
+### Error Handling
+- If a change introduces errors, stop and explain
+- Do not proceed with additional changes until current errors are resolved
+- If reverting changes, ensure all files are returned to original state
+- Document any errors encountered during changes
+
+## Activity Logging Patterns
+- ActivityType should be descriptive but generic:
+  - Use 'add_role' instead of 'add_role_editor'
+  - Use 'tenant_add_user' for first-time tenant user addition
+- TargetId and TargetName should include specific details:
+  - For role additions: 'email_role_name' (e.g., 'user@example.com_editor')
+  - For user additions: just the email
+- Always include:
+  - TenantId for tenant-specific operations
+  - IpAddress when available
+  - UserAgent when available
+- Log both the initial user addition and subsequent role assignments separately
+- Use appropriate LogType (ACTIVITY, AUTH, MEDIA_ACCESS, MEDIA_SHARE)
+- Store additional context in Metadata field as JSON
+
+## Role Management
+- First-time tenant user addition:
+  - Must be logged as 'tenant_add_user' with LogType ACTIVITY
+  - Requires entry in TenantUsers table
+  - Initial role must be specified
+- Additional role assignments:
+  - Must be logged as 'add_role' with LogType ACTIVITY
+  - Requires entry in UserRoles table
+  - Must check for existing role before adding
+  - Must include both user and role in TargetId
+- Role verification:
+  - Always verify role exists before assignment
+  - Convert role names to lowercase with underscores for consistency
+  - Handle unknown roles gracefully with fallback
+
+version: 1
+rules:
+  - name: Translation Preferences
+    description: Preferences for handling translations
+    rules:
+      - name: Use Familiar Form
+        description: Use familiar form (du/tú/tu/jij) instead of formal form (Sie/usted/vous/u) in translations
+        pattern: translation.json
+        languages: [de, es, fr, nl]
+      - name: Translation Structure
+        description: Maintain consistent structure across all language files
+        pattern: translation.json
+
+  - name: Code Style Preferences
+    description: Preferences for code style and formatting
+    rules:
+      - name: TypeScript Strict
+        description: Use strict TypeScript settings
+        pattern: tsconfig.json
+      - name: React Component Structure
+        description: Use functional components with TypeScript
+        pattern: "*.tsx"
+
+  - name: UI/UX Preferences
+    description: Preferences for user interface and experience
+    rules:
+      - name: Text Alignment
+        description: Prefer wider text containers to avoid unnecessary line breaks
+        pattern: "*.tsx"
+      - name: Form Validation
+        description: Use comprehensive form validation with clear error messages
+        pattern: "*.tsx"
+
+# Convert role names to lowercase with underscores for consistency
+# Handle unknown roles gracefully with fallback
+
+## Radix UI Components
+- Container:
+  - Default behavior forces min-height: 100vh
+  - Use custom Container component instead
+  - Custom Container properties:
+    - width: 100%
+    - maxWidth: 1200px
+    - margin: 0 auto
+    - padding: 0 var(--space-4)
+  - Implementation: Simple Box component with above properties
+  - Rule: Avoid using Radix UI Container directly
+
+## Layout Structure
+- Page structure:
+  - Header at top
+  - Container with content
+  - Footer right after content
+- Best practices:
+  - Avoid forcing full viewport height
+  - Let content determine natural height
+  - Use Box component for padding and margins
+  - Maintain consistent max-width across pages
+
