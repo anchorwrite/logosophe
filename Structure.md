@@ -369,7 +369,7 @@ ingress:
     originRequest:
       noTLSVerify: true
   - hostname: local-dev.logosophe.com
-    service: https://localhost:8788
+    service: https://localhost:8789
     originRequest:
       noTLSVerify: true
   - service: http_status:404
@@ -406,11 +406,11 @@ ingress:
    ingress:
      - hostname: local-dev.logosophe.com
        path: /worker/*
-       service: https://localhost:8787
+       service: https://localhost:8788
        originRequest:
          noTLSVerify: true
      - hostname: local-dev.logosophe.com
-       service: https://localhost:8788
+       service: https://localhost:8789
        originRequest:
          noTLSVerify: true
      - service: http_status:404
