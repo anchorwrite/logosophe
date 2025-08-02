@@ -4,7 +4,6 @@ import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { isSystemAdmin } from '@/lib/access';
 import { SystemLogs } from '@/lib/system-logs';
 
-export const runtime = 'edge';
 
 export async function POST(
   request: NextRequest,

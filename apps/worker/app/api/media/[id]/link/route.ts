@@ -6,7 +6,6 @@ import { config } from '@/lib/config';
 import { SystemLogs } from '@/lib/system-logs';
 import { encrypt } from '@/lib/encryption';
 
-export const runtime = 'edge';
 
 interface LinkRequest {
   expiresIn: number | null;

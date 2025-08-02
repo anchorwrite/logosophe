@@ -6,7 +6,6 @@ import { isSystemAdmin, isTenantAdminFor, hasPermission } from '@/lib/access';
 import { SystemLogs } from '@/lib/system-logs';
 import { nanoid } from 'nanoid';
 
-export const runtime = 'edge';
 
 export async function POST(
   request: NextRequest,

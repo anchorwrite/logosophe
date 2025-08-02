@@ -3,7 +3,6 @@ import { auth } from '@/auth';
 import { isSystemAdmin, isTenantAdminFor } from '@/lib/access';
 import { getDB } from '@/lib/request-context';
 
-export const runtime = 'edge';
 
 type Params = Promise<{ id: string; email: string; roleId: string }>
 

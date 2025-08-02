@@ -3,7 +3,6 @@ import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { checkAccess } from '@/lib/access-control';
 import { auth } from '@/auth';
 
-export const runtime = 'edge';
 
 export async function GET() {
   try {

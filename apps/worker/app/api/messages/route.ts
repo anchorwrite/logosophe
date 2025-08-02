@@ -10,7 +10,6 @@ import {
 } from '@/lib/messaging';
 import { CreateMessageRequest, SendMessageResponse, GetMessagesRequest, GetMessagesResponse } from '@/types/messaging';
 
-export const runtime = 'edge';
 
 // POST /api/messages - Send a message
 export async function POST(request: NextRequest) {

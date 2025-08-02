@@ -3,7 +3,6 @@ import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { auth } from '@/auth';
 import { SystemLogs } from '@/lib/system-logs';
 
-export const runtime = 'edge';
 
 interface ProfileUpdate {
   name: string;

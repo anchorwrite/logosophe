@@ -4,7 +4,6 @@ import { auth } from '@/auth';
 import { isSystemAdmin } from '@/lib/access';
 import { getDB } from '@/lib/request-context';
 
-export const runtime = 'edge';
 
 interface UpdateRoleRequest {
   RoleId: string;

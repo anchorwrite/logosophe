@@ -5,7 +5,6 @@ import { isSystemAdmin, isTenantAdminFor } from '@/lib/access';
 import { logMessagingActivity } from '@/lib/messaging';
 import type { BlockUserRequest, UnblockUserRequest, GetUserBlocksResponse } from '@/types/messaging';
 
-export const runtime = 'edge';
 
 // GET /api/messages/blocks - Get user's blocking relationships
 export async function GET(request: NextRequest) {

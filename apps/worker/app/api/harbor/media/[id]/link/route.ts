@@ -6,7 +6,6 @@ import { nanoid } from 'nanoid';
 import { isSystemAdmin } from '@/lib/access';
 import { encrypt } from '@/lib/encryption';
 
-export const runtime = 'edge';
 
 export async function POST(
   request: NextRequest,

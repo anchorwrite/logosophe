@@ -7,7 +7,6 @@ import { getRequestContext as getRequestContextLib } from '@/lib/request-context
 import { isSystemAdmin } from '@/lib/access';
 import { SystemLogs } from '@/lib/system-logs';
 
-export const runtime = 'edge';
 
 interface TenantCreateRequest {
   id: string;

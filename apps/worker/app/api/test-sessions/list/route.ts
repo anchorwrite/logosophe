@@ -3,7 +3,6 @@ import { auth } from '@/auth';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { isSystemAdmin } from '@/lib/access';
 
-export const runtime = 'edge';
 
 export async function GET(request: NextRequest) {
   try {

@@ -6,7 +6,6 @@ import { SystemLogs } from '@/lib/system-logs';
 import { D1Database } from '@cloudflare/workers-types';
 import type { Session } from 'next-auth';
 
-export const runtime = 'edge';
 
 type Role = 'admin' | 'tenant';
 

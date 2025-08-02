@@ -3,7 +3,6 @@ import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { auth } from "@/auth";
 import { isSystemAdmin } from "@/lib/access";
 
-export const runtime = 'edge';
 
 interface SubscriberRow {
   Id: string;

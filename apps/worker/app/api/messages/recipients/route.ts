@@ -5,7 +5,6 @@ import { isSystemAdmin, isTenantAdminFor } from '@/lib/access';
 import { getUserMessagingTenants } from '@/lib/messaging';
 import type { GetRecipientsResponse } from '@/types/messaging';
 
-export const runtime = 'edge';
 
 // GET /api/messages/recipients - Get available recipients for messaging
 export async function GET(request: NextRequest) {

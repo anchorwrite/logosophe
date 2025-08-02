@@ -5,7 +5,6 @@ import { checkAccess } from '@/lib/access-control';
 import { SystemLogs } from '@/lib/system-logs';
 import { isSystemAdmin } from '@/lib/access';
 
-export const runtime = 'edge';
 
 interface MediaFile {
   Id: string;

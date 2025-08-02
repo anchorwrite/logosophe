@@ -4,7 +4,6 @@ import { auth } from "@/auth";
 import { isSystemAdmin, isTenantAdminFor, hasPermission, Action } from "@/lib/access";
 import { checkAccess } from '@/lib/access-control';
 
-export const runtime = 'edge';
 
 interface Reviewer {
   Id: string;

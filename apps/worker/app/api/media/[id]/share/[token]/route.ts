@@ -2,7 +2,6 @@ import { NextRequest } from 'next/server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { checkAccess } from '@/lib/access-control';
 
-export const runtime = 'edge';
 
 type Params = Promise<{ id: string; token: string }>
 

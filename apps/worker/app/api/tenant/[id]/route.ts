@@ -7,7 +7,6 @@ import { getDB } from '@/lib/request-context';
 import { v4 as uuidv4 } from 'uuid';
 import { SystemLogs } from '@/lib/system-logs';
 
-export const runtime = 'edge';
 
 interface TenantUpdateRequest {
   name: string;

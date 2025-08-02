@@ -5,7 +5,6 @@ import { isSystemAdmin, isTenantAdminFor } from '@/lib/access';
 import { auth } from '@/auth';
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 
-export const runtime = 'edge';
 
 export async function GET(request: NextRequest) {
     const session = await auth();

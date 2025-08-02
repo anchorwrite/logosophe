@@ -2,7 +2,6 @@ import { NextRequest } from 'next/server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { auth } from '@/auth';
 
-export const runtime = 'edge';
 
 export async function GET(request: NextRequest) {
   try {

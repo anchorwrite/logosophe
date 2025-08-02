@@ -3,7 +3,6 @@ import { checkAccess } from '@/lib/access-control';
 import { isSystemAdmin } from '@/lib/access';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 
-export const runtime = 'edge';
 
 type Params = Promise<{ id: string }>;
 

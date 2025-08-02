@@ -3,7 +3,6 @@ import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { checkAccess } from '@/lib/access-control';
 import type { D1Result } from '@cloudflare/workers-types';
 
-export const runtime = 'edge';
 
 type Params = Promise<{ id: string }>;
 
