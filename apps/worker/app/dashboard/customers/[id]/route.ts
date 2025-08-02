@@ -2,8 +2,6 @@ import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth'
 
-export const runtime = "edge";
-
 export interface Env {
     DB: D1Database;
   }
