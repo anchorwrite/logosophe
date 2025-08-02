@@ -1,12 +1,15 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
+import Providers from './providers'
+import { ThemeWrapper } from '@/components/ThemeWrapper'
+import '@radix-ui/themes/styles.css'
 import './globals.css'
 
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Logosophe - Content Publishing Platform',
-  description: 'A modern content publishing platform built with OpenNext and Cloudflare Workers',
+  title: 'Logosophe',
+  description: 'Logosophe - Your Writing Companion',
 }
 
 export default function RootLayout({
@@ -15,8 +18,14 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
-      <body className={inter.className}>{children}</body>
+    <html lang="en" className="light" style={{ colorScheme: 'light' }}>
+      <body className={inter.className}>
+        <Providers>
+          <ThemeWrapper>
+            {children}
+          </ThemeWrapper>
+        </Providers>
+      </body>
     </html>
   )
 } 
