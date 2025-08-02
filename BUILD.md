@@ -13,13 +13,15 @@ This document covers common build and deployment issues for the logosophe projec
   ```
   GET https://www.logosophe.com/_next/static/chunks/main-app-88f0b36266861039.js net::ERR_ABORTED 404 (Not Found)
   ```
-- Worker logs show "Ok" for the same requests
+- **Production worker logs show "Ok" for the same requests** (indicating files are being served correctly)
 - Page loads but JavaScript functionality is broken
 
 **Root Cause:**
-Build cache mismatch between what the browser expects and what's actually deployed. The browser requests files with specific hash names, but the deployed files have different hash names.
+Browser cache mismatch - the browser has cached references to old JavaScript files with specific hash names, but the deployed files have different hash names. The worker is serving the correct files, but the browser is requesting old cached file references.
 
 **Solution:**
+
+**Server-side (if needed):**
 ```bash
 # 1. Clear all build caches
 cd apps/worker
@@ -30,6 +32,55 @@ yarn build
 
 # 3. Deploy via GitHub Actions
 git push origin main
+```
+
+**Browser-side (most common fix):**
+Since production worker logs show "Ok" for all requests, this is typically a browser cache issue:
+
+1. **Hard Refresh**: `Cmd+Shift+R` (Mac) or `Ctrl+Shift+R` (Windows)
+2. **Clear Browser Cache**: 
+   - Open Developer Tools (F12)
+   - Right-click refresh button → "Empty Cache and Hard Reload"
+3. **Incognito Mode**: Test in private/incognito browser window
+4. **Clear All Browser Data**: Settings → Clear browsing data → Cached images and files
+
+**If browser cache clearing doesn't work:**
+The HTML page itself may be cached with old file references. Check if the HTML contains old file hashes:
+```bash
+curl -s "https://www.logosophe.com/" | grep -o 'main-app-[^"]*\.js'
+```
+If the HTML references old hashes, this indicates a **build manifest cache issue** that requires a fresh deployment.
+
+**For OpenNext deployments:**
+If the issue persists after multiple deployments, the OpenNext build cache may be corrupted:
+```bash
+# In GitHub Actions workflow, add cache clearing before build:
+- name: Clear OpenNext cache
+  run: |
+    cd apps/worker
+    rm -rf .open-next
+    rm -rf .next
+    
+- name: Build Application
+  run: |
+    cd apps/worker
+    yarn build
+```
+
+**OpenNext Cache Interception Issue:**
+If HTML references old file hashes but worker logs show "Ok", this is often caused by cache interception. Add to `open-next.config.ts`:
+```typescript
+export default defineCloudflareConfig({
+  incrementalCache: r2IncrementalCache,
+  enableCacheInterception: false, // Disable to fix static asset issues
+});
+```
+
+**Static Asset Cache TTL:**
+Update `public/_headers` to use shorter cache times:
+```
+/_next/static/*
+  Cache-Control: public,max-age=3600,s-maxage=86400
 ```
 
 ### 2. Build Cache Issues
@@ -152,7 +203,8 @@ curl -I https://www.logosophe.com
 ### Browser Developer Tools
 1. Open Network tab
 2. Look for 404 errors on `_next/static/chunks/*.js` files
-3. Check if file hashes match between browser requests and actual files
+3. **Compare with worker logs**: If worker logs show "Ok" but browser shows 404, it's a browser cache issue
+4. Check if file hashes match between browser requests and actual files
 
 ### Worker Logs
 ```bash
@@ -220,4 +272,6 @@ Contact the development team if:
 - The project uses OpenNext for Cloudflare Workers deployment
 - Build artifacts are in `.open-next/` directory
 - Static assets are served from Cloudflare's edge network
-- Database uses D1 with migrations in `packages/database/migrations/` 
+- Database uses D1 with migrations in `packages/database/migrations/`
+- Uses React 18.3.x for compatibility with Radix UI/Themes
+- Uses AuthJS v5 beta for authentication 
