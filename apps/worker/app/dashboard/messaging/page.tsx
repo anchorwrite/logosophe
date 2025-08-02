@@ -7,7 +7,6 @@ import { SystemLogs } from '@/lib/system-logs';
 import { Container, Heading, Text, Flex, Card, Button, Box } from '@radix-ui/themes';
 import Link from 'next/link';
 
-export const runtime = 'edge';
 
 export default async function MessagingAdminPage() {
   const session = await auth();

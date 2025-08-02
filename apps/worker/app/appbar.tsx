@@ -5,7 +5,6 @@ import { SvgIcon } from "@/common/SvgIcon";
 import { Button } from "@radix-ui/themes";
 import { PreferencesButton } from "@/components/PreferencesButton";
 
-export const runtime = 'edge';
 
 async function AppBar() {
   const session = await auth();

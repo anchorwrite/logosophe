@@ -7,7 +7,6 @@ import { getUserTenants } from '@/lib/access';
 import { TenantSelector } from '@/components/TenantSelector';
 import { headers } from 'next/headers';
 
-export const runtime = 'edge';
 
 const reviewerConfig: TableConfig = {
   name: 'Reviewers',

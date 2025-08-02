@@ -7,7 +7,6 @@ import { SystemLogs } from '@/lib/system-logs';
 import { Container, Heading, Text, Box } from '@radix-ui/themes';
 import { DashboardWorkflowDetails } from '@/components/DashboardWorkflowDetails';
 
-export const runtime = 'edge';
 
 interface WorkflowDetailsPageProps {
   params: Promise<{ id: string }>;

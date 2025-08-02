@@ -5,7 +5,6 @@ import { getUserTenants, isSystemAdmin } from '@/lib/access';
 import { auth } from '@/auth';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 
-export const runtime = 'edge';
 
 export default async function TenantPage() {
   const access = await checkAccess({

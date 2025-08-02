@@ -3,7 +3,6 @@ import { redirect } from 'next/navigation';
 import { DataTable } from '@/components/table';
 import type { TableConfig } from '@/types/table';
 
-export const runtime = 'edge'
 
 const orderDetailConfig: TableConfig = {
   name: 'OrderDetail',

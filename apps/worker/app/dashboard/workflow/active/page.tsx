@@ -8,7 +8,6 @@ import { Container, Heading, Text, Box, Flex, Button } from '@radix-ui/themes';
 import Link from 'next/link';
 import { DashboardWorkflowList } from '@/components/DashboardWorkflowList';
 
-export const runtime = 'edge';
 
 export default async function ActiveWorkflowsPage() {
   const session = await auth();

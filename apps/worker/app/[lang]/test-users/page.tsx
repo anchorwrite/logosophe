@@ -8,7 +8,6 @@ import ActiveSessionsDashboard from '@/components/ActiveSessionsDashboard';
 import { Box, Card, Flex, Grid, Heading, Text } from '@radix-ui/themes';
 import { ToastProvider } from '@/components/Toast';
 
-export const runtime = 'edge';
 
 export default async function TestUsersPage() {
   const session = await auth();

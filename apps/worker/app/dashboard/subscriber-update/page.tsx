@@ -4,7 +4,6 @@ import { Container, Box, Card, Text, Heading } from '@radix-ui/themes';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { SubscriberUpdateList } from './SubscriberUpdateList';
 
-export const runtime = 'edge';
 
 interface Subscriber {
   Email: string;

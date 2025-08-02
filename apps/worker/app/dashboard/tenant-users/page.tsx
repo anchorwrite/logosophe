@@ -1,7 +1,6 @@
 import { DataTable } from '@/components/table';
 import type { TableConfig } from '@/types/table';
 
-export const runtime = 'edge';
 
 const tenantUsersConfig: TableConfig = {
   name: 'Tenant Users',

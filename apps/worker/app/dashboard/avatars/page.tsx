@@ -6,7 +6,6 @@ import { Box, Card, Flex, Grid, Heading, Text } from '@radix-ui/themes';
 import PresetAvatarsManager from './PresetAvatarsManager';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 
-export const runtime = 'edge'
 
 export default async function PresetAvatarsPage() {
   const session = await auth()

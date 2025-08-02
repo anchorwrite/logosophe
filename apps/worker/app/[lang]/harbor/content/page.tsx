@@ -19,4 +19,3 @@ export default async function ContentDashboardPage({ params }: ContentDashboardP
   );
 }
 
-export const runtime = 'edge'; 

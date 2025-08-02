@@ -1,7 +1,6 @@
 import { Text, Container, Flex, Box, Card, Button, Heading } from '@radix-ui/themes'
 import Link from 'next/link'
 
-export const runtime = 'edge'
 
 export default function ErrorPage() {
   return (

@@ -7,7 +7,6 @@ import { Container, Heading, Text, Box, Flex, Button, Card } from '@radix-ui/the
 import Link from 'next/link';
 import { WorkflowSystemStats } from '@/components/WorkflowSystemStats';
 
-export const runtime = 'edge';
 
 export default async function WorkflowSystemPage() {
   const session = await auth();

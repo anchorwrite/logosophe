@@ -6,7 +6,6 @@ export const metadata: Metadata = {
   description: 'View shared media files',
 };
 
-export const runtime = 'edge';
 
 interface SharedMediaPageProps {
   params: Promise<{ token: string }>;

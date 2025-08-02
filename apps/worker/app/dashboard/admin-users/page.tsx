@@ -5,7 +5,6 @@ import { isSystemAdmin } from '@/lib/access';
 import AdminUsers from '@/components/AdminUsers';
 import { SystemLogs } from '@/lib/system-logs';
 
-export const runtime = 'edge';
 
 interface AdminUser {
   Email: string;

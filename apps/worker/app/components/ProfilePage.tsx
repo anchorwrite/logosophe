@@ -6,7 +6,6 @@ import ProfileForm from './ProfileForm'
 import { isSystemAdmin } from '@/lib/access'
 import { getCloudflareContext } from '@opennextjs/cloudflare'
 
-export const runtime = 'edge'
 
 async function updateName(formData: FormData) {
   'use server'

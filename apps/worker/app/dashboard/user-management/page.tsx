@@ -7,7 +7,6 @@ import { SystemLogs } from '@/lib/system-logs';
 import UserManagement from '@/components/UserManagement';
 import { Box, Container } from '@radix-ui/themes';
 
-export const runtime = 'edge';
 
 export default async function UserManagementPage() {
   const session = await auth();

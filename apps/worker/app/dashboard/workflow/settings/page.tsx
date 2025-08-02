@@ -8,7 +8,6 @@ import Link from 'next/link';
 import { DashboardWorkflowSettings } from '@/components/DashboardWorkflowSettings';
 import { DashboardWorkflowHealth } from '@/components/DashboardWorkflowHealth';
 
-export const runtime = 'edge';
 
 export default async function WorkflowSettingsPage() {
   const session = await auth();

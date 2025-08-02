@@ -8,7 +8,6 @@ import { Container, Heading, Text, Box, Flex, Button } from '@radix-ui/themes';
 import Link from 'next/link';
 import { WorkflowHistoryTabs } from '@/components/WorkflowHistoryTabs';
 
-export const runtime = 'edge';
 
 export default async function WorkflowHistoryPage() {
   const session = await auth();

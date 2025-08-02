@@ -11,7 +11,6 @@ import { DashboardWorkflowList } from '@/components/DashboardWorkflowList';
 import { DashboardWorkflowBulkActions } from '@/components/DashboardWorkflowBulkActions';
 import { EnhancedWorkflowList } from '@/components/EnhancedWorkflowList';
 
-export const runtime = 'edge';
 
 export default async function WorkflowSearchPage() {
   const session = await auth();

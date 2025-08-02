@@ -1,7 +1,6 @@
 import { Text, Container, Flex, Box, Card } from '@radix-ui/themes'
 import { SignOutButtons } from './sign-out-buttons'
 
-export const runtime = 'edge'
 
 export default async function SignOutPage() {
   return (
