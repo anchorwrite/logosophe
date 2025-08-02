@@ -6,7 +6,6 @@ import { getDB } from '@/lib/request-context';
 import { v4 as uuid } from 'uuid';
 import { SystemLogs } from '@/lib/system-logs';
 
-export const runtime = 'edge';
 
 interface TenantUserRequest {
   Email: string;

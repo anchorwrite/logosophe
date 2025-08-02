@@ -3,7 +3,6 @@ import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { auth } from '@/auth';
 import { SystemLogs } from '@/lib/system-logs';
 
-export const runtime = 'edge';
 
 // POST /api/avatars - Upload custom avatar
 export async function POST(request: Request) {

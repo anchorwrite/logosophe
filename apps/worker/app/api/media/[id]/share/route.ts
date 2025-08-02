@@ -6,7 +6,6 @@ import { checkAccess } from '@/lib/access-control';
 import { config } from '@/lib/config';
 import { SystemLogs } from '@/lib/system-logs';
 
-export const runtime = 'edge';
 
 interface ShareLinkRequest {
   expiresIn: number;

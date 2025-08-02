@@ -4,7 +4,6 @@ import { auth } from '@/auth';
 import { isSystemAdmin } from '@/lib/access';
 import { SystemLogs } from '@/lib/system-logs';
 
-export const runtime = 'edge';
 
 // POST /api/avatars/presets - Admin only endpoint for uploading preset avatars (system-wide)
 export async function POST(request: Request) {

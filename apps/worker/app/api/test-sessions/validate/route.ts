@@ -3,7 +3,6 @@ import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { SystemLogs } from '@/lib/system-logs';
 import { headers } from 'next/headers';
 
-export const runtime = 'edge';
 
 interface ValidateTokenRequest {
   token: string;

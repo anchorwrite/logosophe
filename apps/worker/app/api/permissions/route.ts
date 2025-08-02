@@ -2,7 +2,6 @@ import { auth } from '@/auth';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { NextResponse } from 'next/server';
 
-export const runtime = 'edge';
 
 export async function GET(request: Request) {
   const session = await auth();

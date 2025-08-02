@@ -4,7 +4,6 @@ import { auth } from '@/auth';
 import { checkAccess } from '@/lib/access-control';
 import { isSystemAdmin } from '@/lib/access';
 
-export const runtime = 'edge';
 
 export async function GET(request: Request) {
   try {

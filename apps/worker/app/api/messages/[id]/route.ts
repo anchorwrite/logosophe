@@ -4,7 +4,6 @@ import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { canRecallMessage, logMessagingActivity } from '@/lib/messaging';
 import type { RecallMessageRequest } from '@/types/messaging';
 
-export const runtime = 'edge';
 
 type Params = Promise<{ id: string }>;
 

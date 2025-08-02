@@ -4,7 +4,6 @@ import { auth } from '@/auth';
 import { checkAccess } from '@/lib/access-control';
 import { SystemLogs } from '@/lib/system-logs';
 
-export const runtime = 'edge';
 
 export async function DELETE(
   request: NextRequest,

@@ -5,7 +5,6 @@ import { checkRateLimit, getSystemSettings, updateRateLimit } from '@/lib/messag
 import { SystemLogs } from '@/lib/system-logs';
 import type { D1Result } from '@cloudflare/workers-types';
 
-export const runtime = 'edge';
 
 interface SendMessageRequest {
   subject: string;

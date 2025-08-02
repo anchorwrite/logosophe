@@ -4,7 +4,6 @@ import { checkAccess } from '@/lib/access-control';
 import { isSystemAdmin } from '@/lib/access';
 import { SystemLogs } from '@/lib/system-logs';
 
-export const runtime = 'edge';
 
 type Params = Promise<{ id: string }>
 

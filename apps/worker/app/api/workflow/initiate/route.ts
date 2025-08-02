@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { checkAccess } from '@/lib/access-control';
 
-export const runtime = 'edge';
 
 export async function POST(request: NextRequest) {
   try {

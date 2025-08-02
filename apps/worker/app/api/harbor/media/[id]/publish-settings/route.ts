@@ -5,7 +5,6 @@ import { checkAccess } from '@/lib/access-control';
 import { isSystemAdmin, isTenantAdminFor, hasPermission } from '@/lib/access';
 import { SystemLogs } from '@/lib/system-logs';
 
-export const runtime = 'edge';
 
 export async function PUT(
   request: NextRequest,

@@ -4,7 +4,6 @@ import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { isSystemAdmin, isTenantAdminFor } from '@/lib/access';
 import { SystemLogs } from '@/lib/system-logs';
 
-export const runtime = 'edge';
 
 interface UserInfo {
   email: string;

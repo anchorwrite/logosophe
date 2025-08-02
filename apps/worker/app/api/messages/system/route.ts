@@ -10,7 +10,6 @@ import {
 } from '@/lib/messaging';
 import type { SystemControlRequest, GetSystemStatusResponse } from '@/types/messaging';
 
-export const runtime = 'edge';
 
 // GET /api/messages/system - Get system status and settings
 export async function GET(request: NextRequest) {

@@ -3,7 +3,6 @@ import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { auth } from '@/auth';
 import { FileType, AccessLevel } from '@/types/media';
 
-export const runtime = 'edge';
 
 export const POST = async (request: Request) => {
   try {

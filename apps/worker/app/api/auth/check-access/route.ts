@@ -3,7 +3,6 @@ import { auth } from "@/auth";
 import { hasPermission, hasResourceAccess } from "@/lib/access";
 import type { ResourceType, Action } from "@/lib/access";
 
-export const runtime = 'edge';
 
 interface RequestBody {
   resource: ResourceType;

@@ -6,7 +6,6 @@ import bcrypt from 'bcryptjs';
 import { SystemLogs } from '@/lib/system-logs';
 import { isSystemAdmin } from '@/lib/access';
 
-export const runtime = 'edge';
 
 interface CredentialsUser {
   Email: string;

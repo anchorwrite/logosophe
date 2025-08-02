@@ -3,7 +3,6 @@ import { checkAccess } from '@/lib/access-control';
 import { isSystemAdmin, isTenantAdminFor } from '@/lib/access';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 
-export const runtime = 'edge';
 
 export async function GET(request: NextRequest) {
   try {

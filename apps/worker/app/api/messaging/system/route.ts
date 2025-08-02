@@ -5,7 +5,6 @@ import { isSystemAdmin } from '@/lib/access';
 import { getSystemSettings } from '@/lib/messaging';
 import { SystemLogs } from '@/lib/system-logs';
 
-export const runtime = 'edge';
 
 export async function GET(request: NextRequest) {
   try {
