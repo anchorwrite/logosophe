@@ -34,5 +34,15 @@
       "database_id": "fd7b2b89-eedd-4111-ba68-fdb05cdf2995",
     },
   ],
+  "observability": {
+    "logs": {
+      "enabled": true
+    }
+  },
+  "tail_consumers": [
+    {
+      "service": "logosophe-tail"
+    }
+  ]
 
 } 
