@@ -4,7 +4,6 @@ import type { Locale } from '@/types/i18n';
 import DashboardAppBar from '@/dashboard/appbar';
 import ScrollRestoration from '@/components/ScrollRestoration';
 
-export const runtime = 'edge';
 
 export const metadata: Metadata = {
   title: "Test Users - Logosophe",

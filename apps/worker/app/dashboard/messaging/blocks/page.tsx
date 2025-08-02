@@ -7,7 +7,6 @@ import { SystemLogs } from '@/lib/system-logs';
 import { BlocksClient } from './BlocksClient';
 import type { D1Result } from '@cloudflare/workers-types';
 
-export const runtime = 'edge';
 
 interface UserBlock {
   Id: number;

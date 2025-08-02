@@ -8,7 +8,6 @@ export const metadata: Metadata = {
   description: 'Upload media files to your library',
 };
 
-export const runtime = 'edge';
 
 export default async function MediaUploadPage() {
   // Check access - only allow admin, tenant, editor, and author roles

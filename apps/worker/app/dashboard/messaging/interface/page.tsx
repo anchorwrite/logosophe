@@ -7,7 +7,6 @@ import { SystemLogs } from '@/lib/system-logs';
 import { MessagingInterface } from './MessagingInterface';
 import type { D1Result } from '@cloudflare/workers-types';
 
-export const runtime = 'edge';
 
 interface RecentMessage {
   Id: number;

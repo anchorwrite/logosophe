@@ -8,7 +8,6 @@ import { Container, Heading, Text, Flex, Card, Button, Box, Table, Badge } from 
 import Link from 'next/link';
 import type { D1Result } from '@cloudflare/workers-types';
 
-export const runtime = 'edge';
 
 interface Message {
   Id: number;

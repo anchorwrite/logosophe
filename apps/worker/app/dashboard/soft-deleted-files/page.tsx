@@ -1,6 +1,5 @@
 'use client';
 
-export const runtime = 'edge';
 
 import { useEffect, useState } from 'react';
 import { Box, Flex, Heading, Text, Card, Button, Badge, Table, Dialog } from "@radix-ui/themes";

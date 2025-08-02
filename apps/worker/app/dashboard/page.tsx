@@ -6,7 +6,6 @@ import { redirect } from 'next/navigation';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { isSystemAdmin } from '@/lib/access';
 
-export const runtime = 'edge'
 
 export default async function DashboardPage() {
   const session = await auth()

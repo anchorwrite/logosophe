@@ -5,7 +5,6 @@ import type { Locale } from '@/types/i18n';
 import Footer from '@/components/Footer';
 import ScrollRestoration from '@/components/ScrollRestoration';
 
-export const runtime = 'edge';
 
 // Client component wrapper for Footer
 const ClientFooter = () => {

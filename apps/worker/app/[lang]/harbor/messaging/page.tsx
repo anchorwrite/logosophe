@@ -6,7 +6,6 @@ import { SystemLogs } from '@/lib/system-logs';
 import { SubscriberMessagingInterface } from './SubscriberMessagingInterface';
 import type { D1Result } from '@cloudflare/workers-types';
 
-export const runtime = 'edge';
 
 interface RecentMessage {
   Id: number;

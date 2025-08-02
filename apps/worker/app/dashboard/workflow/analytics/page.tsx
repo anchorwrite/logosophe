@@ -8,7 +8,6 @@ import { Container, Heading, Text, Box, Flex, Button } from '@radix-ui/themes';
 import Link from 'next/link';
 import { WorkflowAnalyticsTabs } from '@/components/WorkflowAnalyticsTabs';
 
-export const runtime = 'edge';
 
 export default async function WorkflowAnalyticsPage() {
   const session = await auth();

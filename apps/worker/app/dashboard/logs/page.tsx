@@ -2,7 +2,6 @@ import { Container, Box, Heading, Text } from '@radix-ui/themes';
 import { checkAccess } from '@/lib/access-control';
 import { LogsTable } from './LogsTable';
 
-export const runtime = 'edge';
 
 export default async function LogsPage() {
     const access = await checkAccess({

@@ -7,7 +7,6 @@ import { SystemLogs } from '@/lib/system-logs';
 import { RecipientsClient } from './RecipientsClient';
 import type { D1Result } from '@cloudflare/workers-types';
 
-export const runtime = 'edge';
 
 interface Recipient {
   Email: string;

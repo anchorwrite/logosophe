@@ -10,7 +10,6 @@ export const metadata: Metadata = {
   description: 'Manage your media files',
 };
 
-export const runtime = 'edge';
 
 export default async function MediaLibraryPage() {
   // Check access - only allow admin, tenant, editor, and author roles

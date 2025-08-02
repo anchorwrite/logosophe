@@ -5,7 +5,6 @@ import { Container, Box, Card, Text, Heading } from '@radix-ui/themes';
 import { SubscriberList } from './SubscriberList';
 import { useToast } from '@/components/Toast';
 
-export const runtime = 'edge';
 
 interface Subscriber {
   Email: string;

@@ -16,7 +16,6 @@ interface ProviderResponse {
   provider: string;
 }
 
-export const runtime = 'edge';
 
 function HarborAppBar({ lang }: { lang: Locale }) {
   const { t, i18n } = useTranslation('translations');

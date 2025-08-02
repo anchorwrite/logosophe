@@ -6,7 +6,6 @@ import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { checkAccess } from '@/lib/access-control';
 import { isSystemAdmin } from '@/lib/access';
 
-export const runtime = 'edge';
 
 interface ShareLink {
   Id: string;

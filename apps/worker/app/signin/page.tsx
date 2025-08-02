@@ -7,7 +7,6 @@ import { auth, signIn, signOut } from '@/auth'
 import { AuthError } from 'next-auth'
 import { handleSignOut } from '@/signout/actions'
 
-export const runtime = 'edge'
 
 export const metadata: Metadata = {
   title: 'Logosophe Login Page',

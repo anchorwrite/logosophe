@@ -1,4 +1,3 @@
-export const runtime = 'edge';
 
 import { handleAccessControl } from '@/lib/access-control';
 import { SubscriberAddForm } from './SubscriberAddForm';

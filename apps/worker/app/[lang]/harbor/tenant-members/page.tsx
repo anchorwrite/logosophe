@@ -7,7 +7,6 @@ import TenantMembers from "@/components/TenantMembers";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 
-export const runtime = 'edge';
 
 export default async function TenantMembersPage() {
   const session = await auth();

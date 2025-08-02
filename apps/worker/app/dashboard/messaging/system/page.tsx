@@ -7,7 +7,6 @@ import { getSystemSettings } from '@/lib/messaging';
 import { SystemLogs } from '@/lib/system-logs';
 import { SystemControlsClient } from './SystemControlsClient';
 
-export const runtime = 'edge';
 
 export default async function SystemControlsPage() {
   const session = await auth();

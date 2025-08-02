@@ -2,8 +2,6 @@ import { Suspense } from 'react';
 import { ContentViewer } from '@/components/content/ContentViewer';
 import Container from '@/common/Container';
 
-export const runtime = 'edge';
-
 interface ContentViewPageProps {
   params: Promise<{
     lang: string;
