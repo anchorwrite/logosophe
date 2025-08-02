@@ -12,6 +12,7 @@ const nextConfig = {
       },
     ],
   },
+  allowedDevOrigins: ['local-dev.logosophe.com', 'www.logosophe.com'],
 };
 
 export default nextConfig; 

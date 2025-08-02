@@ -42,6 +42,71 @@
 - **Providers**: Google, Apple, Resend, Credentials
 - **Configuration**: `apps/worker/app/auth.ts`
 
+### Auth.js v5 Database Access Patterns
+- **OpenNext Cloudflare**: Use `getCloudflareContext({async: true})` to access D1 database
+- **Database Binding**: Access via `context.env.DB` after getting context
+- **Async Pattern**: Always await the context: `const context = await getCloudflareContext({async: true})`
+- **Error Handling**: Wrap database access in try/catch blocks
+- **Fallback Strategy**: Continue with operation even if database logging fails
+
+### Auth.js v5 Configuration Patterns
+- **Async NextAuth**: Configure NextAuth as async function to get database context
+- **Session Strategy**: Use `'database'` strategy for session management
+- **Custom Adapter**: Create custom adapter with role support for D1
+- **Event Logging**: Log authentication events in SystemLogs table
+- **Provider Configuration**: Configure each provider with proper callbacks
+
+### Database Schema for Auth.js
+- **Users Table**: Standard Auth.js users table with id, name, email, emailVerified, image
+- **Accounts Table**: OAuth provider accounts with userId, provider, type, access_token, etc.
+- **Sessions Table**: Session management with sessionToken, userId, expires
+- **Verification Tokens**: For email verification flows
+- **Credentials Table**: Custom table for admin/tenant users with Email, Password, Role
+- **Subscribers Table**: Custom table for regular users with email, provider, etc.
+
+### SystemLogs Integration
+- **Log Types**: Use 'AUTH' for authentication events
+- **Required Fields**: userId, userEmail, provider, activityType, ipAddress, userAgent
+- **Metadata**: Store additional context as JSON string
+- **Column Names**: Use 'LogType' and 'UserEmail' (not 'Type' and 'Email')
+- **Error Handling**: Log errors but don't fail authentication flow
+
+### Sign-In/Sign-Out Patterns
+- **Server Actions**: Use inline server actions with 'use server' directive
+- **Redirect Handling**: Let Auth.js handle redirects with `redirectTo` parameter
+- **Error Handling**: Don't catch `NEXT_REDIRECT` errors from Auth.js
+- **Session Checking**: Use `await auth()` to check current session
+- **Role-Based Redirects**: Check user role before redirecting to appropriate page
+
+### NEXT_REDIRECT Error Handling
+- **Root Cause**: `redirect()` throws `NEXT_REDIRECT` error for Next.js to handle
+- **Problem**: Try/catch blocks can intercept this error and prevent proper redirects
+- **Solution**: Move `redirect()` calls outside try/catch blocks
+- **Pattern**: Store error messages in variables, handle redirects separately
+- **Auth.js Redirects**: Let `signIn()` with `redirectTo` handle successful redirects naturally
+
+### Database Query Best Practices
+- **Direct Queries**: Use `db.prepare().bind().first()` or `db.prepare().bind().all()`
+- **Type Safety**: Always type query results explicitly
+- **Error Handling**: Let SQL errors propagate naturally
+- **Transaction Avoidance**: Don't use transactions with D1 (not supported)
+- **Connection Management**: Get fresh context for each database operation
+
+### Authentication Flow
+1. **Sign-In**: `signIn('credentials', { email, password, redirectTo })`
+2. **Session Check**: `const session = await auth()`
+3. **Role Resolution**: Query Credentials/Subscribers tables for user role
+4. **Redirect Logic**: Based on role (admin → dashboard, others → harbor)
+5. **Logging**: Log authentication events to SystemLogs
+6. **Sign-Out**: Use `handleSignOut()` action for proper logging
+
+### Common Pitfalls
+- **Context Access**: Always use `await getCloudflareContext({async: true})`
+- **Column Names**: Use correct database column names (LogType, UserEmail)
+- **Error Catching**: Don't catch `NEXT_REDIRECT` errors from Auth.js
+- **Redirect Timing**: Handle redirects outside try/catch blocks
+- **Session Management**: Use database strategy for persistent sessions
+
 ## Migration Context
 - **Source Project**: anchorwrite (uses Cloudflare Pages + Next.js from Vercel)
 - **Target Project**: logosophe (uses OpenNext + Cloudflare Workers)

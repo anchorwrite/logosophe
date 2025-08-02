@@ -1,10 +1,11 @@
 import type { Metadata } from 'next'
-import { signIn } from 'next-auth/react'
 import { Button } from '@radix-ui/themes'
 import { Card, Text, Flex, Box, Heading, Container, Avatar } from '@radix-ui/themes'
 import { redirect } from 'next/navigation'
 import { getCloudflareContext } from "@opennextjs/cloudflare";
-import { auth, signOut } from '../auth'
+import { auth, signIn, signOut } from '../auth'
+import { AuthError } from 'next-auth'
+import { handleSignOut } from '../signout/actions'
 
 export const runtime = 'edge'
 
@@ -86,7 +87,7 @@ export default async function SignInPage({
                 <form
                   action={async () => {
                     'use server'
-                    await signOut({ redirectTo: '/signout' })
+                    await handleSignOut()
                   }}
                 >
                   <Button type="submit" variant="solid" color="red" style={{ width: '100%' }}>
@@ -112,91 +113,71 @@ export default async function SignInPage({
                 <form
                   action={async (formData) => {
                     'use server'
-                    let errorOccurred = false;
+                    let errorMessage: string | null = null;
+                    
                     try {
-                      const email = formData.get('email') as string
-                      const password = formData.get('password') as string
+                      // Check if user is an admin first
+                      const context = await getCloudflareContext({async: true});
+                      const db = context.env.DB;
+                      const isAdmin = await db.prepare(
+                        'SELECT 1 FROM Credentials WHERE Email = ?'
+                      ).bind(formData.get('email')).first();
 
-                      if (!email || !password) {
-                        return
-                      }
-
-                      // Check if user is admin before signing in
-                      let db;
-                      try {
-                        const context = await getCloudflareContext({async: true});
-                        db = context.env.DB;
-                      } catch (error) {
-                        console.error('Failed to get Cloudflare context for admin check:', error);
-                        redirect('/harbor') // Redirect to harbor as fallback
-                        return
-                      }
-
-                      if (!db) {
-                        console.error('Database not available for admin check');
-                        redirect('/harbor') // Redirect to harbor as fallback
-                        return
-                      }
-
-                      // Check if user exists in Credentials table (admin/tenant)
-                      const credUser = await db.prepare(
-                        'SELECT * FROM Credentials WHERE Email = ?'
-                      ).bind(email).first();
-
-                      if (!credUser) {
-                        // User not found in Credentials table
-                        redirect('/signin?error=UserNotFound')
-                        return
-                      }
-
-                      // Attempt to sign in
-                      const result = await signIn('credentials', {
-                        email,
-                        password,
-                        redirect: false
+                      // Let Auth.js handle the redirect based on user type
+                      await signIn('credentials', {
+                        email: formData.get('email'),
+                        password: formData.get('password'),
+                        redirectTo: isAdmin ? '/dashboard' : '/harbor'
                       })
-
-                      if (result?.error) {
-                        errorOccurred = true;
-                        redirect(`/signin?error=${result.error}`)
-                        return
-                      }
-
-                      if (!errorOccurred) {
-                        // Redirect based on user type
-                        redirect('/dashboard')
-                      }
                     } catch (error) {
-                      console.error('Sign-in error:', error)
-                      redirect('/signin?error=AuthenticationError')
+                      // Don't catch NEXT_REDIRECT errors from signIn - let them bubble up
+                      if (error instanceof Error && error.message === 'NEXT_REDIRECT') {
+                        throw error;
+                      }
+                      
+                      if (error instanceof AuthError) {
+                        errorMessage = error.message || 'AuthenticationError';
+                      } else {
+                        console.error('Sign-in error:', error)
+                        errorMessage = 'AuthenticationError';
+                      }
+                    }
+                    
+                    // Handle redirects outside of try/catch to avoid NEXT_REDIRECT issues
+                    if (errorMessage) {
+                      redirect(`/signin?error=${errorMessage}`)
                     }
                   }}
                   style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}
                 >
-                  <input
-                    type="email"
-                    name="email"
-                    placeholder="Email"
-                    required
-                    style={{
-                      padding: '0.75rem',
-                      border: '1px solid var(--gray-6)',
-                      borderRadius: 'var(--radius-2)',
-                      fontSize: '0.875rem'
-                    }}
-                  />
-                  <input
-                    type="password"
-                    name="password"
-                    placeholder="Password"
-                    required
-                    style={{
-                      padding: '0.75rem',
-                      border: '1px solid var(--gray-6)',
-                      borderRadius: 'var(--radius-2)',
-                      fontSize: '0.875rem'
-                    }}
-                  />
+                                     <input
+                     type="email"
+                     name="email"
+                     placeholder="Email"
+                     autoComplete="email"
+                     autoCapitalize="none"
+                     autoCorrect="off"
+                     required
+                     style={{
+                       padding: '0.75rem',
+                       border: '1px solid var(--gray-6)',
+                       borderRadius: 'var(--radius-2)',
+                       fontSize: '0.875rem'
+                     }}
+                   />
+                   <input
+                     type="password"
+                     name="password"
+                     placeholder="Password"
+                     autoComplete="current-password"
+                     required
+                     style={{
+                       padding: '0.75rem',
+                       border: '1px solid var(--gray-6)',
+                       borderRadius: 'var(--radius-2)',
+                       fontSize: '0.875rem'
+                     }}
+                   />
                   <Button type="submit" style={{ width: '100%' }}>
                     Sign In
                   </Button>
@@ -267,18 +248,21 @@ export default async function SignInPage({
               }}
               style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}
             >
-              <input
-                type="email"
-                name="email"
-                placeholder="Enter your email"
-                required
-                style={{
-                  padding: '0.75rem',
-                  border: '1px solid var(--gray-6)',
-                  borderRadius: 'var(--radius-2)',
-                  fontSize: '0.875rem'
-                }}
-              />
+                             <input
+                 type="email"
+                 name="email"
+                 placeholder="Enter your email"
+                 autoComplete="email"
+                 autoCapitalize="none"
+                 autoCorrect="off"
+                 required
+                 style={{
+                   padding: '0.75rem',
+                   border: '1px solid var(--gray-6)',
+                   borderRadius: 'var(--radius-2)',
+                   fontSize: '0.875rem'
+                 }}
+               />
               <Button type="submit" variant="outline" style={{ width: '100%' }}>
                 Continue with Email
               </Button>
