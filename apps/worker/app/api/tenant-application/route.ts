@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 
-// Use Edge Runtime for Cloudflare Pages
-export const runtime = "edge";
-
 interface TenantApplicationRequestBody {
   name: string;
   email: string;
