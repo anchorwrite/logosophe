@@ -4,8 +4,6 @@ import { useEffect, useState } from 'react';
 import { Box, Text } from '@radix-ui/themes';
 import { useParams } from 'next/navigation';
 
-export const runtime = 'edge';
-
 interface MediaFile {
   Id: string;
   FileName: string;

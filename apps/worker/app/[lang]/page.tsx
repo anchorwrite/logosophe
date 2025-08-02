@@ -1,7 +1,5 @@
 "use client";
 
-export const runtime = 'edge';
-
 import ContentBlock from '@/components/ContentBlock'
 import MiddleBlock from '@/components/MiddleBlock'
 import Container from '@/common/Container'

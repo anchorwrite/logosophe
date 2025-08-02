@@ -1,7 +1,5 @@
 "use client";
 
-export const runtime = 'edge';
-
 import { useEffect, useRef, Suspense, useState } from "react";
 import ContentBlock from '@/components/ContentBlock';
 import ContactForm from "@/components/ContactForm";

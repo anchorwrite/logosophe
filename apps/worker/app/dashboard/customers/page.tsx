@@ -22,8 +22,6 @@ interface CustomerRow {
 import { Button, Table, Flex, Text, Popover, Box, Checkbox } from '@radix-ui/themes';
 import { useToast } from '@/components/Toast';
 
-export const runtime = 'edge'
-
 const Home: NextPage = () => {
   const [fetchedData, setFetchedData] = useState<CustomerRow[] | null>(null);
   const [fetchedPlaceholders, setPlaceholders] = useState<CustomerRow[] | null>(null);
