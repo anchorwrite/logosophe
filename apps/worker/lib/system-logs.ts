@@ -5,9 +5,9 @@ export type LogType = 'auth' | 'activity' | 'media_access' | 'media_share';
 export interface SystemLog {
   id?: number;
   timestamp: string;
-  type: LogType;
+  logType: LogType;
   userId: string;
-  email: string;
+  userEmail: string;
   provider: string;
   activityType: string;
   ipAddress: string;
@@ -24,13 +24,13 @@ export class SystemLogs {
 
   async createLog(log: Omit<SystemLog, 'id'>): Promise<number> {
     const { results } = await this.db.prepare(`
-      INSERT INTO SystemLogs (Timestamp, Type, UserId, Email, Provider, ActivityType, IpAddress, UserAgent, Metadata)
+      INSERT INTO SystemLogs (Timestamp, LogType, UserId, UserEmail, Provider, ActivityType, IpAddress, UserAgent, Metadata)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).bind(
       log.timestamp,
-      log.type,
+      log.logType,
       log.userId,
-      log.email,
+      log.userEmail,
       log.provider,
       log.activityType,
       log.ipAddress,
@@ -52,8 +52,14 @@ export class SystemLogs {
   }): Promise<number> {
     return this.createLog({
       timestamp: new Date().toISOString(),
-      type: 'auth',
-      ...data
+      logType: 'auth',
+      userId: data.userId,
+      userEmail: data.email,
+      provider: data.provider,
+      activityType: data.activityType,
+      ipAddress: data.ipAddress,
+      userAgent: data.userAgent,
+      metadata: data.metadata
     });
   }
 
@@ -68,8 +74,14 @@ export class SystemLogs {
   }): Promise<number> {
     return this.createLog({
       timestamp: new Date().toISOString(),
-      type: 'activity',
-      ...data
+      logType: 'activity',
+      userId: data.userId,
+      userEmail: data.email,
+      provider: data.provider,
+      activityType: data.activityType,
+      ipAddress: data.ipAddress,
+      userAgent: data.userAgent,
+      metadata: data.metadata
     });
   }
 
@@ -84,8 +96,14 @@ export class SystemLogs {
   }): Promise<number> {
     return this.createLog({
       timestamp: new Date().toISOString(),
-      type: 'media_access',
-      ...data
+      logType: 'media_access',
+      userId: data.userId,
+      userEmail: data.email,
+      provider: data.provider,
+      activityType: data.activityType,
+      ipAddress: data.ipAddress,
+      userAgent: data.userAgent,
+      metadata: data.metadata
     });
   }
 
@@ -100,8 +118,14 @@ export class SystemLogs {
   }): Promise<number> {
     return this.createLog({
       timestamp: new Date().toISOString(),
-      type: 'media_share',
-      ...data
+      logType: 'media_share',
+      userId: data.userId,
+      userEmail: data.email,
+      provider: data.provider,
+      activityType: data.activityType,
+      ipAddress: data.ipAddress,
+      userAgent: data.userAgent,
+      metadata: data.metadata
     });
   }
 } 
