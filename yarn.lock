@@ -8658,6 +8658,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"logosophe-tail-worker@workspace:apps/tail-worker":
+  version: 0.0.0-use.local
+  resolution: "logosophe-tail-worker@workspace:apps/tail-worker"
+  dependencies:
+    "@cloudflare/workers-types": "npm:^4.20250708.0"
+    typescript: "npm:^5.8.3"
+    wrangler: "npm:^4.24.0"
+  languageName: unknown
+  linkType: soft
+
 "logosophe@workspace:.":
   version: 0.0.0-use.local
   resolution: "logosophe@workspace:."

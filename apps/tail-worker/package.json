@@ -1,0 +1,17 @@
+{
+  "name": "logosophe-tail-worker",
+  "version": "1.0.0",
+  "description": "Tail Worker for Logosophe application",
+  "main": "app/index.ts",
+  "scripts": {
+    "dev": "wrangler dev",
+    "build": "tsc --noEmit",
+    "deploy": "wrangler deploy",
+    "type-check": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250708.0",
+    "typescript": "^5.8.3",
+    "wrangler": "^4.24.0"
+  }
+}
