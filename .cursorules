@@ -26,6 +26,29 @@
 - **Create database**: `yarn wrangler d1 create logosophe`
 - **Delete database**: `yarn wrangler d1 delete logosophe`
 
+## Database Schema Lookup
+- **Check table structure**: `yarn wrangler d1 execute logosophe --command "PRAGMA table_info(table_name);"`
+- **Session token lookup**: Join sessions and users tables to get email from session token:
+  ```sql
+  SELECT s.sessionToken FROM sessions s 
+  JOIN users u ON s.userId = u.id 
+  WHERE u.email = 'user@example.com' 
+  ORDER BY s.expires DESC LIMIT 1;
+  ```
+- **Email from session token**: Reverse lookup to get email from session token:
+  ```sql
+  SELECT u.email FROM sessions s 
+  JOIN users u ON s.userId = u.id 
+  WHERE s.sessionToken = 'token_here';
+  ```
+- **Session expiration check**: Include expires field when querying sessions:
+  ```sql
+  SELECT s.sessionToken, s.expires FROM sessions s 
+  JOIN users u ON s.userId = u.id 
+  WHERE u.email = 'user@example.com' 
+  ORDER BY s.expires DESC LIMIT 1;
+  ```
+
 ## Wrangler Configuration
 - **Config file**: `apps/worker/wrangler.jsonc`
 - **Must run wrangler commands from**: `apps/worker/` directory

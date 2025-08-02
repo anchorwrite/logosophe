@@ -108,6 +108,10 @@ export default function ProfileForm({ session, updateName, updateEmail, isAdminU
     }
   };
 
+
+
+
+
   const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
@@ -237,10 +241,16 @@ export default function ProfileForm({ session, updateName, updateEmail, isAdminU
     formData.append('file', uploadedAvatar);
 
     try {
+      console.log('Attempting to upload preset avatar...');
+      // Test if the route exists by making a simple request first
+      const testResponse = await fetch('/api/preset-avatars', { method: 'GET' });
+      console.log('GET test response:', testResponse.status);
+      
       const response = await fetch('/api/preset-avatars', {
         method: 'POST',
         body: formData,
       });
+      console.log('Response received:', response.status, response.statusText);
       const data = await response.json() as ApiResponse;
       if (response.ok && data.avatarId) {
         showToast({
@@ -496,131 +506,207 @@ export default function ProfileForm({ session, updateName, updateEmail, isAdminU
                     </Tabs.Content>
 
                     <Tabs.Content value="custom">
-                      <Box style={{ gap: '1rem' }}>
-                        <Text size="3" weight="medium" mb="4">Upload New Custom Avatar</Text>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={handleAvatarUpload}
-                        />
-                        {avatarPreview && (
-                          <Box style={{ gap: '1rem' }}>
-                            <Avatar
-                              size="6"
-                              src={avatarPreview}
-                              fallback="AV"
-                            />
+                      <Box style={{ gap: '2rem' }}>
+                        {/* Upload New Custom Avatar Section */}
+                        <Card>
+                          <Box p="4" style={{ gap: '1rem' }}>
+                            <Flex direction="column" gap="2">
+                              <Text size="3" weight="medium">Upload New Custom Avatar</Text>
+                              <Text size="2" color="gray">
+                                Upload a custom avatar for your personal use.
+                              </Text>
+                            </Flex>
+                            
+                            <Box style={{ gap: '1rem' }}>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                onChange={handleAvatarUpload}
+                                style={{
+                                  padding: '0.5rem',
+                                  border: '1px solid var(--gray-6)',
+                                  borderRadius: 'var(--radius-3)',
+                                  backgroundColor: 'var(--gray-1)',
+                                  width: '100%'
+                                }}
+                              />
+                              
+                              {avatarPreview && (
+                                <Box style={{ gap: '1rem' }}>
+                                  <Text size="2" weight="medium">Preview</Text>
+                                  <Avatar
+                                    size="6"
+                                    src={avatarPreview}
+                                    fallback="AV"
+                                  />
+                                </Box>
+                              )}
+                              
+                              <Button 
+                                onClick={handleCustomUpload} 
+                                disabled={!uploadedAvatar}
+                                size="2"
+                              >
+                                Upload Avatar
+                              </Button>
+                            </Box>
                           </Box>
-                        )}
-                        <Button onClick={handleCustomUpload} disabled={!uploadedAvatar}>
-                          Upload Avatar
-                        </Button>
+                        </Card>
 
-                        <Text size="3" weight="medium" mt="6" mb="4">Your Custom Avatars</Text>
-                        <Grid columns="4" gap="4">
-                          {customAvatars.map((avatar) => (
-                            <Card
-                              key={avatar.Id}
-                              style={{
-                                cursor: 'pointer',
-                                border: selectedAvatar === avatar.Id.toString() ? '2px solid var(--blue-9)' : undefined,
-                                position: 'relative',
-                                backgroundColor: selectedAvatar === avatar.Id.toString() ? 'var(--blue-3)' : undefined
-                              }}
-                            >
-                              <Box p="2">
-                                <Avatar
-                                  size="6"
-                                  src={`/api/avatars/${avatar.Id}/preview`}
-                                  fallback="AV"
-                                />
-                                <Flex gap="2" mt="2" justify="center">
-                                  <Button 
-                                    size="1" 
-                                    variant="soft" 
-                                    color={selectedAvatar === avatar.Id.toString() ? "blue" : "gray"}
-                                    onClick={() => handlePresetSelect(avatar.Id)}
-                                  >
-                                    {selectedAvatar === avatar.Id.toString() ? 'Selected' : 'Select'}
-                                  </Button>
-                                  <Button 
-                                    size="1" 
-                                    variant="soft" 
-                                    color="red"
-                                    onClick={() => handleDeleteAvatar(avatar.Id)}
-                                  >
-                                    Delete
-                                  </Button>
-                                </Flex>
-                              </Box>
-                            </Card>
-                          ))}
-                        </Grid>
+                        {/* Your Custom Avatars Section */}
+                        <Card>
+                          <Box p="4" style={{ gap: '1rem' }}>
+                            <Flex direction="column" gap="2">
+                              <Text size="3" weight="medium">Your Custom Avatars</Text>
+                              <Text size="2" color="gray">
+                                Manage your personal custom avatars.
+                              </Text>
+                            </Flex>
+                            
+                            <Grid columns="4" gap="4" mt="2">
+                              {customAvatars.map((avatar) => (
+                                <Card
+                                  key={avatar.Id}
+                                  style={{
+                                    cursor: 'pointer',
+                                    border: selectedAvatar === avatar.Id.toString() ? '2px solid var(--blue-9)' : undefined,
+                                    position: 'relative',
+                                    backgroundColor: selectedAvatar === avatar.Id.toString() ? 'var(--blue-3)' : undefined
+                                  }}
+                                >
+                                  <Box p="2">
+                                    <Avatar
+                                      size="6"
+                                      src={`/api/avatars/${avatar.Id}/preview`}
+                                      fallback="AV"
+                                    />
+                                    <Flex gap="2" mt="2" justify="center">
+                                      <Button 
+                                        size="1" 
+                                        variant="soft" 
+                                        color={selectedAvatar === avatar.Id.toString() ? "blue" : "gray"}
+                                        onClick={() => handlePresetSelect(avatar.Id)}
+                                      >
+                                        {selectedAvatar === avatar.Id.toString() ? 'Selected' : 'Select'}
+                                      </Button>
+                                      <Button 
+                                        size="1" 
+                                        variant="soft" 
+                                        color="red"
+                                        onClick={() => handleDeleteAvatar(avatar.Id)}
+                                      >
+                                        Delete
+                                      </Button>
+                                    </Flex>
+                                  </Box>
+                                </Card>
+                              ))}
+                            </Grid>
+                          </Box>
+                        </Card>
                       </Box>
                     </Tabs.Content>
 
                     {isAdminUser && (
                       <Tabs.Content value="admin">
-                        <Box style={{ gap: '1rem' }}>
-                          <Text size="3" weight="medium" mb="4">Upload New Preset Avatar</Text>
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={handleAvatarUpload}
-                          />
-                          {avatarPreview && (
-                            <Box style={{ gap: '1rem' }}>
-                              <Avatar
-                                size="6"
-                                src={avatarPreview}
-                                fallback="AV"
-                              />
+                        <Box style={{ gap: '2rem' }}>
+                          {/* Upload New Preset Avatar Section */}
+                          <Card>
+                            <Box p="4" style={{ gap: '1rem' }}>
+                              <Flex direction="column" gap="2">
+                                <Text size="3" weight="medium">Upload New Preset Avatar</Text>
+                                <Text size="2" color="gray">
+                                  Upload a new avatar that will be available to all users as a preset option.
+                                </Text>
+                              </Flex>
+                              
+                              <Box style={{ gap: '1rem' }}>
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  onChange={handleAvatarUpload}
+                                  style={{
+                                    padding: '0.5rem',
+                                    border: '1px solid var(--gray-6)',
+                                    borderRadius: 'var(--radius-3)',
+                                    backgroundColor: 'var(--gray-1)',
+                                    width: '100%'
+                                  }}
+                                />
+                                
+                                {avatarPreview && (
+                                  <Box style={{ gap: '1rem' }}>
+                                    <Text size="2" weight="medium">Preview</Text>
+                                    <Avatar
+                                      size="6"
+                                      src={avatarPreview}
+                                      fallback="AV"
+                                    />
+                                  </Box>
+                                )}
+                                
+                                <Button 
+                                  onClick={handlePresetUpload} 
+                                  disabled={!uploadedAvatar}
+                                  size="2"
+                                >
+                                  Upload as Preset
+                                </Button>
+                              </Box>
                             </Box>
-                          )}
-                          <Button onClick={handlePresetUpload} disabled={!uploadedAvatar}>
-                            Upload as Preset
-                          </Button>
+                          </Card>
 
-                          <Text size="3" weight="medium" mt="6" mb="4">Existing Preset Avatars</Text>
-                          <Grid columns="4" gap="4">
-                            {presetAvatars.map((avatar) => (
-                              <Card
-                                key={avatar.Id}
-                                style={{
-                                  cursor: 'pointer',
-                                  border: selectedAvatar === avatar.Id.toString() ? '2px solid var(--blue-9)' : undefined,
-                                  position: 'relative',
-                                  backgroundColor: selectedAvatar === avatar.Id.toString() ? 'var(--blue-3)' : undefined
-                                }}
-                              >
-                                <Box p="2">
-                                  <Avatar
-                                    size="6"
-                                    src={`/api/avatars/${avatar.Id}/preview`}
-                                    fallback="AV"
-                                  />
-                                  <Flex gap="2" mt="2" justify="center">
-                                    <Button 
-                                      size="1" 
-                                      variant="soft" 
-                                      color={selectedAvatar === avatar.Id.toString() ? "blue" : "gray"}
-                                      onClick={() => handlePresetSelect(avatar.Id)}
-                                    >
-                                      {selectedAvatar === avatar.Id.toString() ? 'Selected' : 'Select'}
-                                    </Button>
-                                    <Button 
-                                      size="1" 
-                                      variant="soft" 
-                                      color="red"
-                                      onClick={() => handleDeleteAvatar(avatar.Id)}
-                                    >
-                                      Delete
-                                    </Button>
-                                  </Flex>
-                                </Box>
-                              </Card>
-                            ))}
-                          </Grid>
+                          {/* Existing Preset Avatars Section */}
+                          <Card>
+                            <Box p="4" style={{ gap: '1rem' }}>
+                              <Flex direction="column" gap="2">
+                                <Text size="3" weight="medium">Existing Preset Avatars</Text>
+                                <Text size="2" color="gray">
+                                  Manage preset avatars available to all users.
+                                </Text>
+                              </Flex>
+                              
+                              <Grid columns="4" gap="4" mt="2">
+                                {presetAvatars.map((avatar) => (
+                                  <Card
+                                    key={avatar.Id}
+                                    style={{
+                                      cursor: 'pointer',
+                                      border: selectedAvatar === avatar.Id.toString() ? '2px solid var(--blue-9)' : undefined,
+                                      position: 'relative',
+                                      backgroundColor: selectedAvatar === avatar.Id.toString() ? 'var(--blue-3)' : undefined
+                                    }}
+                                  >
+                                    <Box p="2">
+                                      <Avatar
+                                        size="6"
+                                        src={`/api/avatars/${avatar.Id}/preview`}
+                                        fallback="AV"
+                                      />
+                                      <Flex gap="2" mt="2" justify="center">
+                                        <Button 
+                                          size="1" 
+                                          variant="soft" 
+                                          color={selectedAvatar === avatar.Id.toString() ? "blue" : "gray"}
+                                          onClick={() => handlePresetSelect(avatar.Id)}
+                                        >
+                                          {selectedAvatar === avatar.Id.toString() ? 'Selected' : 'Select'}
+                                        </Button>
+                                        <Button 
+                                          size="1" 
+                                          variant="soft" 
+                                          color="red"
+                                          onClick={() => handleDeleteAvatar(avatar.Id)}
+                                        >
+                                          Delete
+                                        </Button>
+                                      </Flex>
+                                    </Box>
+                                  </Card>
+                                ))}
+                              </Grid>
+                            </Box>
+                          </Card>
                         </Box>
                       </Tabs.Content>
                     )}
