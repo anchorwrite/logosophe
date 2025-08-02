@@ -3,12 +3,12 @@ import { JWT, encode as defaultEncode, decode as defaultDecode } from "next-auth
 import { D1Adapter } from "@auth/d1-adapter";
 import type { AdapterUser, Adapter, AdapterAccount } from "@auth/core/adapters"
 import Credentials from "next-auth/providers/credentials";
-import { validateCredentials } from '../lib/credentials';
+import { validateCredentials } from '@/lib/credentials';
 import Resend from "next-auth/providers/resend";
 import Google from "next-auth/providers/google";
 import Apple from "next-auth/providers/apple";
 import { v4 as uuid } from "uuid";
-import { SystemLogs } from "../lib/system-logs";
+import { SystemLogs } from "@/lib/system-logs";
 import { headers } from "next/headers";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 
@@ -66,7 +66,7 @@ async function getDatabase() {
 }
 
 // Create a custom adapter that includes the role property
-async function createCustomAdapter() {
+export async function createCustomAdapter() {
   const db = await getDatabase();
   if (!db) {
     console.warn('Database not available, using fallback adapter');

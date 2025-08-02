@@ -3,9 +3,9 @@ import { Button } from '@radix-ui/themes'
 import { Card, Text, Flex, Box, Heading, Container, Avatar } from '@radix-ui/themes'
 import { redirect } from 'next/navigation'
 import { getCloudflareContext } from "@opennextjs/cloudflare";
-import { auth, signIn, signOut } from '../auth'
+import { auth, signIn, signOut } from '@/auth'
 import { AuthError } from 'next-auth'
-import { handleSignOut } from '../signout/actions'
+import { handleSignOut } from '@/signout/actions'
 
 export const runtime = 'edge'
 
@@ -28,7 +28,7 @@ export default async function SignInPage({
     if (!error) return '';
     
     // Handle Auth.js error format
-    if (error.startsWith('Read more at https://errors.authjs.dev')) {
+    if (error.startsWith('Read more at https:/errors.authjs.dev')) {
       return 'Invalid email or password';
     }
     

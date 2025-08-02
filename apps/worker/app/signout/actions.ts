@@ -1,7 +1,7 @@
 'use server'
 
-import { signOut, auth } from '../auth'
-import { SystemLogs } from '../../lib/system-logs'
+import { signOut, auth } from '@/auth'
+import { SystemLogs } from '@/lib/system-logs'
 import { headers } from 'next/headers'
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 

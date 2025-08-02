@@ -1,4 +1,4 @@
-import { auth } from '../../../worker/app/auth'
+import { auth } from '@/auth'
 
 export async function getCurrentUser() {
   return await auth()

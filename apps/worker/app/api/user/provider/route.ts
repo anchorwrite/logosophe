@@ -1,0 +1,48 @@
+import { NextResponse } from 'next/server';
+import { getCloudflareContext } from '@opennextjs/cloudflare';
+import { checkAccess } from '@/lib/access-control';
+import { auth } from '@/auth';
+
+export const runtime = 'edge';
+
+export async function GET() {
+  try {
+    const access = await checkAccess({
+      requireAuth: true,
+    });
+
+    if (!access.hasAccess || !access.email) {
+      return new NextResponse('Unauthorized', { status: 401 });
+    }
+
+    const session = await auth();
+    const { env } = await getCloudflareContext({async: true});
+    const db = env.DB;
+
+    // For test users, return 'Test' as provider
+    if (access.email.endsWith('@logosophe.test')) {
+      return NextResponse.json({
+        success: true,
+        provider: 'Test',
+        email: access.email
+      });
+    }
+
+    // For other users, get the provider from the database
+    const account = await db.prepare(
+      'SELECT provider FROM accounts WHERE userId = ?'
+    ).bind(session?.user?.id).first() as { provider: string } | null;
+
+    const provider = account?.provider || 'unknown';
+
+    return NextResponse.json({
+      success: true,
+      provider,
+      email: access.email
+    });
+
+  } catch (error) {
+    console.error('Error fetching user provider:', error);
+    return new NextResponse('Internal server error', { status: 500 });
+  }
+} 
