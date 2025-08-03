@@ -30,7 +30,13 @@ jobs:
           export CLOUDFLARE_ACCOUNT_ID="${{ secrets.CLOUDFLARE_ACCOUNT_ID }}"
           export NODE_ENV=production
           
-          echo "Deploying worker..."
+          # Skew protection environment variables
+          export CF_WORKER_NAME="logosophe"
+          export CF_PREVIEW_DOMAIN="anchorwrite.workers.dev"
+          export CF_WORKERS_SCRIPTS_API_TOKEN="${{ secrets.CF_WORKERS_SCRIPTS_API_TOKEN }}"
+          export CF_ACCOUNT_ID="${{ secrets.CLOUDFLARE_ACCOUNT_ID }}"
+          
+          echo "Deploying worker with skew protection..."
           cd apps/worker
           
           # Use OpenNext commands directly as recommended
@@ -39,4 +45,8 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          NODE_ENV: production 
+          NODE_ENV: production
+          CF_WORKER_NAME: logosophe
+          CF_PREVIEW_DOMAIN: anchorwrite.workers.dev
+          CF_WORKERS_SCRIPTS_API_TOKEN: ${{ secrets.CF_WORKERS_SCRIPTS_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }} 
