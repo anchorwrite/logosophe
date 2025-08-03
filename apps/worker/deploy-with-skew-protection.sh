@@ -12,6 +12,7 @@ export CF_ACCOUNT_ID="911edf2379732c1038a6a894cae9bee5"
 export NEXTAUTH_URL="https://www.logosophe.com"
 export AUTH_URL="https://www.logosophe.com"
 export AUTH_REDIRECT_PROXY_URL="https://www.logosophe.com"
+export NODE_ENV="production"
 
 # Check if API token is provided
 if [ -z "$CF_WORKERS_SCRIPTS_API_TOKEN" ]; then
@@ -26,6 +27,7 @@ echo "Worker name: $CF_WORKER_NAME"
 echo "Preview domain: $CF_PREVIEW_DOMAIN"
 echo "Account ID: $CF_ACCOUNT_ID"
 echo "Production URL: $NEXTAUTH_URL"
+echo "Node environment: $NODE_ENV"
 
 # Build and deploy
 yarn build

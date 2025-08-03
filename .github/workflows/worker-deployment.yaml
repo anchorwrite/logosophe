@@ -36,6 +36,11 @@ jobs:
           export CF_WORKERS_SCRIPTS_API_TOKEN="${{ secrets.CF_WORKERS_SCRIPTS_API_TOKEN }}"
           export CF_ACCOUNT_ID="${{ secrets.CLOUDFLARE_ACCOUNT_ID }}"
           
+          # Production NextAuth environment variables
+          export NEXTAUTH_URL="https://www.logosophe.com"
+          export AUTH_URL="https://www.logosophe.com"
+          export AUTH_REDIRECT_PROXY_URL="https://www.logosophe.com"
+          
           echo "Deploying worker with skew protection..."
           cd apps/worker
           
@@ -49,4 +54,7 @@ jobs:
           CF_WORKER_NAME: logosophe
           CF_PREVIEW_DOMAIN: anchorwrite.workers.dev
           CF_WORKERS_SCRIPTS_API_TOKEN: ${{ secrets.CF_WORKERS_SCRIPTS_API_TOKEN }}
-          CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }} 
+          CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          NEXTAUTH_URL: https://www.logosophe.com
+          AUTH_URL: https://www.logosophe.com
+          AUTH_REDIRECT_PROXY_URL: https://www.logosophe.com 
