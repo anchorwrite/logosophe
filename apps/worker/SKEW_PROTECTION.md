@@ -10,10 +10,16 @@ Skew protection helps handle requests that might be routed to different versions
 
 ### Configuration Files Updated
 
-1. **wrangler.jsonc**: Added `run_worker_first: true` to the assets configuration
+1. **wrangler.jsonc**: Added `run_worker_first: true` to the assets configuration and configured routes for both domains
 2. **next.config.mjs**: Added `deploymentId: getDeploymentId()` for unique deployment tracking
 3. **.dev.vars**: Added required environment variables for local development
 4. **.open-next/cloudflare/skew-protection.js**: Enabled skew protection logic
+
+### Domain Configuration
+
+The worker is configured to handle two domains:
+- **Production**: `www.logosophe.com`
+- **Development**: `local-dev.logosophe.com`
 
 ### Required Environment Variables
 
@@ -51,11 +57,19 @@ To test skew protection:
 1. Deploy your worker
 2. Make a request with a specific deployment ID:
    ```bash
-   curl -H "x-deployment-id: your-deployment-id" https://logosophe.com
+   # Test production domain
+   curl -H "x-deployment-id: your-deployment-id" https://www.logosophe.com
+   
+   # Test development domain
+   curl -H "x-deployment-id: your-deployment-id" https://local-dev.logosophe.com
    ```
    or
    ```bash
-   curl "https://logosophe.com?dpl=your-deployment-id"
+   # Test production domain
+   curl "https://www.logosophe.com?dpl=your-deployment-id"
+   
+   # Test development domain
+   curl "https://local-dev.logosophe.com?dpl=your-deployment-id"
    ```
 
 ### Important Notes
@@ -64,6 +78,7 @@ To test skew protection:
 - Requests to older deployments will be slightly slower (few milliseconds)
 - The system maintains up to 20 previous versions by default
 - Versions older than 7 days are automatically cleaned up
+- Both `www.logosophe.com` and `local-dev.logosophe.com` are supported
 
 ## Troubleshooting
 
@@ -73,6 +88,7 @@ If skew protection isn't working:
 2. Verify your API token has the correct permissions
 3. Ensure you're testing with a custom domain, not a `.workers.dev` domain
 4. Check the worker logs for any error messages
+5. Verify that both domains are properly configured in your Cloudflare DNS
 
 ## References
 

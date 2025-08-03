@@ -42,7 +42,11 @@
   },
   "routes": [
     {
-      "pattern": "logosophe.com",
+      "pattern": "www.logosophe.com",
+      "custom_domain": true,
+    },
+    {
+      "pattern": "local-dev.logosophe.com",
       "custom_domain": true,
     },
   ],
