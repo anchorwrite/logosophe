@@ -185,12 +185,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth(async () => {
       error: '/error',
     },
     debug: false,
-    trustedHosts: [
-      'www.logosophe.com',
-      'local-dev.logosophe.com',
-      'localhost:3001',
-      'localhost:3000'
-    ],
     callbacks: {
       async jwt({ token, user }) {
         if (user) {
