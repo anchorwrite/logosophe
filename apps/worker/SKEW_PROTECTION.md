@@ -10,16 +10,17 @@ Skew protection helps handle requests that might be routed to different versions
 
 ### Configuration Files Updated
 
-1. **wrangler.jsonc**: Added `run_worker_first: true` to the assets configuration and configured routes for both domains
+1. **wrangler.jsonc**: Added `run_worker_first: true` to the assets configuration and configured routes for production domain
 2. **next.config.mjs**: Added `deploymentId: getDeploymentId()` for unique deployment tracking
 3. **.dev.vars**: Added required environment variables for local development
 4. **.open-next/cloudflare/skew-protection.js**: Enabled skew protection logic
 
 ### Domain Configuration
 
-The worker is configured to handle two domains:
-- **Production**: `www.logosophe.com`
-- **Development**: `local-dev.logosophe.com`
+The worker is configured to handle the production domain:
+- **Production**: `www.logosophe.com` (managed by Cloudflare Workers)
+
+**Note**: `local-dev.logosophe.com` is managed by Cloudflare Tunnel for local development and is not configured in the worker routes to avoid DNS conflicts.
 
 ### Required Environment Variables
 
@@ -59,18 +60,19 @@ To test skew protection:
    ```bash
    # Test production domain
    curl -H "x-deployment-id: your-deployment-id" https://www.logosophe.com
-   
-   # Test development domain
-   curl -H "x-deployment-id: your-deployment-id" https://local-dev.logosophe.com
    ```
    or
    ```bash
    # Test production domain
    curl "https://www.logosophe.com?dpl=your-deployment-id"
-   
-   # Test development domain
-   curl "https://local-dev.logosophe.com?dpl=your-deployment-id"
    ```
+
+### Local Development
+
+For local development with `local-dev.logosophe.com`:
+- The domain is managed by Cloudflare Tunnel
+- Skew protection is not needed for local development
+- The tunnel routes traffic directly to your local development server
 
 ### Important Notes
 
@@ -78,7 +80,8 @@ To test skew protection:
 - Requests to older deployments will be slightly slower (few milliseconds)
 - The system maintains up to 20 previous versions by default
 - Versions older than 7 days are automatically cleaned up
-- Both `www.logosophe.com` and `local-dev.logosophe.com` are supported
+- Only `www.logosophe.com` is managed by the worker for skew protection
+- `local-dev.logosophe.com` is managed by Cloudflare Tunnel for local development
 
 ## Troubleshooting
 
@@ -86,9 +89,9 @@ If skew protection isn't working:
 
 1. Check that all environment variables are set correctly
 2. Verify your API token has the correct permissions
-3. Ensure you're testing with a custom domain, not a `.workers.dev` domain
+3. Ensure you're testing with the production domain (`www.logosophe.com`)
 4. Check the worker logs for any error messages
-5. Verify that both domains are properly configured in your Cloudflare DNS
+5. Verify that the production domain is properly configured in your Cloudflare DNS
 
 ## References
 

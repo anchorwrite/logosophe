@@ -45,10 +45,6 @@
       "pattern": "www.logosophe.com",
       "custom_domain": true,
     },
-    {
-      "pattern": "local-dev.logosophe.com",
-      "custom_domain": true,
-    },
   ],
   "tail_consumers": [
     {
