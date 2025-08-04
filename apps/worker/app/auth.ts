@@ -181,6 +181,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth(async () => {
       Apple({
         clientId: getEnvVar('AUTH_APPLE_ID'),
         clientSecret: getEnvVar('AUTH_APPLE_SECRET'),
+        authorization: {
+          params: {
+            scope: 'name email',
+            response_mode: 'form_post'
+          }
+        }
       }),
     ],
     adapter: await createCustomAdapter(),

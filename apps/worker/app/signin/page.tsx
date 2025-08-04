@@ -39,6 +39,8 @@ export default async function SignInPage({
         return 'No account found with this email';
       case 'IncorrectPassword':
         return 'Incorrect password';
+      case 'OAuthAccountNotLinked':
+        return 'This email is already associated with a different sign-in method. Please use the same provider you used when you first created your account.';
       default:
         return 'An error occurred during sign in';
     }
