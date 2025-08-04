@@ -30,7 +30,8 @@ export function middleware(request: NextRequest) {
       pathname.startsWith('/signout') ||
       pathname.startsWith('/test-signin') ||
       pathname.startsWith('/api/auth') ||
-      pathname.startsWith('/share/')) return
+      pathname.startsWith('/share/') ||
+      pathname.startsWith('/error')) return
 
   // Check if there is any supported locale in the pathname
   const pathnameHasLocale = locales.some(
