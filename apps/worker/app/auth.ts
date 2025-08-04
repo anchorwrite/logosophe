@@ -136,7 +136,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth(async () => {
     if (process.env.NODE_ENV === 'development') {
       return process.env[key];
     }
-    const value = env[key as keyof typeof env];
+    // In production, secrets are accessible via env but not typed in the interface
+    const value = (env as any)[key];
     return typeof value === 'string' ? value : undefined;
   };
   
