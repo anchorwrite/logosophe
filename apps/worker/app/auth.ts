@@ -185,6 +185,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth(async () => {
       error: '/error',
     },
     debug: false,
+    trustHost: true,
     trustedHosts: [
       'www.logosophe.com',
       'local-dev.logosophe.com',
