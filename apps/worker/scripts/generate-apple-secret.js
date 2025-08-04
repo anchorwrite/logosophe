@@ -3,9 +3,9 @@ const fs = require('fs');
 
 // Configuration
 const teamId = '42R9DPNTYR';
-const clientId = 'net.logosophe.www.authjs';
-const keyId = 'QFH6PXJG9K';
-const privateKeyPath = process.argv[2]; / Path to your .p8 file
+const clientId = 'com.logosophe.www.authjs';
+const keyId = 'MVVB892PSQ';
+const privateKeyPath = process.argv[2]; // Path to your .p8 file
 
 if (!privateKeyPath) {
   console.error('Please provide the path to your private key file (.p8)');
@@ -18,7 +18,7 @@ try {
   const token = jwt.sign({}, privateKey, {
     algorithm: 'ES256',
     expiresIn: '180d',
-    audience: 'https:/appleid.apple.com',
+    audience: 'https://appleid.apple.com',
     issuer: teamId,
     subject: clientId,
     keyid: keyId
