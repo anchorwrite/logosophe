@@ -9,6 +9,11 @@ declare namespace Cloudflare {
 		DB: D1Database;
 		WORKER_SELF_REFERENCE: Service<typeof import("./.open-next/worker").default>;
 		ASSETS: Fetcher;
+		AUTH_RESEND_KEY: string;
+		AUTH_GOOGLE_ID: string;
+		AUTH_GOOGLE_SECRET: string;
+		AUTH_APPLE_ID: string;
+		AUTH_APPLE_SECRET: string;
 	}
 }
 interface CloudflareEnv extends Cloudflare.Env {}
