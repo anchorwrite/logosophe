@@ -50,6 +50,9 @@ echo "YOUR_RESEND_API_KEY" | npx wrangler secret put AUTH_RESEND_KEY
 echo "YOUR_APPLE_CLIENT_ID" | npx wrangler secret put AUTH_APPLE_ID
 echo "YOUR_APPLE_CLIENT_SECRET" | npx wrangler secret put AUTH_APPLE_SECRET
 
+# Set worker URL secrets
+echo "https://logosophe-email.anchorwrite.workers.dev" | npx wrangler secret put EMAIL_WORKER_URL
+
 # Verify secrets are set
 npx wrangler secret list
 ```
@@ -73,18 +76,7 @@ const getEnvVar = (key: string): string | undefined => {
 yarn wrangler types --env-interface CloudflareEnv
 ```
 
-**Step 5: Fix debug route**
-Update `apps/worker/app/api/debug/env/route.ts` to handle secrets:
-```typescript
-// Check specific auth variables - these are now secrets
-const authVars = {
-  AUTH_GOOGLE_ID: '***SECRET***', // These are now secrets, not directly accessible
-  AUTH_GOOGLE_SECRET: '***SECRET***',
-  AUTH_RESEND_KEY: '***SECRET***',
-  AUTH_APPLE_ID: '***SECRET***',
-  AUTH_APPLE_SECRET: '***SECRET***',
-};
-```
+
 
 **Verification:**
 - Check that secrets are set: `npx wrangler secret list`
