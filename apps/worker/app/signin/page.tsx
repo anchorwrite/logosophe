@@ -98,19 +98,6 @@ export default async function SignInPage({
               </Flex>
             ) : (
               <>
-                {error && (
-                  <Box style={{ 
-                    backgroundColor: 'var(--red-2)', 
-                    border: '1px solid var(--red-6)', 
-                    borderRadius: 'var(--radius-2)',
-                    marginBottom: '1rem',
-                    padding: '0.75rem'
-                  }}>
-                    <Text color="red">
-                      {getErrorMessage(error)}
-                    </Text>
-                  </Box>
-                )}
                 <form
                   action={async (formData) => {
                     'use server'
@@ -205,6 +192,19 @@ export default async function SignInPage({
             </Flex>
           </Box>
           <Box style={{ padding: '1rem' }}>
+            {error && (error === 'OAuthAccountNotLinked' || error === 'Configuration') && (
+              <Box style={{ 
+                backgroundColor: 'var(--red-2)', 
+                border: '1px solid var(--red-6)', 
+                borderRadius: 'var(--radius-2)',
+                marginBottom: '1rem',
+                padding: '0.75rem'
+              }}>
+                <Text color="red">
+                  {getErrorMessage(error)}
+                </Text>
+              </Box>
+            )}
             <form
               action={async () => {
                 'use server'
