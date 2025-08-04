@@ -161,16 +161,16 @@ export const { handlers, auth, signIn, signOut } = NextAuth(async () => {
         },
       }),
       Resend({
-        apiKey: process.env.AUTH_RESEND_KEY,
+        apiKey: env.AUTH_RESEND_KEY,
         from: 'phil@logosophe.com',
       }),
       Google({
-        clientId: process.env.AUTH_GOOGLE_ID,
-        clientSecret: process.env.AUTH_GOOGLE_SECRET,
+        clientId: env.AUTH_GOOGLE_ID,
+        clientSecret: env.AUTH_GOOGLE_SECRET,
       }),
       Apple({
-        clientId: process.env.AUTH_APPLE_ID,
-        clientSecret: process.env.AUTH_APPLE_SECRET,
+        clientId: env.AUTH_APPLE_ID,
+        clientSecret: env.AUTH_APPLE_SECRET,
       }),
     ],
     adapter: await createCustomAdapter(),
@@ -278,7 +278,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth(async () => {
     },
     events: {
       async signIn({ user, account }) {
-        const db = env.DB;
+        const ctx = await getCloudflareContext({async: true});
+        const db = ctx.env.DB;
         if (!db) {
           console.error('Database not available');
           return;
