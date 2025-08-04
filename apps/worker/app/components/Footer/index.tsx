@@ -10,7 +10,7 @@ import { useTheme } from "@/lib/theme-context";
 import { SUPPORTED_LANGUAGES, SupportedLanguageCode } from '@/lib/languages';
 
 const Footer: React.FC = () => {
-  const { t, i18n } = useTranslation();
+  const { t, i18n } = useTranslation('translations');
   const router = useRouter();
   const pathname = usePathname();
   const { language, setLanguage } = useTheme();
@@ -49,7 +49,7 @@ const Footer: React.FC = () => {
             {/* Navigation Section */}
             <Card variant="ghost">
               <Flex direction="column" gap="3">
-                <Text size="3" weight="bold">{t("Navigation")}</Text>
+                <Text size="3" weight="bold">{t("Navigation menu")}</Text>
                 <Flex direction="column" gap="2">
                   <a href={`/${currentLang}`} style={{ textDecoration: 'none', color: 'inherit' }}>
                     <Text size="2">{t("Home")}</Text>
@@ -67,7 +67,7 @@ const Footer: React.FC = () => {
             {/* Social Media Section */}
             <Card variant="ghost">
               <Flex direction="column" gap="3">
-                <Text size="3" weight="bold">{t("Connect")}</Text>
+                <Text size="3" weight="bold">{t("connect")}</Text>
                 <Flex gap="3">
                   <a href="https:/github.com/plowden" target="_blank" rel="noopener noreferrer" aria-label="GitHub">
                     <SvgIcon src="/img/svg/github.svg" width="25px" height="25px" />
@@ -85,7 +85,7 @@ const Footer: React.FC = () => {
             {/* Language Section */}
             <Card variant="ghost">
               <Flex direction="column" gap="3">
-                <Text size="3" weight="bold">{t("Language")}</Text>
+                <Text size="3" weight="bold">{t("language")}</Text>
                 <Select.Root value={currentLang} onValueChange={handleChange}>
                   <Select.Trigger style={{ width: '100%' }} />
                   <Select.Content>

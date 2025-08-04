@@ -246,6 +246,11 @@
   "Contact": "Contact",
   "Menu": "Menu",
   "Navigation menu": "Navigation menu",
+  "Home": "Home",
+  "About": "About",
+  "Privacy Policy": "Privacy Policy",
+  "Terms of Service": "Terms of Service",
+  "All rights reserved": "All rights reserved",
   "common": {
     "loading": "Loading...",
     "success": "Success",
