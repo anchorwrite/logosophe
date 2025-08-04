@@ -224,7 +224,7 @@ export default async function SignInPage({
             <form
               action={async () => {
                 'use server'
-                await signIn('apple', { redirectTo: '/harbor' })
+                await signIn('apple')
               }}
               style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1rem' }}
             >
