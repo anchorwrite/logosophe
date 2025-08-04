@@ -17,7 +17,7 @@ import {
   AlertDialog
 } from '@radix-ui/themes';
 import { useToast } from '@/components/Toast';
-import { ChevronDown, ChevronUp, Search, Filter, LogOut, Shield, ShieldOff } from 'lucide-react';
+import { ChevronDown, ChevronUp, Search, Filter, LogOut, Shield, ShieldOff, Trash2 } from 'lucide-react';
 
 interface UserInfo {
   email: string;
@@ -85,8 +85,10 @@ export default function UserManagement() {
   const [isActionLoading, setIsActionLoading] = useState<string | null>(null);
   const [confirmDialog, setConfirmDialog] = useState<{
     isOpen: boolean;
-    action: 'logout' | 'block' | 'unblock';
+    action: 'logout' | 'block' | 'unblock' | 'delete';
     user: UserInfo | null;
+    hasPublishedContent?: boolean;
+    publishedContent?: any[];
   }>({
     isOpen: false,
     action: 'logout',
@@ -164,7 +166,7 @@ export default function UserManagement() {
     }));
   };
 
-  const handleAction = async (action: 'logout' | 'block' | 'unblock', user: UserInfo) => {
+  const handleAction = async (action: 'logout' | 'block' | 'unblock' | 'delete', user: UserInfo) => {
     try {
       setIsActionLoading(`${action}-${user.email}`);
       
@@ -200,7 +202,30 @@ export default function UserManagement() {
     }
   };
 
-  const openConfirmDialog = (action: 'logout' | 'block' | 'unblock', user: UserInfo) => {
+  const openConfirmDialog = async (action: 'logout' | 'block' | 'unblock' | 'delete', user: UserInfo) => {
+    if (action === 'delete') {
+      // Check for published content before showing delete dialog
+      try {
+        const response = await fetch(`/api/user-management/${encodeURIComponent(user.email)}/published-content`);
+        if (response.ok) {
+          const data = await response.json() as { hasPublishedContent: boolean; publishedContent: any[] };
+          if (data.hasPublishedContent) {
+            // Show warning about published content
+            setConfirmDialog({ 
+              isOpen: true, 
+              action, 
+              user,
+              hasPublishedContent: true,
+              publishedContent: data.publishedContent
+            });
+            return;
+          }
+        }
+      } catch (error) {
+        console.error('Error checking published content:', error);
+      }
+    }
+    
     setConfirmDialog({ isOpen: true, action, user });
   };
 
@@ -465,6 +490,18 @@ export default function UserManagement() {
                               <ShieldOff size={14} />
                             </Button>
                           )}
+                          {/* Only show delete button for non-Credentials provider users */}
+                          {user.provider !== 'Credentials' && (
+                            <Button
+                              size="1"
+                              variant="soft"
+                              color="red"
+                              onClick={() => openConfirmDialog('delete', user)}
+                              disabled={isActionLoading === `delete-${user.email}`}
+                            >
+                              <Trash2 size={14} />
+                            </Button>
+                          )}
                         </Flex>
                       </Table.Cell>
                     </Table.Row>
@@ -508,11 +545,37 @@ export default function UserManagement() {
             {confirmDialog.action === 'logout' && 'Logout User'}
             {confirmDialog.action === 'block' && 'Block User'}
             {confirmDialog.action === 'unblock' && 'Unblock User'}
+            {confirmDialog.action === 'delete' && 'Delete User'}
           </AlertDialog.Title>
           <AlertDialog.Description>
             {confirmDialog.action === 'logout' && `Are you sure you want to logout ${confirmDialog.user?.email}?`}
             {confirmDialog.action === 'block' && `Are you sure you want to block ${confirmDialog.user?.email}? They will not be able to sign in.`}
             {confirmDialog.action === 'unblock' && `Are you sure you want to unblock ${confirmDialog.user?.email}? They will be able to sign in again.`}
+            {confirmDialog.action === 'delete' && (
+              <>
+                <Text>
+                  Are you sure you want to delete {confirmDialog.user?.email}? This action cannot be undone and will permanently remove all user data.
+                </Text>
+                {confirmDialog.hasPublishedContent && (
+                  <Box mt="3" p="3" style={{ backgroundColor: '#fef3c7', border: '1px solid #f59e0b', borderRadius: '6px' }}>
+                    <Text weight="bold" color="amber">⚠️ Warning: Published Content Found</Text>
+                    <Text size="2" color="gray" mt="1">
+                      This user has {confirmDialog.publishedContent?.length || 0} published content item(s) that will also be deleted:
+                    </Text>
+                    <Box mt="2">
+                      {confirmDialog.publishedContent?.map((content, index) => (
+                        <Text key={index} size="2" color="gray">
+                          • {content.FileName || `Media ID: ${content.MediaId}`} ({content.ContentType || content.MediaType || 'Unknown type'})
+                        </Text>
+                      ))}
+                    </Box>
+                    <Text size="2" color="gray" mt="2">
+                      Consider unpublishing this content first if you want to preserve it.
+                    </Text>
+                  </Box>
+                )}
+              </>
+            )}
           </AlertDialog.Description>
           <Flex gap="3" mt="4" justify="end">
             <AlertDialog.Cancel>
@@ -520,12 +583,13 @@ export default function UserManagement() {
             </AlertDialog.Cancel>
             <AlertDialog.Action>
               <Button 
-                color={confirmDialog.action === 'logout' ? 'red' : confirmDialog.action === 'block' ? 'red' : 'green'}
+                color={confirmDialog.action === 'logout' ? 'red' : confirmDialog.action === 'block' ? 'red' : confirmDialog.action === 'delete' ? 'red' : 'green'}
                 onClick={() => confirmDialog.user && handleAction(confirmDialog.action, confirmDialog.user)}
               >
                 {confirmDialog.action === 'logout' && 'Logout'}
                 {confirmDialog.action === 'block' && 'Block'}
                 {confirmDialog.action === 'unblock' && 'Unblock'}
+                {confirmDialog.action === 'delete' && 'Delete'}
               </Button>
             </AlertDialog.Action>
           </Flex>

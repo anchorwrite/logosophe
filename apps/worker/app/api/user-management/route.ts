@@ -88,13 +88,13 @@ export async function GET(request: NextRequest) {
             ELSE 'unknown'
           END
         ) as provider,
-        s.expires as lastLogin,
-        CASE WHEN s.expires > datetime('now') THEN 1 ELSE 0 END as hasActiveSession,
+        COALESCE(latest_session.expires, latest_signin.timestamp) as lastLogin,
+        CASE WHEN latest_session.expires > datetime('now') THEN 1 ELSE 0 END as hasActiveSession,
         sub.Banned as isBlocked,
         CASE WHEN sub.Email IS NOT NULL THEN 1 ELSE 0 END as isSubscriber,
         CASE WHEN u.email IS NOT NULL THEN 1 ELSE 0 END as hasSignedIn,
         GROUP_CONCAT(DISTINCT t.Id) as tenantIds,
-        GROUP_CONCAT(DISTINCT t.Name) as tenantNames,
+        GROUP_CONCAT(DISTINCT COALESCE(t.Name, t.Id)) as tenantNames,
         GROUP_CONCAT(DISTINCT r.Name) as roleNames
       FROM (
         SELECT tu.Email as user_email, tu.TenantId
@@ -106,7 +106,24 @@ export async function GET(request: NextRequest) {
       ) combined_users
       LEFT JOIN users u ON combined_users.user_email = u.email
       LEFT JOIN accounts a ON u.id = a.userId
-      LEFT JOIN sessions s ON u.id = s.userId
+      LEFT JOIN (
+        SELECT userId, expires
+        FROM sessions s1
+        WHERE expires = (
+          SELECT MAX(expires)
+          FROM sessions s2
+          WHERE s2.userId = s1.userId
+        )
+      ) latest_session ON u.id = latest_session.userId
+      LEFT JOIN (
+        SELECT UserEmail, timestamp
+        FROM SystemLogs sl1
+        WHERE ActivityType = 'signin' AND timestamp = (
+          SELECT MAX(timestamp)
+          FROM SystemLogs sl2
+          WHERE sl2.UserEmail = sl1.UserEmail AND sl2.ActivityType = 'signin'
+        )
+      ) latest_signin ON combined_users.user_email = latest_signin.UserEmail
       LEFT JOIN Subscribers sub ON combined_users.user_email = sub.Email
       LEFT JOIN Tenants t ON combined_users.TenantId = t.Id
       LEFT JOIN UserRoles ur ON combined_users.user_email = ur.Email
@@ -156,9 +173,9 @@ export async function GET(request: NextRequest) {
 
     // Add status filter
     if (params.status === 'active') {
-      whereConditions.push('s.expires > datetime("now")');
+      whereConditions.push('latest_session.expires > datetime("now")');
     } else if (params.status === 'inactive') {
-      whereConditions.push('(s.expires IS NULL OR s.expires <= datetime("now"))');
+      whereConditions.push('(latest_session.expires IS NULL OR latest_session.expires <= datetime("now"))');
     } else if (params.status === 'blocked') {
       whereConditions.push('sub.Banned = 1');
     }
@@ -192,7 +209,7 @@ export async function GET(request: NextRequest) {
     // Add sorting
     let sortColumn;
     if (params.sortBy === 'lastLogin') {
-      sortColumn = 's.expires';
+      sortColumn = 'COALESCE(latest_session.expires, latest_signin.timestamp)';
     } else if (params.sortBy === 'email') {
       sortColumn = 'COALESCE(u.email, user_email)';
     } else if (params.sortBy === 'name') {
@@ -217,7 +234,24 @@ export async function GET(request: NextRequest) {
       ) combined_users
       LEFT JOIN users u ON combined_users.user_email = u.email
       LEFT JOIN accounts a ON u.id = a.userId
-      LEFT JOIN sessions s ON u.id = s.userId
+      LEFT JOIN (
+        SELECT userId, expires
+        FROM sessions s1
+        WHERE expires = (
+          SELECT MAX(expires)
+          FROM sessions s2
+          WHERE s2.userId = s1.userId
+        )
+      ) latest_session ON u.id = latest_session.userId
+      LEFT JOIN (
+        SELECT UserEmail, timestamp
+        FROM SystemLogs sl1
+        WHERE ActivityType = 'signin' AND timestamp = (
+          SELECT MAX(timestamp)
+          FROM SystemLogs sl2
+          WHERE sl2.UserEmail = sl1.UserEmail AND sl2.ActivityType = 'signin'
+        )
+      ) latest_signin ON combined_users.user_email = latest_signin.UserEmail
       LEFT JOIN Subscribers sub ON combined_users.user_email = sub.Email
       LEFT JOIN Tenants t ON combined_users.TenantId = t.Id
       LEFT JOIN UserRoles ur ON combined_users.user_email = ur.Email
