@@ -9,10 +9,12 @@ import Link from "next/link";
 import { Flex, Box, Button, Text, Container } from "@radix-ui/themes";
 import * as Dialog from "@radix-ui/react-dialog";
 import { PreferencesButton } from '@/components/PreferencesButton';
+import { useSession } from "next-auth/react";
 
 const Header: React.FC = () => {
   const { t, i18n } = useTranslation('translations');
   const router = useRouter();
+  const { data: session } = useSession();
   const [isOpen, setIsOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -67,8 +69,14 @@ const Header: React.FC = () => {
     },
     {
       key: "dashboard",
-      label: t("Sign In"),
-      onClick: () => router.push("/dashboard"),
+      label: session?.user ? "Harbor" : t("Sign In"),
+      onClick: () => {
+        if (session?.user) {
+          router.push("/harbor");
+        } else {
+          router.push("/dashboard");
+        }
+      },
     },
     {
       key: "contact",
