@@ -178,7 +178,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth(async () => {
       strategy: 'database',
       maxAge: 30 * 24 * 60 * 60, // 30 days
     },
-    secret: process.env.AUTH_SECRET,
+    secret: "FOrym3mfl2Q+/RqoyhJr0p/xXzQuZi8a1pHUDjrDquI=",
     experimental: { enableWebAuthn: true },
     pages: {
       signIn: '/signin',
