@@ -208,7 +208,7 @@ export default async function SignInPage({
             <form
               action={async () => {
                 'use server'
-                await signIn('google', { redirectTo: '/harbor' })
+                await signIn('google', { callbackUrl: '/harbor' })
               }}
               style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1rem' }}
             >
@@ -244,7 +244,7 @@ export default async function SignInPage({
                 const email = formData.get('email') as string
                 await signIn('resend', { 
                   email,
-                  redirectTo: '/harbor' 
+                  callbackUrl: '/harbor' 
                 })
               }}
               style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}
