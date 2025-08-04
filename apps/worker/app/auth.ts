@@ -131,6 +131,15 @@ export async function createCustomAdapter() {
 export const { handlers, auth, signIn, signOut } = NextAuth(async () => {
   const { env } = await getCloudflareContext({async: true});
   
+  // Use Cloudflare env in production, process.env in development
+  const getEnvVar = (key: string): string | undefined => {
+    if (process.env.NODE_ENV === 'development') {
+      return process.env[key];
+    }
+    const value = env[key as keyof typeof env];
+    return typeof value === 'string' ? value : undefined;
+  };
+  
   return {
     providers: [
       Credentials({
@@ -161,16 +170,16 @@ export const { handlers, auth, signIn, signOut } = NextAuth(async () => {
         },
       }),
       Resend({
-        apiKey: env.AUTH_RESEND_KEY,
+        apiKey: getEnvVar('AUTH_RESEND_KEY'),
         from: 'phil@logosophe.com',
       }),
       Google({
-        clientId: env.AUTH_GOOGLE_ID,
-        clientSecret: env.AUTH_GOOGLE_SECRET,
+        clientId: getEnvVar('AUTH_GOOGLE_ID'),
+        clientSecret: getEnvVar('AUTH_GOOGLE_SECRET'),
       }),
       Apple({
-        clientId: env.AUTH_APPLE_ID,
-        clientSecret: env.AUTH_APPLE_SECRET,
+        clientId: getEnvVar('AUTH_APPLE_ID'),
+        clientSecret: getEnvVar('AUTH_APPLE_SECRET'),
       }),
     ],
     adapter: await createCustomAdapter(),

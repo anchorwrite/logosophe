@@ -40,6 +40,14 @@
       "enabled": true
     }
   },
+  "vars": {
+    "NEXTJS_ENV": "production",
+    "AUTH_GOOGLE_ID": "placeholder",
+    "AUTH_GOOGLE_SECRET": "placeholder",
+    "AUTH_RESEND_KEY": "placeholder",
+    "AUTH_APPLE_ID": "placeholder",
+    "AUTH_APPLE_SECRET": "placeholder"
+  },
   "routes": [
     {
       "pattern": "www.logosophe.com",
