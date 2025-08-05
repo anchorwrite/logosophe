@@ -125,7 +125,7 @@ async function handleRequest(request: Request, env: CloudflareEnv): Promise<Resp
       // Use the send_email binding's destination address instead of vars
       const message = new EmailMessage(
         env.EMAIL_FROM_ADDRESS,
-        "info@logosophe.com", // Use the verified destination directly
+        env.EMAIL_TO_ADDRESS,
         mimeMessage
       );
       await env.EMAIL.send(message);
