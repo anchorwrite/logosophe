@@ -22,5 +22,10 @@
       "name": "EMAIL",
       "destination_address": "info@logosophe.com"
     }
-  ]
+  ],
+  "observability": {
+    "logs": {
+      "enabled": true
+    }
+  }
 } 
