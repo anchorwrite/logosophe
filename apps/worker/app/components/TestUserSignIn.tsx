@@ -40,21 +40,14 @@ export default function TestUserSignIn() {
   // Fetch active sessions to determine button colors
   const fetchActiveSessions = async () => {
     try {
-      console.log('Fetching active sessions for button colors...');
       const response = await fetch('/api/test-sessions/list');
-      console.log('Active sessions response status:', response.status);
       
       if (response.ok) {
         const data: SessionsResponse = await response.json();
-        console.log('Active sessions data:', data);
-        console.log('Number of active sessions:', data.sessions.length);
         setActiveSessions(data.sessions);
-        console.log('Active sessions state updated');
-      } else {
-        console.error('Failed to fetch active sessions:', response.status);
       }
     } catch (error) {
-      console.error('Error fetching active sessions:', error);
+      // Silently handle error
     }
   };
 
@@ -83,7 +76,6 @@ export default function TestUserSignIn() {
       });
 
       if (result?.error) {
-        console.error('Sign in error:', result.error);
         showToast({
           type: 'error',
           title: 'Sign In Failed',
@@ -93,7 +85,6 @@ export default function TestUserSignIn() {
         router.push('/harbor');
       }
     } catch (error) {
-      console.error('Sign in error:', error);
       showToast({
         type: 'error',
         title: 'Sign In Failed',
@@ -143,7 +134,6 @@ export default function TestUserSignIn() {
       });
 
     } catch (error) {
-      console.error('Error creating test session:', error);
       showToast({
         type: 'error',
         title: 'Error',
@@ -189,7 +179,6 @@ export default function TestUserSignIn() {
             });
           }
         } catch (error) {
-          console.error('Error terminating session:', error);
           showToast({
             type: 'error',
             title: 'Error',
@@ -204,7 +193,7 @@ export default function TestUserSignIn() {
       // Single-user mode: existing behavior
       if (session?.user?.email === testEmail) {
         await signOut({ redirect: false });
-        router.push('/en/test-users');
+        router.push('/dashboard/test-users');
         return;
       }
       
@@ -223,7 +212,6 @@ export default function TestUserSignIn() {
         });
 
         if (result?.error) {
-          console.error('Sign in error:', result.error);
           showToast({
             type: 'error',
             title: 'Sign In Failed',
@@ -233,7 +221,6 @@ export default function TestUserSignIn() {
           router.push('/harbor');
         }
       } catch (error) {
-        console.error('Sign in error:', error);
         showToast({
           type: 'error',
           title: 'Sign In Failed',
@@ -247,8 +234,6 @@ export default function TestUserSignIn() {
   const hasActiveSession = (userNumber: number) => {
     const testEmail = `test-user-${userNumber}@logosophe.test`;
     const hasSession = activeSessions.some(session => session.testUserEmail === testEmail);
-    console.log(`Checking if ${testEmail} has active session:`, hasSession);
-    console.log('Current active sessions:', activeSessions.map(s => s.testUserEmail));
     return hasSession;
   };
 

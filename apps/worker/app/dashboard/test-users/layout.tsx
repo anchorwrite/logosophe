@@ -1,6 +1,5 @@
 import { Metadata } from "next";
 import { Container, Box, Flex } from '@radix-ui/themes';
-import type { Locale } from '@/types/i18n';
 import DashboardAppBar from '@/dashboard/appbar';
 import ScrollRestoration from '@/components/ScrollRestoration';
 
@@ -10,17 +9,11 @@ export const metadata: Metadata = {
   description: "Test user management for Logosophe",
 };
 
-type Params = Promise<{ lang: string }>;
-
 export default async function TestUsersLayout({
   children,
-  params
 }: {
   children: React.ReactNode;
-  params: Params;
 }) {
-  const { lang } = await params;
-
   return (
     <>
       <ScrollRestoration />
