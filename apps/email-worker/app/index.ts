@@ -1,4 +1,5 @@
 import { EmailMessage } from "cloudflare:email";
+import { createMimeMessage } from "mimetext";
 
 interface EmailData {
   name: string;
@@ -105,27 +106,22 @@ async function handleRequest(request: Request, env: CloudflareEnv): Promise<Resp
       );
     }
     
-    // Create a simple, clean email message
-    const messageId = `${Date.now()}@logosophe.workers.dev`;
-    const date = new Date().toUTCString();
-    const mimeMessage = [
-      `From: ${env.EMAIL_FROM_ADDRESS}`,
-      `To: ${env.EMAIL_TO_ADDRESS}`,
-      `Subject: ${data.subject}`,
-      `Message-ID: <${messageId}>`,
-      `Date: ${date}`,
-      `MIME-Version: 1.0`,
-      `Content-Type: text/plain; charset=UTF-8`,
-      ``,
-      emailBody
-    ].join('\r\n');
+    // Create email using mimetext library as recommended by Cloudflare
+    const msg = createMimeMessage();
+    msg.setSender({ name: "Logosophe Contact Form", addr: env.EMAIL_FROM_ADDRESS });
+    msg.setRecipient(env.EMAIL_TO_ADDRESS);
+    msg.setSubject(data.subject);
+    msg.addMessage({
+      contentType: 'text/plain',
+      data: emailBody
+    });
     
     try {
       console.log("Sending email...");
       const message = new EmailMessage(
         env.EMAIL_FROM_ADDRESS,
         env.EMAIL_TO_ADDRESS,
-        mimeMessage
+        msg.asRaw()
       );
       await env.EMAIL.send(message);
       console.log("Email sent successfully");
