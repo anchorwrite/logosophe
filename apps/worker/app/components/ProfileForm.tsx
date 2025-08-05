@@ -5,6 +5,7 @@ import { Button, TextField, Text, Box, Card, Flex, Grid, Tabs, Avatar, Dialog } 
 import { useSession } from 'next-auth/react';
 import type { Session } from 'next-auth';
 import { useToast } from '@/components/Toast';
+import { useTranslation } from 'react-i18next';
 
 interface UserAvatar {
   Id: number;
@@ -38,6 +39,7 @@ interface ProfileFormProps {
 
 export default function ProfileForm({ session, updateName, updateEmail, isAdminUser }: ProfileFormProps) {
   const { showToast } = useToast();
+  const { t } = useTranslation('translations');
   const [isLoading, setIsLoading] = useState(false);
   const [presetAvatars, setPresetAvatars] = useState<UserAvatar[]>([]);
   const [customAvatars, setCustomAvatars] = useState<UserAvatar[]>([]);
@@ -84,8 +86,8 @@ export default function ProfileForm({ session, updateName, updateEmail, isAdminU
     } catch (error) {
       console.error('Error fetching preset avatars:', error);
       showToast({
-        title: 'Error',
-        content: 'Failed to load preset avatars',
+        title: t('common.status.error'),
+        content: t('profile.messages.failedToUpdateAvatar'),
         type: 'error'
       });
     }
@@ -101,8 +103,8 @@ export default function ProfileForm({ session, updateName, updateEmail, isAdminU
     } catch (error) {
       console.error('Error fetching custom avatars:', error);
       showToast({
-        title: 'Error',
-        content: 'Failed to load custom avatars',
+        title: t('common.status.error'),
+        content: t('profile.messages.failedToUpdateAvatar'),
         type: 'error'
       });
     }
@@ -145,15 +147,15 @@ export default function ProfileForm({ session, updateName, updateEmail, isAdminU
       
       setSelectedAvatar(avatarId.toString());
       showToast({
-        title: 'Success',
-        content: 'Avatar updated successfully',
+        title: t('common.status.success'),
+        content: t('profile.messages.avatarUpdatedSuccessfully'),
         type: 'success'
       });
     } catch (error) {
       console.error('Error selecting avatar:', error);
       showToast({
-        title: 'Error',
-        content: 'Failed to update avatar',
+        title: t('common.status.error'),
+        content: t('profile.messages.failedToUpdateAvatar'),
         type: 'error'
       });
     }
@@ -174,8 +176,8 @@ export default function ProfileForm({ session, updateName, updateEmail, isAdminU
       console.log('Delete response:', responseData);
 
       showToast({
-        title: 'Success',
-        content: 'Avatar deleted successfully',
+        title: t('common.status.success'),
+        content: t('profile.messages.avatarDeletedSuccessfully'),
         type: 'success'
       });
       // Refresh the avatar list
@@ -183,8 +185,8 @@ export default function ProfileForm({ session, updateName, updateEmail, isAdminU
     } catch (error) {
       console.error('Error deleting avatar:', error);
       showToast({
-        title: 'Error',
-        content: 'Failed to delete avatar',
+        title: t('common.status.error'),
+        content: t('profile.messages.failedToDeleteAvatar'),
         type: 'error'
       });
     }
@@ -205,8 +207,8 @@ export default function ProfileForm({ session, updateName, updateEmail, isAdminU
       if (response.ok && data.avatarId) {
         setSelectedAvatar(data.avatarId.toString());
         showToast({
-          title: 'Success',
-          content: 'Avatar uploaded successfully',
+          title: t('common.status.success'),
+          content: t('profile.messages.avatarUploadedSuccessfully'),
           type: 'success'
         });
         // Refresh both avatar lists
@@ -219,16 +221,16 @@ export default function ProfileForm({ session, updateName, updateEmail, isAdminU
         setAvatarPreview(null);
       } else {
         showToast({
-          title: 'Error',
-          content: 'Failed to upload avatar',
+          title: t('common.status.error'),
+          content: t('profile.messages.failedToUploadAvatar'),
           type: 'error'
         });
       }
     } catch (error) {
       console.error('Error uploading avatar:', error);
       showToast({
-        title: 'Error',
-        content: 'Failed to upload avatar',
+        title: t('common.status.error'),
+        content: t('profile.messages.failedToUploadAvatar'),
         type: 'error'
       });
     }
@@ -254,8 +256,8 @@ export default function ProfileForm({ session, updateName, updateEmail, isAdminU
       const data = await response.json() as ApiResponse;
       if (response.ok && data.avatarId) {
         showToast({
-          title: 'Success',
-          content: 'Preset avatar uploaded successfully',
+          title: t('common.status.success'),
+          content: t('profile.messages.presetAvatarUploadedSuccessfully'),
           type: 'success'
         });
         // Refresh the avatar list
@@ -265,16 +267,16 @@ export default function ProfileForm({ session, updateName, updateEmail, isAdminU
         setAvatarPreview(null);
       } else {
         showToast({
-          title: 'Error',
-          content: 'Failed to upload preset avatar',
+          title: t('common.status.error'),
+          content: t('profile.messages.failedToUploadPresetAvatar'),
           type: 'error'
         });
       }
     } catch (error) {
       console.error('Error uploading preset avatar:', error);
       showToast({
-        title: 'Error',
-        content: 'Failed to upload preset avatar',
+        title: t('common.status.error'),
+        content: t('profile.messages.failedToUploadPresetAvatar'),
         type: 'error'
       });
     }
@@ -322,8 +324,8 @@ export default function ProfileForm({ session, updateName, updateEmail, isAdminU
         const responseData = await response.json();
         console.log('Profile update response:', responseData);
         showToast({
-          title: 'Success',
-          content: 'Profile updated successfully',
+          title: t('common.status.success'),
+          content: t('profile.messages.profileUpdatedSuccessfully'),
           type: 'success'
         });
         // Reset the form state
@@ -336,16 +338,16 @@ export default function ProfileForm({ session, updateName, updateEmail, isAdminU
         const errorData = await response.json() as { message?: string };
         console.error('Profile update failed:', errorData);
         showToast({
-          title: 'Error',
-          content: errorData.message || 'Failed to update profile',
+          title: t('common.status.error'),
+          content: errorData.message || t('profile.messages.failedToUpdateProfile'),
           type: 'error'
         });
       }
     } catch (error) {
       console.error('Error updating profile:', error);
       showToast({
-        title: 'Error',
-        content: 'Failed to update profile',
+        title: t('common.status.error'),
+        content: t('profile.messages.failedToUpdateProfile'),
         type: 'error'
       });
     } finally {
@@ -373,8 +375,8 @@ export default function ProfileForm({ session, updateName, updateEmail, isAdminU
     e.preventDefault();
     if (!currentPassword || !newPassword || !confirmPassword) {
       showToast({
-        title: 'Error',
-        content: 'All password fields are required',
+        title: t('common.status.error'),
+        content: t('profile.messages.allPasswordFieldsRequired'),
         type: 'error'
       });
       return;
@@ -382,8 +384,8 @@ export default function ProfileForm({ session, updateName, updateEmail, isAdminU
 
     if (newPassword.length < 8) {
       showToast({
-        title: 'Error',
-        content: 'New password must be at least 8 characters long',
+        title: t('common.status.error'),
+        content: t('profile.messages.passwordTooShort'),
         type: 'error'
       });
       return;
@@ -391,8 +393,8 @@ export default function ProfileForm({ session, updateName, updateEmail, isAdminU
 
     if (newPassword !== confirmPassword) {
       showToast({
-        title: 'Error',
-        content: 'New passwords do not match',
+        title: t('common.status.error'),
+        content: t('profile.messages.passwordsDoNotMatch'),
         type: 'error'
       });
       return;
@@ -419,15 +421,15 @@ export default function ProfileForm({ session, updateName, updateEmail, isAdminU
       setNewPassword('');
       setConfirmPassword('');
       showToast({
-        title: 'Success',
-        content: 'Password updated successfully',
+        title: t('common.status.success'),
+        content: t('profile.messages.passwordUpdatedSuccessfully'),
         type: 'success'
       });
     } catch (error) {
       console.error('Error updating password:', error);
       showToast({
-        title: 'Error',
-        content: error instanceof Error ? error.message : 'Failed to update password',
+        title: t('common.status.error'),
+        content: error instanceof Error ? error.message : t('profile.messages.failedToUpdatePassword'),
         type: 'error'
       });
     }
@@ -437,9 +439,9 @@ export default function ProfileForm({ session, updateName, updateEmail, isAdminU
     <Box p="4">
       <Tabs.Root defaultValue="profile">
         <Tabs.List>
-          <Tabs.Trigger value="profile">Profile</Tabs.Trigger>
+          <Tabs.Trigger value="profile">{t('profile.title')}</Tabs.Trigger>
           {isAdminUser && (
-            <Tabs.Trigger value="password">Password</Tabs.Trigger>
+            <Tabs.Trigger value="password">{t('profile.password')}</Tabs.Trigger>
           )}
         </Tabs.List>
 
@@ -447,17 +449,17 @@ export default function ProfileForm({ session, updateName, updateEmail, isAdminU
           <Tabs.Content value="profile">
             <form onSubmit={handleSubmit}>
               <Box style={{ gap: '1.5rem' }}>
-                <Text size="5" weight="bold">Profile Information</Text>
+                <Text size="5" weight="bold">{t('profile.profileInformation')}</Text>
                 
                 {/* Avatar Selection */}
                 <Box style={{ gap: '1rem' }}>
-                  <Text size="3" weight="medium">Profile Picture</Text>
+                  <Text size="3" weight="medium">{t('profile.profilePicture')}</Text>
                   <Tabs.Root defaultValue="presets">
                     <Tabs.List>
-                      <Tabs.Trigger value="presets">Preset Avatars</Tabs.Trigger>
-                      <Tabs.Trigger value="custom">Upload Custom</Tabs.Trigger>
+                      <Tabs.Trigger value="presets">{t('profile.presetAvatars')}</Tabs.Trigger>
+                      <Tabs.Trigger value="custom">{t('profile.uploadCustom')}</Tabs.Trigger>
                       {isAdminUser && (
-                        <Tabs.Trigger value="admin">Manage Presets</Tabs.Trigger>
+                        <Tabs.Trigger value="admin">{t('profile.managePresets')}</Tabs.Trigger>
                       )}
                     </Tabs.List>
 
@@ -486,7 +488,7 @@ export default function ProfileForm({ session, updateName, updateEmail, isAdminU
                                   color={selectedAvatar === avatar.Id.toString() ? "blue" : "gray"}
                                   onClick={() => handlePresetSelect(avatar.Id)}
                                 >
-                                  {selectedAvatar === avatar.Id.toString() ? 'Selected' : 'Select'}
+                                  {selectedAvatar === avatar.Id.toString() ? t('profile.selected') : t('profile.select')}
                                 </Button>
                                 {(isAdminUser || avatar.UserId === session?.user?.id) && (
                                   <Button 
@@ -495,7 +497,7 @@ export default function ProfileForm({ session, updateName, updateEmail, isAdminU
                                     color="red"
                                     onClick={() => handleDeleteAvatar(avatar.Id)}
                                   >
-                                    Delete
+                                    {t('profile.delete')}
                                   </Button>
                                 )}
                               </Flex>
@@ -511,9 +513,9 @@ export default function ProfileForm({ session, updateName, updateEmail, isAdminU
                         <Card>
                           <Box p="4" style={{ gap: '1rem' }}>
                             <Flex direction="column" gap="2">
-                              <Text size="3" weight="medium">Upload New Custom Avatar</Text>
+                              <Text size="3" weight="medium">{t('profile.uploadNewCustomAvatar')}</Text>
                               <Text size="2" color="gray">
-                                Upload a custom avatar for your personal use.
+                                {t('profile.uploadNewCustomAvatarDescription')}
                               </Text>
                             </Flex>
                             
@@ -533,7 +535,7 @@ export default function ProfileForm({ session, updateName, updateEmail, isAdminU
                               
                               {avatarPreview && (
                                 <Box style={{ gap: '1rem' }}>
-                                  <Text size="2" weight="medium">Preview</Text>
+                                  <Text size="2" weight="medium">{t('profile.preview')}</Text>
                                   <Avatar
                                     size="6"
                                     src={avatarPreview}
@@ -547,7 +549,7 @@ export default function ProfileForm({ session, updateName, updateEmail, isAdminU
                                 disabled={!uploadedAvatar}
                                 size="2"
                               >
-                                Upload Avatar
+                                {t('profile.uploadAvatar')}
                               </Button>
                             </Box>
                           </Box>
@@ -557,9 +559,9 @@ export default function ProfileForm({ session, updateName, updateEmail, isAdminU
                         <Card>
                           <Box p="4" style={{ gap: '1rem' }}>
                             <Flex direction="column" gap="2">
-                              <Text size="3" weight="medium">Your Custom Avatars</Text>
+                              <Text size="3" weight="medium">{t('profile.yourCustomAvatars')}</Text>
                               <Text size="2" color="gray">
-                                Manage your personal custom avatars.
+                                {t('profile.yourCustomAvatarsDescription')}
                               </Text>
                             </Flex>
                             
@@ -587,16 +589,16 @@ export default function ProfileForm({ session, updateName, updateEmail, isAdminU
                                         color={selectedAvatar === avatar.Id.toString() ? "blue" : "gray"}
                                         onClick={() => handlePresetSelect(avatar.Id)}
                                       >
-                                        {selectedAvatar === avatar.Id.toString() ? 'Selected' : 'Select'}
+                                        {selectedAvatar === avatar.Id.toString() ? t('profile.selected') : t('profile.select')}
                                       </Button>
-                                      <Button 
-                                        size="1" 
-                                        variant="soft" 
-                                        color="red"
-                                        onClick={() => handleDeleteAvatar(avatar.Id)}
-                                      >
-                                        Delete
-                                      </Button>
+                                                                                <Button 
+                                            size="1" 
+                                            variant="soft" 
+                                            color="red"
+                                            onClick={() => handleDeleteAvatar(avatar.Id)}
+                                          >
+                                            {t('profile.delete')}
+                                          </Button>
                                     </Flex>
                                   </Box>
                                 </Card>
@@ -614,9 +616,9 @@ export default function ProfileForm({ session, updateName, updateEmail, isAdminU
                           <Card>
                             <Box p="4" style={{ gap: '1rem' }}>
                               <Flex direction="column" gap="2">
-                                <Text size="3" weight="medium">Upload New Preset Avatar</Text>
+                                <Text size="3" weight="medium">{t('profile.uploadNewPresetAvatar')}</Text>
                                 <Text size="2" color="gray">
-                                  Upload a new avatar that will be available to all users as a preset option.
+                                  {t('profile.uploadNewPresetAvatarDescription')}
                                 </Text>
                               </Flex>
                               
@@ -636,7 +638,7 @@ export default function ProfileForm({ session, updateName, updateEmail, isAdminU
                                 
                                 {avatarPreview && (
                                   <Box style={{ gap: '1rem' }}>
-                                    <Text size="2" weight="medium">Preview</Text>
+                                    <Text size="2" weight="medium">{t('profile.preview')}</Text>
                                     <Avatar
                                       size="6"
                                       src={avatarPreview}
@@ -650,7 +652,7 @@ export default function ProfileForm({ session, updateName, updateEmail, isAdminU
                                   disabled={!uploadedAvatar}
                                   size="2"
                                 >
-                                  Upload as Preset
+                                  {t('profile.uploadAsPreset')}
                                 </Button>
                               </Box>
                             </Box>
@@ -660,9 +662,9 @@ export default function ProfileForm({ session, updateName, updateEmail, isAdminU
                           <Card>
                             <Box p="4" style={{ gap: '1rem' }}>
                               <Flex direction="column" gap="2">
-                                <Text size="3" weight="medium">Existing Preset Avatars</Text>
+                                <Text size="3" weight="medium">{t('profile.existingPresetAvatars')}</Text>
                                 <Text size="2" color="gray">
-                                  Manage preset avatars available to all users.
+                                  {t('profile.existingPresetAvatarsDescription')}
                                 </Text>
                               </Flex>
                               
@@ -690,7 +692,7 @@ export default function ProfileForm({ session, updateName, updateEmail, isAdminU
                                           color={selectedAvatar === avatar.Id.toString() ? "blue" : "gray"}
                                           onClick={() => handlePresetSelect(avatar.Id)}
                                         >
-                                          {selectedAvatar === avatar.Id.toString() ? 'Selected' : 'Select'}
+                                          {selectedAvatar === avatar.Id.toString() ? t('profile.selected') : t('profile.select')}
                                         </Button>
                                         <Button 
                                           size="1" 
@@ -698,7 +700,7 @@ export default function ProfileForm({ session, updateName, updateEmail, isAdminU
                                           color="red"
                                           onClick={() => handleDeleteAvatar(avatar.Id)}
                                         >
-                                          Delete
+                                          {t('profile.delete')}
                                         </Button>
                                       </Flex>
                                     </Box>
@@ -715,16 +717,16 @@ export default function ProfileForm({ session, updateName, updateEmail, isAdminU
 
                 {/* Name and email fields */}
                 <Box style={{ gap: '1rem', marginTop: '2rem' }}>
-                  <Text size="3" weight="medium">Profile Information</Text>
+                  <Text size="3" weight="medium">{t('profile.profileInformation')}</Text>
                   <Box style={{ marginTop: '0.5rem', marginBottom: '1rem' }}>
-                    <Text size="2" color="gray">Update your name and email address below:</Text>
+                    <Text size="2" color="gray">{t('profile.updateNameAndEmail')}</Text>
                   </Box>
                   
                   <TextField.Root style={{ width: '100%' }}>
                     <TextField.Slot>
                       <TextField.Input
                         name="name"
-                        placeholder="Name"
+                        placeholder={t('profile.name')}
                         value={formData.name}
                         onChange={handleInputChange}
                         required
@@ -737,7 +739,7 @@ export default function ProfileForm({ session, updateName, updateEmail, isAdminU
                       <TextField.Input
                         name="email"
                         type="email"
-                        placeholder="Email"
+                        placeholder={t('profile.email')}
                         value={formData.email}
                         onChange={handleInputChange}
                         required
@@ -746,7 +748,7 @@ export default function ProfileForm({ session, updateName, updateEmail, isAdminU
                   </TextField.Root>
 
                   <Button type="submit" disabled={isLoading}>
-                    {isLoading ? 'Updating...' : 'Update Name & Email'}
+                    {isLoading ? t('profile.updating') : t('profile.updateNameAndEmailButton')}
                   </Button>
                 </Box>
               </Box>
@@ -770,7 +772,7 @@ export default function ProfileForm({ session, updateName, updateEmail, isAdminU
                       <TextField.Root>
                         <TextField.Input
                           type="password"
-                          placeholder="Current Password"
+                          placeholder={t('profile.currentPassword')}
                           value={currentPassword}
                           onChange={(e) => setCurrentPassword(e.target.value)}
                           autoComplete="current-password"
@@ -779,7 +781,7 @@ export default function ProfileForm({ session, updateName, updateEmail, isAdminU
                       <TextField.Root>
                         <TextField.Input
                           type="password"
-                          placeholder="New Password"
+                          placeholder={t('profile.newPassword')}
                           value={newPassword}
                           onChange={(e) => setNewPassword(e.target.value)}
                           autoComplete="new-password"
@@ -788,14 +790,14 @@ export default function ProfileForm({ session, updateName, updateEmail, isAdminU
                       <TextField.Root>
                         <TextField.Input
                           type="password"
-                          placeholder="Confirm New Password"
+                          placeholder={t('profile.confirmNewPassword')}
                           value={confirmPassword}
                           onChange={(e) => setConfirmPassword(e.target.value)}
                           autoComplete="new-password"
                         />
                       </TextField.Root>
                       <Button type="submit" disabled={isLoading}>
-                        Update Password
+                        {t('profile.updatePassword')}
                       </Button>
                     </Grid>
                   </form>
@@ -817,22 +819,20 @@ export default function ProfileForm({ session, updateName, updateEmail, isAdminU
           maxHeight: '90vh',
           overflow: 'auto'
         }}>
-          <Dialog.Title>Confirm Email Change</Dialog.Title>
+          <Dialog.Title>{t('profile.confirmEmailChange')}</Dialog.Title>
           <Dialog.Description>
-            Current session email is {session?.user?.email}
-            <br /><br />
-            Are you sure you want to change your email? This is the key to most of the data in the database, and changing it may make it unavailable to you.
+            {t('profile.confirmEmailChangeDescription', { email: session?.user?.email })}
           </Dialog.Description>
 
           <Flex gap="3" mt="4" justify="end">
             <Dialog.Close>
               <Button variant="soft" color="gray" onClick={handleEmailCancel}>
-                Cancel
+                {t('profile.cancel')}
               </Button>
             </Dialog.Close>
             <Dialog.Close>
               <Button onClick={handleEmailConfirm}>
-                Yes, I am sure
+                {t('profile.yesIAmSure')}
               </Button>
             </Dialog.Close>
           </Flex>
