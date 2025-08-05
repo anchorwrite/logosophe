@@ -6,7 +6,8 @@
   },
   "dependencies": {
     "@cloudflare/workers-types": "^4.20250708.0",
-    "cloudflare": "^4.4.1"
+    "cloudflare": "^4.4.1",
+    "mimetext": "^0.15.0"
   },
   "devDependencies": {
     "typescript": "^5.8.3",
