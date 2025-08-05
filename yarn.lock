@@ -6641,6 +6641,7 @@ __metadata:
   resolution: "email-worker@workspace:apps/email-worker"
   dependencies:
     "@cloudflare/workers-types": "npm:^4.20250708.0"
+    cloudflare: "npm:^4.4.1"
     typescript: "npm:^5.8.3"
     wrangler: "npm:^4.24.0"
   languageName: unknown
