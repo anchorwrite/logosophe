@@ -6,11 +6,21 @@
   "compatibility_flags": [
     "nodejs_compat"
   ],
+  "vars": {
+    "EMAIL_FROM_ADDRESS": "info@logosophe.com",
+    "EMAIL_TO_ADDRESS": "info@logosophe.com"
+  },
   "d1_databases": [
     {
       "binding": "DB",
       "database_name": "contact_submissions",
       "database_id": "b8c70fef-f207-4216-9215-cb3b886938b5"
+    }
+  ],
+  "send_email": [
+    {
+      "name": "EMAIL",
+      "destination_address": "info@logosophe.com"
     }
   ]
 } 
