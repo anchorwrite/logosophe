@@ -122,7 +122,6 @@ async function handleRequest(request: Request, env: CloudflareEnv): Promise<Resp
     
     try {
       console.log("Sending email...");
-      // Use the send_email binding's destination address instead of vars
       const message = new EmailMessage(
         env.EMAIL_FROM_ADDRESS,
         env.EMAIL_TO_ADDRESS,
