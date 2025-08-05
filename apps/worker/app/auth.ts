@@ -172,7 +172,65 @@ export const { handlers, auth, signIn, signOut } = NextAuth(async () => {
       }),
       Resend({
         apiKey: getEnvVar('AUTH_RESEND_KEY'),
-        from: 'phil@logosophe.com',
+        from: 'info@logosophe.com',
+        sendVerificationRequest(params) {
+          const { identifier: email, url } = params;
+          // Custom email sending logic with redirect to /harbor
+          const verificationUrl = new URL(url);
+          verificationUrl.searchParams.set('callbackUrl', '/harbor');
+          
+          fetch("https://api.resend.com/emails", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${getEnvVar('AUTH_RESEND_KEY')}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              from: 'info@logosophe.com',
+              to: email,
+              subject: `Sign in to ${verificationUrl.host}`,
+              html: `
+                <body style="background: #f9f9f9;">
+                  <table width="100%" border="0" cellspacing="20" cellpadding="0"
+                    style="background: #fff; max-width: 600px; margin: auto; border-radius: 10px;">
+                    <tr>
+                      <td align="center"
+                        style="padding: 10px 0px; font-size: 22px; font-family: Helvetica, Arial, sans-serif; color: #444;">
+                        Sign in to <strong>${verificationUrl.host}</strong>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td align="center" style="padding: 20px 0;">
+                        <table border="0" cellspacing="0" cellpadding="0">
+                          <tr>
+                            <td align="center" style="border-radius: 5px;" bgcolor="#346df1">
+                              <a href="${verificationUrl.toString()}"
+                                target="_blank"
+                                style="font-size: 18px; font-family: Helvetica, Arial, sans-serif; color: #fff; text-decoration: none; border-radius: 5px; padding: 10px 20px; border: 1px solid #346df1; display: inline-block; font-weight: bold;">
+                                Sign in
+                              </a>
+                            </td>
+                          </tr>
+                        </table>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td align="center"
+                        style="padding: 0px 0px 10px 0px; font-size: 16px; line-height: 22px; font-family: Helvetica, Arial, sans-serif; color: #444;">
+                        If you did not request this email you can safely ignore it.
+                      </td>
+                    </tr>
+                  </table>
+                </body>
+              `,
+              text: `Sign in to ${verificationUrl.host}\n${verificationUrl.toString()}\n\n`,
+            }),
+          }).then(res => {
+            if (!res.ok) {
+              throw new Error("Resend error: " + JSON.stringify(res.json()));
+            }
+          });
+        },
       }),
       Google({
         clientId: getEnvVar('AUTH_GOOGLE_ID'),
@@ -244,6 +302,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth(async () => {
           }
         }
         return session;
+      },
+      async redirect({ url, baseUrl }) {
+        // Handle redirects for different authentication flows
+        if (url.startsWith('/')) return `${baseUrl}${url}`
+        else if (new URL(url).origin === baseUrl) return url
+        return baseUrl
       }
     },
     jwt: {
@@ -301,7 +365,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth(async () => {
           return;
         }
         
-        if (!user.email) throw new Error('User email is missing');
+        if (!user.email) {
+          console.error('User email is missing in signIn event');
+          return;
+        }
         
         const adapter = await createCustomAdapter();
         if (!adapter) {

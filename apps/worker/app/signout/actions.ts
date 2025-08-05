@@ -30,7 +30,11 @@ export async function handleSignOut(redirectTo?: string) {
           'SELECT * FROM users WHERE id = ?'
         ).bind(session.user.id).first() as UserResult | null;
 
-        if (user?.email) {
+        // Use email from database or fall back to session
+        const userEmail = user?.email || session.user?.email;
+        
+        if (userEmail) {
+          
           // Get the account information to determine provider
           const account = await db.prepare(
             'SELECT provider FROM accounts WHERE userId = ?'
@@ -38,22 +42,24 @@ export async function handleSignOut(redirectTo?: string) {
           
           // Determine provider based on account or user role
           let provider = account?.provider || 'unknown';
-          if (provider === 'unknown') {
+          
+          // If no account found, check for other authentication methods
+          if (!account) {
             // Check if user is in Credentials table (admin/tenant)
             const credUser = await db.prepare(
               'SELECT * FROM Credentials WHERE email = ?'
-            ).bind(user.email).first();
+            ).bind(userEmail).first();
             
             if (credUser) {
               provider = 'credentials';
             } else {
-              // Check if user is in Subscribers table
-              const subscriber = await db.prepare(
-                'SELECT * FROM Subscribers WHERE email = ?'
-              ).bind(user.email).first();
+              // Check if user has emailVerified (Resend magic link users)
+              const userWithEmailVerified = await db.prepare(
+                'SELECT emailVerified FROM users WHERE id = ?'
+              ).bind(session.user.id).first() as { emailVerified: string | null } | null;
               
-              if (subscriber) {
-                provider = 'resend'; // Default to resend for subscribers
+              if (userWithEmailVerified?.emailVerified) {
+                provider = 'resend'; // Use 'resend' to match signin event
               }
             }
           }
@@ -68,7 +74,7 @@ export async function handleSignOut(redirectTo?: string) {
           const systemLogs = new SystemLogs(db);
           const logData = {
             userId: session.user.id,
-            email: user.email,
+            email: userEmail,
             provider,
             activityType: 'signout' as const,
             ipAddress: headersList.get('x-forwarded-for') || headersList.get('x-real-ip') || 'unknown',

@@ -32,7 +32,18 @@ export async function GET() {
       'SELECT provider FROM accounts WHERE userId = ?'
     ).bind(session?.user?.id).first() as { provider: string } | null;
 
-    const provider = account?.provider || 'unknown';
+    let provider = account?.provider || 'unknown';
+    
+    // If no account found but user has emailVerified, they signed in via email magic link
+    if (!account) {
+      const user = await db.prepare(
+        'SELECT emailVerified FROM users WHERE id = ?'
+      ).bind(session?.user?.id).first() as { emailVerified: string | null } | null;
+      
+      if (user?.emailVerified) {
+        provider = 'email';
+      }
+    }
 
     return NextResponse.json({
       success: true,
