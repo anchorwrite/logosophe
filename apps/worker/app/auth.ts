@@ -7,6 +7,7 @@ import { validateCredentials } from '@/lib/credentials';
 import Resend from "next-auth/providers/resend";
 import Google from "next-auth/providers/google";
 import Apple from "next-auth/providers/apple";
+import { TestProvider } from '@/lib/test-provider';
 import { v4 as uuid } from "uuid";
 import { SystemLogs } from "@/lib/system-logs";
 import { headers } from "next/headers";
@@ -170,6 +171,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth(async () => {
           }
         },
       }),
+      TestProvider({
+        id: 'test-credentials',
+        name: 'Test Users',
+        type: 'credentials',
+      }),
       Resend({
         apiKey: getEnvVar('AUTH_RESEND_KEY'),
         from: 'info@logosophe.com',
@@ -281,23 +287,46 @@ export const { handlers, auth, signIn, signOut } = NextAuth(async () => {
             return session;
           }
           
-          // For non-test users, check database tables
-          const credResult = await db.prepare(
-            'SELECT Role FROM Credentials WHERE Email = ?'
-          ).bind(session.user.email).first();
-          
-          if (credResult?.Role === 'admin' || credResult?.Role === 'tenant') {
-            session.user.role = credResult.Role;
-          } else {
-            // Check Subscribers table
-            const subscriberResult = await db.prepare(
-              'SELECT 1 FROM Subscribers WHERE Email = ?'
-            ).bind(session.user.email).first();
-            
-            if (subscriberResult) {
-              session.user.role = 'subscriber';
+          // Check if this is a test user
+          if (session.user.email && session.user.email.endsWith('@logosophe.test')) {
+            // For test users, determine role based on user number
+            const match = session.user.email.match(/test-user-(\d+)@logosophe\.test/);
+            if (match) {
+              const userNumber = parseInt(match[1], 10);
+              
+              // Determine role based on user number range
+              if (userNumber >= 301 && userNumber <= 305) {
+                // Opted-in users (301-305) should be subscribers
+                session.user.role = 'subscriber';
+              } else if (userNumber >= 410 && userNumber <= 469) {
+                // Tenant users (410-469) should be subscribers
+                session.user.role = 'subscriber';
+              } else {
+                // Other test users (101-105, 201-205) should be users
+                session.user.role = 'user';
+              }
             } else {
               session.user.role = 'user';
+            }
+          } else {
+            // For non-test users, check database tables
+            const credResult = await db.prepare(
+              'SELECT Role FROM Credentials WHERE Email = ?'
+            ).bind(session.user.email).first();
+            
+            if (credResult?.Role === 'admin' || credResult?.Role === 'tenant') {
+              session.user.role = credResult.Role;
+            } else {
+              // Check Subscribers table
+              const subscriberResult = await db.prepare(
+                'SELECT 1 FROM Subscribers WHERE Email = ?'
+              ).bind(session.user.email).first();
+              
+              if (subscriberResult) {
+                session.user.role = 'subscriber';
+              } else {
+                session.user.role = 'user';
+              }
             }
           }
         }
