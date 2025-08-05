@@ -39,7 +39,7 @@ interface ProfileFormProps {
 
 export default function ProfileForm({ session, updateName, updateEmail, isAdminUser }: ProfileFormProps) {
   const { showToast } = useToast();
-  const { t } = useTranslation('translations');
+  const { t, i18n } = useTranslation('translations');
   const [isLoading, setIsLoading] = useState(false);
   const [presetAvatars, setPresetAvatars] = useState<UserAvatar[]>([]);
   const [customAvatars, setCustomAvatars] = useState<UserAvatar[]>([]);
@@ -128,7 +128,6 @@ export default function ProfileForm({ session, updateName, updateEmail, isAdminU
 
   const handlePresetSelect = async (avatarId: number) => {
     try {
-      console.log('Selecting avatar:', avatarId);
       const response = await fetch('/api/user/avatar', {
         method: 'PUT',
         headers: {
@@ -143,7 +142,6 @@ export default function ProfileForm({ session, updateName, updateEmail, isAdminU
       }
 
       const responseData = await response.json();
-      console.log('Avatar update response:', responseData);
       
       setSelectedAvatar(avatarId.toString());
       showToast({
@@ -173,7 +171,6 @@ export default function ProfileForm({ session, updateName, updateEmail, isAdminU
       }
 
       const responseData = await response.json();
-      console.log('Delete response:', responseData);
 
       showToast({
         title: t('common.status.success'),
@@ -243,16 +240,13 @@ export default function ProfileForm({ session, updateName, updateEmail, isAdminU
     formData.append('file', uploadedAvatar);
 
     try {
-      console.log('Attempting to upload preset avatar...');
       // Test if the route exists by making a simple request first
       const testResponse = await fetch('/api/preset-avatars', { method: 'GET' });
-      console.log('GET test response:', testResponse.status);
       
       const response = await fetch('/api/preset-avatars', {
         method: 'POST',
         body: formData,
       });
-      console.log('Response received:', response.status, response.statusText);
       const data = await response.json() as ApiResponse;
       if (response.ok && data.avatarId) {
         showToast({
@@ -306,8 +300,6 @@ export default function ProfileForm({ session, updateName, updateEmail, isAdminU
   const submitProfileUpdate = async (data: ProfileFormData) => {
     setIsLoading(true);
     try {
-      console.log('Submitting profile update');
-
       // Update profile information
       const response = await fetch('/api/user/profile', {
         method: 'PUT',
@@ -322,7 +314,6 @@ export default function ProfileForm({ session, updateName, updateEmail, isAdminU
 
       if (response.ok) {
         const responseData = await response.json();
-        console.log('Profile update response:', responseData);
         showToast({
           title: t('common.status.success'),
           content: t('profile.messages.profileUpdatedSuccessfully'),
@@ -520,18 +511,40 @@ export default function ProfileForm({ session, updateName, updateEmail, isAdminU
                             </Flex>
                             
                             <Box style={{ gap: '1rem' }}>
-                              <input
-                                type="file"
-                                accept="image/*"
-                                onChange={handleAvatarUpload}
-                                style={{
-                                  padding: '0.5rem',
-                                  border: '1px solid var(--gray-6)',
-                                  borderRadius: 'var(--radius-3)',
-                                  backgroundColor: 'var(--gray-1)',
-                                  width: '100%'
-                                }}
-                              />
+                              <Box style={{ position: 'relative' }}>
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  onChange={handleAvatarUpload}
+                                  style={{
+                                    position: 'absolute',
+                                    opacity: 0,
+                                    width: '100%',
+                                    height: '100%',
+                                    cursor: 'pointer'
+                                  }}
+                                  id="custom-avatar-upload"
+                                />
+                                <label
+                                  htmlFor="custom-avatar-upload"
+                                  style={{
+                                    width: 'fit-content',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: '0.5rem',
+                                    padding: '0.5rem',
+                                    border: '1px solid var(--gray-6)',
+                                    borderRadius: 'var(--radius-3)',
+                                    backgroundColor: 'var(--gray-1)',
+                                    fontSize: 'var(--font-size-2)',
+                                    fontWeight: '500'
+                                  }}
+                                >
+                                  {t('fileInput.chooseFile')}
+                                </label>
+                              </Box>
                               
                               {avatarPreview && (
                                 <Box style={{ gap: '1rem' }}>
@@ -623,18 +636,40 @@ export default function ProfileForm({ session, updateName, updateEmail, isAdminU
                               </Flex>
                               
                               <Box style={{ gap: '1rem' }}>
-                                <input
-                                  type="file"
-                                  accept="image/*"
-                                  onChange={handleAvatarUpload}
-                                  style={{
-                                    padding: '0.5rem',
-                                    border: '1px solid var(--gray-6)',
-                                    borderRadius: 'var(--radius-3)',
-                                    backgroundColor: 'var(--gray-1)',
-                                    width: '100%'
-                                  }}
-                                />
+                                <Box style={{ position: 'relative' }}>
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={handleAvatarUpload}
+                                    style={{
+                                      position: 'absolute',
+                                      opacity: 0,
+                                      width: '100%',
+                                      height: '100%',
+                                      cursor: 'pointer'
+                                    }}
+                                    id="preset-avatar-upload"
+                                  />
+                                  <label
+                                    htmlFor="preset-avatar-upload"
+                                    style={{
+                                      width: 'fit-content',
+                                      cursor: 'pointer',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      gap: '0.5rem',
+                                      padding: '0.5rem',
+                                      border: '1px solid var(--gray-6)',
+                                      borderRadius: 'var(--radius-3)',
+                                      backgroundColor: 'var(--gray-1)',
+                                      fontSize: 'var(--font-size-2)',
+                                      fontWeight: '500'
+                                    }}
+                                  >
+                                    {t('fileInput.chooseFile')}
+                                  </label>
+                                </Box>
                                 
                                 {avatarPreview && (
                                   <Box style={{ gap: '1rem' }}>

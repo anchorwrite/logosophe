@@ -51,9 +51,6 @@ export async function checkAccess(options: AccessControlOptions): Promise<Access
   const session = await auth();
   const email = session?.user.email ?? null;
 
-  console.log('checkAccess called with options:', options);
-  console.log('Session email:', email);
-
   if (!email) {
     if (options.requireAuth) {
       return { hasAccess: false, role: null, email: null };
@@ -69,7 +66,6 @@ export async function checkAccess(options: AccessControlOptions): Promise<Access
 
     // First check if user is a system admin
     const isAdmin = await isSystemAdmin(email, db);
-    console.log('Is system admin:', isAdmin);
 
     if (isAdmin) {
       return { hasAccess: true, role: 'admin', email };
@@ -80,11 +76,8 @@ export async function checkAccess(options: AccessControlOptions): Promise<Access
       'SELECT Role FROM Credentials WHERE Email = ?'
     ).bind(email).first();
 
-    console.log('Credentials user role:', credentialsUser?.Role);
-
     if (credentialsUser?.Role === 'tenant') {
       const result = { hasAccess: true, role: credentialsUser.Role as UserRole, email };
-      console.log('Returning tenant result:', result);
       return result;
     }
 
@@ -92,8 +85,6 @@ export async function checkAccess(options: AccessControlOptions): Promise<Access
     const tenantUserCheck = await db.prepare(
       'SELECT 1 FROM TenantUsers WHERE Email = ?'
     ).bind(email).first();
-
-    console.log('Exists in TenantUsers:', !!tenantUserCheck);
 
     if (!tenantUserCheck) {
       return { hasAccess: false, role: null, email };
@@ -103,22 +94,17 @@ export async function checkAccess(options: AccessControlOptions): Promise<Access
     interface RoleResult { Id: string, Name: string }
     let roleResults: RoleResult[] = [];
     try {
-      console.log('checkAccess: Querying UserRoles for email:', email);
       const roleResultsRaw = await db.prepare(
         `SELECT r.Id, r.Name FROM UserRoles ur JOIN Roles r ON ur.RoleId = r.Id WHERE ur.Email = ?`
       ).bind(email).all();
-      console.log('checkAccess: Raw role results:', roleResultsRaw);
       if (Array.isArray(roleResultsRaw.results)) {
         roleResults = roleResultsRaw.results
           .filter((r): r is { Id: string, Name: string } => typeof r.Id === 'string' && typeof r.Name === 'string')
           .map((r) => ({ Id: r.Id, Name: r.Name }));
       }
     } catch (e) {
-      console.error('checkAccess: Error querying UserRoles:', e);
       // handle error or leave roleResults empty
     }
-
-    console.log('Role results:', roleResults);
 
     // Check all roles - user has access if any role is allowed
     if (roleResults.length > 0) {
@@ -157,7 +143,6 @@ export async function checkAccess(options: AccessControlOptions): Promise<Access
     // If we get here, user has no allowed roles
     return { hasAccess: false, role: null, email };
   } catch (error) {
-    console.error('Error in checkAccess:', error);
     return { hasAccess: false, role: null, email };
   }
 }

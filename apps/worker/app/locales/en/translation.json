@@ -292,6 +292,8 @@
     "next": "Next",
     "subscriberMessage": "You're a subscriber! Enjoy your access to additional features.",
     "becomeSubscriber": "Become a subscriber to access additional features.",
+    "subscribing": "Subscribing...",
+    "subscribeNow": "Subscribe Now",
     "uploading": "Uploading...",
     "clickToUpload": "Click to upload or drag and drop",
     "anyFileType": "Any file type",
@@ -796,5 +798,9 @@
       "passwordTooShort": "New password must be at least 8 characters long",
       "passwordsDoNotMatch": "New passwords do not match"
     }
+  },
+  "fileInput": {
+    "chooseFile": "Choose File",
+    "noFileChosen": "No file chosen"
   }
 }
