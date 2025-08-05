@@ -1,12 +1,5 @@
 import { EmailMessage } from "cloudflare:email";
 
-interface Env {
-  EMAIL_FROM_ADDRESS: string;
-  EMAIL_TO_ADDRESS: string;
-  EMAIL: any; // Email binding from cloudflare:email
-  DB: D1Database; // Using DB binding as configured in wrangler.jsonc
-}
-
 interface EmailData {
   name: string;
   email: string;
@@ -31,7 +24,7 @@ function getCorsOrigin(request: Request): string {
   return allowedOrigins[0];
 }
 
-async function handleRequest(request: Request, env: Env): Promise<Response> {
+async function handleRequest(request: Request, env: CloudflareEnv): Promise<Response> {
   console.log("Received request:", {
     method: request.method,
     url: request.url,
@@ -185,7 +178,7 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
 }
 
 export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
+  async fetch(request: Request, env: CloudflareEnv): Promise<Response> {
     return handleRequest(request, env);
   },
 }; 
