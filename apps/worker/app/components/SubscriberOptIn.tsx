@@ -126,7 +126,7 @@ export default function SubscriberOptIn({ email }: SubscriberOptInProps) {
             disabled={isLoading || !provider}
             style={{ width: '100%' }}
           >
-            {isLoading ? 'Subscribing...' : 'Subscribe Now'}
+            {isLoading ? t('harbor.subscribing') : t('harbor.subscribeNow')}
           </Button>
         </Flex>
       </Flex>

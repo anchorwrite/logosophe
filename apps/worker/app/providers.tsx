@@ -10,7 +10,17 @@ import { useEffect } from 'react'
 
 function Providers({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
-  const lang = pathname.split('/')[1] || 'en'
+  
+  // Extract language from pathname, but be more robust
+  const pathSegments = pathname.split('/')
+  const lang = pathSegments.length > 1 && ['en', 'es', 'de', 'fr', 'nl'].includes(pathSegments[1]) 
+    ? pathSegments[1] 
+    : 'en'
+
+  // Set language synchronously to avoid hydration mismatch
+  if (lang && i18n.language !== lang) {
+    i18n.changeLanguage(lang)
+  }
 
   useEffect(() => {
     if (lang && i18n.language !== lang) {
