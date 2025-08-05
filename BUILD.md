@@ -1,8 +1,143 @@
-# Build and Deployment Troubleshooting Guide - As Of Aug 4, 2025, 20:45 EDT
+# Build and Deployment Troubleshooting Guide - As Of Aug 5, 2025, 14:45 EDT
 
 ## Overview
 
 This document covers common build and deployment issues for the logosophe project, particularly when deploying to Cloudflare Workers using OpenNext.
+
+## Email Worker Deployment and Configuration
+
+### Email Worker Architecture
+
+The project includes a separate email worker (`apps/email-worker`) that handles contact form submissions:
+
+- **Email Worker**: `logosophe-email` - Handles contact form processing, database storage, and email sending
+- **Main Worker**: `logosophe` - Serves the Next.js application and calls the email worker via API
+
+### Email Worker Environment Setup
+
+**Production Configuration:**
+```bash
+# Set production email worker URL as secret
+cd apps/worker
+echo "https://logosophe-email.logosophe.com" | yarn wrangler secret put EMAIL_WORKER_URL
+```
+
+**Development Configuration:**
+```bash
+# Add to apps/worker/.dev.vars for local development
+EMAIL_WORKER_URL=https://logosophe-email.logosophe.com
+```
+
+**Email Worker Deployment:**
+The email worker is deployed automatically via GitHub Actions when changes are pushed to the repository. The deployment workflow is in `.github/workflows/email-worker-deployment.yaml`.
+
+### Email Worker Database
+
+The email worker uses a separate D1 database (`contact_submissions`) for storing contact form submissions:
+
+- **Database ID**: `b8c70fef-f207-4216-9215-cb3b886938b5`
+- **Table**: `contact_submissions` with columns: `id`, `name`, `email`, `subject`, `message`, `created_at`
+- **Local Development**: Database is created automatically when running `yarn wrangler d1 execute contact_submissions --file=migrations/0000_initial.sql`
+
+### Email Worker Testing
+
+**Local Testing:**
+```bash
+# Start email worker locally
+cd apps/email-worker
+yarn dev
+
+# Test email worker directly
+curl -X POST http://localhost:8787 \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Test","email":"test@example.com","subject":"Test","message":"Test message"}'
+```
+
+**Production Testing:**
+```bash
+# Test production email worker
+curl -X POST https://logosophe-email.logosophe.com \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Test","email":"test@example.com","subject":"Test","message":"Test message"}'
+```
+
+### Contact Form Integration
+
+The contact form (`apps/worker/app/components/ContactForm/index.tsx`) submits to `/api/contact`, which then calls the email worker:
+
+1. **Contact Form** → `/api/contact` (main worker)
+2. **Contact API** → `EMAIL_WORKER_URL` (email worker)
+3. **Email Worker** → Database storage + Email sending
+4. **Response** → Success/error back to contact form
+
+### Email Worker Configuration Files
+
+**wrangler.jsonc (Email Worker):**
+```json
+{
+  "name": "logosophe-email",
+  "vars": {
+    "EMAIL_FROM_ADDRESS": "info@logosophe.com",
+    "EMAIL_TO_ADDRESS": "info@logosophe.com"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "contact_submissions",
+      "database_id": "b8c70fef-f207-4216-9215-cb3b886938b5"
+    }
+  ],
+  "send_email": [
+    {
+      "name": "EMAIL",
+      "destination_address": "info@logosophe.com"
+    }
+  ]
+}
+```
+
+**Environment Variables:**
+- `EMAIL_WORKER_URL`: Set as Cloudflare secret for production, `.dev.vars` for development
+- `EMAIL_FROM_ADDRESS`: Configured in email worker wrangler.jsonc
+- `EMAIL_TO_ADDRESS`: Configured in email worker wrangler.jsonc
+
+### Troubleshooting Email Worker Issues
+
+**Common Issues:**
+
+1. **Email Worker Not Responding:**
+   - Check if email worker is deployed: `wrangler tail logosophe-email`
+   - Verify environment variables are set correctly
+   - Check email worker logs for errors
+
+2. **Contact Form Not Working:**
+   - Verify `EMAIL_WORKER_URL` is set correctly in main worker
+   - Check that main worker can reach email worker URL
+   - Test email worker directly to isolate issues
+
+3. **Database Connection Issues:**
+   - Verify D1 database is accessible: `yarn wrangler d1 execute contact_submissions --command "SELECT 1"`
+   - Check database binding in email worker configuration
+   - Ensure local database is created for development
+
+4. **Email Not Sending:**
+   - Check Cloudflare Email configuration in dashboard
+   - Verify email binding is configured correctly
+   - Check email worker logs for send_email binding errors
+
+**Debugging Commands:**
+```bash
+# Check email worker status
+wrangler tail logosophe-email
+
+# Test database connection
+yarn wrangler d1 execute contact_submissions --command "SELECT COUNT(*) FROM contact_submissions"
+
+# Test email worker directly
+curl -X POST https://logosophe-email.logosophe.com \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Test","email":"test@example.com","subject":"Test","message":"Test"}'
+```
 
 ## Common Issues
 
