@@ -7,8 +7,8 @@
     "nodejs_compat"
   ],
   "vars": {
-    "EMAIL_FROM_ADDRESS": "phil@anchorwrite.net",
-    "EMAIL_TO_ADDRESS": "phil@anchorwrite.net"
+    "EMAIL_FROM_ADDRESS": "info@anchorwrite.net",
+    "EMAIL_TO_ADDRESS": "info@anchorwrite.net"
   },
   "d1_databases": [
     {
@@ -20,7 +20,7 @@
   "send_email": [
     {
       "name": "EMAIL",
-      "destination_address": "phil@anchorwrite.net"
+      "destination_address": "info@anchorwrite.net"
     }
   ],
   "observability": {
