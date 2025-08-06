@@ -122,7 +122,16 @@ export async function POST(request: NextRequest) {
       .run();
 
     // Add participants to workflow
-    for (const participant of participants) {
+    // Ensure the initiator is always added as a participant
+    const allParticipants = [...participants];
+    
+    // Check if initiator is already in the participants list
+    const initiatorExists = allParticipants.some(p => p.email === access.email);
+    if (!initiatorExists) {
+      allParticipants.push({ email: access.email, role: initiatorRole || 'author' });
+    }
+
+    for (const participant of allParticipants) {
       const joinedAt = new Date().toISOString();
 
       // Map user roles to workflow participant roles
