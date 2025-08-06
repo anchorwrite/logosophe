@@ -37,6 +37,23 @@ The workflow system provides real-time collaboration capabilities for sharing me
 - `Role` (TEXT, NOT NULL) - Participant role (any valid role name)
 - `JoinedAt` (TEXT, NOT NULL) - Join timestamp
 
+**WorkflowHistory**
+- `Id` (TEXT, PRIMARY KEY) - Unique history record identifier
+- `WorkflowId` (TEXT, NOT NULL) - Associated workflow
+- `TenantId` (TEXT, NOT NULL) - Associated tenant
+- `InitiatorEmail` (TEXT, NOT NULL) - Email of workflow creator
+- `Title` (TEXT, NOT NULL) - Workflow title
+- `Status` (TEXT, NOT NULL) - Workflow status at time of event
+- `CreatedAt` (TEXT, NOT NULL) - Original workflow creation timestamp
+- `UpdatedAt` (TEXT, NOT NULL) - Last update timestamp
+- `CompletedAt` (TEXT) - Completion timestamp
+- `CompletedBy` (TEXT) - Email of user who completed
+- `DeletedAt` (TEXT) - Deletion timestamp
+- `DeletedBy` (TEXT) - Email of user who deleted
+- `EventType` (TEXT, NOT NULL) - Type of event (created, updated, completed, terminated, deleted, reactivated)
+- `EventTimestamp` (TEXT, NOT NULL) - When the event occurred
+- `EventPerformedBy` (TEXT, NOT NULL) - Email of user who performed the event
+
 **Note**: The `Role` column in `WorkflowParticipants` was updated to allow any role name (e.g., 'author', 'subscriber', 'editor') instead of being limited to legacy 'initiator'/'recipient' roles.
 
 ### API Routes
@@ -50,6 +67,7 @@ The workflow system provides real-time collaboration capabilities for sharing me
 **`/api/workflow/[id]`**
 - `GET` - Get workflow details with messages and participants
 - `PUT` - Update workflow (status, title, actions)
+- `DELETE` - Delete workflow (soft delete, updates status to 'deleted')
 
 **`/api/workflow/[id]/stream`**
 - `GET` - SSE endpoint for real-time updates
@@ -107,10 +125,12 @@ eventSource.onmessage = (event) => {
 
 #### SSE Implementation Details
 
-- **Polling Interval**: 2 seconds
+- **Polling Interval**: 15 seconds (reduced from 2 seconds for better performance)
 - **Duplicate Prevention**: Uses both `Id` and `CreatedAt` for precise message tracking
-- **Connection Management**: Automatic reconnection on errors
+- **Connection Management**: Automatic reconnection on errors with exponential backoff
 - **Access Control**: Full RBAC validation for stream access
+- **Error Handling**: Tracks consecutive errors and closes connection after 3 failures
+- **Heartbeat**: Sends heartbeat messages every 45 seconds to keep connection alive
 
 ### Access Control
 
@@ -173,11 +193,13 @@ const hasAllowedRole = userRoles.some(role => allowedRoles.includes(role));
 - `active` - Workflow is ongoing
 - `completed` - Workflow has been completed
 - `terminated` - Workflow has been terminated
+- `deleted` - Workflow has been soft deleted
 
 #### Actions
 - `complete` - Mark workflow as completed
 - `terminate` - Terminate workflow
 - `reactivate` - Reactivate completed/terminated workflow
+- `delete` - Soft delete workflow (updates status to 'deleted')
 
 ### Message Types
 
@@ -236,6 +258,49 @@ createWorkflowSSEConnection(workflowId)
 - Workflow history view
 - Filtering and search capabilities
 
+### Database Management
+
+#### Clear Workflow Data Script
+
+A SQL script is available to clear all workflow data for testing purposes:
+
+**File**: `apps/worker/scripts/clear-workflow-data.sql`
+
+```sql
+-- Clear all workflow-related data
+-- This script removes all data from workflow tables to start fresh
+
+-- Delete all workflow messages
+DELETE FROM WorkflowMessages;
+
+-- Delete all workflow participants
+DELETE FROM WorkflowParticipants;
+
+-- Delete all workflow history records
+DELETE FROM WorkflowHistory;
+
+-- Delete all workflows
+DELETE FROM Workflows;
+
+-- Verify the tables are empty
+SELECT 'Workflows' as table_name, COUNT(*) as count FROM Workflows
+UNION ALL
+SELECT 'WorkflowMessages' as table_name, COUNT(*) as count FROM WorkflowMessages
+UNION ALL
+SELECT 'WorkflowParticipants' as table_name, COUNT(*) as count FROM WorkflowParticipants
+UNION ALL
+SELECT 'WorkflowHistory' as table_name, COUNT(*) as count FROM WorkflowHistory;
+```
+
+**Usage**:
+```bash
+# Clear local database
+yarn wrangler d1 execute logosophe --local --file=scripts/clear-workflow-data.sql
+
+# Clear remote database
+yarn wrangler d1 execute logosophe --remote --file=scripts/clear-workflow-data.sql
+```
+
 ### Logging
 
 #### System Logs
@@ -252,6 +317,25 @@ All workflow activities are logged to the `SystemLogs` table:
 - `workflow_message_sent` - Message sending
 - `workflow_completed` - Workflow completion
 - `workflow_terminated` - Workflow termination
+- `workflow_deleted` - Workflow deletion
+
+#### WorkflowHistory Audit Trail
+
+The `WorkflowHistory` table provides a complete audit trail of all workflow lifecycle events:
+
+**Event Types**
+- `created` - Workflow creation
+- `updated` - Workflow modifications
+- `completed` - Workflow completion
+- `terminated` - Workflow termination
+- `deleted` - Workflow deletion
+- `reactivated` - Workflow reactivation
+
+**History Records Include**
+- Complete workflow state at time of event
+- User who performed the action
+- Timestamp of the event
+- All relevant workflow metadata
 
 ### Error Handling
 
@@ -266,23 +350,31 @@ All workflow activities are logged to the `SystemLogs` table:
 - Automatic EventSource reconnection on errors
 - Graceful handling of network interruptions
 - Proper cleanup on component unmount
+- Heartbeat messages to detect connection issues
 
 **Access Control Errors**
 - Comprehensive RBAC validation
 - Clear error messages for permission issues
 - Fallback to subscriber role when appropriate
 
+**React Hydration Errors**
+- Fixed nested `<h1>` elements in dialog components
+- `ConfirmationDialog` and `MediaFileSelector` components use `Heading size="3"` instead of `size="4"`
+- Ensures proper heading hierarchy in dialog contexts
+
 ### Performance Considerations
 
 #### Database Optimization
 - Direct database access eliminates API call overhead
 - Efficient queries with proper indexing
-- Minimal polling interval (2 seconds) balances responsiveness and performance
+- Optimized polling interval (15 seconds) balances responsiveness and performance
+- WorkflowHistory table provides audit trail without impacting main workflow operations
 
 #### Frontend Optimization
 - Efficient React state management
 - Proper cleanup of EventSource connections
 - Optimized re-rendering with proper key props
+- Fixed hydration errors for better rendering performance
 
 ### Security
 
@@ -290,6 +382,7 @@ All workflow activities are logged to the `SystemLogs` table:
 - All database queries use parameterized statements
 - Input validation on all API endpoints
 - RBAC ensures proper data isolation between tenants
+- Soft delete for workflows preserves audit trail
 
 #### Authentication
 - NextAuth v5 integration
@@ -308,6 +401,12 @@ All workflow activities are logged to the `SystemLogs` table:
 - **Migration**: `003-update-workflow-participants-role-constraint.sql`
 - **Change**: Removed `CHECK` constraint limiting roles to 'initiator'/'recipient'
 - **Result**: Now supports any valid role name (author, subscriber, editor, etc.)
+
+#### WorkflowHistory Implementation
+- **Added**: Complete audit trail functionality
+- **Events**: All workflow lifecycle events are recorded
+- **Integration**: Automatic history updates on workflow operations
+- **Benefits**: Complete audit trail for compliance and debugging
 
 ### Usage Examples
 
@@ -354,6 +453,14 @@ eventSource.onmessage = (event) => {
 };
 ```
 
+#### Deleting a Workflow
+```typescript
+const response = await fetch(`/api/workflow/${workflowId}`, {
+  method: 'DELETE',
+  headers: { 'Content-Type': 'application/json' }
+});
+```
+
 ### Development Workflow
 
 #### Local Development
@@ -366,6 +473,11 @@ eventSource.onmessage = (event) => {
 - Database migrations applied with `--remote` flag
 - Proper environment configuration
 
+#### Testing
+- Use `clear-workflow-data.sql` script to reset workflow data
+- Test all workflow lifecycle events
+- Verify WorkflowHistory audit trail functionality
+
 ### Troubleshooting
 
 #### Common Issues
@@ -373,8 +485,27 @@ eventSource.onmessage = (event) => {
 2. **Duplicate Messages**: Verify SSE polling logic and frontend duplicate detection
 3. **Connection Errors**: Check network connectivity and EventSource implementation
 4. **Role Display Issues**: Ensure database migration has been applied to allow proper role names
+5. **React Hydration Errors**: Ensure dialog components use proper heading hierarchy
 
 #### Debug Tools
 - Browser developer tools for SSE connection monitoring
 - Database queries for role verification
 - System logs for activity tracking
+- WorkflowHistory table for audit trail analysis
+
+#### Database Queries for Debugging
+
+```sql
+-- Check workflow history
+SELECT * FROM WorkflowHistory WHERE WorkflowId = 'your-workflow-id' ORDER BY EventTimestamp DESC;
+
+-- Check user roles
+SELECT * FROM TenantUsers WHERE Email = 'user@example.com';
+SELECT * FROM UserRoles WHERE Email = 'user@example.com';
+
+-- Check workflow participants
+SELECT * FROM WorkflowParticipants WHERE WorkflowId = 'your-workflow-id';
+
+-- Check recent workflow messages
+SELECT * FROM WorkflowMessages WHERE WorkflowId = 'your-workflow-id' ORDER BY CreatedAt DESC LIMIT 10;
+```

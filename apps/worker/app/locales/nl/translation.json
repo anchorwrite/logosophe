@@ -720,6 +720,12 @@
           "confirm": "Verwijderen",
           "cancel": "Annuleren"
         },
+        "selectParticipantsDialog": {
+          "title": "Deelnemers Selecteren"
+        },
+        "selectMediaFilesDialog": {
+          "title": "Mediabestanden Selecteren"
+        },
         "messageTranslations": {
           "workflowInitiated": "Werkstroom \"{{title}}\" gestart",
           "withDescription": "met beschrijving",

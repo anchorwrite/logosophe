@@ -143,7 +143,7 @@ export default function MediaFileSelector({
   return (
     <Box>
       <Flex justify="between" align="center" mb="4">
-        <Heading size="4">Select Media Files</Heading>
+        <Heading size="3">Select Media Files</Heading>
         <Flex gap="2">
           <Button size="2" variant="soft" onClick={handleSelectAll}>
             Select All
