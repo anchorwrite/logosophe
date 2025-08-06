@@ -322,6 +322,7 @@ export function CreateWorkflowClient({ userEmail, userTenants, defaultTenant, la
       {/* Participant Selector Dialog */}
       <Dialog.Root open={showParticipantSelector} onOpenChange={setShowParticipantSelector}>
         <Dialog.Content style={{ maxWidth: '1000px', maxHeight: '80vh' }}>
+          <Dialog.Title>{t('workflow.selectParticipantsDialog.title')}</Dialog.Title>
           <WorkflowParticipantSelector
             userEmail={userEmail}
             selectedTenantId={formData.selectedTenant.tenantId}
@@ -335,6 +336,7 @@ export function CreateWorkflowClient({ userEmail, userTenants, defaultTenant, la
       {/* Media File Selector Dialog */}
       <Dialog.Root open={showMediaSelector} onOpenChange={setShowMediaSelector}>
         <Dialog.Content style={{ maxWidth: '1000px', maxHeight: '80vh' }}>
+          <Dialog.Title>{t('workflow.selectMediaFilesDialog.title')}</Dialog.Title>
           <MediaFileSelector
             userEmail={userEmail}
             userTenantId={formData.selectedTenant.tenantId}

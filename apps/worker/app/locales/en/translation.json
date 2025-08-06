@@ -640,6 +640,12 @@
           "confirm": "Delete",
           "cancel": "Cancel"
         },
+        "selectParticipantsDialog": {
+          "title": "Select Participants"
+        },
+        "selectMediaFilesDialog": {
+          "title": "Select Media Files"
+        },
         "messageTranslations": {
           "workflowInitiated": "Workflow \"{{title}}\" initiated",
           "withDescription": "with description",

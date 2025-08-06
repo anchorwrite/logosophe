@@ -721,6 +721,12 @@
           "confirm": "Löschen",
           "cancel": "Abbrechen"
         },
+        "selectParticipantsDialog": {
+          "title": "Teilnehmer auswählen"
+        },
+        "selectMediaFilesDialog": {
+          "title": "Mediendateien auswählen"
+        },
         "messageTranslations": {
           "workflowInitiated": "Workflow \"{{title}}\" gestartet",
           "withDescription": "mit Beschreibung",

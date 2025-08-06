@@ -7,7 +7,6 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  console.log('Workflow history detail API called');
   try {
     const access = await checkAccess({
       requireAuth: true,
@@ -18,7 +17,6 @@ export async function GET(
     }
 
     const { id: workflowId } = await params;
-    console.log('Workflow ID:', workflowId);
     
     if (!workflowId) {
       return NextResponse.json({ error: 'Workflow ID is required' }, { status: 400 });
@@ -138,13 +136,14 @@ export async function GET(
 
     const messages = await db.prepare(messagesQuery).bind(workflowId).all();
 
-    // Get participants
+    // Get participants with role names
     const participantsQuery = `
       SELECT 
         wp.ParticipantEmail,
-        wp.Role,
+        COALESCE(r.Name, wp.Role) as Role,
         wp.JoinedAt
       FROM WorkflowParticipants wp
+      LEFT JOIN Roles r ON wp.Role = r.Id
       WHERE wp.WorkflowId = ?
       ORDER BY wp.JoinedAt
     `;
