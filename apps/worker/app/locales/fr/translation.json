@@ -723,6 +723,12 @@
           "confirm": "Supprimer",
           "cancel": "Annuler"
         },
+        "selectParticipantsDialog": {
+          "title": "Sélectionner les Participants"
+        },
+        "selectMediaFilesDialog": {
+          "title": "Sélectionner les Fichiers Médias"
+        },
         "messageTranslations": {
           "workflowInitiated": "Flux de travail \"{{title}}\" initié",
           "withDescription": "avec description",

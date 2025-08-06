@@ -111,7 +111,7 @@ export async function GET(request: NextRequest) {
         COUNT(*) as totalWorkflows,
         SUM(CASE WHEN Status = 'active' THEN 1 ELSE 0 END) as activeWorkflows,
         SUM(CASE WHEN Status = 'completed' THEN 1 ELSE 0 END) as completedWorkflows,
-        SUM(CASE WHEN Status = 'cancelled' THEN 1 ELSE 0 END) as cancelledWorkflows,
+        SUM(CASE WHEN Status = 'terminated' THEN 1 ELSE 0 END) as terminatedWorkflows,
         AVG(CASE WHEN Status = 'completed' THEN 
           (julianday(CompletedAt) - julianday(CreatedAt)) 
         ELSE NULL END) as avgCompletionDays
@@ -120,6 +120,18 @@ export async function GET(request: NextRequest) {
     `;
 
     const stats = await db.prepare(statsQuery).bind(tenantId).first();
+
+    // Get today's activity
+    const todayActivityQuery = `
+      SELECT 
+        SUM(CASE WHEN Status = 'completed' AND date(CompletedAt) = date('now', 'localtime') THEN 1 ELSE 0 END) as completedToday,
+        SUM(CASE WHEN date(CreatedAt) = date('now', 'localtime') THEN 1 ELSE 0 END) as initiatedToday,
+        SUM(CASE WHEN Status = 'terminated' AND date(UpdatedAt) = date('now', 'localtime') THEN 1 ELSE 0 END) as terminatedToday
+      FROM Workflows 
+      WHERE TenantId = ?
+    `;
+
+    const todayActivity = await db.prepare(todayActivityQuery).bind(tenantId).first();
 
     // Get recent activity (last 7 days)
     const recentActivityQuery = `
@@ -157,7 +169,10 @@ export async function GET(request: NextRequest) {
         totalWorkflows: stats?.totalWorkflows || 0,
         activeWorkflows: stats?.activeWorkflows || 0,
         completedWorkflows: stats?.completedWorkflows || 0,
-        cancelledWorkflows: stats?.cancelledWorkflows || 0,
+        terminatedWorkflows: stats?.terminatedWorkflows || 0,
+        completedToday: todayActivity?.completedToday || 0,
+        initiatedToday: todayActivity?.initiatedToday || 0,
+        terminatedToday: todayActivity?.terminatedToday || 0,
         avgCompletionDays: stats?.avgCompletionDays || 0,
         recentWorkflows: recentActivity?.recentWorkflows || 0,
         workflowsWithMessages: recentActivity?.workflowsWithMessages || 0,
