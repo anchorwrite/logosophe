@@ -4,6 +4,7 @@ import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { auth } from '@/auth';
 import { isSystemAdmin } from '@/lib/access';
 import { SystemLogs } from '@/lib/system-logs';
+import { getWorkflowHistoryLogger } from '@/lib/workflow-history';
 
 export async function GET(
   request: NextRequest,
@@ -85,6 +86,12 @@ export async function GET(
     const participants = await db.prepare(participantsQuery)
       .bind(id)
       .all() as any;
+
+    // Check if user is a participant or system admin
+    const participantEmails = participants.results?.map((p: any) => p.ParticipantEmail) || [];
+    if (!isAdmin && !participantEmails.includes(userEmail)) {
+      return NextResponse.json({ error: 'You do not have permission to access this workflow' }, { status: 403 });
+    }
 
     // Get media files from WorkflowMessages table
     const mediaFilesQuery = `
@@ -257,6 +264,10 @@ export async function PUT(
             title: body.title
           }
         });
+
+        // Log to WorkflowHistory
+        const workflowHistoryLogger = await getWorkflowHistoryLogger();
+        await workflowHistoryLogger.logWorkflowUpdated(workflowData, access.email, body.action);
       } catch (logError) {
         console.error('Failed to log workflow update:', logError);
         // Continue with workflow update even if logging fails
