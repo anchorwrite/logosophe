@@ -3,6 +3,7 @@ import { checkAccess } from '@/lib/access-control';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { isSystemAdmin } from '@/lib/access';
 import { SystemLogs } from '@/lib/system-logs';
+import { getWorkflowHistoryLogger } from '@/lib/workflow-history';
 
 export async function POST(request: NextRequest) {
   try {
@@ -193,6 +194,18 @@ export async function POST(request: NextRequest) {
           initiatorRole: initiatorRole
         }
       });
+
+      // Log to WorkflowHistory
+      const workflowHistoryLogger = await getWorkflowHistoryLogger();
+      await workflowHistoryLogger.logWorkflowCreated({
+        Id: workflowId,
+        TenantId: tenantId,
+        InitiatorEmail: access.email,
+        Title: title,
+        Status: 'active',
+        CreatedAt: new Date().toISOString(),
+        UpdatedAt: new Date().toISOString()
+      }, access.email);
     } catch (logError) {
       console.error('Failed to log workflow creation:', logError);
       // Continue with workflow creation even if logging fails
@@ -264,6 +277,12 @@ export async function GET(request: NextRequest) {
     if (status) {
       workflowsQuery += ' AND w.Status = ?';
       queryParams.push(status);
+    }
+
+    // Filter by workflow participation (unless user is admin)
+    if (!isAdmin) {
+      workflowsQuery += ' AND EXISTS (SELECT 1 FROM WorkflowParticipants wp2 WHERE wp2.WorkflowId = w.Id AND wp2.ParticipantEmail = ?)';
+      queryParams.push(access.email);
     }
 
     workflowsQuery += ' GROUP BY w.Id ORDER BY w.CreatedAt DESC';

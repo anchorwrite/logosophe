@@ -9,6 +9,7 @@ import { completeWorkflowClient, terminateWorkflowClient, deleteWorkflowClient }
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { useToast } from '@/components/Toast';
 import MediaFileSelector from '@/components/MediaFileSelector';
+import WorkflowInvitations from '@/components/WorkflowInvitations';
 
 import { Eye, Download, Paperclip } from 'lucide-react';
 
@@ -818,6 +819,15 @@ export function WorkflowDetailClient({ workflowId, userEmail, userTenantId, lang
               )}
             </Box>
           </Card>
+        </Box>
+
+        {/* Workflow Invitations */}
+        <Box>
+          <WorkflowInvitations 
+            workflowId={workflowId}
+            workflowTitle={workflow.Title}
+            currentUserEmail={userEmail}
+          />
         </Box>
 
         {/* Messages */}
