@@ -65,7 +65,7 @@ export default async function HarborWorkflowActivePage({ params }: { params: Par
         <Flex align="center" gap="4" mb="6">
           <Button variant="soft" asChild>
             <Link href={`/${lang}/harbor/workflow`}>
-              ← Back to Workflows
+              ← {(dict as any).workflow.backToWorkflows}
             </Link>
           </Button>
           <Heading size="6">{(dict as any).workflow.activeWorkflows}</Heading>

@@ -81,7 +81,6 @@ export default function WorkflowHistoryDetailClient({
         const response = await fetch(`/api/workflow/history/detail/${workflowId}`, {
           method: 'GET',
           headers: {
-            'Authorization': `Bearer ${userEmail}`,
             'Content-Type': 'application/json',
           },
         });

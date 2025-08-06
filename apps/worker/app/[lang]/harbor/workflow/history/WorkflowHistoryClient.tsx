@@ -529,10 +529,7 @@ export function WorkflowHistoryClient({ userEmail, userTenantId, lang }: Workflo
                     />
                   </Table.Cell>
                   <Table.Cell>
-                    <Box>
-                      <Text weight="medium" size="2">{workflow.Title}</Text>
-                      <Text size="1" color="gray">{t('workflow.history.table.id')}: {workflow.Id}</Text>
-                    </Box>
+                    <Text weight="medium" size="2">{workflow.Title}</Text>
                   </Table.Cell>
                   <Table.Cell>
                     <Badge color={getStatusColor(workflow.Status)}>

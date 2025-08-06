@@ -303,6 +303,23 @@ export function WorkflowDetailClient({ workflowId, userEmail, userTenantId, lang
               console.log('Participant left:', data.data);
             } else if (data.type === 'status_update') {
               console.log('Status update:', data.data);
+              // Update the workflow status in the UI
+              setWorkflow(prev => {
+                if (!prev) return prev;
+                return {
+                  ...prev,
+                  Status: data.data.status,
+                  UpdatedAt: data.data.updatedAt,
+                  ...(data.data.status === 'completed' && {
+                    CompletedAt: data.data.updatedAt,
+                    CompletedBy: data.data.completedBy
+                  }),
+                  ...(data.data.status === 'terminated' && {
+                    TerminatedAt: data.data.updatedAt,
+                    TerminatedBy: data.data.terminatedBy
+                  })
+                };
+              });
             } else {
               console.log('Unknown message type:', data.type);
             }

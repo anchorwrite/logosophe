@@ -21,7 +21,7 @@ export default async function InternationalizedLayout({
 }) {
   const { lang } = await params;
   return (
-    <Providers>
+    <Providers lang={lang}>
       <ThemeWrapper>
         {children}
       </ThemeWrapper>
