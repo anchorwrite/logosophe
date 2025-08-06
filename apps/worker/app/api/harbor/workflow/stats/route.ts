@@ -81,8 +81,6 @@ export async function GET(request: NextRequest) {
           userRoles.push(...userRolesCheck.results.map(r => r.RoleId));
         }
 
-        console.log('Debug - User roles check:', { email: access.email, tenantId, userRoles });
-
         if (userRoles.length === 0) {
           return NextResponse.json(
             { success: false, error: 'You do not have access to this tenant' },
@@ -93,8 +91,6 @@ export async function GET(request: NextRequest) {
         // 4. Check if the user has any role that allows viewing workflow statistics
         const allowedRoles = ['author', 'editor', 'agent', 'reviewer', 'subscriber'];
         const hasAllowedRole = userRoles.some(role => allowedRoles.includes(role));
-        
-        console.log('Debug - Role check:', { userRoles, allowedRoles, isAllowed: hasAllowedRole });
         
         if (!hasAllowedRole) {
           return NextResponse.json(

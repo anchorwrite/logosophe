@@ -34,8 +34,10 @@ The workflow system provides real-time collaboration capabilities for sharing me
 **WorkflowParticipants**
 - `WorkflowId` (TEXT, PRIMARY KEY) - Associated workflow
 - `ParticipantEmail` (TEXT, PRIMARY KEY) - Email of participant
-- `Role` (TEXT, NOT NULL) - Participant role (initiator/recipient)
+- `Role` (TEXT, NOT NULL) - Participant role (any valid role name)
 - `JoinedAt` (TEXT, NOT NULL) - Join timestamp
+
+**Note**: The `Role` column in `WorkflowParticipants` was updated to allow any role name (e.g., 'author', 'subscriber', 'editor') instead of being limited to legacy 'initiator'/'recipient' roles.
 
 ### API Routes
 
@@ -103,6 +105,13 @@ eventSource.onmessage = (event) => {
 - `status_update` - Workflow status change
 - `error` - Error notification
 
+#### SSE Implementation Details
+
+- **Polling Interval**: 2 seconds
+- **Duplicate Prevention**: Uses both `Id` and `CreatedAt` for precise message tracking
+- **Connection Management**: Automatic reconnection on errors
+- **Access Control**: Full RBAC validation for stream access
+
 ### Access Control
 
 #### Role-Based Access Control (RBAC)
@@ -129,6 +138,34 @@ The system implements comprehensive RBAC:
 3. **Tenant Access** - Verify user has access to workflow's tenant
 4. **Participant Check** - Verify user is workflow participant (for messaging)
 5. **Role Validation** - Check if user's role allows the operation
+
+#### RBAC Implementation
+
+The system checks both `TenantUsers` (for base role) and `UserRoles` (for additional roles) tables:
+
+```typescript
+// 1. Check TenantUsers table for base role
+const tenantUserCheck = await db.prepare(`
+  SELECT RoleId FROM TenantUsers WHERE Email = ? AND TenantId = ?
+`).bind(access.email, tenantId).first<{ RoleId: string }>();
+
+// 2. Check UserRoles table for additional roles
+const userRolesCheck = await db.prepare(`
+  SELECT RoleId FROM UserRoles WHERE Email = ? AND TenantId = ?
+`).bind(access.email, tenantId).all<{ RoleId: string }>();
+
+// 3. Collect all user roles
+const userRoles: string[] = [];
+if (tenantUserCheck) {
+  userRoles.push(tenantUserCheck.RoleId);
+}
+if (userRolesCheck.results) {
+  userRoles.push(...userRolesCheck.results.map(r => r.RoleId));
+}
+
+// 4. Check if user has any role that allows the operation
+const hasAllowedRole = userRoles.some(role => allowedRoles.includes(role));
+```
 
 ### Workflow Lifecycle
 
@@ -214,4 +251,130 @@ All workflow activities are logged to the `SystemLogs` table:
 - `workflow_updated` - Workflow modifications
 - `workflow_message_sent` - Message sending
 - `workflow_completed` - Workflow completion
-- `
+- `workflow_terminated` - Workflow termination
+
+### Error Handling
+
+#### Common Issues and Solutions
+
+**Duplicate Messages**
+- Frontend checks for existing messages by `Id` before adding
+- Messages are sorted by `CreatedAt` and `Id` for consistent ordering
+- SSE polling uses both `Id` and `CreatedAt` for precise tracking
+
+**Connection Issues**
+- Automatic EventSource reconnection on errors
+- Graceful handling of network interruptions
+- Proper cleanup on component unmount
+
+**Access Control Errors**
+- Comprehensive RBAC validation
+- Clear error messages for permission issues
+- Fallback to subscriber role when appropriate
+
+### Performance Considerations
+
+#### Database Optimization
+- Direct database access eliminates API call overhead
+- Efficient queries with proper indexing
+- Minimal polling interval (2 seconds) balances responsiveness and performance
+
+#### Frontend Optimization
+- Efficient React state management
+- Proper cleanup of EventSource connections
+- Optimized re-rendering with proper key props
+
+### Security
+
+#### Data Protection
+- All database queries use parameterized statements
+- Input validation on all API endpoints
+- RBAC ensures proper data isolation between tenants
+
+#### Authentication
+- NextAuth v5 integration
+- Session-based authentication
+- Secure token handling
+
+### Migration Notes
+
+#### From Durable Objects to SSE
+- **Removed**: All Durable Object references and WebSocket logic
+- **Added**: SSE streaming endpoint with polling mechanism
+- **Simplified**: Architecture now uses direct database access
+- **Enhanced**: RBAC implementation with full role checking
+
+#### Database Schema Updates
+- **Migration**: `003-update-workflow-participants-role-constraint.sql`
+- **Change**: Removed `CHECK` constraint limiting roles to 'initiator'/'recipient'
+- **Result**: Now supports any valid role name (author, subscriber, editor, etc.)
+
+### Usage Examples
+
+#### Creating a Workflow
+```typescript
+const response = await fetch('/api/workflow', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    title: 'Review Project Files',
+    participants: [
+      { email: 'user1@example.com', role: 'author' },
+      { email: 'user2@example.com', role: 'reviewer' }
+    ],
+    description: 'Please review the attached files'
+  })
+});
+```
+
+#### Sending a Message
+```typescript
+const response = await fetch('/api/harbor/workflow/messages', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    workflowId: 'workflow-id',
+    content: 'Here are my comments',
+    messageType: 'response',
+    mediaFileIds: [123, 456]
+  })
+});
+```
+
+#### Real-Time Updates
+```typescript
+const eventSource = createWorkflowSSEConnection('workflow-id');
+
+eventSource.onmessage = (event) => {
+  const data = JSON.parse(event.data);
+  if (data.type === 'message') {
+    // Add new message to UI
+    setMessages(prev => [...prev, data.data]);
+  }
+};
+```
+
+### Development Workflow
+
+#### Local Development
+- Use `yarn dev` to start development server
+- Database migrations applied automatically
+- Hot reloading for frontend changes
+
+#### Production Deployment
+- GitHub Actions handles deployment
+- Database migrations applied with `--remote` flag
+- Proper environment configuration
+
+### Troubleshooting
+
+#### Common Issues
+1. **403 Access Denied**: Check user roles in both `TenantUsers` and `UserRoles` tables
+2. **Duplicate Messages**: Verify SSE polling logic and frontend duplicate detection
+3. **Connection Errors**: Check network connectivity and EventSource implementation
+4. **Role Display Issues**: Ensure database migration has been applied to allow proper role names
+
+#### Debug Tools
+- Browser developer tools for SSE connection monitoring
+- Database queries for role verification
+- System logs for activity tracking
