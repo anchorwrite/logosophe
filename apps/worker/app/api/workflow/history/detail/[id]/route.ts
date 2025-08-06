@@ -30,10 +30,12 @@ export async function GET(
 
     // Check if user is system admin (Credentials table with admin role)
     const isAdmin = await isSystemAdmin(access.email, db);
+    console.log('User email:', access.email, 'Is admin:', isAdmin);
     
     let tenantId: string | null = null;
     
     if (isAdmin) {
+      console.log('User is system admin, granting access');
       // System admins have full access to all tenants
       // Get the workflow's tenant
       const workflowTenant = await db.prepare(`
@@ -41,6 +43,7 @@ export async function GET(
       `).bind(workflowId).first<{ TenantId: string }>();
       
       if (!workflowTenant) {
+        console.log('Workflow not found for admin');
         return NextResponse.json({ error: 'Workflow not found' }, { status: 404 });
       }
       
@@ -50,6 +53,8 @@ export async function GET(
       const tenantAdminCheck = await db.prepare(`
         SELECT 1 FROM Credentials WHERE Email = ? AND Role = 'tenant'
       `).bind(access.email).first();
+
+      console.log('User is tenant admin:', !!tenantAdminCheck);
 
       if (tenantAdminCheck) {
         // Tenant admins have full access within their assigned tenants
@@ -61,33 +66,47 @@ export async function GET(
         `).bind(workflowId, access.email).first<{ TenantId: string }>();
         
         if (!workflowTenant) {
+          console.log('Tenant admin: workflow not found or no access');
           return NextResponse.json({ error: 'Workflow not found or you do not have access' }, { status: 404 });
         }
         
         tenantId = workflowTenant.TenantId;
       } else {
         // Regular users need specific role assignments in the tenant
-        const userTenantCheck = await db.prepare(`
-          SELECT tu.TenantId, tu.RoleId 
-          FROM TenantUsers tu
-          JOIN Workflows w ON tu.TenantId = w.TenantId
-          WHERE w.Id = ? AND tu.Email = ?
-        `).bind(workflowId, access.email).first<{ TenantId: string; RoleId: string }>();
+        // Get all user roles for the workflow's tenant
+        const userRolesQuery = `
+          SELECT ur.TenantId, ur.RoleId 
+          FROM UserRoles ur
+          JOIN Workflows w ON ur.TenantId = w.TenantId
+          WHERE w.Id = ? AND ur.Email = ?
+        `;
+        
+        const userRolesResult = await db.prepare(userRolesQuery)
+          .bind(workflowId, access.email)
+          .all() as any;
 
-        if (!userTenantCheck) {
+        console.log('Regular user roles check:', userRolesResult);
+
+        if (!userRolesResult?.results || userRolesResult.results.length === 0) {
+          console.log('Regular user: workflow not found or no access');
           return NextResponse.json({ error: 'Workflow not found or you do not have access' }, { status: 404 });
         }
 
-        // Check if the user has a role that allows viewing workflow history
+        // Check if the user has any role that allows viewing workflow history
         const allowedRoles = ['author', 'editor', 'agent', 'reviewer', 'subscriber'];
-        if (!allowedRoles.includes(userTenantCheck.RoleId)) {
+        const userRoles = userRolesResult.results.map((r: any) => r.RoleId);
+        console.log('User roles:', userRoles, 'Allowed roles:', allowedRoles);
+        
+        const hasAllowedRole = userRoles.some((role: string) => allowedRoles.includes(role));
+        if (!hasAllowedRole) {
+          console.log('User has no allowed roles for workflow history');
           return NextResponse.json(
             { error: 'Your role does not allow viewing workflow history' },
             { status: 403 }
           );
         }
         
-        tenantId = userTenantCheck.TenantId;
+        tenantId = userRolesResult.results[0].TenantId;
       }
     }
 
@@ -97,7 +116,10 @@ export async function GET(
       WHERE WorkflowId = ? AND ParticipantEmail = ?
     `).bind(workflowId, access.email).first();
 
+    console.log('Participant check for user:', access.email, 'Result:', !!participantCheck);
+
     if (!participantCheck) {
+      console.log('User is not a participant in this workflow');
       return NextResponse.json({ error: 'You are not a participant in this workflow' }, { status: 403 });
     }
 
@@ -108,9 +130,11 @@ export async function GET(
         w.Title,
         w.Status,
         w.CreatedAt,
+        w.UpdatedAt,
         w.CompletedAt,
         w.CompletedBy,
-        w.TenantId
+        w.TenantId,
+        w.InitiatorEmail
       FROM Workflows w
       WHERE w.Id = ?
     `;
@@ -151,10 +175,28 @@ export async function GET(
 
     const participants = await db.prepare(participantsQuery).bind(workflowId).all();
 
+    // Determine the event type based on workflow status
+    let eventType = 'created';
+    let eventTimestamp = workflow.CreatedAt;
+    let eventPerformedBy = workflow.InitiatorEmail;
+
+    if (workflow.Status === 'terminated') {
+      eventType = 'terminated';
+      eventTimestamp = workflow.UpdatedAt;
+      eventPerformedBy = 'Unknown'; // We don't have TerminatedBy in the table
+    } else if (workflow.CompletedAt) {
+      eventType = 'completed';
+      eventTimestamp = workflow.CompletedAt;
+      eventPerformedBy = workflow.CompletedBy || 'Unknown';
+    }
+
     return NextResponse.json({
       success: true,
       workflow: {
         ...workflow,
+        EventType: eventType,
+        EventTimestamp: eventTimestamp,
+        EventPerformedBy: eventPerformedBy,
         messages: messages.results || [],
         participants: participants.results || []
       }

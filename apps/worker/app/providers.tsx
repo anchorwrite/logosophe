@@ -8,25 +8,28 @@ import { ThemeProvider } from '@/lib/theme-context'
 import { usePathname } from 'next/navigation'
 import { useEffect } from 'react'
 
-function Providers({ children }: { children: React.ReactNode }) {
+interface ProvidersProps {
+  children: React.ReactNode;
+  lang?: string;
+}
+
+function Providers({ children, lang }: ProvidersProps) {
   const pathname = usePathname()
   
-  // Extract language from pathname, but be more robust
-  const pathSegments = pathname.split('/')
-  const lang = pathSegments.length > 1 && ['en', 'es', 'de', 'fr', 'nl'].includes(pathSegments[1]) 
-    ? pathSegments[1] 
-    : 'en'
+  // Use provided lang prop or extract from pathname as fallback
+  const detectedLang = lang || (() => {
+    const pathSegments = pathname.split('/')
+    return pathSegments.length > 1 && ['en', 'es', 'de', 'fr', 'nl'].includes(pathSegments[1]) 
+      ? pathSegments[1] 
+      : 'en'
+  })()
 
-  // Set language synchronously to avoid hydration mismatch
-  if (lang && i18n.language !== lang) {
-    i18n.changeLanguage(lang)
-  }
-
+  // Only change language in useEffect to avoid setState during render
   useEffect(() => {
-    if (lang && i18n.language !== lang) {
-      i18n.changeLanguage(lang)
+    if (detectedLang && i18n.language !== detectedLang) {
+      i18n.changeLanguage(detectedLang)
     }
-  }, [lang])
+  }, [detectedLang])
 
   return (
     <SessionProvider>

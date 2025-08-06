@@ -6,6 +6,7 @@ import type { Locale } from '@/types/i18n';
 import { CreateWorkflowClient } from './CreateWorkflowClient';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { checkAccess } from '@/lib/access-control';
+import { getDictionary } from '@/lib/dictionary';
 
 type Params = Promise<{ lang: Locale }>;
 
@@ -19,6 +20,7 @@ interface UserTenant {
 export default async function HarborWorkflowCreatePage({ params }: { params: Params }) {
   const session = await auth();
   const { lang } = await params;
+  const dict = await getDictionary(lang);
   
   console.log('Create workflow page - User email:', session?.user?.email);
   
@@ -95,10 +97,10 @@ export default async function HarborWorkflowCreatePage({ params }: { params: Par
         <Flex align="center" gap="4" mb="6">
           <Button variant="soft" asChild>
             <Link href={`/${lang}/harbor/workflow`}>
-              ← Back to Workflows
+              ← {(dict as any).workflow.backToWorkflows}
             </Link>
           </Button>
-          <Heading size="6">Create Workflow</Heading>
+          <Heading size="6">{(dict as any).workflow.createWorkflow}</Heading>
         </Flex>
 
         <CreateWorkflowClient 

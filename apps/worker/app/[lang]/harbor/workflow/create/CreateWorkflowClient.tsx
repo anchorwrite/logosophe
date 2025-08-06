@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Box, Flex, Heading, Text, Card, Button, TextField, TextArea, Dialog, Select } from "@radix-ui/themes";
 import Link from "next/link";
 import { useTranslation } from 'react-i18next';
@@ -160,7 +160,7 @@ export function CreateWorkflowClient({ userEmail, userTenants, defaultTenant, la
               {userTenants.length > 1 && (
                 <Box>
                   <Text as="label" size="3" weight="bold" mb="2" style={{ display: 'block' }}>
-                    Select Tenant *
+                    {t('workflow.selectTenant')} *
                   </Text>
                   <Select.Root
                     value={formData.selectedTenant.tenantId}
@@ -182,7 +182,7 @@ export function CreateWorkflowClient({ userEmail, userTenants, defaultTenant, la
               {getAvailableRolesForTenant(formData.selectedTenant.tenantId).length > 1 && (
                 <Box>
                   <Text as="label" size="3" weight="bold" mb="2" style={{ display: 'block' }}>
-                    Select Your Role *
+                    {t('workflow.selectYourRole')} *
                   </Text>
                   <Select.Root
                     value={formData.selectedRole}
@@ -203,26 +203,26 @@ export function CreateWorkflowClient({ userEmail, userTenants, defaultTenant, la
               {/* Workflow Title */}
               <Box>
                 <Text as="label" size="3" weight="bold" mb="2" style={{ display: 'block' }}>
-                  Workflow Title *
+                  {t('workflow.title')} *
                 </Text>
                 <TextField.Root>
-                  <TextField.Input
-                    placeholder="Enter workflow title"
-                    value={formData.title}
-                    onChange={(e) => handleInputChange('title', e.target.value)}
-                    required
-                    size="3"
-                  />
+                                  <TextField.Input
+                  placeholder={t('workflow.titlePlaceholder')}
+                  value={formData.title}
+                  onChange={(e) => handleInputChange('title', e.target.value)}
+                  required
+                  size="3"
+                />
                 </TextField.Root>
               </Box>
 
               {/* Workflow Description */}
               <Box>
                 <Text as="label" size="3" weight="bold" mb="2" style={{ display: 'block' }}>
-                  Description
+                  {t('workflow.description')}
                 </Text>
                 <TextArea
-                  placeholder="Describe the workflow purpose and goals"
+                  placeholder={t('workflow.descriptionPlaceholder')}
                   value={formData.description}
                   onChange={(e) => handleInputChange('description', e.target.value)}
                   rows={4}
@@ -233,10 +233,10 @@ export function CreateWorkflowClient({ userEmail, userTenants, defaultTenant, la
               {/* Participants */}
               <Box>
                 <Text as="label" size="3" weight="bold" mb="2" style={{ display: 'block' }}>
-                  Workflow Participants
+                  {t('workflow.participants')}
                 </Text>
                 <Text size="2" color="gray" mb="2">
-                  Select team members to include in this workflow and assign their roles
+                  {t('workflow.participantsDescription')}
                 </Text>
                 <Flex gap="3" align="center">
                   <Button 
@@ -245,7 +245,7 @@ export function CreateWorkflowClient({ userEmail, userTenants, defaultTenant, la
                     onClick={() => setShowParticipantSelector(true)}
                     size="3"
                   >
-                    Select Participants ({formData.participants.length} selected)
+                    {t('workflow.selectParticipants')} ({formData.participants.length} selected)
                   </Button>
                   {formData.participants.length > 0 && (
                     <Text size="2" color="gray">
@@ -258,10 +258,10 @@ export function CreateWorkflowClient({ userEmail, userTenants, defaultTenant, la
               {/* Media Files */}
               <Box>
                 <Text as="label" size="3" weight="bold" mb="2" style={{ display: 'block' }}>
-                  Media Files to Share
+                  {t('workflow.mediaFiles')}
                 </Text>
                 <Text size="2" color="gray" mb="2">
-                  Select media files to include in this workflow (optional)
+                  {t('workflow.mediaFilesDescription')}
                 </Text>
                 <Flex gap="3" align="center">
                   <Button 
@@ -270,7 +270,7 @@ export function CreateWorkflowClient({ userEmail, userTenants, defaultTenant, la
                     onClick={() => setShowMediaSelector(true)}
                     size="3"
                   >
-                    Select Media Files ({formData.mediaFileIds.length} selected)
+                    {t('workflow.selectMediaFiles')} ({formData.mediaFileIds.length} selected)
                   </Button>
                   {formData.mediaFileIds.length > 0 && (
                     <Text size="2" color="gray">
@@ -287,7 +287,7 @@ export function CreateWorkflowClient({ userEmail, userTenants, defaultTenant, la
                   disabled={isCreating || !formData.title.trim()}
                   size="3"
                 >
-                  {isCreating ? 'Creating...' : 'Create Workflow'}
+                  {isCreating ? t('workflow.creating') : t('workflow.createWorkflowButton')}
                 </Button>
                 <Button 
                   type="button" 
@@ -296,7 +296,7 @@ export function CreateWorkflowClient({ userEmail, userTenants, defaultTenant, la
                   size="3"
                 >
                   <Link href={`/${lang}/harbor/workflow`}>
-                    Cancel
+                    {t('common.cancel')}
                   </Link>
                 </Button>
               </Flex>
@@ -309,11 +309,9 @@ export function CreateWorkflowClient({ userEmail, userTenants, defaultTenant, la
       <Box mt="4">
         <Card>
           <Box p="4">
-            <Heading size="4" mb="3">About Workflows</Heading>
+            <Heading size="4" mb="3">{t('workflow.aboutWorkflows')}</Heading>
             <Text size="2" color="gray">
-              Workflows allow you to share media files with team members and collaborate on projects. 
-              Once created, participants can view the shared media and reply with their contributions. 
-              The workflow continues until you mark it as complete.
+              {t('workflow.aboutWorkflowsDescription')}
             </Text>
           </Box>
         </Card>
