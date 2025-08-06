@@ -1,12 +1,11 @@
 import { NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 
-
-const WORKER_URL = process.env.CLOUDFLARE_WORKER_URL || 'https:/logosophe.anchorwrite.workers.dev';
-
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    // Convert https URL to wss URL for WebSocket connections
-    const wsUrl = WORKER_URL.replace('https:/', 'wss:/');
+    // Use the current domain for WebSocket connections
+    const baseUrl = request.headers.get('origin') || 'https://local-dev.logosophe.com';
+    const wsUrl = baseUrl.replace('https://', 'wss://').replace('http://', 'ws://');
     
     return NextResponse.json({
       success: true,

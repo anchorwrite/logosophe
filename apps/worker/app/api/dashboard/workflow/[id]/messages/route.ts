@@ -28,8 +28,8 @@ export async function GET(
     }
 
     const { searchParams } = new URL(request.url);
-    const limit = searchParams.get('limit') || '50';
-    const offset = searchParams.get('offset') || '0';
+    const limit = parseInt(searchParams.get('limit') || '50');
+    const offset = parseInt(searchParams.get('offset') || '0');
 
     const { env } = await getCloudflareContext({async: true});
     const db = env.DB;
@@ -52,43 +52,57 @@ export async function GET(
         WHERE w.Id = ?
       `).bind(workflowId).first() as { TenantId: string } | null;
 
-      if (!workflowTenant) {
-        return NextResponse.json({ error: 'Workflow not found' }, { status: 404 });
-      }
+        if (!workflowTenant) {
+          return NextResponse.json({ error: 'Workflow not found' }, { status: 404 });
+        }
 
-      const userTenantAccess = await db.prepare(`
-        SELECT 1 FROM TenantUsers tu
-        WHERE tu.Email = ? AND tu.TenantId = ?
-      `).bind(access.email, workflowTenant.TenantId).first();
+        const userTenantAccess = await db.prepare(`
+          SELECT 1 FROM TenantUsers tu
+          WHERE tu.Email = ? AND tu.TenantId = ?
+        `).bind(access.email, workflowTenant.TenantId).first();
 
       if (!userTenantAccess) {
         return NextResponse.json({ error: 'You do not have access to this workflow' }, { status: 403 });
       }
     }
 
-    // Build worker URL with appropriate parameters
-    const WORKER_URL = process.env.CLOUDFLARE_WORKER_URL || 'https:/logosophe.anchorwrite.workers.dev';
-    const queryParams = new URLSearchParams();
-    queryParams.append('userEmail', access.email);
-    queryParams.append('isGlobalAdmin', isGlobalAdmin.toString());
-    queryParams.append('limit', limit);
-    queryParams.append('offset', offset);
+    // Get messages for this workflow
+    const messagesQuery = `
+      SELECT 
+        wm.Id,
+        wm.SenderEmail,
+        wm.Content,
+        wm.MessageType,
+        wm.CreatedAt,
+        wm.MediaFileId,
+        wm.ShareToken
+      FROM WorkflowMessages wm
+      WHERE wm.WorkflowId = ?
+      ORDER BY wm.CreatedAt DESC
+      LIMIT ? OFFSET ?
+    `;
 
-    const workerResponse = await fetch(`${WORKER_URL}/workflow/${workflowId}/messages?${queryParams.toString()}`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${access.email}`,
-        'Content-Type': 'application/json',
-      },
+    const messages = await db.prepare(messagesQuery).bind(workflowId, limit, offset).all();
+
+    // Get total message count for pagination
+    const countQuery = `
+      SELECT COUNT(*) as total
+      FROM WorkflowMessages wm
+      WHERE wm.WorkflowId = ?
+    `;
+
+    const countResult = await db.prepare(countQuery).bind(workflowId).first<{ total: number }>();
+
+    return NextResponse.json({
+      success: true,
+      messages: messages.results || [],
+      pagination: {
+        total: countResult?.total || 0,
+        limit,
+        offset,
+        hasMore: (countResult?.total || 0) > offset + limit
+      }
     });
-
-    if (!workerResponse.ok) {
-      const error = await workerResponse.text();
-      return NextResponse.json({ error: `Worker error: ${error}` }, { status: workerResponse.status });
-    }
-
-    const result = await workerResponse.json();
-    return NextResponse.json(result);
 
   } catch (error) {
     console.error('Dashboard workflow messages error:', error);

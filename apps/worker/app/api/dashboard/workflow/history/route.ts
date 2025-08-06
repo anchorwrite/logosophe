@@ -18,8 +18,8 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
     const tenantId = searchParams.get('tenantId');
-    const limit = searchParams.get('limit') || '50';
-    const offset = searchParams.get('offset') || '0';
+    const limit = parseInt(searchParams.get('limit') || '50');
+    const offset = parseInt(searchParams.get('offset') || '0');
 
     const { env } = await getCloudflareContext({async: true});
     const db = env.DB;
@@ -34,52 +34,76 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'You do not have permission to access workflow history' }, { status: 403 });
     }
 
-    // Build worker URL with appropriate parameters
-    const WORKER_URL = process.env.CLOUDFLARE_WORKER_URL || 'https:/logosophe.anchorwrite.workers.dev';
-    const params = new URLSearchParams();
-    params.append('userEmail', access.email);
-    params.append('limit', limit);
-    params.append('offset', offset);
+    // Build query based on user type
+    let workflowsQuery = `
+      SELECT 
+        w.Id,
+        w.Title,
+        w.Status,
+        w.CreatedAt,
+        w.CompletedAt,
+        w.CompletedBy,
+        w.TenantId,
+        COUNT(wm.Id) as messageCount,
+        MAX(wm.CreatedAt) as lastActivity,
+        COUNT(DISTINCT wp.ParticipantEmail) as participantCount
+      FROM Workflows w
+      LEFT JOIN WorkflowMessages wm ON w.Id = wm.WorkflowId
+      LEFT JOIN WorkflowParticipants wp ON w.Id = wp.WorkflowId
+    `;
 
-    if (status) {
-      params.append('status', status);
-    }
+    const queryParams: any[] = [];
 
-    // For global admins, pass 'all' to get workflows from all tenants
+    // Add WHERE clause based on user type and filters
     if (isGlobalAdmin) {
-      params.append('tenantId', 'all');
-    } else if (tenantId) {
-      params.append('tenantId', tenantId);
+      // Global admins can see all workflows
+      if (status) {
+        workflowsQuery += ` WHERE w.Status = ?`;
+        queryParams.push(status);
+      }
     } else {
-      // For tenant admins, get their accessible tenants
+      // Tenant admins can only see workflows in their accessible tenants
       const userTenants = await db.prepare(`
         SELECT DISTINCT tu.TenantId
         FROM TenantUsers tu
         WHERE tu.Email = ?
       `).bind(access.email).all() as { results: { TenantId: string }[] };
 
-      if (userTenants.results && userTenants.results.length > 0) {
-        params.append('tenantId', userTenants.results[0].TenantId);
-      } else {
+      if (!userTenants.results || userTenants.results.length === 0) {
         return NextResponse.json({ error: 'No accessible tenants found' }, { status: 403 });
+      }
+
+      const accessibleTenants = userTenants.results.map(t => t.TenantId);
+      const targetTenantId = tenantId || accessibleTenants[0];
+
+      // Verify the target tenant is accessible
+      if (!accessibleTenants.includes(targetTenantId)) {
+        return NextResponse.json({ error: 'You do not have access to this tenant' }, { status: 403 });
+      }
+
+      workflowsQuery += ` WHERE w.TenantId = ?`;
+      queryParams.push(targetTenantId);
+
+      if (status) {
+        workflowsQuery += ` AND w.Status = ?`;
+        queryParams.push(status);
       }
     }
 
-    const workerResponse = await fetch(`${WORKER_URL}/workflow/history?${params.toString()}`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${access.email}`,
-        'Content-Type': 'application/json',
-      },
+    workflowsQuery += `
+      GROUP BY w.Id, w.Title, w.Status, w.CreatedAt, w.CompletedAt, w.CompletedBy, w.TenantId
+      ORDER BY w.CreatedAt DESC
+      LIMIT ? OFFSET ?
+    `;
+
+    queryParams.push(limit, offset);
+
+    const workflows = await db.prepare(workflowsQuery).bind(...queryParams).all();
+
+    return NextResponse.json({
+      success: true,
+      workflows: workflows.results || []
     });
-
-    if (!workerResponse.ok) {
-      const error = await workerResponse.text();
-      return NextResponse.json({ error: `Worker error: ${error}` }, { status: workerResponse.status });
-    }
-
-    const result = await workerResponse.json();
-    return NextResponse.json(result);
 
   } catch (error) {
     console.error('Dashboard workflow history error:', error);

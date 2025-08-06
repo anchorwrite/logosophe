@@ -1,7 +1,7 @@
-import { NextRequest } from 'next/server';
-import { getRequestContext } from '@/lib/request-context';
+import { NextRequest, NextResponse } from 'next/server';
+import { checkAccess } from '@/lib/access-control';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
-
+import { isSystemAdmin } from '@/lib/access';
 
 export async function GET(
   request: NextRequest,
@@ -9,67 +9,160 @@ export async function GET(
 ) {
   console.log('Workflow history detail API called');
   try {
-    const { id } = await params;
-    console.log('Workflow ID:', id);
+    const access = await checkAccess({
+      requireAuth: true,
+    });
+
+    if (!access.hasAccess || !access.email) {
+      return NextResponse.json({ error: 'Authorization required' }, { status: 401 });
+    }
+
+    const { id: workflowId } = await params;
+    console.log('Workflow ID:', workflowId);
     
-    if (!id) {
-      return Response.json({ error: 'Workflow ID is required' }, { status: 400 });
+    if (!workflowId) {
+      return NextResponse.json({ error: 'Workflow ID is required' }, { status: 400 });
     }
 
-    // Extract user email from Authorization header
-    const authHeader = request.headers.get('Authorization') || '';
-    const userEmail = authHeader.replace('Bearer ', '');
-
-    if (!userEmail) {
-      return Response.json({ error: 'Authorization required' }, { status: 401 });
-    }
-
-    // Get tenant ID from user's session
+    // Get database context
     const { env } = await getCloudflareContext({async: true});
     const db = env.DB;
-    const userTenantQuery = `
-      SELECT tu.TenantId
-      FROM TenantUsers tu
-      WHERE tu.Email = ?
+
+    // Check if user is system admin (Credentials table with admin role)
+    const isAdmin = await isSystemAdmin(access.email, db);
+    
+    let tenantId: string | null = null;
+    
+    if (isAdmin) {
+      // System admins have full access to all tenants
+      // Get the workflow's tenant
+      const workflowTenant = await db.prepare(`
+        SELECT TenantId FROM Workflows WHERE Id = ?
+      `).bind(workflowId).first<{ TenantId: string }>();
+      
+      if (!workflowTenant) {
+        return NextResponse.json({ error: 'Workflow not found' }, { status: 404 });
+      }
+      
+      tenantId = workflowTenant.TenantId;
+    } else {
+      // Check if user is a tenant admin (Credentials table with tenant role)
+      const tenantAdminCheck = await db.prepare(`
+        SELECT 1 FROM Credentials WHERE Email = ? AND Role = 'tenant'
+      `).bind(access.email).first();
+
+      if (tenantAdminCheck) {
+        // Tenant admins have full access within their assigned tenants
+        // Get the workflow's tenant and verify access
+        const workflowTenant = await db.prepare(`
+          SELECT w.TenantId FROM Workflows w
+          JOIN TenantUsers tu ON w.TenantId = tu.TenantId
+          WHERE w.Id = ? AND tu.Email = ?
+        `).bind(workflowId, access.email).first<{ TenantId: string }>();
+        
+        if (!workflowTenant) {
+          return NextResponse.json({ error: 'Workflow not found or you do not have access' }, { status: 404 });
+        }
+        
+        tenantId = workflowTenant.TenantId;
+      } else {
+        // Regular users need specific role assignments in the tenant
+        const userTenantCheck = await db.prepare(`
+          SELECT tu.TenantId, tu.RoleId 
+          FROM TenantUsers tu
+          JOIN Workflows w ON tu.TenantId = w.TenantId
+          WHERE w.Id = ? AND tu.Email = ?
+        `).bind(workflowId, access.email).first<{ TenantId: string; RoleId: string }>();
+
+        if (!userTenantCheck) {
+          return NextResponse.json({ error: 'Workflow not found or you do not have access' }, { status: 404 });
+        }
+
+        // Check if the user has a role that allows viewing workflow history
+        const allowedRoles = ['author', 'editor', 'agent', 'reviewer', 'subscriber'];
+        if (!allowedRoles.includes(userTenantCheck.RoleId)) {
+          return NextResponse.json(
+            { error: 'Your role does not allow viewing workflow history' },
+            { status: 403 }
+          );
+        }
+        
+        tenantId = userTenantCheck.TenantId;
+      }
+    }
+
+    // Verify the user is a participant in this workflow
+    const participantCheck = await db.prepare(`
+      SELECT 1 FROM WorkflowParticipants 
+      WHERE WorkflowId = ? AND ParticipantEmail = ?
+    `).bind(workflowId, access.email).first();
+
+    if (!participantCheck) {
+      return NextResponse.json({ error: 'You are not a participant in this workflow' }, { status: 403 });
+    }
+
+    // Get workflow details
+    const workflowQuery = `
+      SELECT 
+        w.Id,
+        w.Title,
+        w.Status,
+        w.CreatedAt,
+        w.CompletedAt,
+        w.CompletedBy,
+        w.TenantId
+      FROM Workflows w
+      WHERE w.Id = ?
     `;
 
-    const userTenantResult = await db.prepare(userTenantQuery)
-      .bind(userEmail)
-      .first() as any;
+    const workflow = await db.prepare(workflowQuery).bind(workflowId).first();
 
-    if (!userTenantResult?.TenantId) {
-      return Response.json({ error: 'User not associated with any tenant' }, { status: 400 });
+    if (!workflow) {
+      return NextResponse.json({ error: 'Workflow not found' }, { status: 404 });
     }
 
-    const tenantId = userTenantResult.TenantId;
+    // Get all messages for this workflow
+    const messagesQuery = `
+      SELECT 
+        wm.Id,
+        wm.SenderEmail,
+        wm.Content,
+        wm.MessageType,
+        wm.CreatedAt,
+        wm.MediaFileId,
+        wm.ShareToken
+      FROM WorkflowMessages wm
+      WHERE wm.WorkflowId = ?
+      ORDER BY wm.CreatedAt ASC
+    `;
 
-    // Proxy the request to the worker
-    const workerUrl = process.env.CLOUDFLARE_WORKER_URL || 'https:/logosophe.anchorwrite.workers.dev';
+    const messages = await db.prepare(messagesQuery).bind(workflowId).all();
 
-    console.log('Calling worker URL:', `${workerUrl}/workflow/history/detail/${id}?tenantId=${tenantId}&userEmail=${userEmail}`);
-    const response = await fetch(`${workerUrl}/workflow/history/detail/${id}?tenantId=${tenantId}&userEmail=${userEmail}`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${userEmail}`,
-        'Content-Type': 'application/json',
-      },
+    // Get participants
+    const participantsQuery = `
+      SELECT 
+        wp.ParticipantEmail,
+        wp.Role,
+        wp.JoinedAt
+      FROM WorkflowParticipants wp
+      WHERE wp.WorkflowId = ?
+      ORDER BY wp.JoinedAt
+    `;
+
+    const participants = await db.prepare(participantsQuery).bind(workflowId).all();
+
+    return NextResponse.json({
+      success: true,
+      workflow: {
+        ...workflow,
+        messages: messages.results || [],
+        participants: participants.results || []
+      }
     });
-    console.log('Worker response status:', response.status);
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({})) as { error?: string };
-      return Response.json(
-        { error: errorData.error || 'Failed to fetch workflow history detail' }, 
-        { status: response.status }
-      );
-    }
-
-    const data = await response.json();
-    return Response.json(data);
 
   } catch (error) {
     console.error('Error in workflow history detail API:', error);
-    return Response.json(
+    return NextResponse.json(
       { error: 'Internal server error' }, 
       { status: 500 }
     );

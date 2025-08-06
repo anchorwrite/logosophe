@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { checkAccess } from '@/lib/access-control';
-
-
-const WORKER_URL = process.env.CLOUDFLARE_WORKER_URL || 'https:/logosophe.anchorwrite.workers.dev';
+import { getCloudflareContext } from '@opennextjs/cloudflare';
 
 export async function GET(request: NextRequest) {
   try {
@@ -22,22 +20,76 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Tenant ID is required' }, { status: 400 });
     }
 
-    // Forward the request to the worker
-    const workerUrl = `${WORKER_URL}/workflow/history?tenantId=${tenantId}&userEmail=${encodeURIComponent(access.email)}`;
-    const workerResponse = await fetch(workerUrl, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${access.email}`,
-      },
-    });
+    // Get database context
+    const { env } = await getCloudflareContext({async: true});
+    const db = env.DB;
 
-    if (!workerResponse.ok) {
-      const error = await workerResponse.text();
-      return NextResponse.json({ error: `Worker error: ${error}` }, { status: workerResponse.status });
+    // Verify the user has access to this tenant
+    const userTenantCheck = await db.prepare(`
+      SELECT 1 FROM TenantUsers WHERE Email = ? AND TenantId = ?
+    `).bind(access.email, tenantId).first();
+
+    if (!userTenantCheck) {
+      return NextResponse.json(
+        { error: 'You do not have access to this tenant' },
+        { status: 403 }
+      );
     }
 
-    const result = await workerResponse.json();
-    return NextResponse.json(result);
+    // Get workflow history for the user in this tenant
+    const historyQuery = `
+      SELECT 
+        w.Id,
+        w.Title,
+        w.Status,
+        w.CreatedAt,
+        w.CompletedAt,
+        w.CompletedBy,
+        COUNT(wm.Id) as messageCount,
+        MAX(wm.CreatedAt) as lastActivity
+      FROM Workflows w
+      LEFT JOIN WorkflowMessages wm ON w.Id = wm.WorkflowId
+      WHERE w.TenantId = ?
+        AND EXISTS (
+          SELECT 1 FROM WorkflowParticipants wp 
+          WHERE wp.WorkflowId = w.Id AND wp.ParticipantEmail = ?
+        )
+      GROUP BY w.Id, w.Title, w.Status, w.CreatedAt, w.CompletedAt, w.CompletedBy
+      ORDER BY w.CreatedAt DESC
+      LIMIT 100
+    `;
+
+    const workflows = await db.prepare(historyQuery).bind(tenantId, access.email).all();
+
+    // Get recent messages for each workflow
+    const recentMessagesQuery = `
+      SELECT 
+        wm.WorkflowId,
+        wm.SenderEmail,
+        wm.Content,
+        wm.MessageType,
+        wm.CreatedAt,
+        wm.MediaFileId
+      FROM WorkflowMessages wm
+      WHERE wm.WorkflowId IN (
+        SELECT w.Id FROM Workflows w
+        WHERE w.TenantId = ?
+          AND EXISTS (
+            SELECT 1 FROM WorkflowParticipants wp 
+            WHERE wp.WorkflowId = w.Id AND wp.ParticipantEmail = ?
+          )
+      )
+      ORDER BY wm.CreatedAt DESC
+      LIMIT 50
+    `;
+
+    const recentMessages = await db.prepare(recentMessagesQuery).bind(tenantId, access.email).all();
+
+    return NextResponse.json({
+      success: true,
+      workflows: workflows.results || [],
+      recentMessages: recentMessages.results || []
+    });
 
   } catch (error) {
     console.error('Workflow history API error:', error);
