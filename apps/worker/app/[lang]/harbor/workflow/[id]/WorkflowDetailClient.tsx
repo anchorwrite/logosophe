@@ -97,13 +97,13 @@ export function WorkflowDetailClient({ workflowId, userEmail, userTenantId, lang
   const [newMessage, setNewMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [wsConnected, setWsConnected] = useState(false);
+  const [sseConnected, setSseConnected] = useState(false);
   const [isCompleting, setIsCompleting] = useState(false);
   const [isTerminating, setIsTerminating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [sharedMediaFiles, setSharedMediaFiles] = useState<SharedMediaFile[]>([]);
   const [isLoadingMedia, setIsLoadingMedia] = useState(false);
-  const wsRef = useRef<WebSocket | null>(null);
+  const eventSourceRef = useRef<EventSource | null>(null);
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { showToast } = useToast();
   
@@ -203,20 +203,20 @@ export function WorkflowDetailClient({ workflowId, userEmail, userTenantId, lang
   // Cleanup WebSocket connection on unmount
   useEffect(() => {
     return () => {
-      if (wsRef.current) {
-        console.log('Component unmounting, closing WebSocket connection');
-        wsRef.current.close();
-        wsRef.current = null;
+      if (eventSourceRef.current) {
+        console.log('Component unmounting, closing EventSource connection');
+        eventSourceRef.current.close();
+        eventSourceRef.current = null;
       }
     };
   }, []);
 
   // Close WebSocket connection when workflow becomes non-active
   useEffect(() => {
-    if (workflow && workflow.Status !== 'active' && wsRef.current) {
-      console.log('Workflow is no longer active, closing WebSocket connection. Status:', workflow.Status);
-      wsRef.current.close();
-      wsRef.current = null;
+    if (workflow && workflow.Status !== 'active' && eventSourceRef.current) {
+      console.log('Workflow is no longer active, closing EventSource connection. Status:', workflow.Status);
+      eventSourceRef.current.close();
+      eventSourceRef.current = null;
     }
   }, [workflow?.Status]);
 
@@ -228,56 +228,48 @@ export function WorkflowDetailClient({ workflowId, userEmail, userTenantId, lang
 
     // Only connect to WebSocket for active workflows
     if (workflow.Status !== 'active') {
-      console.log('Workflow is not active, skipping WebSocket connection. Status:', workflow.Status);
+      console.log('Workflow is not active, skipping EventSource connection. Status:', workflow.Status);
       return;
     }
 
     // Check if workflow exists and is valid
     if (!workflow.Id || workflow.Id === 'undefined' || workflow.Id === 'null') {
-      console.log('Invalid workflow ID, skipping WebSocket connection:', workflow.Id);
+      console.log('Invalid workflow ID, skipping EventSource connection:', workflow.Id);
       return;
     }
 
     // Check if workflow data is properly loaded
     if (isLoading) {
-      console.log('Workflow data not ready, skipping WebSocket connection. Loading:', isLoading);
+      console.log('Workflow data not ready, skipping EventSource connection. Loading:', isLoading);
       return;
     }
 
-    const connectWebSocket = async () => {
+    const connectEventSource = async () => {
       // Close existing connection if any
-      if (wsRef.current) {
-        wsRef.current.close();
-        wsRef.current = null;
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+        eventSourceRef.current = null;
       }
 
       try {
-        // Get the WebSocket URL from our API
-        const response = await fetch('/api/harbor/workflow/websocket-url');
-        const data = await response.json() as { success: boolean; wsUrl?: string; error?: string };
+        // Connect directly to the SSE stream endpoint
+        const sseUrl = `/api/workflow/${workflow.Id}/stream`;
         
-        if (!data.success) {
-          console.error('Failed to get WebSocket URL:', data.error);
-          return;
-        }
+        console.log('Connecting to EventSource:', sseUrl);
+        
+        const eventSource = new EventSource(sseUrl);
+        eventSourceRef.current = eventSource;
 
-        const wsUrl = data.wsUrl + `/workflow/websocket?tenantId=${encodeURIComponent(workflow.TenantId)}&workflowId=${encodeURIComponent(workflow.Id)}&userEmail=${encodeURIComponent(userEmail)}`;
-        
-        console.log('Connecting to WebSocket:', wsUrl);
-        
-        const ws = new WebSocket(wsUrl);
-        wsRef.current = ws;
-
-        ws.onopen = () => {
-          console.log('WebSocket connected successfully');
-          setWsConnected(true);
+        eventSource.onopen = () => {
+          console.log('EventSource connected successfully');
+          setSseConnected(true);
         };
         
-        ws.onmessage = (event) => {
-          console.log('WebSocket message received:', event.data);
+        eventSource.onmessage = (event) => {
+          console.log('EventSource message received:', event.data);
           try {
             const data = JSON.parse(event.data);
-            console.log('Parsed WebSocket message:', data);
+            console.log('Parsed EventSource message:', data);
             
             if (data.type === 'message' && data.data) {
               console.log('Adding new message to state:', data.data);
@@ -292,51 +284,37 @@ export function WorkflowDetailClient({ workflowId, userEmail, userTenantId, lang
               console.log('Unknown message type:', data.type);
             }
           } catch (error) {
-            console.error('Error parsing WebSocket message:', error);
+            console.error('Error parsing EventSource message:', error);
           }
         };
 
-        ws.onclose = (event) => {
-          console.log('WebSocket closed:', event.code, event.reason, event.wasClean);
-          setWsConnected(false);
-          
-          // Reconnect unless it was a clean close with code 1000
-          if (event.code !== 1000) {
-            console.log('Scheduling reconnection...');
-            reconnectTimeoutRef.current = setTimeout(async () => {
-              console.log('Attempting to reconnect...');
-              await connectWebSocket();
-            }, 2000);
-          }
-        };
-
-        ws.onerror = (error) => {
-          console.error('WebSocket error:', error);
-          setWsConnected(false);
+        eventSource.onerror = (error) => {
+          console.error('EventSource error:', error);
+          setSseConnected(false);
         };
       } catch (error) {
-        console.error('Error creating WebSocket:', error);
-        setWsConnected(false);
+        console.error('Error creating EventSource:', error);
+        setSseConnected(false);
         
         // Retry on error
         reconnectTimeoutRef.current = setTimeout(async () => {
-          await connectWebSocket();
+          await connectEventSource();
         }, 2000);
       }
     };
 
     // Connect when we have all required data and no existing connection
-    if (!wsRef.current && workflow && userEmail && userTenantId) {
-      console.log('Establishing WebSocket connection with data:', { workflowId: workflow.Id, userEmail, userTenantId });
-      connectWebSocket();
+    if (!eventSourceRef.current && workflow && userEmail && userTenantId) {
+      console.log('Establishing EventSource connection with data:', { workflowId: workflow.Id, userEmail, userTenantId });
+      connectEventSource();
     }
 
     // Add page unload event listener to close WebSocket
     const handleBeforeUnload = () => {
-      console.log('Page unloading, closing WebSocket connection');
-      if (wsRef.current) {
-        wsRef.current.close(1000, 'Page unload');
-        wsRef.current = null;
+      console.log('Page unloading, closing EventSource connection');
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+        eventSourceRef.current = null;
       }
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
@@ -348,15 +326,15 @@ export function WorkflowDetailClient({ workflowId, userEmail, userTenantId, lang
 
     // Cleanup function
     return () => {
-      console.log('Cleaning up WebSocket connection');
+      console.log('Cleaning up EventSource connection');
       window.removeEventListener('beforeunload', handleBeforeUnload);
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
         reconnectTimeoutRef.current = null;
       }
-      if (wsRef.current) {
-        wsRef.current.close();
-        wsRef.current = null;
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+        eventSourceRef.current = null;
       }
     };
   }, [workflow, userEmail, userTenantId]); // Include workflow in dependencies so connection is established when workflow data is available
@@ -808,8 +786,8 @@ export function WorkflowDetailClient({ workflowId, userEmail, userTenantId, lang
             <Box p="4">
               <Flex justify="between" align="center" mb="3">
                 <Heading size="4">{(dict as any).workflow.history.detail.messages}</Heading>
-                <Badge color={wsConnected ? 'green' : 'red'} size="1">
-                                      {wsConnected ? (dict as any).workflow.history.detail.live : (dict as any).workflow.history.detail.offline}
+                <Badge color={sseConnected ? 'green' : 'red'} size="1">
+                                      {sseConnected ? (dict as any).workflow.history.detail.live : (dict as any).workflow.history.detail.offline}
                 </Badge>
               </Flex>
               
