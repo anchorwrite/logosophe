@@ -134,8 +134,12 @@ export async function POST(request: NextRequest) {
     for (const participant of allParticipants) {
       const joinedAt = new Date().toISOString();
 
-      // Use the actual role name from the participant data
-      const workflowRole = participant.role || 'subscriber';
+      // Map user roles to workflow participant roles
+      // WorkflowParticipants table only accepts 'initiator' and 'recipient'
+      let workflowRole = 'recipient'; // Default to recipient
+      if (participant.email === access.email) {
+        workflowRole = 'initiator'; // Creator is always initiator
+      }
 
       const insertParticipantQuery = `
         INSERT INTO WorkflowParticipants (WorkflowId, ParticipantEmail, Role, JoinedAt)
