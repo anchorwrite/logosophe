@@ -106,6 +106,16 @@ export function WorkflowDetailClient({ workflowId, userEmail, userTenantId, lang
   const eventSourceRef = useRef<EventSource | null>(null);
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { showToast } = useToast();
+
+  // Debug: Log message state changes
+  useEffect(() => {
+    console.log('Messages state updated:', messages.length, 'messages');
+    const messageIds = messages.map(m => m.Id);
+    const uniqueIds = new Set(messageIds);
+    if (messageIds.length !== uniqueIds.size) {
+      console.warn('Duplicate message IDs detected:', messageIds.filter((id, index) => messageIds.indexOf(id) !== index));
+    }
+  }, [messages]);
   
   // Confirmation dialog states
   const [terminateDialog, setTerminateDialog] = useState<{
@@ -273,7 +283,20 @@ export function WorkflowDetailClient({ workflowId, userEmail, userTenantId, lang
             
             if (data.type === 'message' && data.data) {
               console.log('Adding new message to state:', data.data);
-              setMessages(prev => [...prev, data.data]);
+              setMessages(prev => {
+                // Check if message already exists to prevent duplicates
+                const messageExists = prev.some(msg => msg.Id === data.data.Id);
+                if (messageExists) {
+                  console.log('Message already exists, skipping:', data.data.Id);
+                  return prev;
+                }
+                
+                // Add new message and sort by creation time
+                const newMessages = [...prev, data.data];
+                return newMessages.sort((a, b) => 
+                  new Date(a.CreatedAt).getTime() - new Date(b.CreatedAt).getTime()
+                );
+              });
             } else if (data.type === 'participant_joined') {
               console.log('Participant joined:', data.data);
             } else if (data.type === 'participant_left') {
@@ -798,7 +821,7 @@ export function WorkflowDetailClient({ workflowId, userEmail, userTenantId, lang
               ) : (
                 <Flex direction="column" gap="3" mb="4">
                   {messages.map((message) => (
-                    <Box key={message.Id} p="3" style={{ border: '1px solid var(--gray-6)', borderRadius: '4px' }}>
+                    <Box key={`${message.Id}-${message.CreatedAt}`} p="3" style={{ border: '1px solid var(--gray-6)', borderRadius: '4px' }}>
                       <Flex justify="between" align="center" mb="2">
                         <Text weight="bold">{message.SenderEmail}</Text>
                         <Text size="2" color="gray">{new Date(message.CreatedAt).toLocaleString()}</Text>

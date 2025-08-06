@@ -146,6 +146,7 @@ export async function GET(
 
         // Set up polling for new messages
         let lastMessageId: string | null = null;
+        let lastMessageTime: string | null = null;
         
         const pollInterval = setInterval(async () => {
           try {
@@ -153,7 +154,7 @@ export async function GET(
             const latestMessageQuery = `
               SELECT Id, CreatedAt FROM WorkflowMessages 
               WHERE WorkflowId = ? 
-              ORDER BY CreatedAt DESC 
+              ORDER BY CreatedAt DESC, Id DESC
               LIMIT 1
             `;
             
@@ -161,21 +162,30 @@ export async function GET(
               .bind(id)
               .first() as { Id: string; CreatedAt: string } | null;
 
-            if (latestMessage && latestMessage.Id !== lastMessageId) {
+            if (latestMessage && (latestMessage.Id !== lastMessageId || latestMessage.CreatedAt !== lastMessageTime)) {
               // Get new messages since last check
-              const newMessagesQuery = `
+              let newMessagesQuery = `
                 SELECT wm.*, mf.FileName, mf.ContentType, mf.MediaType
                 FROM WorkflowMessages wm
                 LEFT JOIN MediaFiles mf ON wm.MediaFileId = mf.Id
-                WHERE wm.WorkflowId = ? 
-                ${lastMessageId ? 'AND wm.CreatedAt > (SELECT CreatedAt FROM WorkflowMessages WHERE Id = ?)' : ''}
-                ORDER BY wm.CreatedAt ASC
+                WHERE wm.WorkflowId = ?
               `;
 
-              const queryParams = lastMessageId ? [id, lastMessageId] : [id];
+              let queryParams = [id];
+
+              if (lastMessageId && lastMessageTime) {
+                // Use both time and ID to ensure we don't miss messages or get duplicates
+                newMessagesQuery += ` AND (wm.CreatedAt > ? OR (wm.CreatedAt = ? AND wm.Id > ?))`;
+                queryParams.push(lastMessageTime, lastMessageTime, lastMessageId);
+              }
+
+              newMessagesQuery += ` ORDER BY wm.CreatedAt ASC, wm.Id ASC`;
+
               const newMessages = await db.prepare(newMessagesQuery)
                 .bind(...queryParams)
                 .all() as any;
+
+              console.log('SSE Stream - New messages found:', newMessages.results?.length || 0);
 
               if (newMessages.results && newMessages.results.length > 0) {
                 for (const message of newMessages.results) {
@@ -189,6 +199,7 @@ export async function GET(
                 }
                 
                 lastMessageId = latestMessage.Id;
+                lastMessageTime = latestMessage.CreatedAt;
               }
             }
 
