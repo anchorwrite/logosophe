@@ -7,6 +7,7 @@ import { getDictionary } from '@/lib/dictionary';
 import { getRequestContext } from '@/lib/request-context';
 import { WorkflowStats } from '@/components/harbor/workflow/WorkflowStats';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
+import { checkAccess } from '@/lib/access-control';
 
 type Params = Promise<{ lang: Locale }>;
 
@@ -16,27 +17,33 @@ export default async function HarborWorkflowPage({ params }: { params: Params })
   const dict = await getDictionary(lang);
   
   console.log('Workflow page - User email:', session?.user?.email);
-  console.log('Workflow page - User role:', session?.user?.role);
   
   if (!session?.user?.email) {
     console.log('Workflow page - No session, redirecting to signin');
     redirect('/signin');
   }
 
-  // Only subscribers can access this page
-  if (session.user.role !== 'subscriber') {
-    console.log('Workflow page - User role is not subscriber, redirecting to harbor');
+  // Use proper access control that checks all roles
+  const access = await checkAccess({
+    requireAuth: true,
+    allowedRoles: ['admin', 'tenant', 'author', 'editor', 'agent', 'reviewer', 'subscriber']
+  });
+
+  console.log('Workflow page - Access result:', access);
+
+  if (!access.hasAccess) {
+    console.log('Workflow page - Access denied, redirecting to harbor');
     redirect(`/${lang}/harbor`);
   }
 
-  // Get user's primary tenant information
+  // Get user's primary tenant information using UserRoles table
   const { env } = await getCloudflareContext({async: true});
   const db = env.DB;
   const userTenantQuery = `
-    SELECT tu.TenantId, tu.RoleId, t.Name as TenantName
-    FROM TenantUsers tu
-    LEFT JOIN Tenants t ON tu.TenantId = t.Id
-    WHERE tu.Email = ?
+    SELECT ur.TenantId, ur.RoleId, t.Name as TenantName
+    FROM UserRoles ur
+    LEFT JOIN Tenants t ON ur.TenantId = t.Id
+    WHERE ur.Email = ?
   `;
 
   const userTenantResult = await db.prepare(userTenantQuery)

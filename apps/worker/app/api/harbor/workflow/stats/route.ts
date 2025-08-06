@@ -58,20 +58,45 @@ export async function GET(request: NextRequest) {
         }
       } else {
         // Regular users need specific role assignments in the tenant
-        const userTenantCheck = await db.prepare(`
+        // Follow the proper role checking logic from .cursorules
+        
+        // 1. Check TenantUsers table for base role
+        const tenantUserCheck = await db.prepare(`
           SELECT RoleId FROM TenantUsers WHERE Email = ? AND TenantId = ?
         `).bind(access.email, tenantId).first<{ RoleId: string }>();
 
-        if (!userTenantCheck) {
+        // 2. Check UserRoles table for additional roles
+        const userRolesCheck = await db.prepare(`
+          SELECT RoleId FROM UserRoles WHERE Email = ? AND TenantId = ?
+        `).bind(access.email, tenantId).all<{ RoleId: string }>();
+
+        // 3. Collect all user roles
+        const userRoles: string[] = [];
+        
+        if (tenantUserCheck) {
+          userRoles.push(tenantUserCheck.RoleId);
+        }
+        
+        if (userRolesCheck.results) {
+          userRoles.push(...userRolesCheck.results.map(r => r.RoleId));
+        }
+
+        console.log('Debug - User roles check:', { email: access.email, tenantId, userRoles });
+
+        if (userRoles.length === 0) {
           return NextResponse.json(
             { success: false, error: 'You do not have access to this tenant' },
             { status: 403 }
           );
         }
 
-        // Check if the user has a role that allows viewing workflow statistics
+        // 4. Check if the user has any role that allows viewing workflow statistics
         const allowedRoles = ['author', 'editor', 'agent', 'reviewer', 'subscriber'];
-        if (!allowedRoles.includes(userTenantCheck.RoleId)) {
+        const hasAllowedRole = userRoles.some(role => allowedRoles.includes(role));
+        
+        console.log('Debug - Role check:', { userRoles, allowedRoles, isAllowed: hasAllowedRole });
+        
+        if (!hasAllowedRole) {
           return NextResponse.json(
             { success: false, error: 'Your role does not allow viewing workflow statistics' },
             { status: 403 }

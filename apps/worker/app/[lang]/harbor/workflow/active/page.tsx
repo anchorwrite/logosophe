@@ -36,14 +36,14 @@ export default async function HarborWorkflowActivePage({ params }: { params: Par
     redirect(`/${lang}/harbor`);
   }
 
-  // Get user's primary tenant information
+  // Get user's primary tenant information using UserRoles table
   const { env } = await getCloudflareContext({async: true});
   const db = env.DB;
   const userTenantQuery = `
-    SELECT tu.TenantId, tu.RoleId, t.Name as TenantName
-    FROM TenantUsers tu
-    LEFT JOIN Tenants t ON tu.TenantId = t.Id
-    WHERE tu.Email = ?
+    SELECT ur.TenantId, ur.RoleId, t.Name as TenantName
+    FROM UserRoles ur
+    LEFT JOIN Tenants t ON ur.TenantId = t.Id
+    WHERE ur.Email = ?
   `;
 
   const userTenantResult = await db.prepare(userTenantQuery)

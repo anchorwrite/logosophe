@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { checkAccess } from '@/lib/access-control';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { auth } from '@/auth';
+import { isSystemAdmin } from '@/lib/access';
+import { SystemLogs } from '@/lib/system-logs';
 
 export async function GET(
   request: NextRequest,
@@ -11,6 +13,7 @@ export async function GET(
   try {
     const access = await checkAccess({
       requireAuth: true,
+      allowedRoles: ['admin', 'tenant', 'author', 'editor', 'agent', 'reviewer', 'subscriber']
     });
 
     if (!access.hasAccess || !access.email) {
@@ -28,6 +31,23 @@ export async function GET(
     // Get workflow details from database
     const { env } = await getCloudflareContext({async: true});
     const db = env.DB;
+
+    // Check if user is system admin
+    const isAdmin = await isSystemAdmin(userEmail, db);
+
+    // Get user's tenants if not admin
+    let userTenantIds: string[] = [];
+    if (!isAdmin) {
+      const userTenants = await db.prepare(`
+        SELECT TenantId FROM TenantUsers WHERE Email = ?
+      `).bind(userEmail).all();
+
+      if (!userTenants.results || userTenants.results.length === 0) {
+        return NextResponse.json({ error: 'No tenant access found' }, { status: 403 });
+      }
+
+      userTenantIds = userTenants.results.map((t: any) => t.TenantId);
+    }
 
     // Get workflow details
     const workflowQuery = `
@@ -49,6 +69,11 @@ export async function GET(
       return NextResponse.json({ error: 'Workflow not found' }, { status: 404 });
     }
 
+    // Check if user has access to this workflow's tenant
+    if (!isAdmin && !userTenantIds.includes(workflow.TenantId)) {
+      return NextResponse.json({ error: 'You do not have access to this workflow' }, { status: 403 });
+    }
+
     // Get participants
     const participantsQuery = `
       SELECT wp.ParticipantEmail, wp.Role, wp.JoinedAt
@@ -63,7 +88,7 @@ export async function GET(
 
     // Get media files from WorkflowMessages table
     const mediaFilesQuery = `
-      SELECT DISTINCT wm.MediaFileId, mf.FileName, mf.FilePath, mf.FileSize, mf.MimeType, mf.ContentType
+      SELECT DISTINCT wm.MediaFileId, mf.FileName, mf.R2Key, mf.FileSize, mf.ContentType, mf.MediaType
       FROM WorkflowMessages wm
       JOIN MediaFiles mf ON wm.MediaFileId = mf.Id
       WHERE wm.WorkflowId = ? AND wm.MediaFileId IS NOT NULL
@@ -88,6 +113,7 @@ export async function GET(
       .all() as any;
 
     return NextResponse.json({
+      success: true,
       workflow,
       participants: participants.results || [],
       mediaFiles: mediaFiles.results || [],
@@ -116,13 +142,32 @@ export async function PUT(
     }
 
     const body = await request.json() as {
-      status?: 'active' | 'completed' | 'cancelled';
+      status?: 'active' | 'completed' | 'terminated';
       title?: string;
+      action?: 'complete' | 'terminate' | 'reactivate';
+      completedBy?: string;
     };
 
     // Get workflow details from database
     const { env } = await getCloudflareContext({async: true});
     const db = env.DB;
+
+    // Check if user is system admin
+    const isAdmin = await isSystemAdmin(access.email, db);
+
+    // Get user's tenants if not admin
+    let userTenantIds: string[] = [];
+    if (!isAdmin) {
+      const userTenants = await db.prepare(`
+        SELECT TenantId FROM TenantUsers WHERE Email = ?
+      `).bind(access.email).all();
+
+      if (!userTenants.results || userTenants.results.length === 0) {
+        return NextResponse.json({ error: 'No tenant access found' }, { status: 403 });
+      }
+
+      userTenantIds = userTenants.results.map((t: any) => t.TenantId);
+    }
 
     // Check if workflow exists and user has access
     const workflowQuery = `
@@ -143,12 +188,13 @@ export async function PUT(
     const workflowData = workflow.results[0];
     const participants = workflow.results.map((r: any) => r.ParticipantEmail).filter(Boolean);
 
-    // Check if user is a participant or system admin
-    const isSystemAdmin = await db.prepare(`
-      SELECT 1 FROM Credentials WHERE Email = ? AND Role = 'admin'
-    `).bind(access.email).first();
+    // Check if user has access to this workflow's tenant
+    if (!isAdmin && !userTenantIds.includes(workflowData.TenantId)) {
+      return NextResponse.json({ error: 'You do not have access to this workflow' }, { status: 403 });
+    }
 
-    if (!isSystemAdmin && !participants.includes(access.email)) {
+    // Check if user is a participant or system admin
+    if (!isAdmin && !participants.includes(access.email)) {
       return NextResponse.json({ error: 'You do not have permission to modify this workflow' }, { status: 403 });
     }
 
@@ -166,6 +212,18 @@ export async function PUT(
       updateValues.push(body.title);
     }
 
+    // Handle specific actions
+    if (body.action === 'complete') {
+      updateFields.push('Status = ?', 'CompletedAt = ?', 'CompletedBy = ?');
+      updateValues.push('completed', new Date().toISOString(), access.email);
+    } else if (body.action === 'terminate') {
+      updateFields.push('Status = ?', 'UpdatedAt = ?');
+      updateValues.push('terminated', new Date().toISOString());
+    } else if (body.action === 'reactivate') {
+      updateFields.push('Status = ?', 'CompletedAt = NULL', 'CompletedBy = NULL', 'UpdatedAt = ?');
+      updateValues.push('active', new Date().toISOString());
+    }
+
     if (updateFields.length > 0) {
       updateFields.push('UpdatedAt = ?');
       updateValues.push(new Date().toISOString());
@@ -181,28 +239,32 @@ export async function PUT(
       await db.prepare(updateQuery)
         .bind(...updateValues)
         .run();
+
+      // Log the workflow update
+      try {
+        const systemLogs = new SystemLogs(db);
+        await systemLogs.logUserOperation({
+          userEmail: access.email,
+          tenantId: workflowData.TenantId,
+          activityType: 'workflow_updated',
+          targetId: id,
+          targetName: workflowData.Title,
+          ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('cf-connecting-ip') || 'unknown',
+          userAgent: request.headers.get('user-agent') || 'unknown',
+          metadata: {
+            action: body.action || 'update',
+            status: body.status,
+            title: body.title
+          }
+        });
+      } catch (logError) {
+        console.error('Failed to log workflow update:', logError);
+        // Continue with workflow update even if logging fails
+      }
     }
 
-    // Get the WorkflowDurableObject for this workflow
-    const workflowDO = env.WORKFLOW_DO;
-    const workflowDurableObjectId = workflowDO.idFromName(id);
-    const workflowStub = workflowDO.get(workflowDurableObjectId);
-
-    // Notify the Durable Object about the workflow update
-    await workflowStub.fetch('http://localhost/notification', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        type: 'workflow_updated',
-        data: {
-          workflowId: id,
-          updates: body,
-          updatedBy: access.email
-        }
-      })
-    });
-
     return NextResponse.json({ 
+      success: true,
       message: 'Workflow updated successfully',
       workflowId: id
     });

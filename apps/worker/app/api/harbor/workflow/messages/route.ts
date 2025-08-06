@@ -2,11 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { checkAccess } from '@/lib/access-control';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { isSystemAdmin } from '@/lib/access';
+import { SystemLogs } from '@/lib/system-logs';
 
 export async function POST(request: NextRequest) {
   try {
     const access = await checkAccess({
       requireAuth: true,
+      allowedRoles: ['admin', 'tenant', 'author', 'editor', 'agent', 'reviewer', 'subscriber']
     });
 
     if (!access.hasAccess || !access.email) {
@@ -58,20 +60,34 @@ export async function POST(request: NextRequest) {
         }
       } else {
         // Regular users need specific role assignments in the tenant
-        const userTenantCheck = await db.prepare(`
+        // Follow the proper role checking logic from .cursorules
+        
+        // 1. Check TenantUsers table for base role
+        const tenantUserCheck = await db.prepare(`
           SELECT RoleId FROM TenantUsers WHERE Email = ? AND TenantId = ?
         `).bind(access.email, tenantId).first<{ RoleId: string }>();
 
-        if (!userTenantCheck) {
-          return NextResponse.json(
-            { success: false, error: 'You do not have access to this tenant' },
-            { status: 403 }
-          );
+        // 2. Check UserRoles table for additional roles
+        const userRolesCheck = await db.prepare(`
+          SELECT RoleId FROM UserRoles WHERE Email = ? AND TenantId = ?
+        `).bind(access.email, tenantId).all<{ RoleId: string }>();
+
+        // 3. Collect all user roles
+        const userRoles: string[] = [];
+        
+        if (tenantUserCheck) {
+          userRoles.push(tenantUserCheck.RoleId);
+        }
+        
+        if (userRolesCheck.results) {
+          userRoles.push(...userRolesCheck.results.map(r => r.RoleId));
         }
 
-        // Check if the user has a role that allows sending workflow messages
+        // 4. Check if user has any role that allows sending workflow messages
         const allowedRoles = ['author', 'editor', 'agent', 'reviewer', 'subscriber'];
-        if (!allowedRoles.includes(userTenantCheck.RoleId)) {
+        const hasAllowedRole = userRoles.some(role => allowedRoles.includes(role));
+        
+        if (!hasAllowedRole) {
           return NextResponse.json(
             { success: false, error: 'Your role does not allow sending workflow messages' },
             { status: 403 }
@@ -93,57 +109,90 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const requestData = await request.json() as {
-      content: string;
-      messageType?: 'request' | 'response' | 'upload' | 'share_link' | 'review';
-      mediaFileId?: number;
-      shareToken?: string;
-    };
+    // Verify the workflow is still active
+    const workflowStatusCheck = await db.prepare(`
+      SELECT Status FROM Workflows WHERE Id = ?
+    `).bind(workflowId).first<{ Status: string }>();
 
-    // Create the message in the database
-    const messageQuery = `
-      INSERT INTO WorkflowMessages (WorkflowId, SenderEmail, Content, MessageType, MediaFileId, ShareToken, CreatedAt)
-      VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
-    `;
-
-    const messageResult = await db.prepare(messageQuery).bind(
-      workflowId,
-      access.email,
-      requestData.content,
-      requestData.messageType || 'message',
-      requestData.mediaFileId || null,
-      requestData.shareToken || null
-    ).run();
-
-    const messageId = messageResult.meta?.last_row_id;
-
-    if (!messageId) {
+    if (!workflowStatusCheck || workflowStatusCheck.Status !== 'active') {
       return NextResponse.json(
-        { success: false, error: 'Failed to create message' },
-        { status: 500 }
+        { success: false, error: 'This workflow is no longer active' },
+        { status: 400 }
       );
     }
 
-    // Get the WorkflowDurableObject and notify it about the new message
-    const workflowIdObj = env.WORKFLOW_DO.idFromName(workflowId);
-    const workflowObj = env.WORKFLOW_DO.get(workflowIdObj);
+    const requestData = await request.json() as {
+      content: string;
+      messageType?: 'request' | 'response' | 'upload' | 'share_link' | 'review';
+      mediaFileIds?: number[];
+    };
 
-    await workflowObj.fetch('http://localhost/workflow/notification', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        type: 'message_sent',
-        data: {
+    if (!requestData.content && (!requestData.mediaFileIds || requestData.mediaFileIds.length === 0)) {
+      return NextResponse.json(
+        { success: false, error: 'Message content or media files are required' },
+        { status: 400 }
+      );
+    }
+
+    const messageId = crypto.randomUUID();
+    const createdAt = new Date().toISOString();
+
+    // Create the message in the database
+    const messageQuery = `
+      INSERT INTO WorkflowMessages (Id, WorkflowId, SenderEmail, Content, MessageType, CreatedAt)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `;
+
+    const messageResult = await db.prepare(messageQuery).bind(
+      messageId,
+      workflowId,
+      access.email,
+      requestData.content || '',
+      requestData.messageType || 'response',
+      createdAt
+    ).run();
+
+    // If media files are attached, create separate messages for each
+    if (requestData.mediaFileIds && requestData.mediaFileIds.length > 0) {
+      for (const mediaFileId of requestData.mediaFileIds) {
+        const mediaMessageId = crypto.randomUUID();
+        
+        await db.prepare(`
+          INSERT INTO WorkflowMessages (Id, WorkflowId, SenderEmail, MessageType, MediaFileId, Content, CreatedAt)
+          VALUES (?, ?, ?, ?, ?, ?, ?)
+        `).bind(
+          mediaMessageId,
           workflowId,
-          messageId: messageId.toString(),
-          senderEmail: access.email,
-          content: requestData.content,
-          messageType: requestData.messageType || 'message',
-          mediaFileId: requestData.mediaFileId,
-          shareToken: requestData.shareToken
+          access.email,
+          'share_link',
+          mediaFileId,
+          '📎 Attached: ' + (await getMediaFileName(db, mediaFileId)),
+          createdAt
+        ).run();
+      }
+    }
+
+    // Log the message sending
+    try {
+      const systemLogs = new SystemLogs(db);
+      await systemLogs.logMessagingOperation({
+        userEmail: access.email,
+        tenantId: tenantId,
+        activityType: 'workflow_message_sent',
+        targetId: workflowId,
+        targetName: `Message in workflow ${workflowId}`,
+        ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('cf-connecting-ip') || 'unknown',
+        userAgent: request.headers.get('user-agent') || 'unknown',
+        metadata: {
+          messageType: requestData.messageType || 'response',
+          hasMediaFiles: requestData.mediaFileIds ? requestData.mediaFileIds.length > 0 : false,
+          mediaFileCount: requestData.mediaFileIds ? requestData.mediaFileIds.length : 0
         }
-      })
-    });
+      });
+    } catch (logError) {
+      console.error('Failed to log message sending:', logError);
+      // Continue with message sending even if logging fails
+    }
 
     return NextResponse.json({
       success: true,
@@ -156,5 +205,19 @@ export async function POST(request: NextRequest) {
       { success: false, error: 'Internal server error' },
       { status: 500 }
     );
+  }
+}
+
+// Helper function to get media file name
+async function getMediaFileName(db: any, mediaFileId: number): Promise<string> {
+  try {
+    const mediaFile = await db.prepare(`
+      SELECT FileName FROM MediaFiles WHERE Id = ?
+    `).bind(mediaFileId).first() as { FileName: string } | null;
+    
+    return mediaFile ? mediaFile.FileName : 'Unknown file';
+  } catch (error) {
+    console.error('Error getting media file name:', error);
+    return 'Unknown file';
   }
 } 

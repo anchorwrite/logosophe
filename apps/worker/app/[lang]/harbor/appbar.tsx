@@ -10,7 +10,7 @@ import type { Locale } from '@/types/i18n';
 import SubscriberOptIn from "@/components/SubscriberOptIn";
 import SubscriberOptOut from "@/components/SubscriberOptOut";
 import { PreferencesButton } from "@/components/PreferencesButton";
-import { NotificationIndicator } from "@/components/NotificationIndicator";
+
 
 interface ProviderResponse {
   provider: string;
@@ -72,11 +72,7 @@ function HarborAppBar({ lang }: { lang: Locale }) {
                 {t('harbor.nav.profile')}
               </Link>
             </Button>
-            {session.user.role === 'subscriber' && (
-              <NotificationIndicator 
-                userEmail={session.user.email as string} 
-              />
-            )}
+
             {session.user.role === 'subscriber' && (
               <SubscriberOptOut email={session.user.email as string} />
             )}

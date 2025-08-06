@@ -35,28 +35,7 @@
       "database_id": "fd7b2b89-eedd-4111-ba68-fdb05cdf2995",
     },
   ],
-  "durable_objects": {
-    "bindings": [
-      {
-        "name": "WORKFLOW_DO",
-        "class_name": "WorkflowDurableObject"
-      },
-      {
-        "name": "USER_NOTIFICATIONS_DO",
-        "class_name": "UserNotificationsDurableObject"
-      }
-    ]
-  },
-  "migrations": [
-    {
-      "tag": "v1",
-      "new_sqlite_classes": ["WorkflowDurableObject"]
-    },
-    {
-      "tag": "v2",
-      "new_sqlite_classes": ["UserNotificationsDurableObject"]
-    }
-  ],
+
   "observability": {
     "logs": {
       "enabled": true
