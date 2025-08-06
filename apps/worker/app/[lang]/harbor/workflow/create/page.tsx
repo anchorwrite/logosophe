@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { Locale } from '@/types/i18n';
 import { CreateWorkflowClient } from './CreateWorkflowClient';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
+import { checkAccess } from '@/lib/access-control';
 
 type Params = Promise<{ lang: Locale }>;
 
@@ -20,35 +21,40 @@ export default async function HarborWorkflowCreatePage({ params }: { params: Par
   const { lang } = await params;
   
   console.log('Create workflow page - User email:', session?.user?.email);
-  console.log('Create workflow page - User role:', session?.user?.role);
   
   if (!session?.user?.email) {
     console.log('Create workflow page - No session, redirecting to signin');
     redirect('/signin');
   }
 
-  // Only subscribers can access this page
-  if (session.user.role !== 'subscriber') {
-    console.log('Create workflow page - User role is not subscriber, redirecting to harbor');
+  // Use proper access control that checks all roles
+  const access = await checkAccess({
+    requireAuth: true,
+    allowedRoles: ['admin', 'tenant', 'author', 'editor', 'agent', 'reviewer', 'subscriber']
+  });
+
+  console.log('Create workflow page - Access result:', access);
+
+  if (!access.hasAccess) {
+    console.log('Create workflow page - Access denied, redirecting to harbor');
     redirect(`/${lang}/harbor`);
   }
 
-  // Get user's tenant information
+  // Get user's tenant information using UserRoles table
   const { env } = await getCloudflareContext({async: true});
   const db = env.DB;
   
-  // Get all user tenants and roles
+  // Get all user tenants and roles from UserRoles table
   const userTenantsQuery = `
     SELECT 
-      tu.TenantId, 
+      ur.TenantId, 
       t.Name as TenantName,
       ur.RoleId,
       r.Name as RoleName
-    FROM TenantUsers tu
-    LEFT JOIN Tenants t ON tu.TenantId = t.Id
-    LEFT JOIN UserRoles ur ON tu.Email = ur.Email AND tu.TenantId = ur.TenantId
+    FROM UserRoles ur
+    LEFT JOIN Tenants t ON ur.TenantId = t.Id
     LEFT JOIN Roles r ON ur.RoleId = r.Id
-    WHERE tu.Email = ?
+    WHERE ur.Email = ?
     ORDER BY t.Name, r.Name
   `;
 

@@ -25,7 +25,6 @@ export default async function HarborWorkflowDetailPage({ params }: { params: Par
   const dict = await getDictionary(lang);
   
   console.log('Workflow detail page - User email:', session?.user?.email);
-  console.log('Workflow detail page - User role:', session?.user?.role);
   console.log('Workflow detail page - Workflow ID:', id);
   
   if (!session?.user?.email) {
@@ -46,16 +45,16 @@ export default async function HarborWorkflowDetailPage({ params }: { params: Par
     redirect(`/${lang}/harbor`);
   }
 
-  // Get user's tenant information
+  // Get user's tenant information using UserRoles table
   let userTenantResult;
   try {
     const { env } = await getCloudflareContext({async: true});
     const db = env.DB;
     const userTenantQuery = `
-      SELECT tu.TenantId, tu.RoleId, t.Name as TenantName
-      FROM TenantUsers tu
-      LEFT JOIN Tenants t ON tu.TenantId = t.Id
-      WHERE tu.Email = ?
+      SELECT ur.TenantId, ur.RoleId, t.Name as TenantName
+      FROM UserRoles ur
+      LEFT JOIN Tenants t ON ur.TenantId = t.Id
+      WHERE ur.Email = ?
     `;
 
     userTenantResult = await db.prepare(userTenantQuery)

@@ -3,16 +3,16 @@ import { NextRequest } from 'next/server';
 
 export async function GET(request: NextRequest) {
   try {
-    // Use the current domain for WebSocket connections
+    // Use the current domain for SSE connections
     const baseUrl = request.headers.get('origin') || 'https://local-dev.logosophe.com';
-    const wsUrl = baseUrl.replace('https://', 'wss://').replace('http://', 'ws://');
+    const sseUrl = baseUrl;
     
     return NextResponse.json({
       success: true,
-      wsUrl: wsUrl
+      sseUrl: sseUrl
     });
   } catch (error) {
-    console.error('Error getting WebSocket URL:', error);
+    console.error('Error getting SSE URL:', error);
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 }

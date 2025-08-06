@@ -7,13 +7,13 @@ export async function completeWorkflowClient(
   tenantId: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const response = await fetch(`/api/workflow/${workflowId}?tenantId=${encodeURIComponent(tenantId)}`, {
+    const response = await fetch(`/api/workflow/${workflowId}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        status: 'completed',
+        action: 'complete',
         completedBy: userEmail,
       }),
     });
@@ -40,7 +40,7 @@ export async function terminateWorkflowClient(
   tenantId: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const response = await fetch(`/api/workflow/${workflowId}?tenantId=${encodeURIComponent(tenantId)}`, {
+    const response = await fetch(`/api/workflow/${workflowId}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -72,7 +72,7 @@ export async function deleteWorkflowClient(
   tenantId: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const response = await fetch(`/api/workflow/${workflowId}?tenantId=${encodeURIComponent(tenantId)}`, {
+    const response = await fetch(`/api/workflow/${workflowId}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -93,4 +93,47 @@ export async function deleteWorkflowClient(
     console.error('Error deleting workflow:', error);
     return { success: false, error: 'Failed to delete workflow' };
   }
+}
+
+/**
+ * Send a message to a workflow (client-side version)
+ */
+export async function sendWorkflowMessage(
+  workflowId: string,
+  tenantId: string,
+  content: string,
+  messageType: string = 'response',
+  mediaFileIds?: number[]
+): Promise<{ success: boolean; messageId?: string; error?: string }> {
+  try {
+    const response = await fetch(`/api/harbor/workflow/messages?tenantId=${encodeURIComponent(tenantId)}&workflowId=${encodeURIComponent(workflowId)}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        content,
+        messageType,
+        mediaFileIds,
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      return { success: false, error: `Failed to send message: ${error}` };
+    }
+
+    const result = await response.json() as { success: boolean; messageId?: string; error?: string };
+    return { success: result.success, messageId: result.messageId, error: result.error };
+  } catch (error) {
+    console.error('Error sending workflow message:', error);
+    return { success: false, error: 'Failed to send message' };
+  }
+}
+
+/**
+ * Create an SSE connection for real-time workflow updates
+ */
+export function createWorkflowSSEConnection(workflowId: string): EventSource {
+  return new EventSource(`/api/workflow/${workflowId}/stream`);
 } 

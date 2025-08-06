@@ -2,11 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { checkAccess } from '@/lib/access-control';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { isSystemAdmin } from '@/lib/access';
+import { SystemLogs } from '@/lib/system-logs';
 
 export async function POST(request: NextRequest) {
   try {
     const access = await checkAccess({
       requireAuth: true,
+      allowedRoles: ['admin', 'tenant', 'author', 'editor', 'agent', 'reviewer', 'subscriber']
     });
 
     if (!access.hasAccess || !access.email) {
@@ -15,11 +17,13 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json() as {
       title: string;
+      description?: string;
       tenantId: string;
+      initiatorRole: string;
       participants: Array<{ email: string; role: string }>;
       mediaFileIds: number[];
     };
-    const { title, tenantId, participants, mediaFileIds } = body;
+    const { title, description, tenantId, initiatorRole, participants, mediaFileIds } = body;
 
     if (!tenantId) {
       return NextResponse.json({ error: 'Tenant ID is required' }, { status: 400 });
@@ -60,20 +64,41 @@ export async function POST(request: NextRequest) {
         }
       } else {
         // Regular users need specific role assignments in the tenant
-        const userTenantCheck = await db.prepare(`
+        // Follow the proper role checking logic from .cursorules
+        
+        // 1. Check TenantUsers table for base role
+        const tenantUserCheck = await db.prepare(`
           SELECT RoleId FROM TenantUsers WHERE Email = ? AND TenantId = ?
         `).bind(access.email, tenantId).first<{ RoleId: string }>();
 
-        if (!userTenantCheck) {
+        // 2. Check UserRoles table for additional roles
+        const userRolesCheck = await db.prepare(`
+          SELECT RoleId FROM UserRoles WHERE Email = ? AND TenantId = ?
+        `).bind(access.email, tenantId).all<{ RoleId: string }>();
+
+        // 3. Collect all user roles
+        const userRoles: string[] = [];
+        
+        if (tenantUserCheck) {
+          userRoles.push(tenantUserCheck.RoleId);
+        }
+        
+        if (userRolesCheck.results) {
+          userRoles.push(...userRolesCheck.results.map(r => r.RoleId));
+        }
+
+        if (userRoles.length === 0) {
           return NextResponse.json(
             { error: 'You do not have access to this tenant' },
             { status: 403 }
           );
         }
 
-        // Check if the user has a role that allows creating workflows
+        // 4. Check if the user has any role that allows creating workflows
         const allowedRoles = ['author', 'editor', 'agent', 'reviewer'];
-        if (!allowedRoles.includes(userTenantCheck.RoleId)) {
+        const hasAllowedRole = userRoles.some(role => allowedRoles.includes(role));
+        
+        if (!hasAllowedRole) {
           return NextResponse.json(
             { error: 'Your role does not allow creating workflows' },
             { status: 403 }
@@ -100,19 +125,29 @@ export async function POST(request: NextRequest) {
     for (const participant of participants) {
       const joinedAt = new Date().toISOString();
 
+      // Map user roles to workflow participant roles
+      // WorkflowParticipants table only accepts 'initiator' and 'recipient'
+      let workflowRole = 'recipient'; // Default to recipient
+      if (participant.email === access.email) {
+        workflowRole = 'initiator'; // Creator is always initiator
+      }
+
       const insertParticipantQuery = `
         INSERT INTO WorkflowParticipants (WorkflowId, ParticipantEmail, Role, JoinedAt)
         VALUES (?, ?, ?, ?)
       `;
 
       await db.prepare(insertParticipantQuery)
-        .bind(workflowId, participant.email, participant.role, joinedAt)
+        .bind(workflowId, participant.email, workflowRole, joinedAt)
         .run();
     }
 
     // Create initial message
     const messageId = crypto.randomUUID();
     let initialMessage = `Workflow "${title}" initiated`;
+    if (description) {
+      initialMessage += `: ${description}`;
+    }
     if (mediaFileIds && mediaFileIds.length > 0) {
       initialMessage += `\n\nShared ${mediaFileIds.length} media file(s)`;
     }
@@ -129,26 +164,30 @@ export async function POST(request: NextRequest) {
       await db.prepare(`
         INSERT INTO WorkflowMessages (Id, WorkflowId, SenderEmail, MessageType, MediaFileId, Content, CreatedAt)
         VALUES (?, ?, ?, ?, ?, ?, ?)
-      `).bind(mediaMessageId, workflowId, access.email, 'upload', mediaFileId, 'Media file shared', createdAt).run();
+      `).bind(mediaMessageId, workflowId, access.email, 'share_link', mediaFileId, 'Media file shared', createdAt).run();
     }
 
-    // Get the WorkflowDurableObject and notify it about the new workflow
-    const workflowIdObj = env.WORKFLOW_DO.idFromName(workflowId);
-    const workflowObj = env.WORKFLOW_DO.get(workflowIdObj);
-
-    await workflowObj.fetch('http://localhost/workflow/notification', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        type: 'workflow_created',
-        data: {
-          workflowId,
-          tenantId,
-          initiatorEmail: access.email,
-          participants: participants.map(p => p.email)
+    // Log the workflow creation
+    try {
+      const systemLogs = new SystemLogs(db);
+      await systemLogs.logUserOperation({
+        userEmail: access.email,
+        tenantId: tenantId,
+        activityType: 'workflow_created',
+        targetId: workflowId,
+        targetName: title,
+        ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('cf-connecting-ip') || 'unknown',
+        userAgent: request.headers.get('user-agent') || 'unknown',
+        metadata: {
+          participants: participants.length,
+          mediaFiles: mediaFileIds.length,
+          initiatorRole: initiatorRole
         }
-      })
-    });
+      });
+    } catch (logError) {
+      console.error('Failed to log workflow creation:', logError);
+      // Continue with workflow creation even if logging fails
+    }
 
     return NextResponse.json({
       success: true,
@@ -184,6 +223,23 @@ export async function GET(request: NextRequest) {
     const { env } = await getCloudflareContext({async: true});
     const db = env.DB;
 
+    // Check if user is system admin
+    const isAdmin = await isSystemAdmin(access.email, db);
+
+    // Get user's tenants if not admin
+    let userTenantIds: string[] = [];
+    if (!isAdmin) {
+      const userTenants = await db.prepare(`
+        SELECT TenantId FROM TenantUsers WHERE Email = ?
+      `).bind(access.email).all();
+
+      if (!userTenants.results || userTenants.results.length === 0) {
+        return NextResponse.json({ error: 'No tenant access found' }, { status: 403 });
+      }
+
+      userTenantIds = userTenants.results.map((t: any) => t.TenantId);
+    }
+
     let workflowsQuery = `
       SELECT w.*, 
              COUNT(DISTINCT wp.ParticipantEmail) as participantCount,
@@ -208,6 +264,7 @@ export async function GET(request: NextRequest) {
       .all() as any;
 
     return NextResponse.json({
+      success: true,
       workflows: workflows.results || []
     });
 

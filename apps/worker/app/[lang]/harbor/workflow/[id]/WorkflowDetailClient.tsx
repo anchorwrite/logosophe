@@ -361,42 +361,7 @@ export function WorkflowDetailClient({ workflowId, userEmail, userTenantId, lang
     };
   }, [workflow, userEmail, userTenantId]); // Include workflow in dependencies so connection is established when workflow data is available
 
-  // Clear notifications when visiting the workflow detail page
-  useEffect(() => {
-    if (workflowId) {
-      console.log('WorkflowDetailClient: Clearing notifications for workflow:', workflowId);
-      const clearNotifications = async () => {
-        try {
-          // Clear all notifications for this workflow (no timestamp needed)
-          const response = await fetch('/api/harbor/notifications/clear', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ 
-              workflowId, 
-              lastViewedTimestamp: new Date().toISOString() // Use current time to clear all notifications
-            })
-          });
-          
-          if (response.ok) {
-            console.log('WorkflowDetailClient: Successfully cleared notifications for workflow:', workflowId);
-            // Dispatch custom event to notify NotificationIndicator to reset count
-            console.log('WorkflowDetailClient: Dispatching notifications-cleared event');
-            window.dispatchEvent(new CustomEvent('notifications-cleared'));
-            console.log('WorkflowDetailClient: Dispatched notifications-cleared event');
-          } else {
-            const errorText = await response.text();
-            console.error('WorkflowDetailClient: Failed to clear notifications:', response.status, errorText);
-          }
-        } catch (error) {
-          console.error('WorkflowDetailClient: Error clearing notifications:', error);
-        }
-      };
-      
-      clearNotifications();
-    }
-  }, [workflowId]); // Only run when workflowId changes (when user visits the page)
+
 
   const handleSendMessage = async () => {
     if (!newMessage.trim() || !workflow) return;
