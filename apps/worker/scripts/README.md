@@ -17,15 +17,15 @@ The test user system includes:
 
 ```bash
 # For local development
-yarn wrangler d1 execute DB --local --file=scripts/manage-test-users.js -- --create
+yarn wrangler d1 execute DB --local --file=scripts/create-test-users.sql
 
-# For production
-yarn wrangler d1 execute DB --file=scripts/manage-test-users.js -- --create
+# For production (not recommended - test users should only be in development)
+yarn wrangler d1 execute DB --remote --file=scripts/create-test-users.sql
 ```
 
 ### 2. Access Test User Interface
 
-Navigate to `/test-users` in your application to access the test user sign-in interface.
+Navigate to `/dashboard/test-users` in your application to access the test user sign-in interface (admin access required).
 
 ### 3. Sign In as Test User
 
@@ -87,11 +87,11 @@ yarn wrangler d1 execute DB --local --file=scripts/manage-test-users.js -- --cre
 
 ### Delete Test Data
 ```bash
-yarn wrangler d1 execute DB --local --file=scripts/manage-test-users.js -- --delete
+yarn wrangler d1 execute DB --local --file=scripts/delete-test-users.sql
 ```
 
 ### Production Commands
-Remove the `--local` flag for production database operations.
+Remove the `--local` flag for production database operations (not recommended for test users).
 
 ## Authentication Flow
 
@@ -99,6 +99,7 @@ Remove the `--local` flag for production database operations.
 2. **Email Validation**: Only accepts emails ending with `@logosophe.test`
 3. **User Creation**: Automatically creates users in appropriate tables based on user number
 4. **Role Assignment**: Assigns roles based on user category and tenant membership
+5. **Dashboard Access**: Test user management is available at `/dashboard/test-users` (admin only)
 
 ## Security Considerations
 
@@ -106,6 +107,8 @@ Remove the `--local` flag for production database operations.
 - The test provider only accepts emails with the `@logosophe.test` domain
 - Test data can be easily cleaned up using the delete script
 - Test users are clearly identified in the database
+- Test user management is restricted to system administrators only
+- Foreign key constraints have been optimized to prevent insertion issues
 
 ## Troubleshooting
 
@@ -114,6 +117,8 @@ Remove the `--local` flag for production database operations.
 1. **Test users not appearing**: Ensure the database script has been run
 2. **Sign-in failures**: Check that the test provider is properly configured in auth.ts
 3. **Role issues**: Verify that the Roles table contains the expected roles (user, subscriber, author, agent, reviewer, editor)
+4. **Foreign key constraint errors**: These have been resolved by removing the restrictive PublisherId constraint from PublishedContent table
+5. **Access denied**: Ensure you have system administrator privileges to access `/dashboard/test-users`
 
 ### Verification Commands
 
@@ -135,5 +140,6 @@ The test user system integrates seamlessly with your existing:
 - **Role-based access control** system
 - **Multi-tenant** architecture
 - **Database schema** and relationships
+- **Dashboard admin interface** at `/dashboard/test-users`
 
-Test users follow the same authentication and authorization patterns as real users, making them perfect for testing all aspects of your application. 
+Test users follow the same authentication and authorization patterns as real users, making them perfect for testing all aspects of your application. The system is now properly organized under the dashboard structure and requires admin privileges for access. 

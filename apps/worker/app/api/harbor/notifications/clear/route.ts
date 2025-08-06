@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { checkAccess } from '@/lib/access-control';
-
-
-const WORKER_URL = process.env.CLOUDFLARE_WORKER_URL || 'https:/logosophe.anchorwrite.workers.dev';
+import { getCloudflareContext } from '@opennextjs/cloudflare';
 
 export async function POST(request: NextRequest) {
   try {
@@ -32,30 +30,61 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Call the worker to clear notifications (worker will handle workflow access check)
-    const workerResponse = await fetch(`${WORKER_URL}/notifications/clear`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        userEmail: access.email,
-        workflowId,
-        lastViewedTimestamp
-      }),
-    });
+    // Get database context
+    const { env } = await getCloudflareContext({async: true});
+    const db = env.DB;
 
-    if (!workerResponse.ok) {
-      const errorText = await workerResponse.text();
-      console.error('Worker response error:', errorText);
+    // Verify the user has access to this workflow
+    const workflowAccessCheck = await db.prepare(`
+      SELECT 1 FROM WorkflowParticipants 
+      WHERE WorkflowId = ? AND ParticipantEmail = ?
+    `).bind(workflowId, access.email).first();
+
+    if (!workflowAccessCheck) {
       return NextResponse.json(
-        { success: false, error: `Worker error: ${workerResponse.status}` },
-        { status: workerResponse.status }
+        { success: false, error: 'You do not have access to this workflow' },
+        { status: 403 }
       );
     }
 
-    const data = await workerResponse.json();
-    return NextResponse.json(data);
+    // Clear notifications for this workflow and user
+    const clearQuery = `
+      UPDATE UserNotifications 
+      SET IsRead = 1, ReadAt = datetime('now')
+      WHERE UserEmail = ? 
+        AND WorkflowId = ? 
+        AND CreatedAt <= ?
+        AND IsRead = 0
+    `;
+
+    const result = await db.prepare(clearQuery).bind(
+      access.email, 
+      workflowId, 
+      lastViewedTimestamp
+    ).run();
+
+    // Get the UserNotificationsDurableObject and notify it about the cleared notifications
+    const userNotificationsId = env.USER_NOTIFICATIONS_DO.idFromName(access.email);
+    const userNotificationsObj = env.USER_NOTIFICATIONS_DO.get(userNotificationsId);
+
+    await userNotificationsObj.fetch('http://localhost/notifications/clear', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        type: 'notifications_cleared',
+        data: {
+          userEmail: access.email,
+          workflowId,
+          lastViewedTimestamp
+        }
+      })
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: 'Notifications cleared successfully',
+      clearedCount: result.meta?.changes || 0
+    });
   } catch (error) {
     console.error('Error in clear notifications API route:', error);
     return NextResponse.json(

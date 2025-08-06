@@ -62,27 +62,70 @@ export async function GET(
       }
     }
 
-    // Build worker URL with appropriate parameters
-    const WORKER_URL = process.env.CLOUDFLARE_WORKER_URL || 'https:/logosophe.anchorwrite.workers.dev';
-    const queryParams = new URLSearchParams();
-    queryParams.append('userEmail', access.email);
-    queryParams.append('isGlobalAdmin', isGlobalAdmin.toString());
+    // Get workflow details
+    const workflowQuery = `
+      SELECT 
+        w.Id,
+        w.Title,
+        w.Status,
+        w.CreatedAt,
+        w.CompletedAt,
+        w.CompletedBy,
+        w.TenantId,
+        COUNT(wm.Id) as messageCount,
+        COUNT(DISTINCT wp.ParticipantEmail) as participantCount
+      FROM Workflows w
+      LEFT JOIN WorkflowMessages wm ON w.Id = wm.WorkflowId
+      LEFT JOIN WorkflowParticipants wp ON w.Id = wp.WorkflowId
+      WHERE w.Id = ?
+      GROUP BY w.Id, w.Title, w.Status, w.CreatedAt, w.CompletedAt, w.CompletedBy, w.TenantId
+    `;
 
-    const workerResponse = await fetch(`${WORKER_URL}/workflow/${workflowId}?${queryParams.toString()}`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${access.email}`,
-        'Content-Type': 'application/json',
-      },
-    });
+    const workflow = await db.prepare(workflowQuery).bind(workflowId).first();
 
-    if (!workerResponse.ok) {
-      const error = await workerResponse.text();
-      return NextResponse.json({ error: `Worker error: ${error}` }, { status: workerResponse.status });
+    if (!workflow) {
+      return NextResponse.json({ error: 'Workflow not found' }, { status: 404 });
     }
 
-    const result = await workerResponse.json();
-    return NextResponse.json(result);
+    // Get recent messages
+    const messagesQuery = `
+      SELECT 
+        wm.Id,
+        wm.SenderEmail,
+        wm.Content,
+        wm.MessageType,
+        wm.CreatedAt,
+        wm.MediaFileId,
+        wm.ShareToken
+      FROM WorkflowMessages wm
+      WHERE wm.WorkflowId = ?
+      ORDER BY wm.CreatedAt DESC
+      LIMIT 10
+    `;
+
+    const messages = await db.prepare(messagesQuery).bind(workflowId).all();
+
+    // Get participants
+    const participantsQuery = `
+      SELECT 
+        wp.ParticipantEmail,
+        wp.Role,
+        wp.JoinedAt
+      FROM WorkflowParticipants wp
+      WHERE wp.WorkflowId = ?
+      ORDER BY wp.JoinedAt
+    `;
+
+    const participants = await db.prepare(participantsQuery).bind(workflowId).all();
+
+    return NextResponse.json({
+      success: true,
+      workflow: {
+        ...workflow,
+        messages: messages.results || [],
+        participants: participants.results || []
+      }
+    });
 
   } catch (error) {
     console.error('Dashboard workflow details error:', error);
@@ -154,31 +197,31 @@ export async function PUT(
       }
     }
 
-    // Build worker URL with appropriate parameters
-    const WORKER_URL = process.env.CLOUDFLARE_WORKER_URL || 'https:/logosophe.anchorwrite.workers.dev';
-    const queryParams = new URLSearchParams();
-    queryParams.append('userEmail', access.email);
-    queryParams.append('isGlobalAdmin', isGlobalAdmin.toString());
+    // Update workflow based on action
+    let updateQuery = '';
+    const updateParams: any[] = [];
 
-    const workerResponse = await fetch(`${WORKER_URL}/workflow/${workflowId}?${queryParams.toString()}`, {
-      method: 'PUT',
-      headers: {
-        'Authorization': `Bearer ${access.email}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        adminEmail: access.email,
-        ...body
-      }),
-    });
-
-    if (!workerResponse.ok) {
-      const error = await workerResponse.text();
-      return NextResponse.json({ error: `Worker error: ${error}` }, { status: workerResponse.status });
+    switch (action) {
+      case 'terminate':
+        updateQuery = 'UPDATE Workflows SET Status = ?, CompletedAt = datetime("now"), CompletedBy = ? WHERE Id = ?';
+        updateParams.push('cancelled', access.email, workflowId);
+        break;
+      case 'reactivate':
+        updateQuery = 'UPDATE Workflows SET Status = ?, CompletedAt = NULL, CompletedBy = NULL WHERE Id = ?';
+        updateParams.push('active', workflowId);
+        break;
+      case 'delete':
+        updateQuery = 'DELETE FROM Workflows WHERE Id = ?';
+        updateParams.push(workflowId);
+        break;
     }
 
-    const result = await workerResponse.json();
-    return NextResponse.json(result);
+    await db.prepare(updateQuery).bind(...updateParams).run();
+
+    return NextResponse.json({
+      success: true,
+      message: `Workflow ${action}d successfully`
+    });
 
   } catch (error) {
     console.error('Dashboard workflow management error:', error);
