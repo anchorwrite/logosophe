@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "main": "app/worker-entry.ts",
+  "main": ".open-next/worker.js",
   "name": "logosophe",
   "compatibility_date": "2024-12-30",
   "compatibility_flags": [
