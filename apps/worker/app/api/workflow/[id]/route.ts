@@ -74,11 +74,10 @@ export async function GET(
       return NextResponse.json({ error: 'You do not have access to this workflow' }, { status: 403 });
     }
 
-    // Get participants with role names
+    // Get participants
     const participantsQuery = `
-      SELECT wp.ParticipantEmail, COALESCE(r.Name, wp.Role) as Role, wp.JoinedAt
+      SELECT wp.ParticipantEmail, wp.Role, wp.JoinedAt
       FROM WorkflowParticipants wp
-      LEFT JOIN Roles r ON wp.Role = r.Id
       WHERE wp.WorkflowId = ?
       ORDER BY wp.JoinedAt
     `;

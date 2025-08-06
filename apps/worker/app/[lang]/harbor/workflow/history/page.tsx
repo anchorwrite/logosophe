@@ -16,7 +16,10 @@ export default async function HarborWorkflowHistoryPage({ params }: { params: Pa
   const { lang } = await params;
   const dict = await getDictionary(lang);
   
+  console.log('Workflow history page - User email:', session?.user?.email);
+  
   if (!session?.user?.email) {
+    console.log('Workflow history page - No session, redirecting to signin');
     redirect('/signin');
   }
 
@@ -26,7 +29,10 @@ export default async function HarborWorkflowHistoryPage({ params }: { params: Pa
     allowedRoles: ['admin', 'tenant', 'author', 'editor', 'agent', 'reviewer', 'subscriber']
   });
 
+  console.log('Workflow history page - Access result:', access);
+
   if (!access.hasAccess) {
+    console.log('Workflow history page - Access denied, redirecting to harbor');
     redirect(`/${lang}/harbor`);
   }
 
@@ -44,7 +50,10 @@ export default async function HarborWorkflowHistoryPage({ params }: { params: Pa
     .bind(session.user.email)
     .first() as any;
 
+  console.log('Workflow history page - User tenant result:', userTenantResult);
+
   if (!userTenantResult?.TenantId) {
+    console.log('Workflow history page - No tenant found, redirecting to harbor');
     redirect(`/${lang}/harbor`);
   }
 

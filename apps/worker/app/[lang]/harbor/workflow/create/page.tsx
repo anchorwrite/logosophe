@@ -20,7 +20,10 @@ export default async function HarborWorkflowCreatePage({ params }: { params: Par
   const session = await auth();
   const { lang } = await params;
   
+  console.log('Create workflow page - User email:', session?.user?.email);
+  
   if (!session?.user?.email) {
+    console.log('Create workflow page - No session, redirecting to signin');
     redirect('/signin');
   }
 
@@ -30,7 +33,10 @@ export default async function HarborWorkflowCreatePage({ params }: { params: Par
     allowedRoles: ['admin', 'tenant', 'author', 'editor', 'agent', 'reviewer', 'subscriber']
   });
 
+  console.log('Create workflow page - Access result:', access);
+
   if (!access.hasAccess) {
+    console.log('Create workflow page - Access denied, redirecting to harbor');
     redirect(`/${lang}/harbor`);
   }
 
@@ -56,7 +62,10 @@ export default async function HarborWorkflowCreatePage({ params }: { params: Par
     .bind(session.user.email)
     .all() as any;
 
+  console.log('Create workflow page - User tenants result:', userTenantsResult);
+
   if (!userTenantsResult?.results || userTenantsResult.results.length === 0) {
+    console.log('Create workflow page - No tenants found, redirecting to harbor');
     redirect(`/${lang}/harbor`);
   }
 
