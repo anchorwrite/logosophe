@@ -67,7 +67,7 @@ const Footer: React.FC = () => {
             {/* Social Media Section */}
             <Card variant="ghost">
               <Flex direction="column" gap="3">
-                <Text size="3" weight="bold">{t("connect")}</Text>
+                <Text size="3" weight="bold">{t("Connect")}</Text>
                 <Flex gap="3">
                   <a href="https:/github.com/plowden" target="_blank" rel="noopener noreferrer" aria-label="GitHub">
                     <SvgIcon src="/img/svg/github.svg" width="25px" height="25px" />
@@ -75,7 +75,7 @@ const Footer: React.FC = () => {
                   <a href="https:/x.com/PhilipLowden104" target="_blank" rel="noopener noreferrer" aria-label="X (Twitter)">
                     <SvgIcon src="/img/svg/x.svg" width="25px" height="25px" />
                   </a>
-                  <a href="https:/www.linkedin.com/in/philip-lowden-6722b41a/" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn">
+                  <a href="https:/www.linkedin.com/in/philip-lowden-672b8b1b/" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn">
                     <SvgIcon src="/img/svg/linkedin.svg" width="25px" height="25px" />
                   </a>
                 </Flex>
@@ -85,7 +85,7 @@ const Footer: React.FC = () => {
             {/* Language Section */}
             <Card variant="ghost">
               <Flex direction="column" gap="3">
-                <Text size="3" weight="bold">{t("language")}</Text>
+                <Text size="3" weight="bold">{t("Language")}</Text>
                 <Select.Root value={currentLang} onValueChange={handleChange}>
                   <Select.Trigger style={{ width: '100%' }} />
                   <Select.Content>

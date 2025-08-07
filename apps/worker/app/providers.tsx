@@ -24,7 +24,12 @@ function Providers({ children, lang }: ProvidersProps) {
       : 'en'
   })()
 
-  // Only change language in useEffect to avoid setState during render
+  // Synchronously set the language to prevent hydration mismatch
+  if (detectedLang && i18n.language !== detectedLang) {
+    i18n.changeLanguage(detectedLang)
+  }
+
+  // Also use useEffect for any subsequent language changes
   useEffect(() => {
     if (detectedLang && i18n.language !== detectedLang) {
       i18n.changeLanguage(detectedLang)

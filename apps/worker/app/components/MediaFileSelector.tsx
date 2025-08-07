@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Table, Box, Flex, Text, TextField, Select, Button, Grid, Dialog, Checkbox, Heading } from '@radix-ui/themes';
 import { Search, Eye, Download } from 'lucide-react';
 import { useToast } from '@/components/Toast';
+import { useTranslation } from 'react-i18next';
 
 interface MediaResponse {
   files: MediaFile[];
@@ -42,6 +43,7 @@ interface MediaFileSelectorProps {
   selectedFiles: number[];
   onSelectionChange: (fileIds: number[]) => void;
   onClose: () => void;
+  lang?: string;
 }
 
 function formatBytes(bytes: number): string {
@@ -57,9 +59,11 @@ export default function MediaFileSelector({
   userTenantId, 
   selectedFiles, 
   onSelectionChange, 
-  onClose 
+  onClose,
+  lang
 }: MediaFileSelectorProps) {
   const { showToast } = useToast();
+  const { t, i18n } = useTranslation('translations');
   const [files, setFiles] = useState<MediaFile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -74,6 +78,13 @@ export default function MediaFileSelector({
     pageSize: 25,
     totalPages: 0
   });
+
+  // Ensure language is synchronized
+  useEffect(() => {
+    if (lang && i18n.language !== lang) {
+      i18n.changeLanguage(lang);
+    }
+  }, [lang, i18n]);
 
   useEffect(() => {
     const fetchFiles = async () => {
@@ -90,14 +101,14 @@ export default function MediaFileSelector({
         setError(null);
       } catch (err) {
         console.error('Error fetching media files:', err);
-        setError('Failed to load media files');
+        setError(t('workflow.mediaFileSelector.loadError'));
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchFiles();
-  }, [search, type, sortBy, page, pageSize, userEmail]);
+  }, [search, type, sortBy, page, pageSize, userEmail, t]);
 
   const handleFileToggle = (fileId: number) => {
     const newSelection = selectedFiles.includes(fileId)
@@ -127,7 +138,7 @@ export default function MediaFileSelector({
   if (isLoading) {
     return (
       <Box p="4" style={{ textAlign: 'center' }}>
-        <Text>Loading media files...</Text>
+        <Text>{t('workflow.mediaFileSelector.loading')}</Text>
       </Box>
     );
   }
@@ -143,16 +154,15 @@ export default function MediaFileSelector({
   return (
     <Box>
       <Flex justify="between" align="center" mb="4">
-        <Heading size="3">Select Media Files</Heading>
         <Flex gap="2">
           <Button size="2" variant="soft" onClick={handleSelectAll}>
-            Select All
+            {t('workflow.mediaFileSelector.selectAll')}
           </Button>
           <Button size="2" variant="soft" onClick={handleSelectNone}>
-            Select None
+            {t('workflow.mediaFileSelector.selectNone')}
           </Button>
           <Button size="2" onClick={onClose}>
-            Done
+            {t('workflow.mediaFileSelector.done')}
           </Button>
         </Flex>
       </Flex>
@@ -165,7 +175,7 @@ export default function MediaFileSelector({
               <Search className="h-4 w-4" />
             </TextField.Slot>
             <TextField.Input
-              placeholder="Search files..."
+              placeholder={t('workflow.mediaFileSelector.searchPlaceholder')}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -174,20 +184,20 @@ export default function MediaFileSelector({
         <Select.Root value={type} onValueChange={setType}>
           <Select.Trigger />
           <Select.Content>
-            <Select.Item key="type-all" value="all">All Types</Select.Item>
-            <Select.Item key="type-image" value="image">Images</Select.Item>
-            <Select.Item key="type-video" value="video">Videos</Select.Item>
-            <Select.Item key="type-audio" value="audio">Audio</Select.Item>
-            <Select.Item key="type-document" value="document">Documents</Select.Item>
+            <Select.Item key="type-all" value="all">{t('workflow.mediaFileSelector.allTypes')}</Select.Item>
+            <Select.Item key="type-image" value="image">{t('workflow.mediaFileSelector.images')}</Select.Item>
+            <Select.Item key="type-video" value="video">{t('workflow.mediaFileSelector.videos')}</Select.Item>
+            <Select.Item key="type-audio" value="audio">{t('workflow.mediaFileSelector.audio')}</Select.Item>
+            <Select.Item key="type-document" value="document">{t('workflow.mediaFileSelector.documents')}</Select.Item>
           </Select.Content>
         </Select.Root>
         <Select.Root value={sortBy} onValueChange={(value) => setSortBy(value as SortBy)}>
           <Select.Trigger />
           <Select.Content>
-            <Select.Item key="sort-newest" value="newest">Newest First</Select.Item>
-            <Select.Item key="sort-oldest" value="oldest">Oldest First</Select.Item>
-            <Select.Item key="sort-name" value="name">Name</Select.Item>
-            <Select.Item key="sort-size" value="size">Size</Select.Item>
+            <Select.Item key="sort-newest" value="newest">{t('workflow.mediaFileSelector.newestFirst')}</Select.Item>
+            <Select.Item key="sort-oldest" value="oldest">{t('workflow.mediaFileSelector.oldestFirst')}</Select.Item>
+            <Select.Item key="sort-name" value="name">{t('workflow.mediaFileSelector.name')}</Select.Item>
+            <Select.Item key="sort-size" value="size">{t('workflow.mediaFileSelector.size')}</Select.Item>
           </Select.Content>
         </Select.Root>
       </Flex>
@@ -198,19 +208,19 @@ export default function MediaFileSelector({
           <Table.Header>
             <Table.Row>
               <Table.ColumnHeaderCell style={{ width: '50px' }}></Table.ColumnHeaderCell>
-              <Table.ColumnHeaderCell>Name</Table.ColumnHeaderCell>
-              <Table.ColumnHeaderCell>Type</Table.ColumnHeaderCell>
-              <Table.ColumnHeaderCell>Size</Table.ColumnHeaderCell>
-              <Table.ColumnHeaderCell>Uploaded</Table.ColumnHeaderCell>
-              <Table.ColumnHeaderCell>Uploaded By</Table.ColumnHeaderCell>
-              <Table.ColumnHeaderCell>Actions</Table.ColumnHeaderCell>
+              <Table.ColumnHeaderCell>{t('workflow.mediaFileSelector.name')}</Table.ColumnHeaderCell>
+              <Table.ColumnHeaderCell>{t('workflow.mediaFileSelector.type')}</Table.ColumnHeaderCell>
+              <Table.ColumnHeaderCell>{t('workflow.mediaFileSelector.size')}</Table.ColumnHeaderCell>
+              <Table.ColumnHeaderCell>{t('workflow.mediaFileSelector.uploaded')}</Table.ColumnHeaderCell>
+              <Table.ColumnHeaderCell>{t('workflow.mediaFileSelector.uploadedBy')}</Table.ColumnHeaderCell>
+              <Table.ColumnHeaderCell>{t('workflow.mediaFileSelector.actions')}</Table.ColumnHeaderCell>
             </Table.Row>
           </Table.Header>
           <Table.Body>
             {files.length === 0 ? (
               <Table.Row>
                 <Table.Cell colSpan={7}>
-                  <Text align="center">No files found</Text>
+                  <Text align="center">{t('workflow.mediaFileSelector.noFiles')}</Text>
                 </Table.Cell>
               </Table.Row>
             ) : (
@@ -266,7 +276,7 @@ export default function MediaFileSelector({
       <Flex justify="between" align="center" mt="4">
         <Flex gap="2" align="center">
           <Text size="2">
-            Showing {files.length} rows of {pagination.total} files
+            {t('workflow.mediaFileSelector.showingRows', { count: files.length, total: pagination.total })}
           </Text>
           <Select.Root value={pageSize.toString()} onValueChange={(value) => {
             setPageSize(parseInt(value));
@@ -274,10 +284,10 @@ export default function MediaFileSelector({
           }}>
             <Select.Trigger />
             <Select.Content>
-              <Select.Item value="10">10 per page</Select.Item>
-              <Select.Item value="25">25 per page</Select.Item>
-              <Select.Item value="50">50 per page</Select.Item>
-              <Select.Item value="100">100 per page</Select.Item>
+              <Select.Item value="10">10 {t('workflow.mediaFileSelector.perPage')}</Select.Item>
+              <Select.Item value="25">25 {t('workflow.mediaFileSelector.perPage')}</Select.Item>
+              <Select.Item value="50">50 {t('workflow.mediaFileSelector.perPage')}</Select.Item>
+              <Select.Item value="100">100 {t('workflow.mediaFileSelector.perPage')}</Select.Item>
             </Select.Content>
           </Select.Root>
         </Flex>
@@ -288,10 +298,10 @@ export default function MediaFileSelector({
             disabled={page === 1}
             onClick={() => setPage(p => Math.max(1, p - 1))}
           >
-            Previous
+            {t('workflow.mediaFileSelector.previous')}
           </Button>
           <Text size="2" align="center" style={{ minWidth: '100px' }}>
-            Page {page} of {pagination.totalPages}
+            {t('workflow.mediaFileSelector.page')} {page} {t('workflow.mediaFileSelector.of')} {pagination.totalPages}
           </Text>
           <Button
             variant="soft"
@@ -299,7 +309,7 @@ export default function MediaFileSelector({
             disabled={page === pagination.totalPages}
             onClick={() => setPage(p => Math.min(pagination.totalPages, p + 1))}
           >
-            Next
+            {t('workflow.mediaFileSelector.next')}
           </Button>
         </Flex>
       </Flex>
