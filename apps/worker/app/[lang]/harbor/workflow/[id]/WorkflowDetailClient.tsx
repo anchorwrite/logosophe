@@ -108,15 +108,7 @@ export function WorkflowDetailClient({ workflowId, userEmail, userTenantId, lang
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { showToast } = useToast();
 
-  // Debug: Log message state changes
-  useEffect(() => {
-    console.log('Messages state updated:', messages.length, 'messages');
-    const messageIds = messages.map(m => m.Id);
-    const uniqueIds = new Set(messageIds);
-    if (messageIds.length !== uniqueIds.size) {
-      console.warn('Duplicate message IDs detected:', messageIds.filter((id, index) => messageIds.indexOf(id) !== index));
-    }
-  }, [messages]);
+
   
   // Confirmation dialog states
   const [terminateDialog, setTerminateDialog] = useState<{
@@ -215,7 +207,6 @@ export function WorkflowDetailClient({ workflowId, userEmail, userTenantId, lang
   useEffect(() => {
     return () => {
       if (eventSourceRef.current) {
-        console.log('Component unmounting, closing EventSource connection');
         eventSourceRef.current.close();
         eventSourceRef.current = null;
       }
@@ -225,7 +216,6 @@ export function WorkflowDetailClient({ workflowId, userEmail, userTenantId, lang
   // Close WebSocket connection when workflow becomes non-active
   useEffect(() => {
     if (workflow && workflow.Status !== 'active' && eventSourceRef.current) {
-      console.log('Workflow is no longer active, closing EventSource connection. Status:', workflow.Status);
       eventSourceRef.current.close();
       eventSourceRef.current = null;
     }
@@ -239,19 +229,16 @@ export function WorkflowDetailClient({ workflowId, userEmail, userTenantId, lang
 
     // Only connect to WebSocket for active workflows
     if (workflow.Status !== 'active') {
-      console.log('Workflow is not active, skipping EventSource connection. Status:', workflow.Status);
       return;
     }
 
     // Check if workflow exists and is valid
     if (!workflow.Id || workflow.Id === 'undefined' || workflow.Id === 'null') {
-      console.log('Invalid workflow ID, skipping EventSource connection:', workflow.Id);
       return;
     }
 
     // Check if workflow data is properly loaded
     if (isLoading) {
-      console.log('Workflow data not ready, skipping EventSource connection. Loading:', isLoading);
       return;
     }
 
@@ -266,29 +253,22 @@ export function WorkflowDetailClient({ workflowId, userEmail, userTenantId, lang
         // Connect directly to the SSE stream endpoint
         const sseUrl = `/api/workflow/${workflow.Id}/stream`;
         
-        console.log('Connecting to EventSource:', sseUrl);
-        
         const eventSource = new EventSource(sseUrl);
         eventSourceRef.current = eventSource;
 
         eventSource.onopen = () => {
-          console.log('EventSource connected successfully');
           setSseConnected(true);
         };
         
         eventSource.onmessage = (event) => {
-          console.log('EventSource message received:', event.data);
           try {
             const data = JSON.parse(event.data);
-            console.log('Parsed EventSource message:', data);
             
             if (data.type === 'message' && data.data) {
-              console.log('Adding new message to state:', data.data);
               setMessages(prev => {
                 // Check if message already exists to prevent duplicates
                 const messageExists = prev.some(msg => msg.Id === data.data.Id);
                 if (messageExists) {
-                  console.log('Message already exists, skipping:', data.data.Id);
                   return prev;
                 }
                 
@@ -298,12 +278,13 @@ export function WorkflowDetailClient({ workflowId, userEmail, userTenantId, lang
                   new Date(a.CreatedAt).getTime() - new Date(b.CreatedAt).getTime()
                 );
               });
+            } else if (data.type === 'connected') {
+              // Connection established - no action needed
             } else if (data.type === 'participant_joined') {
-              console.log('Participant joined:', data.data);
+              // Participant joined - no action needed
             } else if (data.type === 'participant_left') {
-              console.log('Participant left:', data.data);
+              // Participant left - no action needed
             } else if (data.type === 'status_update') {
-              console.log('Status update:', data.data);
               // Update the workflow status in the UI
               setWorkflow(prev => {
                 if (!prev) return prev;
@@ -322,7 +303,7 @@ export function WorkflowDetailClient({ workflowId, userEmail, userTenantId, lang
                 };
               });
             } else {
-              console.log('Unknown message type:', data.type);
+              // Unknown message type - ignore
             }
           } catch (error) {
             console.error('Error parsing EventSource message:', error);
@@ -346,13 +327,11 @@ export function WorkflowDetailClient({ workflowId, userEmail, userTenantId, lang
 
     // Connect when we have all required data and no existing connection
     if (!eventSourceRef.current && workflow && userEmail && userTenantId) {
-      console.log('Establishing EventSource connection with data:', { workflowId: workflow.Id, userEmail, userTenantId });
       connectEventSource();
     }
 
     // Add page unload event listener to close WebSocket
     const handleBeforeUnload = () => {
-      console.log('Page unloading, closing EventSource connection');
       if (eventSourceRef.current) {
         eventSourceRef.current.close();
         eventSourceRef.current = null;
@@ -367,7 +346,6 @@ export function WorkflowDetailClient({ workflowId, userEmail, userTenantId, lang
 
     // Cleanup function
     return () => {
-      console.log('Cleaning up EventSource connection');
       window.removeEventListener('beforeunload', handleBeforeUnload);
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
@@ -714,8 +692,8 @@ export function WorkflowDetailClient({ workflowId, userEmail, userTenantId, lang
                   </Box>
                 )}
                 <Box>
-                                  <Text weight="bold">{(dict as any).workflow.history.detail.participants}</Text>
-                <Text>{participants.length} {(dict as any).workflow.history.detail.members}</Text>
+                  <Text weight="bold">{(dict as any).workflow.history.detail.participants}</Text>
+                  <Text>{participants.length} {(dict as any).workflow.history.detail.members}</Text>
                   {participants.length > 0 && (
                     <Box mt="2">
                       {participants.map((participant, index) => (
@@ -725,6 +703,15 @@ export function WorkflowDetailClient({ workflowId, userEmail, userTenantId, lang
                       ))}
                     </Box>
                   )}
+                </Box>
+                <Box>
+                  <Flex gap="2" align="center">
+                    <Button variant="soft" asChild size="2">
+                      <Link href={`/${lang}/harbor/workflow/invitations`}>
+                        View My Invitations
+                      </Link>
+                    </Button>
+                  </Flex>
                 </Box>
               </Flex>
             </Box>

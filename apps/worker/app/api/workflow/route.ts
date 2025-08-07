@@ -279,10 +279,13 @@ export async function GET(request: NextRequest) {
       queryParams.push(status);
     }
 
-    // Filter by workflow participation (unless user is admin)
+    // Filter by workflow participation or pending invitations (unless user is admin)
     if (!isAdmin) {
-      workflowsQuery += ' AND EXISTS (SELECT 1 FROM WorkflowParticipants wp2 WHERE wp2.WorkflowId = w.Id AND wp2.ParticipantEmail = ?)';
-      queryParams.push(access.email);
+      workflowsQuery += ` AND (
+        EXISTS (SELECT 1 FROM WorkflowParticipants wp2 WHERE wp2.WorkflowId = w.Id AND wp2.ParticipantEmail = ?)
+        OR EXISTS (SELECT 1 FROM WorkflowInvitations wi WHERE wi.WorkflowId = w.Id AND wi.InviteeEmail = ? AND wi.Status = 'pending')
+      )`;
+      queryParams.push(access.email, access.email);
     }
 
     workflowsQuery += ' GROUP BY w.Id ORDER BY w.CreatedAt DESC';

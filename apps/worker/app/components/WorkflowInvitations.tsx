@@ -60,6 +60,7 @@ export default function WorkflowInvitations({
     setIsInviting(true);
     let successCount = 0;
     let errorCount = 0;
+    const errorMessages: string[] = [];
 
     for (const participant of selectedParticipants) {
       try {
@@ -73,10 +74,14 @@ export default function WorkflowInvitations({
           successCount++;
         } else {
           errorCount++;
+          const errorMsg = result.error || 'Unknown error';
+          errorMessages.push(`${participant.email}: ${errorMsg}`);
           console.error(`Failed to invite ${participant.email}:`, result.error);
         }
       } catch (error) {
         errorCount++;
+        const errorMsg = error instanceof Error ? error.message : 'Network error';
+        errorMessages.push(`${participant.email}: ${errorMsg}`);
         console.error(`Error inviting ${participant.email}:`, error);
       }
     }
@@ -91,10 +96,15 @@ export default function WorkflowInvitations({
     }
 
     if (errorCount > 0) {
+      const errorTitle = errorCount === 1 ? 'Invitation Failed' : 'Some Invitations Failed';
+      const errorContent = errorCount === 1 
+        ? errorMessages[0]
+        : `Failed to send ${errorCount} invitation${errorCount > 1 ? 's' : ''}. ${errorMessages.slice(0, 2).join('; ')}${errorMessages.length > 2 ? ` and ${errorMessages.length - 2} more...` : ''}`;
+      
       showToast({
         type: 'error',
-        title: 'Some Invitations Failed',
-        content: `Failed to send ${errorCount} invitation${errorCount > 1 ? 's' : ''}`
+        title: errorTitle,
+        content: errorContent
       });
     }
 
