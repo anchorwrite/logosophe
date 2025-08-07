@@ -53,13 +53,19 @@ export async function GET(request: NextRequest) {
       LEFT JOIN WorkflowMessages wm ON w.Id = wm.WorkflowId
       LEFT JOIN WorkflowParticipants wp ON w.Id = wp.WorkflowId
       WHERE w.TenantId = ?
-        AND EXISTS (
-          SELECT 1 FROM WorkflowParticipants wp2 
-          WHERE wp2.WorkflowId = w.Id AND wp2.ParticipantEmail = ?
+        AND (
+          EXISTS (
+            SELECT 1 FROM WorkflowParticipants wp2 
+            WHERE wp2.WorkflowId = w.Id AND wp2.ParticipantEmail = ?
+          )
+          OR EXISTS (
+            SELECT 1 FROM WorkflowInvitations wi 
+            WHERE wi.WorkflowId = w.Id AND wi.InviteeEmail = ? AND wi.Status = 'pending'
+          )
         )
     `;
 
-    const queryParams = [tenantId, access.email];
+    const queryParams = [tenantId, access.email, access.email];
 
     if (status) {
       workflowsQuery += ` AND w.Status = ?`;

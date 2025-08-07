@@ -87,10 +87,23 @@ export async function GET(
       .bind(id)
       .all() as any;
 
-    // Check if user is a participant or system admin
+    // Check if user is a participant, has pending invitation, or is system admin
     const participantEmails = participants.results?.map((p: any) => p.ParticipantEmail) || [];
-    if (!isAdmin && !participantEmails.includes(userEmail)) {
-      return NextResponse.json({ error: 'You do not have permission to access this workflow' }, { status: 403 });
+    const isParticipant = participantEmails.includes(userEmail);
+    
+    if (!isAdmin && !isParticipant) {
+      // Check for pending invitation
+      const invitationQuery = `
+        SELECT 1 FROM WorkflowInvitations 
+        WHERE WorkflowId = ? AND InviteeEmail = ? AND Status = 'pending'
+      `;
+      const invitation = await db.prepare(invitationQuery)
+        .bind(id, userEmail)
+        .first();
+      
+      if (!invitation) {
+        return NextResponse.json({ error: 'You do not have permission to access this workflow' }, { status: 403 });
+      }
     }
 
     // Get media files from WorkflowMessages table
