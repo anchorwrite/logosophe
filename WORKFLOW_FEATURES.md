@@ -58,7 +58,12 @@ The workflow system provides real-time collaboration capabilities for sharing me
 
 ### API Routes
 
-#### Core Workflow Routes
+The workflow system uses a three-tier API structure to separate concerns and prevent route duplication:
+
+#### Core Workflow Routes (`/api/workflow/`)
+**Purpose**: General workflow functionality for all authenticated users
+**Access**: All authenticated users with appropriate roles
+**Used by**: Harbor components, general workflow interfaces
 
 **`/api/workflow`**
 - `POST` - Create new workflow
@@ -72,7 +77,16 @@ The workflow system provides real-time collaboration capabilities for sharing me
 **`/api/workflow/[id]/stream`**
 - `GET` - SSE endpoint for real-time updates
 
-#### Harbor-Specific Routes
+**`/api/workflow/history`**
+- `GET` - Get workflow history for user
+
+**`/api/workflow/history/detail/[id]`**
+- `GET` - Get detailed workflow history
+
+#### Harbor-Specific Routes (`/api/harbor/workflow/`)
+**Purpose**: Harbor interface-specific functionality
+**Access**: Harbor users with appropriate roles
+**Used by**: Harbor workflow components only
 
 **`/api/harbor/workflow/messages`**
 - `POST` - Send message to workflow
@@ -80,15 +94,70 @@ The workflow system provides real-time collaboration capabilities for sharing me
 **`/api/harbor/workflow/stats`**
 - `GET` - Get workflow statistics for tenant
 
+#### Dashboard-Specific Routes (`/api/dashboard/workflow/`)
+**Purpose**: Admin-focused functionality for system management
+**Access**: System admins and tenant admins only
+**Used by**: Dashboard admin components only
+
+**`/api/dashboard/workflow/list`**
+- `GET` - List workflows with admin filtering
+
+**`/api/dashboard/workflow/[id]`**
+- `GET` - Admin workflow details and management
+- `PUT` - Admin workflow updates
+
+**`/api/dashboard/workflow/stats`**
+- `GET` - System-wide workflow statistics
+
+**`/api/dashboard/workflow/analytics`**
+- `GET` - Workflow analytics
+
+**`/api/dashboard/workflow/reports`**
+- `GET` - Workflow reports
+
+**`/api/dashboard/workflow/history`**
+- `GET` - Admin workflow history
+
+**`/api/dashboard/workflow/bulk`**
+- `POST` - Bulk workflow operations
+
+**`/api/dashboard/workflow/health`**
+- `GET` - System health checks
+
+**`/api/dashboard/workflow/settings`**
+- `GET` - System settings
+- `PUT` - Update system settings
+
 **Note**: The `/api/harbor/workflow/websocket-url` endpoint has been removed. Frontend components now connect directly to `/api/workflow/[id]/stream` for SSE connections.
 
-#### History Routes
+### API Usage Guidelines
 
-**`/api/workflow/history`**
-- `GET` - Get workflow history for user
+To prevent route duplication and ensure proper API usage:
 
-**`/api/workflow/history/detail/[id]`**
-- `GET` - Get detailed workflow history
+#### For Harbor Components
+- **Core functionality**: Use `/api/workflow/` endpoints
+- **Harbor-specific features**: Use `/api/harbor/workflow/` endpoints
+- **Examples**:
+  - Workflow creation: `/api/workflow` (POST)
+  - Workflow details: `/api/workflow/[id]` (GET)
+  - Real-time updates: `/api/workflow/[id]/stream` (GET)
+  - Send messages: `/api/harbor/workflow/messages` (POST)
+  - Get stats: `/api/harbor/workflow/stats` (GET)
+
+#### For Dashboard Components
+- **Admin functionality**: Use `/api/dashboard/workflow/` endpoints
+- **Examples**:
+  - List workflows: `/api/dashboard/workflow/list` (GET)
+  - Admin workflow details: `/api/dashboard/workflow/[id]` (GET/PUT)
+  - System analytics: `/api/dashboard/workflow/analytics` (GET)
+  - System reports: `/api/dashboard/workflow/reports` (GET)
+  - Bulk operations: `/api/dashboard/workflow/bulk` (POST)
+
+#### Important Rules
+- **DO NOT create new workflow routes** - Use existing routes based on the interface context
+- **Check existing APIs first** - Before creating a new route, verify if functionality already exists
+- **Use the appropriate tier** - Core APIs for general functionality, Harbor APIs for Harbor features, Dashboard APIs for admin features
+- **Maintain separation** - Keep Harbor and Dashboard APIs separate to avoid confusion
 
 ### Real-Time Communication
 

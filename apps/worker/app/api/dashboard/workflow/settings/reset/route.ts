@@ -46,7 +46,8 @@ export async function POST(request: NextRequest) {
       enableAuditLogging: true,
       defaultWorkflowStatus: 'active',
       retentionPolicy: '90days',
-      backupFrequency: 'daily'
+      backupFrequency: 'daily',
+      ssePollingIntervalMs: 15000
     };
 
     // Reset settings in database
@@ -54,9 +55,9 @@ export async function POST(request: NextRequest) {
     
     for (const [key, value] of Object.entries(defaultSettings)) {
       await db.prepare(`
-        INSERT OR REPLACE INTO SystemSettings (Category, SettingKey, SettingValue, LastUpdated, UpdatedBy)
-        VALUES (?, ?, ?, ?, ?)
-      `).bind('workflow', key, value.toString(), timestamp, userEmail).run();
+        INSERT OR REPLACE INTO SystemSettings (Key, Value, UpdatedAt, UpdatedBy)
+        VALUES (?, ?, ?, ?)
+      `).bind(`workflow_${key}`, value.toString(), timestamp, userEmail).run();
     }
 
     // Log the settings reset

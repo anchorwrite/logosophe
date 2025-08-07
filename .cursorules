@@ -414,6 +414,8 @@
 - Include all relevant fields in SELECT statements rather than using *
 
 ## API Structure
+
+### Media API Structure
 - All media-related endpoints should be under /api/media
 - Share link endpoints:
   - /api/media/[id]/link - Create share links
@@ -423,6 +425,51 @@
   - Cache-Control: no-store, no-cache, must-revalidate, proxy-revalidate
   - Pragma: no-cache
   - Expires: 0
+
+### Workflow API Structure
+The workflow system uses a three-tier API structure to separate concerns:
+
+#### Core Workflow APIs (`/api/workflow/`)
+**Purpose**: General workflow functionality for all authenticated users
+**Access**: All authenticated users with appropriate roles
+**Used by**: Harbor components, general workflow interfaces
+**Endpoints**:
+- `/api/workflow` (POST/GET) - Create workflows and list workflows for tenant
+- `/api/workflow/[id]` (GET/PUT/DELETE) - Get, update, delete individual workflows
+- `/api/workflow/[id]/stream` - SSE endpoint for real-time updates
+- `/api/workflow/history` - Get workflow history for user
+- `/api/workflow/history/detail/[id]` - Get detailed workflow history
+
+#### Harbor-Specific APIs (`/api/harbor/workflow/`)
+**Purpose**: Harbor interface-specific functionality
+**Access**: Harbor users with appropriate roles
+**Used by**: Harbor workflow components only
+**Endpoints**:
+- `/api/harbor/workflow/messages` (POST) - Send messages to workflows
+- `/api/harbor/workflow/stats` (GET) - Get workflow statistics for tenant
+
+#### Dashboard-Specific APIs (`/api/dashboard/workflow/`)
+**Purpose**: Admin-focused functionality for system management
+**Access**: System admins and tenant admins only
+**Used by**: Dashboard admin components only
+**Endpoints**:
+- `/api/dashboard/workflow/list` (GET) - List workflows with admin filtering
+- `/api/dashboard/workflow/[id]` (GET/PUT) - Admin workflow details and management
+- `/api/dashboard/workflow/stats` (GET) - System-wide workflow statistics
+- `/api/dashboard/workflow/analytics` (GET) - Workflow analytics
+- `/api/dashboard/workflow/reports` (GET) - Workflow reports
+- `/api/dashboard/workflow/history` (GET) - Admin workflow history
+- `/api/dashboard/workflow/bulk` (POST) - Bulk workflow operations
+- `/api/dashboard/workflow/health` (GET) - System health checks
+- `/api/dashboard/workflow/settings` (GET/PUT) - System settings
+
+### Workflow API Usage Guidelines
+- **DO NOT create new workflow routes** - Use existing routes based on the interface context
+- **For Harbor components**: Use `/api/workflow/` (core) and `/api/harbor/workflow/` (harbor-specific)
+- **For Dashboard components**: Use `/api/dashboard/workflow/` (admin-specific)
+- **For general workflow functionality**: Use `/api/workflow/` (core APIs)
+- **When adding features**: Determine which interface needs the feature and use the appropriate API tier
+- **Avoid duplication**: Check existing APIs before creating new routes
 
 access_control:
   user_authentication:
