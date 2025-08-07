@@ -3,10 +3,9 @@ import { redirect } from 'next/navigation';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { isSystemAdmin } from '@/lib/access';
 import { SystemLogs } from '@/lib/system-logs';
-import { Container, Heading, Text, Box, Flex, Button, Tabs } from '@radix-ui/themes';
+import { Container, Heading, Text, Box, Flex, Button } from '@radix-ui/themes';
 import Link from 'next/link';
 import { DashboardWorkflowSettings } from '@/components/DashboardWorkflowSettings';
-import { DashboardWorkflowHealth } from '@/components/DashboardWorkflowHealth';
 
 
 export default async function WorkflowSettingsPage() {
@@ -66,28 +65,10 @@ export default async function WorkflowSettingsPage() {
         </Flex>
       </Box>
 
-      <Tabs.Root defaultValue="settings">
-        <Tabs.List>
-          <Tabs.Trigger value="settings">System Settings</Tabs.Trigger>
-          <Tabs.Trigger value="health">System Health</Tabs.Trigger>
-        </Tabs.List>
-
-        <Box pt="3">
-          <Tabs.Content value="settings">
-            <DashboardWorkflowSettings 
-              userEmail={session.user.email}
-              isGlobalAdmin={isAdmin}
-            />
-          </Tabs.Content>
-
-          <Tabs.Content value="health">
-            <DashboardWorkflowHealth 
-              userEmail={session.user.email}
-              isGlobalAdmin={isAdmin}
-            />
-          </Tabs.Content>
-        </Box>
-      </Tabs.Root>
+      <DashboardWorkflowSettings 
+        userEmail={session.user.email}
+        isGlobalAdmin={isAdmin}
+      />
 
       <Box style={{ marginTop: '2rem' }}>
         <Text size="2" color="gray">

@@ -17,6 +17,7 @@ interface WorkflowSettings {
   defaultWorkflowStatus: string;
   retentionPolicy: string;
   backupFrequency: string;
+  ssePollingIntervalMs: number;
 }
 
 interface SystemConfig {
@@ -47,7 +48,8 @@ export function DashboardWorkflowSettings({
     enableAuditLogging: true,
     defaultWorkflowStatus: 'active',
     retentionPolicy: '90days',
-    backupFrequency: 'daily'
+    backupFrequency: 'daily',
+    ssePollingIntervalMs: 15000 // 15 seconds default
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -353,6 +355,22 @@ export function DashboardWorkflowSettings({
                         />
                       </TextField.Root>
                       <Text size="1" color="gray">Days before completed workflows are archived</Text>
+                    </Box>
+                    <Box style={{ flex: '1', minWidth: '250px' }}>
+                      <Text size="2" weight="medium" style={{ marginBottom: '0.5rem' }}>
+                        SSE Polling Interval (ms)
+                      </Text>
+                      <TextField.Root>
+                        <TextField.Input
+                          type="number"
+                          value={settings.ssePollingIntervalMs}
+                          onChange={(e) => handleSettingChange('ssePollingIntervalMs', parseInt(e.target.value) || 5000)}
+                          min="5000"
+                          max="60000"
+                          step="1000"
+                        />
+                      </TextField.Root>
+                      <Text size="1" color="gray">Real-time update polling interval (5-60 seconds)</Text>
                     </Box>
                   </Flex>
                   <Flex direction="column" gap="3">

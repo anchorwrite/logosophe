@@ -827,6 +827,8 @@ export function WorkflowDetailClient({ workflowId, userEmail, userTenantId, lang
             workflowId={workflowId}
             workflowTitle={workflow.Title}
             currentUserEmail={userEmail}
+            workflowTenantId={workflow.TenantId}
+            existingParticipants={participants.map(p => ({ email: p.ParticipantEmail, role: p.Role }))}
           />
         </Box>
 

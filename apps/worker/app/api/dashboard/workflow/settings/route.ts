@@ -28,14 +28,14 @@ export async function GET(request: NextRequest) {
     // Get current settings from database
     const settingsResult = await db.prepare(`
       SELECT 
-        SettingKey,
-        SettingValue,
-        LastUpdated,
+        Key,
+        Value,
+        UpdatedAt,
         UpdatedBy
       FROM SystemSettings 
-      WHERE Category = 'workflow'
-      ORDER BY SettingKey
-    `).all() as { results: { SettingKey: string; SettingValue: string; LastUpdated: string; UpdatedBy: string }[] };
+      WHERE Key LIKE 'workflow_%'
+      ORDER BY Key
+    `).all() as { results: { Key: string; Value: string; UpdatedAt: string; UpdatedBy: string }[] };
 
     // Convert database results to settings object
     const settings: Record<string, any> = {};
@@ -43,11 +43,12 @@ export async function GET(request: NextRequest) {
     let updatedBy = '';
 
     settingsResult.results.forEach(row => {
-      const key = row.SettingKey;
-      let value: any = row.SettingValue;
+      // Extract the setting name from the key (remove 'workflow_' prefix)
+      const key = row.Key.replace('workflow_', '');
+      let value: any = row.Value;
       
       // Parse value based on expected type
-      if (key.includes('max') || key.includes('Timeout') || key.includes('Days')) {
+      if (key.includes('max') || key.includes('Timeout') || key.includes('Days') || key.includes('Interval')) {
         value = parseInt(value);
       } else if (key.includes('allow') || key.includes('enable') || key.includes('require')) {
         value = value === 'true';
@@ -56,8 +57,8 @@ export async function GET(request: NextRequest) {
       settings[key] = value;
       
       // Track the most recent update
-      if (!lastUpdated || row.LastUpdated > lastUpdated) {
-        lastUpdated = row.LastUpdated;
+      if (!lastUpdated || row.UpdatedAt > lastUpdated) {
+        lastUpdated = row.UpdatedAt;
         updatedBy = row.UpdatedBy;
       }
     });
@@ -76,7 +77,8 @@ export async function GET(request: NextRequest) {
       enableAuditLogging: true,
       defaultWorkflowStatus: 'active',
       retentionPolicy: '90days',
-      backupFrequency: 'daily'
+      backupFrequency: 'daily',
+      ssePollingIntervalMs: 15000 // 15 seconds default
     };
 
     // Merge with defaults
@@ -161,9 +163,9 @@ export async function POST(request: NextRequest) {
     
     for (const [key, value] of Object.entries(settings)) {
       await db.prepare(`
-        INSERT OR REPLACE INTO SystemSettings (Category, SettingKey, SettingValue, LastUpdated, UpdatedBy)
-        VALUES (?, ?, ?, ?, ?)
-      `).bind('workflow', key, value.toString(), timestamp, userEmail).run();
+        INSERT OR REPLACE INTO SystemSettings (Key, Value, UpdatedAt, UpdatedBy)
+        VALUES (?, ?, ?, ?)
+      `).bind(`workflow_${key}`, value.toString(), timestamp, userEmail).run();
     }
 
     // Log the settings change

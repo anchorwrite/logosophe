@@ -66,7 +66,8 @@ export default async function DashboardPage() {
     { href: '/dashboard/messaging/blocks', label: 'User Blocks', roles: ['admin', 'tenant'] },
     { href: '/dashboard/messaging/recipients', label: 'Recipients', roles: ['admin', 'tenant'] },
     { href: '/dashboard/messaging/system', label: 'System Controls', roles: ['admin'] },
-    { href: '/dashboard/workflow', label: 'Workflow System', roles: ['admin', 'tenant'] }
+    { href: '/dashboard/workflow', label: 'Workflow System', roles: ['admin', 'tenant'] },
+    { href: '/dashboard/workflow/settings', label: 'Workflow Settings', roles: ['admin'] }
   ].sort((a, b) => a.label.localeCompare(b.label));
 
   // Filter links based on user role
