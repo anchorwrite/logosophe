@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { Card, Box, Grid, Heading, Flex, Text, Avatar, Badge, Button, Checkbox, Select } from '@radix-ui/themes';
 import { useToast } from '@/components/Toast';
+import { useTranslation } from 'react-i18next';
+
 
 interface TenantMember {
   email: string;
@@ -40,6 +42,7 @@ interface WorkflowParticipantSelectorProps {
   selectedParticipants: Participant[];
   onSelectionChange: (participants: Participant[]) => void;
   onClose: () => void;
+  lang?: string;
 }
 
 export default function WorkflowParticipantSelector({ 
@@ -47,12 +50,21 @@ export default function WorkflowParticipantSelector({
   selectedTenantId,
   selectedParticipants, 
   onSelectionChange, 
-  onClose 
+  onClose,
+  lang
 }: WorkflowParticipantSelectorProps) {
   const [members, setMembers] = useState<GroupedMember[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [participantRoles, setParticipantRoles] = useState<Record<string, string>>({});
   const { showToast } = useToast();
+  const { t, i18n } = useTranslation('translations');
+
+  // Ensure language is synchronized
+  useEffect(() => {
+    if (lang && i18n.language !== lang) {
+      i18n.changeLanguage(lang);
+    }
+  }, [lang, i18n]);
 
   useEffect(() => {
     const fetchMembers = async () => {
@@ -91,8 +103,8 @@ export default function WorkflowParticipantSelector({
       } catch (error) {
         console.error('Error fetching tenant members:', error);
         showToast({
-          title: 'Error',
-          content: 'Failed to load tenant members',
+          title: t('error'),
+          content: t('workflow.participantSelector.loadError'),
           type: 'error'
         });
       } finally {
@@ -175,7 +187,7 @@ export default function WorkflowParticipantSelector({
   if (isLoading) {
     return (
       <Box p="4" style={{ textAlign: 'center' }}>
-        <Text>Loading members...</Text>
+        <Text>{t('workflow.participantSelector.loading')}</Text>
       </Box>
     );
   }
@@ -183,7 +195,7 @@ export default function WorkflowParticipantSelector({
   if (members.length === 0) {
     return (
       <Box p="4" style={{ textAlign: 'center' }}>
-        <Text>No members found in the selected tenant.</Text>
+        <Text>{t('workflow.participantSelector.noMembers')}</Text>
       </Box>
     );
   }
@@ -191,16 +203,15 @@ export default function WorkflowParticipantSelector({
   return (
     <Box>
       <Flex justify="between" align="center" mb="4">
-        <Text size="5" weight="bold">Select Workflow Participants</Text>
         <Flex gap="2">
           <Button size="2" variant="soft" onClick={handleSelectAll}>
-            Select All
+            {t('workflow.participantSelector.selectAll')}
           </Button>
           <Button size="2" variant="soft" onClick={handleSelectNone}>
-            Select None
+            {t('workflow.participantSelector.selectNone')}
           </Button>
           <Button size="2" onClick={onClose}>
-            Done
+            {t('workflow.participantSelector.done')}
           </Button>
         </Flex>
       </Flex>
@@ -229,7 +240,7 @@ export default function WorkflowParticipantSelector({
                     {member.tenants.map((tenant) => (
                       <Flex key={`${member.email}-${tenant.id}-${tenant.role}`} gap="2" justify="center">
                         <Badge>{tenant.role}</Badge>
-                        <Text size="2" color="gray">in {tenant.name}</Text>
+                        <Text size="2" color="gray">{t('workflow.participantSelector.inTenant', { tenantName: tenant.name })}</Text>
                       </Flex>
                     ))}
                   </Flex>
@@ -240,7 +251,7 @@ export default function WorkflowParticipantSelector({
                       borderRadius: '4px',
                       textAlign: 'center'
                     }}>
-                      <Text size="2" color="gray">Current User</Text>
+                      <Text size="2" color="gray">{t('workflow.participantSelector.currentUser')}</Text>
                     </Box>
                   ) : (
                     <Box mt="2" style={{ width: '100%' }}>
@@ -251,7 +262,7 @@ export default function WorkflowParticipantSelector({
                       />
                       {isSelected && (
                         <Box mt="2">
-                          <Text size="2" weight="bold" mb="1">Role:</Text>
+                          <Text size="2" weight="bold" mb="1">{t('workflow.participantSelector.role')}</Text>
                           <Select.Root
                             value={selectedRole}
                             onValueChange={(role) => handleRoleChange(member.email, role)}

@@ -44,7 +44,7 @@ interface CreateWorkflowClientProps {
 }
 
 export function CreateWorkflowClient({ userEmail, userTenants, defaultTenant, lang }: CreateWorkflowClientProps) {
-  const { t } = useTranslation('translations');
+  const { t, i18n } = useTranslation('translations');
   const [isCreating, setIsCreating] = useState(false);
   const [showParticipantSelector, setShowParticipantSelector] = useState(false);
   const [showMediaSelector, setShowMediaSelector] = useState(false);
@@ -57,6 +57,22 @@ export function CreateWorkflowClient({ userEmail, userTenants, defaultTenant, la
     mediaFileIds: [] as number[]
   });
   const { showToast } = useToast();
+
+  // Ensure language is synchronized
+  useEffect(() => {
+    if (lang && i18n.language !== lang) {
+      i18n.changeLanguage(lang);
+    }
+  }, [lang, i18n]);
+
+  // Don't render until language is ready to prevent hydration mismatch
+  if (lang && i18n.language !== lang) {
+    return (
+      <Box p="4" style={{ textAlign: 'center' }}>
+        <Text>Loading...</Text>
+      </Box>
+    );
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -320,13 +336,14 @@ export function CreateWorkflowClient({ userEmail, userTenants, defaultTenant, la
       {/* Participant Selector Dialog */}
       <Dialog.Root open={showParticipantSelector} onOpenChange={setShowParticipantSelector}>
         <Dialog.Content style={{ maxWidth: '1000px', maxHeight: '80vh' }}>
-          <Dialog.Title>{t('workflow.selectParticipantsDialog.title')}</Dialog.Title>
+          <Dialog.Title>{t('workflow.participantSelector.title')}</Dialog.Title>
           <WorkflowParticipantSelector
             userEmail={userEmail}
             selectedTenantId={formData.selectedTenant.tenantId}
             selectedParticipants={formData.participants}
             onSelectionChange={(participants) => handleInputChange('participants', participants)}
             onClose={() => setShowParticipantSelector(false)}
+            lang={lang}
           />
         </Dialog.Content>
       </Dialog.Root>
@@ -334,13 +351,14 @@ export function CreateWorkflowClient({ userEmail, userTenants, defaultTenant, la
       {/* Media File Selector Dialog */}
       <Dialog.Root open={showMediaSelector} onOpenChange={setShowMediaSelector}>
         <Dialog.Content style={{ maxWidth: '1000px', maxHeight: '80vh' }}>
-          <Dialog.Title>{t('workflow.selectMediaFilesDialog.title')}</Dialog.Title>
+          <Dialog.Title>{t('workflow.mediaFileSelector.title')}</Dialog.Title>
           <MediaFileSelector
             userEmail={userEmail}
             userTenantId={formData.selectedTenant.tenantId}
             selectedFiles={formData.mediaFileIds}
             onSelectionChange={(fileIds) => handleInputChange('mediaFileIds', fileIds)}
             onClose={() => setShowMediaSelector(false)}
+            lang={lang}
           />
         </Dialog.Content>
       </Dialog.Root>
