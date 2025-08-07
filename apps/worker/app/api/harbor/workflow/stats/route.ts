@@ -105,59 +105,52 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Get workflow statistics from WorkflowHistory table
-    let statsQuery = `
+    // Get workflow statistics directly from database
+    const statsQuery = `
       SELECT 
-        COUNT(DISTINCT wh.WorkflowId) as totalWorkflows,
-        SUM(CASE WHEN wh.Status = 'active' THEN 1 ELSE 0 END) as activeWorkflows,
-        SUM(CASE WHEN wh.Status = 'completed' THEN 1 ELSE 0 END) as completedWorkflows,
-        SUM(CASE WHEN wh.Status = 'terminated' THEN 1 ELSE 0 END) as terminatedWorkflows,
-        AVG(CASE WHEN wh.Status = 'completed' THEN 
-          (julianday(wh.CompletedAt) - julianday(wh.CreatedAt)) 
+        COUNT(*) as totalWorkflows,
+        SUM(CASE WHEN Status = 'active' THEN 1 ELSE 0 END) as activeWorkflows,
+        SUM(CASE WHEN Status = 'completed' THEN 1 ELSE 0 END) as completedWorkflows,
+        SUM(CASE WHEN Status = 'terminated' THEN 1 ELSE 0 END) as terminatedWorkflows,
+        AVG(CASE WHEN Status = 'completed' THEN 
+          (julianday(CompletedAt) - julianday(CreatedAt)) 
         ELSE NULL END) as avgCompletionDays
-      FROM WorkflowHistory wh
-      WHERE wh.TenantId = ?
+      FROM Workflows 
+      WHERE TenantId = ?
     `;
 
-    let todayActivityQuery = `
+    const todayActivityQuery = `
       SELECT 
-        SUM(CASE WHEN wh.Status = 'completed' AND date(wh.CompletedAt) = date('now', 'localtime') THEN 1 ELSE 0 END) as completedToday,
-        SUM(CASE WHEN date(wh.CreatedAt) = date('now', 'localtime') THEN 1 ELSE 0 END) as initiatedToday,
-        SUM(CASE WHEN wh.Status = 'terminated' AND date(wh.UpdatedAt) = date('now', 'localtime') THEN 1 ELSE 0 END) as terminatedToday
-      FROM WorkflowHistory wh
-      WHERE wh.TenantId = ?
+        SUM(CASE WHEN Status = 'completed' AND date(CompletedAt) = date('now', 'localtime') THEN 1 ELSE 0 END) as completedToday,
+        SUM(CASE WHEN date(CreatedAt) = date('now', 'localtime') THEN 1 ELSE 0 END) as initiatedToday,
+        SUM(CASE WHEN Status = 'terminated' AND date(UpdatedAt) = date('now', 'localtime') THEN 1 ELSE 0 END) as terminatedToday
+      FROM Workflows 
+      WHERE TenantId = ?
     `;
 
-    let recentActivityQuery = `
+    const recentActivityQuery = `
       SELECT 
-        COUNT(DISTINCT wh.WorkflowId) as recentWorkflows,
-        COUNT(DISTINCT CASE WHEN wm.Id IS NOT NULL THEN wh.WorkflowId END) as workflowsWithMessages
-      FROM WorkflowHistory wh
-      LEFT JOIN WorkflowMessages wm ON wh.WorkflowId = wm.WorkflowId
-      WHERE wh.TenantId = ? AND wh.CreatedAt >= datetime('now', '-7 days')
+        COUNT(*) as recentWorkflows,
+        COUNT(DISTINCT w.Id) as workflowsWithMessages
+      FROM Workflows w
+      LEFT JOIN WorkflowMessages wm ON w.Id = wm.WorkflowId
+      WHERE w.TenantId = ? 
+        AND w.CreatedAt >= datetime('now', '-7 days')
     `;
 
-    let topParticipantsQuery = `
+    const topParticipantsQuery = `
       SELECT 
-        wp.ParticipantEmail,
-        COUNT(DISTINCT wp.WorkflowId) as workflowCount,
+        WorkflowParticipants.ParticipantEmail,
+        COUNT(DISTINCT WorkflowParticipants.WorkflowId) as workflowCount,
         COUNT(wm.Id) as messageCount
-      FROM WorkflowParticipants wp
-      JOIN WorkflowHistory wh ON wp.WorkflowId = wh.WorkflowId
-      LEFT JOIN WorkflowMessages wm ON wh.WorkflowId = wm.WorkflowId AND wm.SenderEmail = wp.ParticipantEmail
-      WHERE wh.TenantId = ?
-      GROUP BY wp.ParticipantEmail
+      FROM WorkflowParticipants
+      JOIN Workflows w ON WorkflowParticipants.WorkflowId = w.Id
+      LEFT JOIN WorkflowMessages wm ON w.Id = wm.WorkflowId AND wm.SenderEmail = WorkflowParticipants.ParticipantEmail
+      WHERE w.TenantId = ?
+      GROUP BY WorkflowParticipants.ParticipantEmail
       ORDER BY messageCount DESC, workflowCount DESC
       LIMIT 5
     `;
-
-    // Add participation filtering for non-admin users
-    if (!isAdmin) {
-      statsQuery += ' AND EXISTS (SELECT 1 FROM WorkflowParticipants wp WHERE wp.WorkflowId = wh.WorkflowId AND wp.ParticipantEmail = ?)';
-      todayActivityQuery += ' AND EXISTS (SELECT 1 FROM WorkflowParticipants wp WHERE wp.WorkflowId = wh.WorkflowId AND wp.ParticipantEmail = ?)';
-      recentActivityQuery += ' AND EXISTS (SELECT 1 FROM WorkflowParticipants wp WHERE wp.WorkflowId = wh.WorkflowId AND wp.ParticipantEmail = ?)';
-      topParticipantsQuery += ' AND wp.ParticipantEmail = ?';
-    }
 
     const stats = await db.prepare(statsQuery).bind(tenantId).first();
     const todayActivity = await db.prepare(todayActivityQuery).bind(tenantId).first();
