@@ -245,9 +245,18 @@ export default function WorkflowHistoryDetailClient({
                   <Text size="2" weight="medium">Status</Text>
                 </Table.Cell>
                 <Table.Cell>
-                  <Badge color={getStatusColor(workflow.Status)}>
-                    {getStatusLabel(workflow.Status)}
-                  </Badge>
+                  <Flex gap="2" align="center">
+                    <Badge color={getStatusColor(workflow.Status)}>
+                      {getStatusLabel(workflow.Status)}
+                    </Badge>
+                    {workflow.Status === 'completed' && !workflow.DeletedAt && (
+                      <Button size="1" variant="soft" asChild>
+                        <Link href={`/${lang}/harbor/workflow/${workflow.Id}`}>
+                          View Workflow Details
+                        </Link>
+                      </Button>
+                    )}
+                  </Flex>
                 </Table.Cell>
               </Table.Row>
               <Table.Row>

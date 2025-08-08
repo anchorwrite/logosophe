@@ -24,11 +24,9 @@ export default async function HarborWorkflowDetailPage({ params }: { params: Par
   const { lang, id } = await params;
   const dict = await getDictionary(lang);
   
-  console.log('Workflow detail page - User email:', session?.user?.email);
-  console.log('Workflow detail page - Workflow ID:', id);
+
   
   if (!session?.user?.email) {
-    console.log('Workflow detail page - No session, redirecting to signin');
     redirect('/signin');
   }
 
@@ -38,10 +36,7 @@ export default async function HarborWorkflowDetailPage({ params }: { params: Par
     allowedRoles: ['admin', 'tenant', 'author', 'editor', 'agent', 'reviewer', 'subscriber']
   });
 
-  console.log('Workflow detail page - Access result:', access);
-
   if (!access.hasAccess) {
-    console.log('Workflow detail page - Access denied, redirecting to harbor');
     redirect(`/${lang}/harbor`);
   }
 
@@ -61,7 +56,6 @@ export default async function HarborWorkflowDetailPage({ params }: { params: Par
       .bind(session.user.email)
       .first() as any;
 
-    console.log('Workflow detail page - User tenant result:', userTenantResult);
   } catch (error) {
     console.error('Workflow detail page - Database error:', error);
     // If database query fails, redirect to harbor
@@ -69,7 +63,6 @@ export default async function HarborWorkflowDetailPage({ params }: { params: Par
   }
 
   if (!userTenantResult?.TenantId) {
-    console.log('Workflow detail page - No tenant found, redirecting to harbor');
     redirect(`/${lang}/harbor`);
   }
 
