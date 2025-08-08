@@ -135,12 +135,8 @@ export async function POST(request: NextRequest) {
     for (const participant of allParticipants) {
       const joinedAt = new Date().toISOString();
 
-      // Map user roles to workflow participant roles
-      // WorkflowParticipants table only accepts 'initiator' and 'recipient'
-      let workflowRole = 'recipient'; // Default to recipient
-      if (participant.email === access.email) {
-        workflowRole = 'initiator'; // Creator is always initiator
-      }
+      // Store the actual role chosen by the user, not hardcoded values
+      const participantRole = participant.role;
 
       const insertParticipantQuery = `
         INSERT INTO WorkflowParticipants (WorkflowId, ParticipantEmail, Role, JoinedAt)
@@ -148,7 +144,7 @@ export async function POST(request: NextRequest) {
       `;
 
       await db.prepare(insertParticipantQuery)
-        .bind(workflowId, participant.email, workflowRole, joinedAt)
+        .bind(workflowId, participant.email, participantRole, joinedAt)
         .run();
     }
 

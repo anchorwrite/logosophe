@@ -77,7 +77,7 @@ export async function GET(request: NextRequest) {
         wm.ShareToken
       FROM WorkflowMessages wm
       WHERE wm.WorkflowId = ?
-      ORDER BY wm.CreatedAt DESC
+      ORDER BY wm.CreatedAt ASC
       LIMIT 10
     `;
 

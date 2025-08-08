@@ -79,7 +79,7 @@ export async function GET(request: NextRequest) {
             WHERE wp.WorkflowId = w.Id AND wp.ParticipantEmail = ?
           )
       )
-      ORDER BY wm.CreatedAt DESC
+      ORDER BY wm.CreatedAt ASC
       LIMIT 50
     `;
 
