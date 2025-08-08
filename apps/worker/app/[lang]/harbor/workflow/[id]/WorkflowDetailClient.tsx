@@ -102,6 +102,7 @@ export function WorkflowDetailClient({ workflowId, userEmail, userTenantId, lang
   const [isCompleting, setIsCompleting] = useState(false);
   const [isTerminating, setIsTerminating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isReactivating, setIsReactivating] = useState(false);
   const [sharedMediaFiles, setSharedMediaFiles] = useState<SharedMediaFile[]>([]);
   const [isLoadingMedia, setIsLoadingMedia] = useState(false);
   const eventSourceRef = useRef<EventSource | null>(null);
@@ -116,6 +117,10 @@ export function WorkflowDetailClient({ workflowId, userEmail, userTenantId, lang
   }>({ isOpen: false });
   
   const [deleteDialog, setDeleteDialog] = useState<{
+    isOpen: boolean;
+  }>({ isOpen: false });
+
+  const [reactivateDialog, setReactivateDialog] = useState<{
     isOpen: boolean;
   }>({ isOpen: false });
 
@@ -524,6 +529,58 @@ export function WorkflowDetailClient({ workflowId, userEmail, userTenantId, lang
     }
   };
 
+  const handleReactivateWorkflow = async () => {
+    if (!workflow || !['completed', 'terminated'].includes(workflow.Status)) return;
+
+    setIsReactivating(true);
+    
+    try {
+      const response = await fetch(`/api/workflow/${workflow.Id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'reactivate'
+        }),
+      });
+
+      const result = await response.json() as { success: boolean; error?: string };
+      
+      if (result.success) {
+        // Update the workflow status locally
+        setWorkflow(prev => prev ? {
+          ...prev,
+          Status: 'active',
+          CompletedAt: undefined,
+          CompletedBy: undefined,
+          UpdatedAt: new Date().toISOString()
+        } : null);
+        
+        showToast({
+          type: 'success',
+          title: t('common.success'),
+          content: 'Workflow reactivated successfully'
+        });
+      } else {
+        showToast({
+          type: 'error',
+          title: t('common.error'),
+          content: result.error || 'Failed to reactivate workflow'
+        });
+      }
+    } catch (error) {
+      console.error('Error reactivating workflow:', error);
+      showToast({
+        type: 'error',
+        title: t('common.error'),
+        content: 'Failed to reactivate workflow'
+      });
+    } finally {
+      setIsReactivating(false);
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'active':
@@ -647,14 +704,23 @@ export function WorkflowDetailClient({ workflowId, userEmail, userTenantId, lang
                     </>
                   )}
                   {(workflow.Status === 'completed' || workflow.Status === 'terminated') && (
-                    <Button 
-                      color="red" 
-                      variant="soft"
-                      onClick={() => setDeleteDialog({ isOpen: true })}
-                      disabled={isDeleting}
-                    >
-                      {isDeleting ? (dict as any).workflow.history.detail.deleting : (dict as any).workflow.history.detail.deleteWorkflow}
-                    </Button>
+                    <>
+                      <Button 
+                        color="blue" 
+                        onClick={() => setReactivateDialog({ isOpen: true })}
+                        disabled={isReactivating}
+                      >
+                        {isReactivating ? 'Reactivating...' : 'Reactivate Workflow'}
+                      </Button>
+                      <Button 
+                        color="red" 
+                        variant="soft"
+                        onClick={() => setDeleteDialog({ isOpen: true })}
+                        disabled={isDeleting}
+                      >
+                        {isDeleting ? (dict as any).workflow.history.detail.deleting : (dict as any).workflow.history.detail.deleteWorkflow}
+                      </Button>
+                    </>
                   )}
                 </Flex>
               </Flex>
@@ -935,6 +1001,19 @@ export function WorkflowDetailClient({ workflowId, userEmail, userTenantId, lang
         cancelText={(dict as any).workflow.history.detail.deleteDialog.cancel}
         variant="danger"
         isLoading={isDeleting}
+      />
+
+      {/* Reactivate Confirmation Dialog */}
+      <ConfirmationDialog
+        isOpen={reactivateDialog.isOpen}
+        onClose={() => setReactivateDialog({ isOpen: false })}
+        onConfirm={handleReactivateWorkflow}
+        title="Reactivate Workflow"
+        message={`Are you sure you want to reactivate the workflow "${workflow?.Title || ''}"? This will change its status back to active and allow new messages.`}
+        confirmText="Reactivate"
+        cancelText="Cancel"
+        variant="default"
+        isLoading={isReactivating}
       />
 
       {/* Media File Selector Dialog */}

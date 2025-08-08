@@ -213,9 +213,23 @@ export async function PUT(
       return NextResponse.json({ error: 'You do not have access to this workflow' }, { status: 403 });
     }
 
-    // Check if user is a participant or system admin
-    if (!isAdmin && !participants.includes(access.email)) {
-      return NextResponse.json({ error: 'You do not have permission to modify this workflow' }, { status: 403 });
+    // Check access permissions based on action
+    const isInitiator = workflowData.InitiatorEmail === access.email;
+    
+    // For reactivate action: allow admins and initiators
+    if (body.action === 'reactivate') {
+      if (!isAdmin && !isInitiator) {
+        return NextResponse.json({ error: 'You do not have permission to reactivate this workflow' }, { status: 403 });
+      }
+      // Also check that workflow is in a reactivatable state
+      if (!['completed', 'terminated'].includes(workflowData.Status)) {
+        return NextResponse.json({ error: 'Workflow cannot be reactivated from its current state' }, { status: 400 });
+      }
+    } else {
+      // For other actions: check if user is a participant or system admin
+      if (!isAdmin && !participants.includes(access.email)) {
+        return NextResponse.json({ error: 'You do not have permission to modify this workflow' }, { status: 403 });
+      }
     }
 
     // Update workflow

@@ -295,7 +295,7 @@ export function ActiveWorkflowsClient({ userEmail, userTenantId, lang, dict }: A
                       </Text>
                     </Flex>
                   </Box>
-                  <Flex gap="2">
+                  <Flex gap="2" style={{ overflowX: 'auto', minWidth: 0 }}>
                     {workflow.Status === 'active' && (
                       <>
                         <Button 
