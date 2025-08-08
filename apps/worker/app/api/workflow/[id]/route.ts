@@ -164,7 +164,7 @@ export async function PUT(
     const body = await request.json() as {
       status?: 'active' | 'completed' | 'terminated';
       title?: string;
-      action?: 'complete' | 'terminate' | 'reactivate';
+      action?: 'complete' | 'terminate' | 'reactivate' | 'delete';
       completedBy?: string;
     };
 
@@ -242,6 +242,9 @@ export async function PUT(
     } else if (body.action === 'reactivate') {
       updateFields.push('Status = ?', 'CompletedAt = NULL', 'CompletedBy = NULL', 'UpdatedAt = ?');
       updateValues.push('active', new Date().toISOString());
+    } else if (body.action === 'delete') {
+      updateFields.push('Status = ?', 'UpdatedAt = ?');
+      updateValues.push('deleted', new Date().toISOString());
     }
 
     if (updateFields.length > 0) {
@@ -280,7 +283,11 @@ export async function PUT(
 
         // Log to WorkflowHistory
         const workflowHistoryLogger = await getWorkflowHistoryLogger();
-        await workflowHistoryLogger.logWorkflowUpdated(workflowData, access.email, body.action);
+        if (body.action === 'delete') {
+          await workflowHistoryLogger.logWorkflowDeleted(workflowData, access.email);
+        } else {
+          await workflowHistoryLogger.logWorkflowUpdated(workflowData, access.email, body.action);
+        }
       } catch (logError) {
         console.error('Failed to log workflow update:', logError);
         // Continue with workflow update even if logging fails

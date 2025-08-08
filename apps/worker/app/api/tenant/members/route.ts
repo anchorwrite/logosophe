@@ -29,7 +29,7 @@ export async function GET(request: Request) {
             s.Email as email,
             s.Name as name,
             u.image as image,
-            r.Name as role,
+            r.Id as role,
             t.Id as tenantId,
             t.Name as tenantName
           FROM UserRoles ur
@@ -46,7 +46,7 @@ export async function GET(request: Request) {
             s.Email as email,
             s.Name as name,
             u.image as image,
-            r.Name as role,
+            r.Id as role,
             t.Id as tenantId,
             t.Name as tenantName
           FROM UserRoles ur
@@ -75,7 +75,7 @@ export async function GET(request: Request) {
             s.Email as email,
             s.Name as name,
             u.image as image,
-            r.Name as role,
+            r.Id as role,
             t.Id as tenantId,
             t.Name as tenantName
           FROM UserRoles ur
@@ -93,7 +93,7 @@ export async function GET(request: Request) {
             s.Email as email,
             s.Name as name,
             u.image as image,
-            r.Name as role,
+            r.Id as role,
             t.Id as tenantId,
             t.Name as tenantName
           FROM UserRoles ur

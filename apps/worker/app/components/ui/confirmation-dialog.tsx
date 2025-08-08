@@ -67,7 +67,7 @@ export function ConfirmationDialog({
         padding: 'var(--space-4)'
       }}>
         <Dialog.Title>
-          <Heading size="3">{title}</Heading>
+          <Text size="3" weight="bold">{title}</Text>
         </Dialog.Title>
         
         <Dialog.Description size="2" mb="4">

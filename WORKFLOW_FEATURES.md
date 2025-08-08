@@ -54,7 +54,7 @@ The workflow system provides real-time collaboration capabilities for sharing me
 - `EventTimestamp` (TEXT, NOT NULL) - When the event occurred
 - `EventPerformedBy` (TEXT, NOT NULL) - Email of user who performed the event
 
-**Note**: The `Role` column in `WorkflowParticipants` was updated to allow any role name (e.g., 'author', 'subscriber', 'editor') instead of being limited to legacy 'initiator'/'recipient' roles.
+**Note**: The `Role` column in `WorkflowParticipants` was updated to allow any role name (e.g., 'author', 'subscriber', 'editor') instead of being limited to legacy 'initiator'/'recipient' roles. Role names are stored as lowercase role IDs (e.g., 'subscriber', 'author', 'reviewer') for consistency.
 
 ### API Routes
 
@@ -71,8 +71,7 @@ The workflow system uses a three-tier API structure to separate concerns and pre
 
 **`/api/workflow/[id]`**
 - `GET` - Get workflow details with messages and participants
-- `PUT` - Update workflow (status, title, actions)
-- `DELETE` - Delete workflow (soft delete, updates status to 'deleted')
+- `PUT` - Update workflow (status, title, actions including delete)
 
 **`/api/workflow/[id]/stream`**
 - `GET` - SSE endpoint for real-time updates
@@ -140,6 +139,7 @@ To prevent route duplication and ensure proper API usage:
 - **Examples**:
   - Workflow creation: `/api/workflow` (POST)
   - Workflow details: `/api/workflow/[id]` (GET)
+  - Workflow actions: `/api/workflow/[id]` (PUT with action parameter)
   - Real-time updates: `/api/workflow/[id]/stream` (GET)
   - Send messages: `/api/harbor/workflow/messages` (POST)
   - Get stats: `/api/harbor/workflow/stats` (GET)
@@ -158,6 +158,7 @@ To prevent route duplication and ensure proper API usage:
 - **Check existing APIs first** - Before creating a new route, verify if functionality already exists
 - **Use the appropriate tier** - Core APIs for general functionality, Harbor APIs for Harbor features, Dashboard APIs for admin features
 - **Maintain separation** - Keep Harbor and Dashboard APIs separate to avoid confusion
+- **Use PUT with actions** - All workflow state changes use PUT requests with action parameters, not separate HTTP methods
 
 ### Real-Time Communication
 
@@ -269,6 +270,8 @@ const hasAllowedRole = userRoles.some(role => allowedRoles.includes(role));
 - `terminate` - Terminate workflow
 - `reactivate` - Reactivate completed/terminated workflow
 - `delete` - Soft delete workflow (updates status to 'deleted')
+
+**Note**: All actions are performed via `PUT` requests with an `action` parameter, not separate HTTP methods.
 
 ### Message Types
 
@@ -428,8 +431,13 @@ The `WorkflowHistory` table provides a complete audit trail of all workflow life
 
 **React Hydration Errors**
 - Fixed nested `<h1>` elements in dialog components
-- `ConfirmationDialog` and `MediaFileSelector` components use `Heading size="3"` instead of `size="4"`
+- `ConfirmationDialog` components use `Text size="3" weight="bold"` instead of `Heading` to avoid nested heading tags
 - Ensures proper heading hierarchy in dialog contexts
+
+**Role Consistency Issues**
+- Role names are stored as lowercase role IDs (e.g., 'subscriber', 'author', 'reviewer')
+- The `/api/tenant/members` endpoint returns role IDs instead of role names for consistency
+- Existing workflows may have mixed case role names that should be updated for consistency
 
 ### Performance Considerations
 
@@ -525,8 +533,11 @@ eventSource.onmessage = (event) => {
 #### Deleting a Workflow
 ```typescript
 const response = await fetch(`/api/workflow/${workflowId}`, {
-  method: 'DELETE',
-  headers: { 'Content-Type': 'application/json' }
+  method: 'PUT',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    action: 'delete'
+  })
 });
 ```
 
@@ -555,6 +566,8 @@ const response = await fetch(`/api/workflow/${workflowId}`, {
 3. **Connection Errors**: Check network connectivity and EventSource implementation
 4. **Role Display Issues**: Ensure database migration has been applied to allow proper role names
 5. **React Hydration Errors**: Ensure dialog components use proper heading hierarchy
+6. **Workflow Deletion Issues**: Verify that deletion uses PUT with `action: 'delete'` parameter
+7. **Role Consistency**: Check that role names are stored as lowercase role IDs
 
 #### Debug Tools
 - Browser developer tools for SSE connection monitoring
