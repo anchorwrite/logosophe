@@ -17,6 +17,7 @@ interface WorkflowHistoryDetail {
   CompletedAt?: string;
   CompletedBy?: string;
   DeletedAt?: string;
+  participants?: WorkflowParticipant[];
   DeletedBy?: string;
   EventType: string;
   EventTimestamp: string;
@@ -64,6 +65,7 @@ export default function WorkflowHistoryDetailClient({
   const [participants, setParticipants] = useState<WorkflowParticipant[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isReactivating, setIsReactivating] = useState(false);
   const fetchingRef = useRef(false);
 
   useEffect(() => {
@@ -93,7 +95,7 @@ export default function WorkflowHistoryDetailClient({
         
         if (data.success && data.workflow) {
           setWorkflow(data.workflow);
-          setParticipants(data.participants || []);
+          setParticipants(data.workflow.participants || []);
         } else {
           setError(data.error || 'Failed to fetch workflow history');
         }
@@ -156,6 +158,56 @@ export default function WorkflowHistoryDetailClient({
       default:
         return role.charAt(0).toUpperCase() + role.slice(1);
     }
+  };
+
+  const handleReactivateWorkflow = async () => {
+    if (!workflow || !['completed', 'terminated'].includes(workflow.Status)) return;
+
+    setIsReactivating(true);
+    
+    try {
+      const response = await fetch(`/api/workflow/${workflow.Id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'reactivate'
+        }),
+      });
+
+      const result = await response.json() as { success: boolean; error?: string };
+      
+      if (result.success) {
+        // Update the workflow status locally
+        setWorkflow(prev => prev ? {
+          ...prev,
+          Status: 'active',
+          CompletedAt: undefined,
+          CompletedBy: undefined,
+          UpdatedAt: new Date().toISOString()
+        } : null);
+        
+        alert('Workflow reactivated successfully');
+      } else {
+        alert(`Error: ${result.error || 'Failed to reactivate workflow'}`);
+      }
+    } catch (error) {
+      console.error('Error reactivating workflow:', error);
+      alert('Failed to reactivate workflow');
+    } finally {
+      setIsReactivating(false);
+    }
+  };
+
+  const canReactivateWorkflow = () => {
+    if (!workflow || !['completed', 'terminated'].includes(workflow.Status)) return false;
+    
+    // Check if user is admin or initiator
+    const isAdmin = userRole === 'admin' || userRole === 'tenant';
+    const isInitiator = workflow.InitiatorEmail === userEmail;
+    
+    return isAdmin || isInitiator;
   };
 
   if (loading) {
@@ -249,6 +301,16 @@ export default function WorkflowHistoryDetailClient({
                     <Badge color={getStatusColor(workflow.Status)}>
                       {getStatusLabel(workflow.Status)}
                     </Badge>
+                    {canReactivateWorkflow() && (
+                      <Button 
+                        size="1" 
+                        color="blue"
+                        onClick={handleReactivateWorkflow}
+                        disabled={isReactivating}
+                      >
+                        {isReactivating ? 'Reactivating...' : 'Reactivate'}
+                      </Button>
+                    )}
                     {workflow.Status === 'completed' && !workflow.DeletedAt && (
                       <Button size="1" variant="soft" asChild>
                         <Link href={`/${lang}/harbor/workflow/${workflow.Id}`}>
