@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
       SELECT wm.*
       FROM WorkflowMessages wm
       WHERE wm.WorkflowId = ?
-      ORDER BY wm.CreatedAt DESC
+      ORDER BY wm.CreatedAt ASC
       LIMIT ?
     `;
 

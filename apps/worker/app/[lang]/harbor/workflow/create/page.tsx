@@ -1,4 +1,4 @@
-import { auth } from '@/auth';
+  import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
 import { Box, Flex, Heading, Text, Card, Button } from "@radix-ui/themes";
 import Link from "next/link";
