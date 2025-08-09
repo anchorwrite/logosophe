@@ -164,7 +164,7 @@ export async function PUT(
     const body = await request.json() as {
       status?: 'active' | 'completed' | 'terminated';
       title?: string;
-      action?: 'complete' | 'terminate' | 'reactivate' | 'delete';
+      action?: 'complete' | 'terminate' | 'reactivate' | 'delete' | 'hard_delete';
       completedBy?: string;
     };
 
@@ -225,6 +225,15 @@ export async function PUT(
       if (!['completed', 'terminated'].includes(workflowData.Status)) {
         return NextResponse.json({ error: 'Workflow cannot be reactivated from its current state' }, { status: 400 });
       }
+    } else if (body.action === 'hard_delete') {
+      // For hard delete: only admins can perform this action
+      if (!isAdmin) {
+        return NextResponse.json({ error: 'Only administrators can permanently delete workflows' }, { status: 403 });
+      }
+      // Also check that workflow is in deleted state
+      if (workflowData.Status !== 'deleted') {
+        return NextResponse.json({ error: 'Only deleted workflows can be permanently deleted' }, { status: 400 });
+      }
     } else {
       // For other actions: check if user is a participant or system admin
       if (!isAdmin && !participants.includes(access.email)) {
@@ -259,6 +268,61 @@ export async function PUT(
     } else if (body.action === 'delete') {
       updateFields.push('Status = ?', 'UpdatedAt = ?');
       updateValues.push('deleted', new Date().toISOString());
+    } else if (body.action === 'hard_delete') {
+      // Hard delete: permanently remove all related records
+      try {
+        // First log the permanent deletion to WorkflowHistory before deleting
+        const workflowHistoryLogger = await getWorkflowHistoryLogger();
+        await workflowHistoryLogger.logWorkflowPermanentlyDeleted(workflowData, access.email);
+
+        // Delete in order to respect foreign key constraints
+        // 1. Delete WorkflowMessages
+        await db.prepare('DELETE FROM WorkflowMessages WHERE WorkflowId = ?')
+          .bind(id)
+          .run();
+
+        // 2. Delete WorkflowParticipants  
+        await db.prepare('DELETE FROM WorkflowParticipants WHERE WorkflowId = ?')
+          .bind(id)
+          .run();
+
+        // 3. Delete WorkflowInvitations
+        await db.prepare('DELETE FROM WorkflowInvitations WHERE WorkflowId = ?')
+          .bind(id)
+          .run();
+
+        // 4. Finally delete the Workflow itself
+        await db.prepare('DELETE FROM Workflows WHERE Id = ?')
+          .bind(id)
+          .run();
+
+        // Log to system logs
+        const systemLogs = new SystemLogs(db);
+        await systemLogs.logUserOperation({
+          userEmail: access.email,
+          tenantId: workflowData.TenantId,
+          activityType: 'workflow_permanently_deleted',
+          targetId: id,
+          targetName: workflowData.Title,
+          ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('cf-connecting-ip') || 'unknown',
+          userAgent: request.headers.get('user-agent') || 'unknown',
+          metadata: {
+            action: 'hard_delete',
+            originalStatus: workflowData.Status
+          }
+        });
+
+        return NextResponse.json({ 
+          success: true, 
+          message: 'Workflow permanently deleted successfully' 
+        });
+
+      } catch (deleteError) {
+        console.error('Error during hard delete:', deleteError);
+        return NextResponse.json({ 
+          error: 'Failed to permanently delete workflow' 
+        }, { status: 500 });
+      }
     }
 
     if (updateFields.length > 0) {

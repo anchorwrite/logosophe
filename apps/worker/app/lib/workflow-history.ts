@@ -12,7 +12,7 @@ export interface WorkflowHistoryEvent {
   completedBy?: string;
   deletedAt?: string;
   deletedBy?: string;
-  eventType: 'created' | 'updated' | 'completed' | 'terminated' | 'deleted' | 'reactivated';
+  eventType: 'created' | 'updated' | 'completed' | 'terminated' | 'deleted' | 'reactivated' | 'permanently_deleted';
   eventTimestamp: string;
   eventPerformedBy: string;
 }
@@ -115,6 +115,27 @@ export class WorkflowHistoryLogger {
       deletedAt: new Date().toISOString(),
       deletedBy: performedBy,
       eventType: 'deleted',
+      eventTimestamp: new Date().toISOString(),
+      eventPerformedBy: performedBy
+    };
+
+    await this.logWorkflowEvent(event);
+  }
+
+  async logWorkflowPermanentlyDeleted(workflowData: any, performedBy: string): Promise<void> {
+    const event: WorkflowHistoryEvent = {
+      workflowId: workflowData.Id,
+      tenantId: workflowData.TenantId,
+      initiatorEmail: workflowData.InitiatorEmail,
+      title: workflowData.Title,
+      status: workflowData.Status,
+      createdAt: workflowData.CreatedAt,
+      updatedAt: workflowData.UpdatedAt,
+      completedAt: workflowData.CompletedAt,
+      completedBy: workflowData.CompletedBy,
+      deletedAt: workflowData.DeletedAt || new Date().toISOString(),
+      deletedBy: workflowData.DeletedBy || performedBy,
+      eventType: 'permanently_deleted',
       eventTimestamp: new Date().toISOString(),
       eventPerformedBy: performedBy
     };
