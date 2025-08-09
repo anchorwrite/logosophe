@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'You do not have permission to access workflow history' }, { status: 403 });
     }
 
-    // Build query based on user type
+    // Build query based on user type with tenant and initiator information
     let workflowsQuery = `
       SELECT 
         w.Id,
@@ -44,10 +44,27 @@ export async function GET(request: NextRequest) {
         w.CompletedAt,
         w.CompletedBy,
         w.TenantId,
+        w.InitiatorEmail,
+        t.Name as TenantName,
+        tu.RoleId as initiatorRole,
         COUNT(wm.Id) as messageCount,
         MAX(wm.CreatedAt) as lastActivity,
-        COUNT(DISTINCT wp.ParticipantEmail) as participantCount
+        COUNT(DISTINCT wp.ParticipantEmail) as participantCount,
+        CASE 
+          WHEN w.Status = 'completed' THEN 'completed'
+          WHEN w.Status = 'terminated' THEN 'terminated'
+          WHEN w.Status = 'deleted' THEN 'deleted'
+          ELSE 'created'
+        END as EventType,
+        CASE 
+          WHEN w.Status = 'completed' THEN w.CompletedAt
+          WHEN w.Status = 'terminated' THEN w.UpdatedAt
+          WHEN w.Status = 'deleted' THEN w.UpdatedAt
+          ELSE w.CreatedAt
+        END as EventTimestamp
       FROM Workflows w
+      LEFT JOIN Tenants t ON w.TenantId = t.Id
+      LEFT JOIN TenantUsers tu ON w.InitiatorEmail = tu.Email AND w.TenantId = tu.TenantId
       LEFT JOIN WorkflowMessages wm ON w.Id = wm.WorkflowId
       LEFT JOIN WorkflowParticipants wp ON w.Id = wp.WorkflowId
     `;
@@ -91,7 +108,7 @@ export async function GET(request: NextRequest) {
     }
 
     workflowsQuery += `
-      GROUP BY w.Id, w.Title, w.Status, w.CreatedAt, w.CompletedAt, w.CompletedBy, w.TenantId
+      GROUP BY w.Id, w.Title, w.Status, w.CreatedAt, w.UpdatedAt, w.CompletedAt, w.CompletedBy, w.TenantId, w.InitiatorEmail, t.Name, tu.RoleId
       ORDER BY w.CreatedAt DESC
       LIMIT ? OFFSET ?
     `;
