@@ -15,6 +15,7 @@ export function WorkflowHistoryTabs({ userEmail, isGlobalAdmin, accessibleTenant
       <Tabs.List>
         <Tabs.Trigger value="completed">Completed Workflows</Tabs.Trigger>
         <Tabs.Trigger value="terminated">Terminated Workflows</Tabs.Trigger>
+        <Tabs.Trigger value="deleted">Deleted Workflows</Tabs.Trigger>
       </Tabs.List>
 
       <Box pt="3">
@@ -36,6 +37,17 @@ export function WorkflowHistoryTabs({ userEmail, isGlobalAdmin, accessibleTenant
             accessibleTenants={accessibleTenants}
             status="terminated"
             title="Terminated Workflows"
+            showPagination={true}
+          />
+        </Tabs.Content>
+
+        <Tabs.Content value="deleted">
+          <DashboardWorkflowHistoryList 
+            userEmail={userEmail}
+            isGlobalAdmin={isGlobalAdmin}
+            accessibleTenants={accessibleTenants}
+            status="deleted"
+            title="Deleted Workflows"
             showPagination={true}
           />
         </Tabs.Content>

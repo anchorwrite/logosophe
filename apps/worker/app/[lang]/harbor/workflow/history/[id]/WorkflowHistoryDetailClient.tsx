@@ -311,6 +311,7 @@ export default function WorkflowHistoryDetailClient({
                         {isReactivating ? 'Reactivating...' : 'Reactivate'}
                       </Button>
                     )}
+
                     {workflow.Status === 'completed' && !workflow.DeletedAt && (
                       <Button size="1" variant="soft" asChild>
                         <Link href={`/${lang}/harbor/workflow/${workflow.Id}`}>

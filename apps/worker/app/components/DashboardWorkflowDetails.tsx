@@ -67,13 +67,14 @@ export function DashboardWorkflowDetails({ workflowId, userEmail, isGlobalAdmin 
   const [actionLoading, setActionLoading] = useState(false);
   const [showTerminateDialog, setShowTerminateDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showPermanentDeleteDialog, setShowPermanentDeleteDialog] = useState(false);
 
   // Scroll to top when dialogs open
   useEffect(() => {
-    if (showTerminateDialog || showDeleteDialog) {
+    if (showTerminateDialog || showDeleteDialog || showPermanentDeleteDialog) {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
-  }, [showTerminateDialog, showDeleteDialog]);
+  }, [showTerminateDialog, showDeleteDialog, showPermanentDeleteDialog]);
   const fetchingRef = useRef(false);
 
   useEffect(() => {
@@ -279,6 +280,19 @@ export function DashboardWorkflowDetails({ workflowId, userEmail, isGlobalAdmin 
                     onClick={() => setShowDeleteDialog(true)}
                   >
                     Delete
+                  </Button>
+                </Flex>
+              )}
+              {canManage && (workflow.Status || workflow.status) === 'deleted' && (
+                <Flex gap="2">
+                  <Button 
+                    size="2" 
+                    variant="solid" 
+                    color="red"
+                    disabled={actionLoading}
+                    onClick={() => setShowPermanentDeleteDialog(true)}
+                  >
+                    Permanently Delete
                   </Button>
                 </Flex>
               )}
@@ -508,15 +522,15 @@ export function DashboardWorkflowDetails({ workflowId, userEmail, isGlobalAdmin 
           <Dialog.Title>Delete Workflow</Dialog.Title>
           <Box mb="4">
             <Text size="2" mb="2">
-              Are you sure you want to permanently delete this workflow? This action will:
+              Are you sure you want to delete this workflow? This action will:
             </Text>
             <ul style={{ marginTop: '0.5rem', paddingLeft: '1rem', marginBottom: '1rem' }}>
-              <li>Permanently remove all workflow data</li>
-              <li>Delete all messages and participants</li>
-              <li>Remove the workflow from history</li>
+              <li>Mark the workflow as deleted</li>
+              <li>Hide it from active workflow lists</li>
+              <li>Preserve all data for audit purposes</li>
             </ul>
-            <Text size="2" color="red" style={{ fontWeight: 'bold' }}>
-              This action is irreversible and will permanently delete all data.
+            <Text size="2" color="blue" style={{ fontWeight: 'bold' }}>
+              The workflow can be permanently deleted later if needed.
             </Text>
           </Box>
           <Flex gap="3" mt="4" justify="end">
@@ -534,6 +548,58 @@ export function DashboardWorkflowDetails({ workflowId, userEmail, isGlobalAdmin 
               }}
             >
               {actionLoading ? 'Deleting...' : 'Delete Workflow'}
+            </Button>
+          </Flex>
+        </Dialog.Content>
+      </Dialog.Root>
+
+      {/* Permanent Delete Confirmation Dialog */}
+      <Dialog.Root open={showPermanentDeleteDialog} onOpenChange={setShowPermanentDeleteDialog}>
+        <Dialog.Content style={{ 
+          maxWidth: 450,
+          width: '400px',
+          position: 'fixed',
+          top: '20%',
+          left: '50%',
+          transform: 'translate(-50%, 0)',
+          maxHeight: '70vh',
+          overflow: 'auto',
+          zIndex: 100000,
+          backgroundColor: 'var(--color-panel-solid)',
+          border: '1px solid var(--gray-6)',
+          borderRadius: 'var(--radius-3)',
+          boxShadow: 'var(--shadow-4)'
+        }}>
+          <Dialog.Title>Permanently Delete Workflow</Dialog.Title>
+          <Box mb="4">
+            <Text size="2" mb="2">
+              Are you sure you want to PERMANENTLY delete this workflow? This action will:
+            </Text>
+            <ul style={{ marginTop: '0.5rem', paddingLeft: '1rem', marginBottom: '1rem' }}>
+              <li>Permanently remove all workflow data</li>
+              <li>Delete all messages and participants</li>
+              <li>Remove all related records from the database</li>
+              <li>Keep only the audit trail in WorkflowHistory</li>
+            </ul>
+            <Text size="2" color="red" style={{ fontWeight: 'bold' }}>
+              This action is irreversible and cannot be undone!
+            </Text>
+          </Box>
+          <Flex gap="3" mt="4" justify="end">
+            <Dialog.Close>
+              <Button variant="soft" color="gray">
+                Cancel
+              </Button>
+            </Dialog.Close>
+            <Button 
+              color="red" 
+              disabled={actionLoading}
+              onClick={async () => {
+                setShowPermanentDeleteDialog(false);
+                await handleAdminAction('hard_delete');
+              }}
+            >
+              {actionLoading ? 'Permanently Deleting...' : 'Permanently Delete'}
             </Button>
           </Flex>
         </Dialog.Content>

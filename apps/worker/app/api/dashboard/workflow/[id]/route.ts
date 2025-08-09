@@ -62,23 +62,28 @@ export async function GET(
       }
     }
 
-    // Get workflow details
+    // Get workflow details with tenant and initiator information
     const workflowQuery = `
-      SELECT 
-        w.Id,
-        w.Title,
-        w.Status,
-        w.CreatedAt,
-        w.CompletedAt,
-        w.CompletedBy,
-        w.TenantId,
-        COUNT(wm.Id) as messageCount,
-        COUNT(DISTINCT wp.ParticipantEmail) as participantCount
+      SELECT w.Id,
+             w.TenantId,
+             w.InitiatorEmail,
+             w.Title,
+             w.Status,
+             w.CreatedAt,
+             w.UpdatedAt,
+             w.CompletedAt,
+             w.CompletedBy,
+             t.Name as TenantName,
+             tu.RoleId as initiatorRole,
+             COUNT(DISTINCT wp.ParticipantEmail) as participantCount,
+             COUNT(DISTINCT wm.Id) as messageCount
       FROM Workflows w
-      LEFT JOIN WorkflowMessages wm ON w.Id = wm.WorkflowId
+      LEFT JOIN Tenants t ON w.TenantId = t.Id
+      LEFT JOIN TenantUsers tu ON w.InitiatorEmail = tu.Email AND w.TenantId = tu.TenantId
       LEFT JOIN WorkflowParticipants wp ON w.Id = wp.WorkflowId
+      LEFT JOIN WorkflowMessages wm ON w.Id = wm.WorkflowId
       WHERE w.Id = ?
-      GROUP BY w.Id, w.Title, w.Status, w.CreatedAt, w.CompletedAt, w.CompletedBy, w.TenantId
+      GROUP BY w.Id, w.TenantId, w.InitiatorEmail, w.Title, w.Status, w.CreatedAt, w.UpdatedAt, w.CompletedAt, w.CompletedBy, t.Name, tu.RoleId
     `;
 
     const workflow = await db.prepare(workflowQuery).bind(workflowId).first();
@@ -87,7 +92,7 @@ export async function GET(
       return NextResponse.json({ error: 'Workflow not found' }, { status: 404 });
     }
 
-    // Get recent messages
+    // Get recent messages with sender role information
     const messagesQuery = `
       SELECT 
         wm.Id,
@@ -96,8 +101,10 @@ export async function GET(
         wm.MessageType,
         wm.CreatedAt,
         wm.MediaFileId,
-        wm.ShareToken
+        wm.ShareToken,
+        COALESCE(wp.Role, 'Unknown') as senderRole
       FROM WorkflowMessages wm
+      LEFT JOIN WorkflowParticipants wp ON wm.SenderEmail = wp.ParticipantEmail AND wm.WorkflowId = wp.WorkflowId
       WHERE wm.WorkflowId = ?
       ORDER BY wm.CreatedAt ASC
       LIMIT 10
@@ -108,9 +115,10 @@ export async function GET(
     // Get participants
     const participantsQuery = `
       SELECT 
-        wp.ParticipantEmail,
-        wp.Role,
-        wp.JoinedAt
+        wp.ParticipantEmail as email,
+        wp.Role as role,
+        wp.JoinedAt as joinedAt,
+        'active' as status
       FROM WorkflowParticipants wp
       WHERE wp.WorkflowId = ?
       ORDER BY wp.JoinedAt
@@ -118,11 +126,21 @@ export async function GET(
 
     const participants = await db.prepare(participantsQuery).bind(workflowId).all();
 
+    // Map messages to match component interface with unique keys
+    const mappedMessages = (messages.results || []).map((msg: any, index: number) => ({
+      id: msg.Id || `message-${index}`, // Ensure unique ID
+      senderEmail: msg.SenderEmail || 'Unknown',
+      senderRole: msg.senderRole || 'Unknown',
+      content: msg.Content || '',
+      timestamp: msg.CreatedAt || new Date().toISOString(),
+      messageType: msg.MessageType || 'unknown'
+    }));
+
     return NextResponse.json({
       success: true,
       workflow: {
         ...workflow,
-        messages: messages.results || [],
+        messages: mappedMessages,
         participants: participants.results || []
       }
     });
@@ -158,8 +176,8 @@ export async function PUT(
     const { action } = body;
 
     // Only allow specific admin actions
-    if (!['terminate', 'reactivate', 'delete'].includes(action)) {
-      return NextResponse.json({ error: 'Invalid action. Only terminate, reactivate, or delete are allowed' }, { status: 400 });
+    if (!['terminate', 'reactivate', 'delete', 'hard_delete'].includes(action)) {
+      return NextResponse.json({ error: 'Invalid action. Only terminate, reactivate, delete, or hard_delete are allowed' }, { status: 400 });
     }
 
     const { env } = await getCloudflareContext({async: true});
@@ -211,12 +229,52 @@ export async function PUT(
         updateParams.push('active', workflowId);
         break;
       case 'delete':
-        updateQuery = 'DELETE FROM Workflows WHERE Id = ?';
-        updateParams.push(workflowId);
+        // Soft delete - set status to deleted
+        updateQuery = 'UPDATE Workflows SET Status = ?, UpdatedAt = datetime("now") WHERE Id = ?';
+        updateParams.push('deleted', workflowId);
         break;
+      case 'hard_delete':
+        // Hard delete - permanently remove all related records
+        try {
+          // Get workflow data for logging before deletion
+          const workflowData = await db.prepare('SELECT * FROM Workflows WHERE Id = ?')
+            .bind(workflowId)
+            .first();
+
+          if (!workflowData) {
+            return NextResponse.json({ error: 'Workflow not found' }, { status: 404 });
+          }
+
+          // Ensure workflow is in deleted state before hard delete
+          if (workflowData.Status !== 'deleted') {
+            return NextResponse.json({ error: 'Only deleted workflows can be permanently deleted' }, { status: 400 });
+          }
+
+          // Log permanent deletion to WorkflowHistory before deleting
+          const { getWorkflowHistoryLogger } = await import('@/lib/workflow-history');
+          const workflowHistoryLogger = await getWorkflowHistoryLogger();
+          await workflowHistoryLogger.logWorkflowPermanentlyDeleted(workflowData, access.email);
+
+          // Delete in order to respect foreign key constraints
+          await db.prepare('DELETE FROM WorkflowMessages WHERE WorkflowId = ?').bind(workflowId).run();
+          await db.prepare('DELETE FROM WorkflowParticipants WHERE WorkflowId = ?').bind(workflowId).run();
+          await db.prepare('DELETE FROM WorkflowInvitations WHERE WorkflowId = ?').bind(workflowId).run();
+          await db.prepare('DELETE FROM Workflows WHERE Id = ?').bind(workflowId).run();
+
+          return NextResponse.json({
+            success: true,
+            message: 'Workflow permanently deleted successfully'
+          });
+
+        } catch (deleteError) {
+          console.error('Error during hard delete:', deleteError);
+          return NextResponse.json({ error: 'Failed to permanently delete workflow' }, { status: 500 });
+        }
     }
 
-    await db.prepare(updateQuery).bind(...updateParams).run();
+    if (updateQuery) {
+      await db.prepare(updateQuery).bind(...updateParams).run();
+    }
 
     return NextResponse.json({
       success: true,

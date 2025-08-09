@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { Card, Box, Text, Heading, Flex, Button, Badge, Table, TextField, Select } from '@radix-ui/themes';
+import { Card, Box, Text, Heading, Flex, Button, Badge, Table, TextField, Select, Dialog } from '@radix-ui/themes';
 import Link from 'next/link';
 
 interface WorkflowHistory {
@@ -75,6 +75,9 @@ export function DashboardWorkflowHistoryList({
   const [tenantFilter, setTenantFilter] = useState<string>('all');
   const [sortField, setSortField] = useState<SortField>('eventTimestamp');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+  const [selectedWorkflows, setSelectedWorkflows] = useState<Set<string>>(new Set());
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+  const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
   const fetchingRef = useRef(false);
 
   // Get unique values for filters
@@ -235,6 +238,81 @@ export function DashboardWorkflowHistoryList({
     setCurrentPage(1);
   }, [searchTerm, statusFilter, tenantFilter, sortField, sortDirection]);
 
+  // Bulk delete functionality
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      const deletedWorkflows = filteredAndSortedWorkflows
+        .filter(w => (w.Status || w.status) === 'deleted')
+        .map(w => w.Id || w.id)
+        .filter((id): id is string => id !== undefined);
+      setSelectedWorkflows(new Set(deletedWorkflows));
+    } else {
+      setSelectedWorkflows(new Set());
+    }
+  };
+
+  const handleSelectWorkflow = (workflowId: string, checked: boolean) => {
+    const newSelected = new Set(selectedWorkflows);
+    if (checked) {
+      newSelected.add(workflowId);
+    } else {
+      newSelected.delete(workflowId);
+    }
+    setSelectedWorkflows(newSelected);
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedWorkflows.size === 0) return;
+
+    setIsBulkDeleting(true);
+    try {
+      const response = await fetch('/api/dashboard/workflow/bulk-delete', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          workflowIds: Array.from(selectedWorkflows)
+        }),
+      });
+
+      const result = await response.json() as { 
+        success: boolean; 
+        results: { successful: string[]; failed: { workflowId: string; error: string }[] };
+        message: string;
+        error?: string;
+      };
+
+      if (result.success) {
+        // Remove successfully deleted workflows from the list
+        setWorkflows(prev => prev.filter(w => {
+          const workflowId = w.Id || w.id;
+          return workflowId ? !result.results.successful.includes(workflowId) : true;
+        }));
+        setSelectedWorkflows(new Set());
+        
+        // Show success message
+        console.log(result.message);
+        if (result.results.failed.length > 0) {
+          console.warn(`${result.results.failed.length} workflows failed to delete:`, result.results.failed);
+        }
+      } else {
+        console.error('Bulk delete failed:', result.error);
+      }
+    } catch (error) {
+      console.error('Error during bulk delete:', error);
+    } finally {
+      setIsBulkDeleting(false);
+      setShowBulkDeleteDialog(false);
+    }
+  };
+
+  const deletedWorkflowsCount = filteredAndSortedWorkflows.filter(w => (w.Status || w.status) === 'deleted').length;
+  const selectedDeletedCount = Array.from(selectedWorkflows).filter(id => {
+    const workflow = workflows.find(w => (w.Id || w.id) === id);
+    return workflow && (workflow.Status || workflow.status) === 'deleted';
+  }).length;
+
   const getStatusColor = (status: string | undefined) => {
     if (!status) return 'gray';
     
@@ -377,10 +455,55 @@ export function DashboardWorkflowHistoryList({
           )}
         </Flex>
 
+        {/* Bulk Actions */}
+        {deletedWorkflowsCount > 0 && (
+          <Card style={{ marginBottom: '1rem', padding: '1rem' }}>
+            <Flex justify="between" align="center">
+              <Flex align="center" gap="3">
+                <Text size="2" weight="medium">
+                  Bulk Actions for Deleted Workflows ({deletedWorkflowsCount} available)
+                </Text>
+                {selectedDeletedCount > 0 && (
+                  <Badge color="red" variant="soft">
+                    {selectedDeletedCount} selected
+                  </Badge>
+                )}
+              </Flex>
+              <Flex gap="2">
+                <Button
+                  size="2"
+                  variant="soft"
+                  onClick={() => handleSelectAll(selectedDeletedCount !== deletedWorkflowsCount)}
+                  disabled={deletedWorkflowsCount === 0}
+                >
+                  {selectedDeletedCount === deletedWorkflowsCount ? 'Deselect All' : 'Select All Deleted'}
+                </Button>
+                <Button
+                  size="2"
+                  color="red"
+                  variant="solid"
+                  onClick={() => setShowBulkDeleteDialog(true)}
+                  disabled={selectedDeletedCount === 0 || isBulkDeleting}
+                >
+                  {isBulkDeleting ? 'Permanently Deleting...' : `Permanently Delete (${selectedDeletedCount})`}
+                </Button>
+              </Flex>
+            </Flex>
+          </Card>
+        )}
+
         {/* Workflows Table */}
         <Table.Root>
           <Table.Header>
             <Table.Row>
+              <Table.ColumnHeaderCell width="50px">
+                <input
+                  type="checkbox"
+                  checked={selectedDeletedCount === deletedWorkflowsCount && deletedWorkflowsCount > 0}
+                  onChange={(e) => handleSelectAll(e.target.checked)}
+                  disabled={deletedWorkflowsCount === 0}
+                />
+              </Table.ColumnHeaderCell>
               <SortableHeader field="title">Title</SortableHeader>
               <SortableHeader field="status">Status</SortableHeader>
               <SortableHeader field="tenant">Tenant</SortableHeader>
@@ -391,8 +514,23 @@ export function DashboardWorkflowHistoryList({
             </Table.Row>
           </Table.Header>
           <Table.Body>
-            {paginatedWorkflows.map((workflow) => (
-              <Table.Row key={workflow.Id || workflow.id}>
+            {paginatedWorkflows.map((workflow) => {
+              const workflowId = workflow.Id || workflow.id;
+              const isDeleted = (workflow.Status || workflow.status) === 'deleted';
+              
+              // Skip workflows without valid IDs
+              if (!workflowId) return null;
+              
+              return (
+              <Table.Row key={workflowId}>
+                <Table.Cell>
+                  <input
+                    type="checkbox"
+                    checked={selectedWorkflows.has(workflowId)}
+                    onChange={(e) => handleSelectWorkflow(workflowId, e.target.checked)}
+                    disabled={!isDeleted}
+                  />
+                </Table.Cell>
                 <Table.Cell>
                   <Text weight="medium">
                     {workflow.Title || workflow.title || 'Untitled'}
@@ -433,7 +571,8 @@ export function DashboardWorkflowHistoryList({
                   </Flex>
                 </Table.Cell>
               </Table.Row>
-            ))}
+              );
+            })}
           </Table.Body>
         </Table.Root>
 
@@ -463,6 +602,55 @@ export function DashboardWorkflowHistoryList({
             </Flex>
           </Flex>
         )}
+
+        {/* Bulk Delete Confirmation Dialog */}
+        <Dialog.Root open={showBulkDeleteDialog} onOpenChange={setShowBulkDeleteDialog}>
+          <Dialog.Content style={{ 
+            maxWidth: 500,
+            width: '450px',
+            position: 'fixed',
+            top: '20%',
+            left: '50%',
+            transform: 'translate(-50%, 0)',
+            maxHeight: '70vh',
+            overflow: 'auto',
+            zIndex: 100000,
+            backgroundColor: 'var(--color-panel-solid)',
+            border: '1px solid var(--gray-6)',
+            borderRadius: 'var(--radius-3)',
+            boxShadow: 'var(--shadow-4)'
+          }}>
+            <Dialog.Title>Bulk Permanently Delete Workflows</Dialog.Title>
+            <Box mb="4">
+              <Text size="2" mb="2">
+                Are you sure you want to PERMANENTLY delete {selectedDeletedCount} workflows? This action will:
+              </Text>
+              <ul style={{ marginTop: '0.5rem', paddingLeft: '1rem', marginBottom: '1rem' }}>
+                <li>Permanently remove all workflow data</li>
+                <li>Delete all messages and participants</li>
+                <li>Remove all related records from the database</li>
+                <li>Keep only the audit trail in WorkflowHistory</li>
+              </ul>
+              <Text size="2" color="red" style={{ fontWeight: 'bold' }}>
+                This action is irreversible and cannot be undone!
+              </Text>
+            </Box>
+            <Flex gap="3" mt="4" justify="end">
+              <Dialog.Close>
+                <Button variant="soft" color="gray">
+                  Cancel
+                </Button>
+              </Dialog.Close>
+              <Button 
+                color="red" 
+                disabled={isBulkDeleting}
+                onClick={handleBulkDelete}
+              >
+                {isBulkDeleting ? `Permanently Deleting ${selectedDeletedCount}...` : `Permanently Delete ${selectedDeletedCount} Workflows`}
+              </Button>
+            </Flex>
+          </Dialog.Content>
+        </Dialog.Root>
       </Box>
     </Card>
   );
