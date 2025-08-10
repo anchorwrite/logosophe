@@ -70,7 +70,7 @@ export default async function WorkflowPage() {
             <Heading size="4" style={{ marginBottom: '1rem' }}>
               Workflow Monitoring
             </Heading>
-            <Text color="gray" size="2" style={{ marginBottom: '1.5rem' }}>
+            <Text color="gray" size="2" style={{ marginBottom: '1.5rem', display: 'block' }}>
               Monitor and track collaborative workflows across your organization
             </Text>
             <Flex gap="2" wrap="wrap">
@@ -94,31 +94,16 @@ export default async function WorkflowPage() {
             <Heading size="4" style={{ marginBottom: '1rem' }}>
               Workflow Details
             </Heading>
-            <Text color="gray" size="2" style={{ marginBottom: '1.5rem' }}>
+            <Text color="gray" size="2" style={{ marginBottom: '1.5rem', display: 'block' }}>
               View detailed information about specific workflows
             </Text>
-            <Button asChild>
-              <Link href="/dashboard/workflow/search">
-                Search Workflows
-              </Link>
-            </Button>
-          </Box>
-        </Card>
-
-        {/* System Controls - Admin Only */}
-        <Card style={{ flex: '1', minWidth: '300px' }}>
-          <Box style={{ padding: '1.5rem' }}>
-            <Heading size="4" style={{ marginBottom: '1rem' }}>
-              System Controls
-            </Heading>
-            <Text color="gray" size="2" style={{ marginBottom: '1.5rem' }}>
-              Configure workflow system settings and permissions
-            </Text>
-            <Button asChild>
-              <Link href="/dashboard/workflow/system">
-                System Settings
-              </Link>
-            </Button>
+            <Flex gap="2" wrap="wrap">
+              <Button asChild>
+                <Link href="/dashboard/workflow/search">
+                  Search Workflows
+                </Link>
+              </Button>
+            </Flex>
           </Box>
         </Card>
 
@@ -128,14 +113,16 @@ export default async function WorkflowPage() {
             <Heading size="4" style={{ marginBottom: '1rem' }}>
               Workflow History
             </Heading>
-            <Text color="gray" size="2" style={{ marginBottom: '1.5rem' }}>
+            <Text color="gray" size="2" style={{ marginBottom: '1.5rem', display: 'block' }}>
               Review completed workflows and their outcomes
             </Text>
-            <Button asChild>
-              <Link href="/dashboard/workflow/history">
-                View History
-              </Link>
-            </Button>
+            <Flex gap="2" wrap="wrap">
+              <Button asChild>
+                <Link href="/dashboard/workflow/history">
+                  View History
+                </Link>
+              </Button>
+            </Flex>
           </Box>
         </Card>
 
@@ -146,14 +133,16 @@ export default async function WorkflowPage() {
               <Heading size="4" style={{ marginBottom: '1rem' }}>
                 System Controls
               </Heading>
-              <Text color="gray" size="2" style={{ marginBottom: '1.5rem' }}>
+              <Text color="gray" size="2" style={{ marginBottom: '1.5rem', display: 'block' }}>
                 Configure workflow system settings and permissions
               </Text>
-              <Button asChild>
-                <Link href="/dashboard/workflow/system">
-                  System Settings
-                </Link>
-              </Button>
+              <Flex gap="2" wrap="wrap">
+                <Button asChild>
+                  <Link href="/dashboard/workflow/system">
+                    System Settings
+                  </Link>
+                </Button>
+              </Flex>
             </Box>
           </Card>
         )}

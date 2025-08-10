@@ -152,8 +152,12 @@ export function WorkflowHistoryClient({ userEmail, userTenantId, lang }: Workflo
       const result = await deleteWorkflowClient(workflowId, userEmail, userTenantId);
       
       if (result.success) {
-        // Remove the workflow from the list
-        setWorkflows(prev => prev.filter(workflow => workflow.Id !== workflowId));
+        // Update the workflow status to 'deleted' and set DeletedAt (soft delete)
+        setWorkflows(prev => prev.map(workflow => 
+          workflow.Id === workflowId 
+            ? { ...workflow, Status: 'deleted', DeletedAt: new Date().toISOString(), DeletedBy: userEmail }
+            : workflow
+        ));
         
         showToast({
           type: 'success',
@@ -627,14 +631,16 @@ export function WorkflowHistoryClient({ userEmail, userTenantId, lang }: Workflo
               // Bulk delete
               const workflowIds = deleteDialog.workflowId.split(',');
               Promise.all(workflowIds.map(id => handleDeleteWorkflow(id)));
+              setSelectedWorkflows(new Set()); // Clear selections after bulk delete
             } else {
               // Single delete
               handleDeleteWorkflow(deleteDialog.workflowId);
             }
           }
+          setDeleteDialog({ isOpen: false, workflowId: null, workflowTitle: '' });
         }}
         title="Delete Workflow"
-        message={`Are you sure you want to permanently delete ${deleteDialog.workflowId?.includes(',') ? 'these workflows' : 'this workflow'} "${deleteDialog.workflowTitle}"? This action cannot be undone and will remove all associated messages and participants.`}
+        message={`Are you sure you want to delete ${deleteDialog.workflowId?.includes(',') ? 'these workflows' : 'this workflow'} "${deleteDialog.workflowTitle}"? The workflow will be marked as deleted but can still be viewed in the history.`}
         confirmText="Delete"
         cancelText="Cancel"
         variant="danger"

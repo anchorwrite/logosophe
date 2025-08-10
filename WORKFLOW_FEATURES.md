@@ -54,6 +54,25 @@ The workflow system provides real-time collaboration capabilities for sharing me
 - `EventTimestamp` (TEXT, NOT NULL) - When the event occurred
 - `EventPerformedBy` (TEXT, NOT NULL) - Email of user who performed the event
 
+**WorkflowInvitations**
+- `Id` (TEXT, PRIMARY KEY) - Unique invitation identifier
+- `WorkflowId` (TEXT, NOT NULL) - Associated workflow
+- `InviterEmail` (TEXT, NOT NULL) - Email of user who sent invitation
+- `InviteeEmail` (TEXT, NOT NULL) - Email of user being invited
+- `Role` (TEXT, NOT NULL) - Role to be assigned to invitee
+- `Status` (TEXT, NOT NULL, DEFAULT 'pending') - Invitation status (pending, accepted, rejected, expired)
+- `Message` (TEXT) - Optional message from inviter
+- `ExpiresAt` (TEXT, NOT NULL) - Invitation expiration timestamp
+- `CreatedAt` (TEXT, NOT NULL) - Creation timestamp
+- `UpdatedAt` (TEXT, NOT NULL) - Last update timestamp
+- `RespondedAt` (TEXT) - Response timestamp
+
+**SystemSettings**
+- `Key` (TEXT, PRIMARY KEY) - Setting key (prefixed with 'workflow_' for workflow settings)
+- `Value` (TEXT, NOT NULL) - Setting value
+- `UpdatedAt` (TEXT, NOT NULL) - Last update timestamp
+- `UpdatedBy` (TEXT, NOT NULL) - Email of user who updated the setting
+
 **Note**: The `Role` column in `WorkflowParticipants` was updated to allow any role name (e.g., 'author', 'subscriber', 'editor') instead of being limited to legacy 'initiator'/'recipient' roles. Role names are stored as lowercase role IDs (e.g., 'subscriber', 'author', 'reviewer') for consistency.
 
 ### API Routes
@@ -81,6 +100,21 @@ The workflow system uses a three-tier API structure to separate concerns and pre
 
 **`/api/workflow/history/detail/[id]`**
 - `GET` - Get detailed workflow history
+
+**`/api/workflow/[id]/invite`**
+- `POST` - Invite user to workflow
+
+**`/api/workflow/invitations`**
+- `GET` - List user's workflow invitations
+
+**`/api/workflow/invitations/[id]`**
+- `PUT` - Accept or reject workflow invitation
+
+**`/api/workflow/invitations/[id]/resend`**
+- `POST` - Resend workflow invitation (inviter only)
+
+**`/api/workflow/list`**
+- `GET` - List workflows (includes workflows with pending invitations)
 
 #### Harbor-Specific Routes (`/api/harbor/workflow/`)
 **Purpose**: Harbor interface-specific functionality
@@ -124,8 +158,11 @@ The workflow system uses a three-tier API structure to separate concerns and pre
 - `GET` - System health checks
 
 **`/api/dashboard/workflow/settings`**
-- `GET` - System settings
-- `PUT` - Update system settings
+- `GET` - Get system workflow settings
+- `POST` - Update system workflow settings
+
+**`/api/dashboard/workflow/settings/reset`**
+- `POST` - Reset workflow settings to defaults
 
 **Note**: The `/api/harbor/workflow/websocket-url` endpoint has been removed. Frontend components now connect directly to `/api/workflow/[id]/stream` for SSE connections.
 
@@ -141,6 +178,9 @@ To prevent route duplication and ensure proper API usage:
   - Workflow details: `/api/workflow/[id]` (GET)
   - Workflow actions: `/api/workflow/[id]` (PUT with action parameter)
   - Real-time updates: `/api/workflow/[id]/stream` (GET)
+  - Invite participants: `/api/workflow/[id]/invite` (POST)
+  - List invitations: `/api/workflow/invitations` (GET)
+  - Respond to invitations: `/api/workflow/invitations/[id]` (PUT)
   - Send messages: `/api/harbor/workflow/messages` (POST)
   - Get stats: `/api/harbor/workflow/stats` (GET)
 
@@ -152,6 +192,8 @@ To prevent route duplication and ensure proper API usage:
   - System analytics: `/api/dashboard/workflow/analytics` (GET)
   - System reports: `/api/dashboard/workflow/reports` (GET)
   - Bulk operations: `/api/dashboard/workflow/bulk` (POST)
+  - System settings: `/api/dashboard/workflow/settings` (GET/POST)
+  - Reset settings: `/api/dashboard/workflow/settings/reset` (POST)
 
 #### Important Rules
 - **DO NOT create new workflow routes** - Use existing routes based on the interface context
@@ -195,10 +237,10 @@ eventSource.onmessage = (event) => {
 
 #### SSE Implementation Details
 
-- **Polling Interval**: 15 seconds (reduced from 2 seconds for better performance)
+- **Configurable Polling Interval**: Default 15 seconds, configurable by system admins (5-60 seconds)
 - **Duplicate Prevention**: Uses both `Id` and `CreatedAt` for precise message tracking
 - **Connection Management**: Automatic reconnection on errors with exponential backoff
-- **Access Control**: Full RBAC validation for stream access
+- **Access Control**: Full RBAC validation for stream access, includes pending invitation access
 - **Error Handling**: Tracks consecutive errors and closes connection after 3 failures
 - **Heartbeat**: Sends heartbeat messages every 45 seconds to keep connection alive
 
@@ -220,13 +262,14 @@ The system implements comprehensive RBAC:
 - Access based on role assignments in specific tenants
 - Roles: author, editor, agent, reviewer, subscriber
 - Must be participants in workflows to send messages
+- Can view workflows with pending invitations
 
 #### Access Validation Flow
 
 1. **Authentication Check** - Verify user is authenticated
 2. **Admin Check** - Check if user is system admin
 3. **Tenant Access** - Verify user has access to workflow's tenant
-4. **Participant Check** - Verify user is workflow participant (for messaging)
+4. **Participant Check** - Verify user is workflow participant or has pending invitation
 5. **Role Validation** - Check if user's role allows the operation
 
 #### RBAC Implementation
@@ -256,6 +299,67 @@ if (userRolesCheck.results) {
 // 4. Check if user has any role that allows the operation
 const hasAllowedRole = userRoles.some(role => allowedRoles.includes(role));
 ```
+
+### Workflow Invitation System
+
+The workflow invitation system allows existing participants to invite new users to join workflows with specific roles.
+
+#### Invitation Lifecycle
+
+**States**
+- `pending` - Invitation sent, awaiting response
+- `accepted` - Invitation accepted, user becomes participant
+- `rejected` - Invitation declined by invitee
+- `expired` - Invitation expired (7 days default)
+
+**Features**
+- **Role-based Invitations**: Invitees are assigned specific roles based on their tenant membership
+- **Expiration**: Invitations expire after 7 days
+- **Duplicate Prevention**: Cannot invite users who are already participants or have pending invitations
+- **Access Control**: Only workflow participants can send invitations
+- **Optional Messages**: Inviters can include custom messages
+
+#### Invitation Process
+
+1. **Send Invitation**: Existing participant uses `/api/workflow/[id]/invite` to invite user
+2. **View Invitations**: Invitee sees pending invitations at `/[lang]/harbor/workflow/invitations`
+3. **Respond**: Invitee accepts or rejects via `/api/workflow/invitations/[id]`
+4. **Participation**: Accepted invitations automatically add user to `WorkflowParticipants`
+
+### System Configuration
+
+The workflow system includes configurable settings managed by system administrators through the Dashboard.
+
+#### Configurable Settings
+
+**Performance Settings**
+- `ssePollingIntervalMs` (5000-60000ms) - Real-time update polling frequency
+- `maxWorkflowsPerTenant` (default: 100) - Maximum workflows per tenant
+- `maxParticipantsPerWorkflow` (default: 50) - Maximum participants per workflow
+- `maxMessagesPerWorkflow` (default: 1000) - Maximum messages per workflow
+
+**Workflow Behavior**
+- `workflowTimeoutHours` (default: 168) - Auto-timeout for inactive workflows
+- `autoArchiveDays` (default: 30) - Days before archiving completed workflows
+- `allowWorkflowPause` (default: true) - Allow workflow pausing
+- `allowWorkflowTermination` (default: true) - Allow workflow termination
+- `requireApproval` (default: false) - Require admin approval for new workflows
+
+**System Features**
+- `enableNotifications` (default: true) - Enable system notifications
+- `enableAuditLogging` (default: true) - Enable comprehensive audit logging
+- `defaultWorkflowStatus` (default: 'active') - Default status for new workflows
+
+**Data Management**
+- `retentionPolicy` (default: '90days') - Data retention policy
+- `backupFrequency` (default: 'daily') - Backup frequency
+
+#### Settings Management
+
+- **Access**: System administrators only
+- **Interface**: Dashboard at `/dashboard/workflow/settings`
+- **Storage**: `SystemSettings` table with `workflow_` prefix
+- **Reset**: Administrators can reset all settings to defaults
 
 ### Workflow Lifecycle
 
@@ -325,10 +429,25 @@ createWorkflowSSEConnection(workflowId)
 - Real-time messaging interface
 - Media file display
 - Participant management
+- Participant invitation functionality
+
+**`/[lang]/harbor/workflow/invitations/`**
+- View pending workflow invitations
+- Accept or reject invitations
+- Shows workflow titles and invitation details
 
 **`/[lang]/harbor/workflow/history/`**
 - Workflow history view
 - Filtering and search capabilities
+
+#### Dashboard Workflow Pages
+
+**`/dashboard/workflow/settings/`**
+- System workflow configuration
+- Performance settings (SSE polling interval)
+- Workflow behavior settings
+- Data management options
+- Admin-only access
 
 ### Database Management
 
@@ -517,6 +636,30 @@ const response = await fetch('/api/harbor/workflow/messages', {
 });
 ```
 
+#### Inviting a Participant
+```typescript
+const response = await fetch(`/api/workflow/${workflowId}/invite`, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    inviteeEmail: 'user@example.com',
+    role: 'reviewer',
+    message: 'Please review this workflow'
+  })
+});
+```
+
+#### Accepting an Invitation
+```typescript
+const response = await fetch(`/api/workflow/invitations/${invitationId}`, {
+  method: 'PUT',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    action: 'accept'
+  })
+});
+```
+
 #### Real-Time Updates
 ```typescript
 const eventSource = createWorkflowSSEConnection('workflow-id');
@@ -568,6 +711,9 @@ const response = await fetch(`/api/workflow/${workflowId}`, {
 5. **React Hydration Errors**: Ensure dialog components use proper heading hierarchy
 6. **Workflow Deletion Issues**: Verify that deletion uses PUT with `action: 'delete'` parameter
 7. **Role Consistency**: Check that role names are stored as lowercase role IDs
+8. **Invitation Issues**: Check `WorkflowInvitations` table for pending invitations and expiration dates
+9. **SSE Performance**: Adjust `ssePollingIntervalMs` setting if real-time updates are too frequent/slow
+10. **Settings Not Loading**: Verify system admin access and `SystemSettings` table structure
 
 #### Debug Tools
 - Browser developer tools for SSE connection monitoring
@@ -590,4 +736,14 @@ SELECT * FROM WorkflowParticipants WHERE WorkflowId = 'your-workflow-id';
 
 -- Check recent workflow messages
 SELECT * FROM WorkflowMessages WHERE WorkflowId = 'your-workflow-id' ORDER BY CreatedAt DESC LIMIT 10;
+
+-- Check workflow invitations
+SELECT * FROM WorkflowInvitations WHERE InviteeEmail = 'user@example.com' ORDER BY CreatedAt DESC;
+SELECT * FROM WorkflowInvitations WHERE WorkflowId = 'your-workflow-id';
+
+-- Check system settings
+SELECT * FROM SystemSettings WHERE Key LIKE 'workflow_%';
+
+-- Check SSE polling interval
+SELECT Value FROM SystemSettings WHERE Key = 'workflow_ssePollingIntervalMs';
 ```
