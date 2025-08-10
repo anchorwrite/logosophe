@@ -46,27 +46,22 @@ export async function GET(request: NextRequest) {
       FROM Workflows
     `;
 
-    let recentActivityQuery = `
+    let todayStatsQuery = `
       SELECT 
-        COUNT(*) as recentWorkflows,
-        COUNT(DISTINCT w.Id) as workflowsWithMessages
-      FROM Workflows w
-      LEFT JOIN WorkflowMessages wm ON w.Id = wm.WorkflowId
-      WHERE w.CreatedAt >= datetime('now', '-7 days')
+        COUNT(CASE WHEN Status = 'completed' AND date(CompletedAt) = date('now') THEN 1 END) as completedToday,
+        COUNT(CASE WHEN date(CreatedAt) = date('now') THEN 1 END) as initiatedToday,
+        COUNT(CASE WHEN Status = 'cancelled' AND date(CreatedAt) = date('now') THEN 1 END) as terminatedToday
+      FROM Workflows
     `;
 
-    let topParticipantsQuery = `
-      SELECT 
-        wp.ParticipantEmail,
-        COUNT(DISTINCT w.Id) as workflowCount,
-        COUNT(wm.Id) as messageCount
-      FROM WorkflowParticipants wp
-      JOIN Workflows w ON wp.WorkflowId = w.Id
-      LEFT JOIN WorkflowMessages wm ON w.Id = wm.WorkflowId AND wm.SenderEmail = wp.ParticipantEmail
-      GROUP BY wp.ParticipantEmail
-      ORDER BY messageCount DESC, workflowCount DESC
-      LIMIT 5
+    let pendingWorkflowsQuery = `
+      SELECT COUNT(DISTINCT w.Id) as pendingWorkflows
+      FROM Workflows w
+      JOIN WorkflowInvitations wi ON w.Id = wi.WorkflowId
+      WHERE wi.Status = 'pending' AND w.Status = 'active'
     `;
+
+
 
     const queryParams: any[] = [];
     let targetTenantIds: string[] = [];
@@ -100,27 +95,25 @@ export async function GET(request: NextRequest) {
       // Add tenant filter to all queries
       const placeholders = targetTenantIds.map(() => '?').join(',');
       statsQuery += ` WHERE TenantId IN (${placeholders})`;
-      recentActivityQuery += ` AND w.TenantId IN (${placeholders})`;
-      topParticipantsQuery += ` WHERE w.TenantId IN (${placeholders})`;
+      todayStatsQuery += ` WHERE TenantId IN (${placeholders})`;
+      pendingWorkflowsQuery += ` WHERE w.TenantId IN (${placeholders})`;
 
       queryParams.push(...targetTenantIds, ...targetTenantIds, ...targetTenantIds);
     }
 
     const stats = await db.prepare(statsQuery).bind(...queryParams.slice(0, isGlobalAdmin ? 0 : targetTenantIds.length)).first();
-    const recentActivity = await db.prepare(recentActivityQuery).bind(...queryParams.slice(isGlobalAdmin ? 0 : targetTenantIds.length, isGlobalAdmin ? 0 : targetTenantIds.length * 2)).first();
-    const topParticipants = await db.prepare(topParticipantsQuery).bind(...queryParams.slice(isGlobalAdmin ? 0 : targetTenantIds.length * 2)).all();
+    const todayStats = await db.prepare(todayStatsQuery).bind(...queryParams.slice(0, isGlobalAdmin ? 0 : targetTenantIds.length)).first();
+    const pendingWorkflows = await db.prepare(pendingWorkflowsQuery).bind(...queryParams.slice(0, isGlobalAdmin ? 0 : targetTenantIds.length)).first();
 
     return NextResponse.json({
       success: true,
       stats: {
         totalWorkflows: stats?.totalWorkflows || 0,
         activeWorkflows: stats?.activeWorkflows || 0,
-        completedWorkflows: stats?.completedWorkflows || 0,
-        cancelledWorkflows: stats?.cancelledWorkflows || 0,
-        avgCompletionDays: stats?.avgCompletionDays || 0,
-        recentWorkflows: recentActivity?.recentWorkflows || 0,
-        workflowsWithMessages: recentActivity?.workflowsWithMessages || 0,
-        topParticipants: topParticipants?.results || []
+        completedToday: todayStats?.completedToday || 0,
+        initiatedToday: todayStats?.initiatedToday || 0,
+        terminatedToday: todayStats?.terminatedToday || 0,
+        pendingWorkflows: pendingWorkflows?.pendingWorkflows || 0
       }
     });
 

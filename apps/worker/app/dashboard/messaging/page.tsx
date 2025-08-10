@@ -86,14 +86,16 @@ export default async function MessagingAdminPage() {
             <Heading size="4" style={{ marginBottom: '1rem' }}>
               User Blocks
             </Heading>
-            <Text color="gray" size="2" style={{ marginBottom: '1.5rem' }}>
+            <Text color="gray" size="2" style={{ marginBottom: '1.5rem', display: 'block' }}>
               Manage user blocking relationships and view block history
             </Text>
-            <Button asChild>
-              <Link href="/dashboard/messaging/blocks">
-                Manage Blocks
-              </Link>
-            </Button>
+            <Flex gap="2" wrap="wrap">
+              <Button asChild>
+                <Link href="/dashboard/messaging/blocks">
+                  Manage Blocks
+                </Link>
+              </Button>
+            </Flex>
           </Box>
         </Card>
 
@@ -104,14 +106,16 @@ export default async function MessagingAdminPage() {
               <Heading size="4" style={{ marginBottom: '1rem' }}>
                 System Controls
               </Heading>
-              <Text color="gray" size="2" style={{ marginBottom: '1.5rem' }}>
+              <Text color="gray" size="2" style={{ marginBottom: '1.5rem', display: 'block' }}>
                 Configure messaging system settings and controls
               </Text>
-              <Button asChild>
-                <Link href="/dashboard/messaging/system">
-                  System Settings
-                </Link>
-              </Button>
+              <Flex gap="2" wrap="wrap">
+                <Button asChild>
+                  <Link href="/dashboard/messaging/system">
+                    System Settings
+                  </Link>
+                </Button>
+              </Flex>
             </Box>
           </Card>
         )}
@@ -122,14 +126,16 @@ export default async function MessagingAdminPage() {
             <Heading size="4" style={{ marginBottom: '1rem' }}>
               Recipients
             </Heading>
-            <Text color="gray" size="2" style={{ marginBottom: '1.5rem' }}>
+            <Text color="gray" size="2" style={{ marginBottom: '1.5rem', display: 'block' }}>
               View and manage available messaging recipients
             </Text>
-            <Button asChild>
-              <Link href="/dashboard/messaging/recipients">
-                View Recipients
-              </Link>
-            </Button>
+            <Flex gap="2" wrap="wrap">
+              <Button asChild>
+                <Link href="/dashboard/messaging/recipients">
+                  View Recipients
+                </Link>
+              </Button>
+            </Flex>
           </Box>
         </Card>
       </Flex>

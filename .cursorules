@@ -749,6 +749,9 @@ rules:
       - name: Form Validation
         description: Use comprehensive form validation with clear error messages
         pattern: "*.tsx"
+      - name: Text and Button Spacing
+        description: Ensure proper spacing between text and buttons to prevent elements running together
+        pattern: "*.tsx"
 
 # Convert role names to lowercase with underscores for consistency
 # Handle unknown roles gracefully with fallback
@@ -775,4 +778,69 @@ rules:
   - Let content determine natural height
   - Use Box component for padding and margins
   - Maintain consistent max-width across pages
+
+## UI Component Spacing Guidelines
+
+### Text and Button Spacing
+**Problem**: Text and Button elements running together without proper separation, appearing as a single element in the browser.
+
+**Solution**: Always use proper layout structure to separate descriptive text from action buttons.
+
+#### Dashboard Card Pattern (REQUIRED)
+```tsx
+<Card style={{ flex: '1', minWidth: '300px' }}>
+  <Box style={{ padding: '1.5rem' }}>
+    <Heading size="4" style={{ marginBottom: '1rem' }}>
+      Card Title
+    </Heading>
+    <Text color="gray" size="2" style={{ marginBottom: '1.5rem', display: 'block' }}>
+      Description text that explains what this section does
+    </Text>
+    <Flex gap="2" wrap="wrap">
+      <Button asChild>
+        <Link href="/path">Primary Action</Link>
+      </Button>
+      <Button variant="soft" asChild>
+        <Link href="/path">Secondary Action</Link>
+      </Button>
+    </Flex>
+  </Box>
+</Card>
+```
+
+#### Key Requirements
+1. **Text Display**: Always add `display: 'block'` to Text components that precede buttons
+2. **Button Containers**: Wrap buttons in `<Flex gap="2" wrap="wrap">` containers
+3. **Consistent Spacing**: Use `marginBottom: '1.5rem'` on text elements before buttons
+4. **Responsive Design**: Use `wrap="wrap"` for proper responsive behavior
+
+#### Anti-Pattern (AVOID)
+```tsx
+// ❌ BAD: Text and button run together
+<Text color="gray" size="2" style={{ marginBottom: '1.5rem' }}>
+  Description text here
+</Text>
+<Button asChild>
+  <Link href="/path">Button Text</Link>
+</Button>
+```
+
+#### Correct Pattern (USE)
+```tsx
+// ✅ GOOD: Proper separation and layout
+<Text color="gray" size="2" style={{ marginBottom: '1.5rem', display: 'block' }}>
+  Description text here
+</Text>
+<Flex gap="2" wrap="wrap">
+  <Button asChild>
+    <Link href="/path">Button Text</Link>
+  </Button>
+</Flex>
+```
+
+### When to Apply These Rules
+- Dashboard card layouts with descriptive text and action buttons
+- Any interface where text content is immediately followed by interactive elements
+- Form layouts with explanatory text and submit buttons
+- Modal dialogs with description text and action buttons
 

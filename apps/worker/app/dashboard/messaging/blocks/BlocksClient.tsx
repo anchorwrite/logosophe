@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Container, Heading, Text, Flex, Card, Button, Box, Table, Badge, TextField } from '@radix-ui/themes';
+import { Container, Heading, Text, Flex, Card, Button, Box, Table, Badge, TextField, Dialog } from '@radix-ui/themes';
 import Link from 'next/link';
 
 interface UserBlock {
@@ -25,6 +25,11 @@ export function BlocksClient({ initialBlocks, accessibleTenants }: BlocksClientP
   const [blocks, setBlocks] = useState<UserBlock[]>(initialBlocks);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTenant, setSelectedTenant] = useState('');
+  const [selectedBlock, setSelectedBlock] = useState<UserBlock | null>(null);
+  const [showDetailsDialog, setShowDetailsDialog] = useState(false);
+  const [blockToDelete, setBlockToDelete] = useState<UserBlock | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const filteredBlocks = blocks.filter(block => {
     const matchesSearch = searchTerm === '' || 
@@ -37,6 +42,37 @@ export function BlocksClient({ initialBlocks, accessibleTenants }: BlocksClientP
     
     return matchesSearch && matchesTenant;
   });
+
+  const handleDeleteBlock = async (block: UserBlock) => {
+    setBlockToDelete(block);
+    setShowDeleteDialog(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!blockToDelete) return;
+    
+    setIsDeleting(true);
+    try {
+      const response = await fetch(`/api/messages/blocks/${blockToDelete.Id}`, {
+        method: 'DELETE',
+      });
+      
+      if (response.ok) {
+        // Remove the block from local state
+        setBlocks(prevBlocks => prevBlocks.filter(block => block.Id !== blockToDelete.Id));
+        setShowDeleteDialog(false);
+        setBlockToDelete(null);
+      } else {
+        const errorData = await response.json().catch(() => ({ error: 'Failed to delete block' })) as { error?: string };
+        alert(`Error deleting block: ${errorData.error || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Error deleting block:', error);
+      alert('Error deleting block. Please try again.');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   return (
     <Container size="3">
@@ -129,21 +165,21 @@ export function BlocksClient({ initialBlocks, accessibleTenants }: BlocksClientP
                   <Table.Row key={block.Id}>
                     <Table.Cell>
                       <Box>
-                        <Text weight="medium" style={{ marginBottom: '0.25rem' }}>
+                        <Text weight="medium" style={{ marginBottom: '0.25rem', display: 'block' }}>
                           {block.BlockerUserName || block.BlockerEmail}
                         </Text>
-                        <Text size="2" color="gray">
-                          {block.BlockerEmail}
+                        <Text size="2" color="gray" style={{ display: 'block' }}>
+                          ({block.BlockerEmail})
                         </Text>
                       </Box>
                     </Table.Cell>
                     <Table.Cell>
                       <Box>
-                        <Text weight="medium" style={{ marginBottom: '0.25rem' }}>
+                        <Text weight="medium" style={{ marginBottom: '0.25rem', display: 'block' }}>
                           {block.BlockedUserName || block.BlockedEmail}
                         </Text>
-                        <Text size="2" color="gray">
-                          {block.BlockedEmail}
+                        <Text size="2" color="gray" style={{ display: 'block' }}>
+                          ({block.BlockedEmail})
                         </Text>
                       </Box>
                     </Table.Cell>
@@ -167,10 +203,22 @@ export function BlocksClient({ initialBlocks, accessibleTenants }: BlocksClientP
                     </Table.Cell>
                     <Table.Cell>
                       <Flex gap="2">
-                        <Button size="1" variant="soft" color="red">
+                        <Button 
+                          size="1" 
+                          variant="soft" 
+                          color="red"
+                          onClick={() => handleDeleteBlock(block)}
+                        >
                           Remove Block
                         </Button>
-                        <Button size="1" variant="soft">
+                        <Button 
+                          size="1" 
+                          variant="soft"
+                          onClick={() => {
+                            setSelectedBlock(block);
+                            setShowDetailsDialog(true);
+                          }}
+                        >
                           View Details
                         </Button>
                       </Flex>
@@ -215,6 +263,97 @@ export function BlocksClient({ initialBlocks, accessibleTenants }: BlocksClientP
           </Flex>
         </Box>
       </Card>
+
+      {/* Block Details Dialog */}
+      <Dialog.Root open={showDetailsDialog} onOpenChange={setShowDetailsDialog}>
+        <Dialog.Content>
+          <Dialog.Title>Block Details</Dialog.Title>
+          {selectedBlock && (
+            <Box style={{ padding: '1rem 0' }}>
+              <Flex direction="column" gap="3">
+                <Box>
+                  <Text weight="medium" size="2" style={{ marginBottom: '0.5rem', display: 'block' }}>Blocker</Text>
+                  <Text size="2" style={{ marginBottom: '0.25rem', display: 'block' }}>
+                    {selectedBlock.BlockerUserName || selectedBlock.BlockerEmail}
+                  </Text>
+                  <Text size="1" color="gray">
+                    ({selectedBlock.BlockerEmail})
+                  </Text>
+                </Box>
+                <Box>
+                  <Text weight="medium" size="2" style={{ marginBottom: '0.5rem', display: 'block' }}>Blocked User</Text>
+                  <Text size="2" style={{ marginBottom: '0.25rem', display: 'block' }}>
+                    {selectedBlock.BlockedUserName || selectedBlock.BlockedEmail}
+                  </Text>
+                  <Text size="1" color="gray">
+                    ({selectedBlock.BlockedEmail})
+                  </Text>
+                </Box>
+                <Box>
+                  <Text weight="medium" size="2" style={{ marginBottom: '0.5rem', display: 'block' }}>Tenant</Text>
+                  <Badge variant="soft">{selectedBlock.TenantId}</Badge>
+                </Box>
+                <Box>
+                  <Text weight="medium" size="2" style={{ marginBottom: '0.5rem', display: 'block' }}>Reason</Text>
+                  <Text size="2">{selectedBlock.Reason || 'No reason provided'}</Text>
+                </Box>
+                <Box>
+                  <Text weight="medium" size="2" style={{ marginBottom: '0.5rem', display: 'block' }}>Date Created</Text>
+                  <Text size="2">{new Date(selectedBlock.CreatedAt).toLocaleString()}</Text>
+                </Box>
+                <Box>
+                  <Text weight="medium" size="2" style={{ marginBottom: '0.5rem', display: 'block' }}>Status</Text>
+                  <Badge color={selectedBlock.IsActive ? 'red' : 'gray'}>
+                    {selectedBlock.IsActive ? 'Active' : 'Inactive'}
+                  </Badge>
+                </Box>
+              </Flex>
+            </Box>
+          )}
+          <Flex gap="3" justify="end">
+            <Dialog.Close>
+              <Button variant="soft">Close</Button>
+            </Dialog.Close>
+          </Flex>
+        </Dialog.Content>
+      </Dialog.Root>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog.Root open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <Dialog.Content>
+          <Dialog.Title>Confirm Block Removal</Dialog.Title>
+          {blockToDelete && (
+            <Box style={{ padding: '1rem 0' }}>
+              <Text size="2" style={{ marginBottom: '1rem' }}>
+                Are you sure you want to remove the block for{' '}
+                <Text weight="medium">{blockToDelete.BlockedUserName || blockToDelete.BlockedEmail}</Text>
+                {' '}in tenant <Badge variant="soft">{blockToDelete.TenantId}</Badge>?
+              </Text>
+              <Text size="2" color="gray">
+                This action cannot be undone.
+              </Text>
+            </Box>
+          )}
+          <Flex gap="3" justify="end">
+            <Button 
+              variant="soft" 
+              onClick={() => {
+                setShowDeleteDialog(false);
+                setBlockToDelete(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button 
+              color="red" 
+              onClick={confirmDelete}
+              disabled={isDeleting}
+            >
+              {isDeleting ? 'Removing...' : 'Remove Block'}
+            </Button>
+          </Flex>
+        </Dialog.Content>
+      </Dialog.Root>
     </Container>
   );
 } 
