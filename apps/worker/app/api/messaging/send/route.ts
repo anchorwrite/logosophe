@@ -52,7 +52,17 @@ export async function POST(request: NextRequest) {
           WHERE TenantId = ? AND Email = ?
         `).bind(tenantId, userEmail).first();
         
-        hasAccess = !!userTenant;
+        if (userTenant) {
+          hasAccess = true;
+        } else {
+          // Check if user has subscriber role in UserRoles table for this tenant
+          const userRole = await db.prepare(`
+            SELECT 1 FROM UserRoles 
+            WHERE TenantId = ? AND Email = ? AND RoleId = 'subscriber'
+          `).bind(tenantId, userEmail).first();
+          
+          hasAccess = !!userRole;
+        }
       }
     }
 
@@ -72,7 +82,17 @@ export async function POST(request: NextRequest) {
       WHERE TenantId = ? AND Email IN (${recipients.map(() => '?').join(',')})
     `).bind(tenantId, ...recipients).all();
 
-    const validRecipients = recipientValidation.results.map(r => r.Email) as string[];
+    // Also check UserRoles table for subscribers
+    const subscriberValidation = await db.prepare(`
+      SELECT Email FROM UserRoles 
+      WHERE TenantId = ? AND Email IN (${recipients.map(() => '?').join(',')}) AND RoleId = 'subscriber'
+    `).bind(tenantId, ...recipients).all();
+
+    // Combine both results
+    const tenantUsers = recipientValidation.results.map(r => r.Email) as string[];
+    const subscribers = subscriberValidation.results.map(r => r.Email) as string[];
+    const validRecipients = [...new Set([...tenantUsers, ...subscribers])];
+    
     const invalidRecipients = recipients.filter(email => !validRecipients.includes(email));
 
     if (invalidRecipients.length > 0) {
@@ -102,9 +122,9 @@ export async function POST(request: NextRequest) {
     // Insert recipients
     const recipientInserts = validRecipients.map(email => 
       db.prepare(`
-        INSERT INTO MessageRecipients (MessageId, RecipientEmail, TenantId)
-        VALUES (?, ?, ?)
-      `).bind(messageId, email, tenantId)
+        INSERT INTO MessageRecipients (MessageId, RecipientEmail)
+        VALUES (?, ?)
+      `).bind(messageId, email)
     );
 
     // Insert attachments if any

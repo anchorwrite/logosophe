@@ -203,10 +203,13 @@ export default async function SubscriberMessagingPage({ params }: { params: Prom
   
   const recipients = recipientsResult.results || [];
 
+  // Calculate the actual available recipient count (excluding blocked users)
+  const availableRecipientsCount = recipients.filter(r => !r.IsBlocked).length;
+
   const systemSettings = {
     messagingEnabled: settings.messaging_enabled === 'true',
     rateLimitSeconds: Number(settings.messaging_rate_limit) || 60,
-    maxRecipients: Number(settings.messaging_max_recipients) || 10,
+    maxRecipients: availableRecipientsCount, // Use actual count instead of system limit
     recallWindowSeconds: Number(settings.messaging_recall_window) || 300,
     messageExpiryDays: Number(settings.messaging_message_expiry) || 30,
   };

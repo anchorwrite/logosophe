@@ -67,6 +67,7 @@ function HarborAppBar({ lang }: { lang: Locale }) {
       {session?.user?.role === 'subscriber' && (
         <Flex align="center" gap="2" style={{ marginLeft: '1rem' }}>
           <ConnectionStatusIndicator size="small" showText={false} />
+          <UnreadMessageBadge />
         </Flex>
       )}
       <Flex gap="4" align="center" p="2">
@@ -79,14 +80,6 @@ function HarborAppBar({ lang }: { lang: Locale }) {
             </Button>
             {session.user.role === 'subscriber' && (
               <>
-                <Button variant="ghost" asChild>
-                  <Link href={`/${lang}/harbor/messaging`}>
-                    <Flex align="center" gap="2">
-                      {t('messaging.subscriberMessaging')}
-                      <UnreadMessageBadge />
-                    </Flex>
-                  </Link>
-                </Button>
                 <SubscriberOptOut email={session.user.email as string} />
               </>
             )}

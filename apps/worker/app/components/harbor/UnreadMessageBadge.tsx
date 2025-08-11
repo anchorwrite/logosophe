@@ -14,9 +14,33 @@ export function UnreadMessageBadge({
   size = 'medium',
   variant = 'default' 
 }: UnreadMessageBadgeProps) {
-  const { unreadCount, sseConnected, isLoading } = useUnreadMessageCount();
+  const { unreadCount, sseConnected, isLoading, error } = useUnreadMessageCount();
 
-  if (unreadCount === 0) {
+  // Show loading indicator if still loading
+  if (isLoading) {
+    return (
+      <Flex align="center" gap="1">
+        <Box 
+          style={{ 
+            width: '8px', 
+            height: '8px', 
+            borderRadius: '50%', 
+            backgroundColor: 'var(--blue-9)',
+            opacity: 0.8
+          }} 
+          title="Loading unread count..."
+        />
+        {variant === 'detailed' && (
+          <Text size="1" color="gray" style={{ marginLeft: '4px' }}>
+            Loading...
+          </Text>
+        )}
+      </Flex>
+    );
+  }
+
+  // Don't show anything if there's an error or no unread messages
+  if (error || unreadCount === 0) {
     return null;
   }
 
