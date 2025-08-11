@@ -9,6 +9,16 @@ This directory contains database migrations for the Logosophe project.
 - **Date**: 2025-08-01
 - **Description**: Initial database schema with all tables, indexes, and initial data
 
+### 002-messaging-attachments-links.sql
+- **Status**: Ready for application
+- **Date**: 2025-01-27
+- **Description**: Adds support for file attachments and link sharing in the messaging system
+- **Changes**:
+  - New `MessageAttachments` table for file attachments (media library + uploads)
+  - New `MessageLinks` table for link sharing with preview metadata
+  - Updates to `Messages` table: `HasAttachments` and `AttachmentCount` columns
+  - Performance indexes for new tables and columns
+
 ## Database Schema Overview
 
 ### Authentication Tables

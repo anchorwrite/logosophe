@@ -546,7 +546,9 @@
     "deleteError": "Erreur lors de la suppression du message",
     "messageDeleted": "Message supprimé avec succès",
     "archiveError": "Erreur lors de l'archivage du message",
-    "messageArchived": "Message archivé avec succès"
+    "messageArchived": "Message archivé avec succès",
+    "newMessageReceived": "Nouveau message reçu !",
+    "attachments": "Pièces jointes"
   },
   "preferences": {
     "title": "Préférences",

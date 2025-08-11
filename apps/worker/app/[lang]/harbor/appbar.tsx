@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { SvgIcon } from "@/common/SvgIcon";
-import { Button, Flex, Box } from "@radix-ui/themes";
+import { Button, Flex, Box, Badge } from "@radix-ui/themes";
 import { useTranslation } from 'react-i18next';
 import { useEffect, useState } from 'react';
 import { useSession } from "next-auth/react";
@@ -10,6 +10,7 @@ import type { Locale } from '@/types/i18n';
 import SubscriberOptIn from "@/components/SubscriberOptIn";
 import SubscriberOptOut from "@/components/SubscriberOptOut";
 import { PreferencesButton } from "@/components/PreferencesButton";
+import { useUnreadMessageCount } from '@/hooks/useUnreadMessageCount';
 
 
 interface ProviderResponse {
@@ -21,6 +22,7 @@ function HarborAppBar({ lang }: { lang: Locale }) {
   const { t, i18n } = useTranslation('translations');
   const [isLoading, setIsLoading] = useState(true);
   const [provider, setProvider] = useState<string>('');
+  const { unreadCount } = useUnreadMessageCount();
 
   const { data: session } = useSession();
 
@@ -67,15 +69,28 @@ function HarborAppBar({ lang }: { lang: Locale }) {
                 {t('harbor.nav.harbor')}
               </Link>
             </Button>
+            {session.user.role === 'subscriber' && (
+              <>
+                <Button variant="ghost" asChild>
+                  <Link href={`/${lang}/harbor/messaging`}>
+                    <Flex align="center" gap="2">
+                      {t('messaging.subscriberMessaging')}
+                      {unreadCount > 0 && (
+                        <Badge color="red" size="1" style={{ minWidth: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          {unreadCount > 99 ? '99+' : unreadCount}
+                        </Badge>
+                      )}
+                    </Flex>
+                  </Link>
+                </Button>
+                <SubscriberOptOut email={session.user.email as string} />
+              </>
+            )}
             <Button variant="ghost" asChild>
               <Link href={`/${lang}/harbor/profile`}>
                 {t('harbor.nav.profile')}
               </Link>
             </Button>
-
-            {session.user.role === 'subscriber' && (
-              <SubscriberOptOut email={session.user.email as string} />
-            )}
             <PreferencesButton />
             <Button variant="ghost" asChild>
               <Link href="/signout">

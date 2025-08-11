@@ -544,7 +544,9 @@
     "deleteError": "Fehler beim Löschen der Nachricht",
     "messageDeleted": "Nachricht erfolgreich gelöscht",
     "archiveError": "Fehler beim Archivieren der Nachricht",
-    "messageArchived": "Nachricht erfolgreich archiviert"
+    "messageArchived": "Nachricht erfolgreich archiviert",
+    "newMessageReceived": "Neue Nachricht erhalten!",
+    "attachments": "Anhänge"
   },
   "preferences": {
     "title": "Einstellungen",

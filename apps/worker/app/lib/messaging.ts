@@ -27,7 +27,12 @@ export async function checkRateLimit(senderEmail: string): Promise<RateLimitInfo
   // Check if messaging is enabled
   const messagingEnabled = await isMessagingEnabled();
   if (!messagingEnabled) {
-    return { allowed: false, waitSeconds: 0, messageCount: 0, resetAt: '' };
+    return { 
+      allowed: false, 
+      remaining: 0, 
+      limit: 0, 
+      resetTime: new Date().toISOString() 
+    };
   }
   
   // Get rate limit setting
@@ -56,9 +61,9 @@ export async function checkRateLimit(senderEmail: string): Promise<RateLimitInfo
     
     return { 
       allowed: true, 
-      waitSeconds: 0, 
-      messageCount: 1, 
-      resetAt 
+      remaining: 0, 
+      limit: 1, 
+      resetTime: resetAt 
     };
   }
   
@@ -82,9 +87,10 @@ export async function checkRateLimit(senderEmail: string): Promise<RateLimitInfo
   
   return { 
     allowed: waitSeconds === 0, 
-    waitSeconds, 
-    messageCount: userLimit.MessageCount as number, 
-    resetAt: userLimit.ResetAt as string 
+    remaining: Math.max(0, 1 - (userLimit.MessageCount as number)),
+    limit: 1,
+    resetTime: userLimit.ResetAt as string,
+    waitSeconds
   };
 }
 

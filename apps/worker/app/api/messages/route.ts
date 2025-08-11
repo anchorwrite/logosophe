@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
     const { env } = await getCloudflareContext({async: true});
     const db = env.DB;
     const body = await request.json() as CreateMessageRequest;
-    const { subject, body: messageBody, recipients, tenantId, messageType, priority = 'normal', attachments = [] } = body;
+    const { subject, body: messageBody, recipients, tenantId, messageType = 'direct', priority = 'normal', attachments = [] } = body;
     const replyToMessageId = (body as any).replyToMessageId;
 
     // Validate required fields
