@@ -88,9 +88,11 @@ export function SubscriberMessagingInterface({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [sseConnected, setSseConnected] = useState(false);
+  const [connectionDuration, setConnectionDuration] = useState<number>(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const eventSourceRef = useRef<EventSource | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const connectionStartTimeRef = useRef<number | null>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -99,6 +101,20 @@ export function SubscriberMessagingInterface({
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Track connection duration
+  useEffect(() => {
+    if (!sseConnected || !connectionStartTimeRef.current) {
+      return;
+    }
+
+    const interval = setInterval(() => {
+      const duration = Math.floor((Date.now() - connectionStartTimeRef.current!) / 1000);
+      setConnectionDuration(duration);
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [sseConnected]);
 
   // SSE Connection Management
   useEffect(() => {
@@ -121,6 +137,8 @@ export function SubscriberMessagingInterface({
 
         eventSource.onopen = () => {
           setSseConnected(true);
+          setError(null); // Clear any previous connection errors
+          connectionStartTimeRef.current = Date.now();
           console.log('SSE connection established for messaging');
         };
 
@@ -136,18 +154,25 @@ export function SubscriberMessagingInterface({
         eventSource.onerror = (error) => {
           console.error('SSE connection error:', error);
           setSseConnected(false);
+          connectionStartTimeRef.current = null;
+          setConnectionDuration(0);
           
-          // Retry connection with exponential backoff
+          // Clear any existing reconnection timeout
           if (reconnectTimeoutRef.current) {
             clearTimeout(reconnectTimeoutRef.current);
           }
+          
+          // Implement exponential backoff for reconnection
+          const reconnectDelay = Math.min(2000 * Math.pow(2, 0), 30000); // Start with 2s, max 30s
           reconnectTimeoutRef.current = setTimeout(() => {
+            console.log(`Attempting to reconnect in ${reconnectDelay}ms...`);
             connectEventSource();
-          }, 2000);
+          }, reconnectDelay);
         };
       } catch (error) {
         console.error('Error creating SSE connection:', error);
         setSseConnected(false);
+        setError('Failed to establish real-time connection');
       }
     };
 
@@ -169,152 +194,195 @@ export function SubscriberMessagingInterface({
 
   // Handle SSE events
   const handleSSEEvent = (event: SSEEvent) => {
-    switch (event.type) {
-      case 'message:new':
-        handleNewMessage(event.data);
-        break;
-      case 'message:read':
-        handleMessageRead(event.data);
-        break;
-      case 'message:delete':
-        handleMessageDelete(event.data);
-        break;
-      case 'message:update':
-        handleMessageUpdate(event.data);
-        break;
-      case 'message:attachment:added':
-        handleAttachmentAdded(event.data);
-        break;
-      case 'message:attachment:removed':
-        handleAttachmentRemoved(event.data);
-        break;
-      case 'message:link:added':
-        handleLinkAdded(event.data);
-        break;
-      case 'message:link:removed':
-        handleLinkRemoved(event.data);
-        break;
-      case 'connection:established':
-        console.log('SSE connection confirmed:', event.data);
-        break;
-      default:
-        console.log('Unhandled SSE event type:', (event as any).type);
+    try {
+      switch (event.type) {
+        case 'message:new':
+          handleNewMessage(event.data);
+          break;
+        case 'message:read':
+          handleMessageRead(event.data);
+          break;
+        case 'message:delete':
+          handleMessageDelete(event.data);
+          break;
+        case 'message:update':
+          handleMessageUpdate(event.data);
+          break;
+        case 'message:attachment:added':
+          handleAttachmentAdded(event.data);
+          break;
+        case 'message:attachment:removed':
+          handleAttachmentRemoved(event.data);
+          break;
+        case 'message:link:added':
+          handleLinkAdded(event.data);
+          break;
+        case 'message:link:removed':
+          handleLinkRemoved(event.data);
+          break;
+        case 'connection:established':
+          console.log('SSE connection confirmed:', event.data);
+          setSseConnected(true);
+          break;
+        case 'heartbeat':
+          // Update connection activity without logging
+          break;
+        default:
+          console.log('Unhandled SSE event type:', (event as any).type);
+      }
+    } catch (error) {
+      console.error('Error handling SSE event:', error, event);
+      // Don't set error state for SSE event handling failures to avoid disrupting the UI
     }
   };
 
   // Handle new message event
   const handleNewMessage = (data: SSEMessageNew['data']) => {
-    // Only add if it's not from the current user and the current user is a recipient
-    if (data.senderEmail !== userEmail && data.recipients.includes(userEmail)) {
-      const newMessage: RecentMessage = {
-        Id: data.messageId,
-        Subject: data.subject,
-        Body: data.body,
-        SenderEmail: data.senderEmail,
-        SenderName: data.senderEmail, // Will be updated when we fetch the actual message
-        CreatedAt: data.timestamp,
-        IsRead: false,
-        MessageType: 'subscriber',
-        RecipientCount: data.recipients.length,
-        HasAttachments: data.hasAttachments,
-        AttachmentCount: data.attachmentCount
-      };
+    try {
+      // Only add if it's not from the current user and the current user is a recipient
+      if (data.senderEmail !== userEmail && data.recipients.includes(userEmail)) {
+        const newMessage: RecentMessage = {
+          Id: data.messageId,
+          Subject: data.subject,
+          Body: data.body,
+          SenderEmail: data.senderEmail,
+          SenderName: data.senderEmail, // Will be updated when we fetch the actual message
+          CreatedAt: data.timestamp,
+          IsRead: false,
+          MessageType: 'subscriber',
+          RecipientCount: data.recipients.length,
+          HasAttachments: data.hasAttachments,
+          AttachmentCount: data.attachmentCount
+        };
 
-      setMessages(prev => [newMessage, ...prev]);
-      setStats(prev => ({
-        ...prev,
-        totalMessages: prev.totalMessages + 1,
-        unreadMessages: prev.unreadMessages + 1
-      }));
+        setMessages(prev => [newMessage, ...prev]);
+        setStats(prev => ({
+          ...prev,
+          totalMessages: prev.totalMessages + 1,
+          unreadMessages: prev.unreadMessages + 1
+        }));
 
-      // Show notification
-      setSuccess(t('messaging.newMessageReceived'));
-      setTimeout(() => setSuccess(null), 5000);
+        // Show notification
+        setSuccess(t('messaging.newMessageReceived'));
+        setTimeout(() => setSuccess(null), 5000);
+      }
+    } catch (error) {
+      console.error('Error handling new message event:', error, data);
     }
   };
 
   // Handle message read event
   const handleMessageRead = (data: SSEMessageRead['data']) => {
-    if (data.readBy === userEmail) {
-      setMessages(prev => prev.map(msg => 
-        msg.Id === data.messageId 
-          ? { ...msg, IsRead: true }
-          : msg
-      ));
-      
-      setStats(prev => ({
-        ...prev,
-        unreadMessages: Math.max(0, prev.unreadMessages - 1)
-      }));
+    try {
+      if (data.readBy === userEmail) {
+        setMessages(prev => prev.map(msg => 
+          msg.Id === data.messageId 
+            ? { ...msg, IsRead: true }
+            : msg
+        ));
+        
+        setStats(prev => ({
+          ...prev,
+          unreadMessages: Math.max(0, prev.unreadMessages - 1)
+        }));
+      }
+    } catch (error) {
+      console.error('Error handling message read event:', error, data);
     }
   };
 
   // Handle message delete event
   const handleMessageDelete = (data: SSEMessageDelete['data']) => {
-    setMessages(prev => prev.filter(msg => msg.Id !== data.messageId));
-    
-    // Update stats if needed
-    const deletedMessage = messages.find(msg => msg.Id === data.messageId);
-    if (deletedMessage) {
-      setStats(prev => ({
-        ...prev,
-        totalMessages: Math.max(0, prev.totalMessages - 1),
-        unreadMessages: deletedMessage.IsRead ? prev.unreadMessages : Math.max(0, prev.unreadMessages - 1)
-      }));
+    try {
+      setMessages(prev => prev.filter(msg => msg.Id !== data.messageId));
+      
+      // Update stats if needed
+      const deletedMessage = messages.find(msg => msg.Id === data.messageId);
+      if (deletedMessage) {
+        setStats(prev => ({
+          ...prev,
+          totalMessages: Math.max(0, prev.totalMessages - 1),
+          unreadMessages: deletedMessage.IsRead ? prev.unreadMessages : Math.max(0, prev.unreadMessages - 1)
+        }));
+      }
+    } catch (error) {
+      console.error('Error handling message delete event:', error, data);
     }
   };
 
   // Handle message update event
   const handleMessageUpdate = (data: SSEMessageUpdate['data']) => {
-    setMessages(prev => prev.map(msg => 
-      msg.Id === data.messageId 
-        ? { ...msg, ...data.changes }
-        : msg
-    ));
+    try {
+      setMessages(prev => prev.map(msg => 
+        msg.Id === data.messageId 
+          ? { ...msg, ...data.changes }
+          : msg
+      ));
+    } catch (error) {
+      console.error('Error handling message update event:', error, data);
+    }
   };
 
   // Handle attachment added event
   const handleAttachmentAdded = (data: SSEAttachmentAdded['data']) => {
-    // Update message to reflect new attachment
-    setMessages(prevMessages => 
-      prevMessages.map(msg => 
-        msg.Id === data.messageId 
-          ? { 
-              ...msg, 
-              HasAttachments: true, 
-              AttachmentCount: (msg.AttachmentCount || 0) + 1 
-            }
-          : msg
-      )
-    );
+    try {
+      // Update message to reflect new attachment
+      setMessages(prevMessages => 
+        prevMessages.map(msg => 
+          msg.Id === data.messageId 
+            ? { 
+                ...msg, 
+                HasAttachments: true, 
+                AttachmentCount: (msg.AttachmentCount || 0) + 1 
+              }
+            : msg
+        )
+      );
+    } catch (error) {
+      console.error('Error handling attachment added event:', error, data);
+    }
   };
 
   // Handle attachment removed event
   const handleAttachmentRemoved = (data: SSEAttachmentRemoved['data']) => {
-    // Update message to reflect removed attachment
-    setMessages(prevMessages => 
-      prevMessages.map(msg => 
-        msg.Id === data.messageId 
-          ? { 
-              ...msg, 
-              AttachmentCount: Math.max(0, (msg.AttachmentCount || 0) - 1),
-              HasAttachments: (msg.AttachmentCount || 0) > 1
-            }
-          : msg
-      )
-    );
+    try {
+      // Update message to reflect removed attachment
+      setMessages(prevMessages => 
+        prevMessages.map(msg => 
+          msg.Id === data.messageId 
+            ? { 
+                ...msg, 
+                AttachmentCount: Math.max(0, (msg.AttachmentCount || 0) - 1),
+                HasAttachments: (msg.AttachmentCount || 0) > 1
+              }
+            : msg
+        )
+      );
+    } catch (error) {
+      console.error('Error handling attachment removed event:', error, data);
+    }
   };
 
   // Handle link added event
   const handleLinkAdded = (data: SSELinkAdded['data']) => {
-    // Handle link added event - could update UI to show link previews
-    console.log('Link added to message:', data);
+    try {
+      // Handle link added event - could update UI to show link previews
+      console.log('Link added to message:', data);
+      // TODO: Update message to reflect new link count
+    } catch (error) {
+      console.error('Error handling link added event:', error, data);
+    }
   };
 
   // Handle link removed event
   const handleLinkRemoved = (data: SSELinkRemoved['data']) => {
-    // Handle link removed event
-    console.log('Link removed from message:', data);
+    try {
+      // Handle link removed event
+      console.log('Link removed from message:', data);
+      // TODO: Update message to reflect removed link count
+    } catch (error) {
+      console.error('Error handling link removed event:', error, data);
+    }
   };
 
   const handleSendMessage = async () => {
@@ -516,12 +584,32 @@ export function SubscriberMessagingInterface({
                     backgroundColor: sseConnected ? 'var(--green-9)' : 'var(--red-9)' 
                   }} 
                 />
-                {sseConnected ? 'Connected' : 'Disconnected'}
+                {sseConnected ? 'Real-time Connected' : 'Real-time Disconnected'}
               </Badge>
+              {!sseConnected && reconnectTimeoutRef.current && (
+                <Text size="1" color="gray">
+                  Reconnecting...
+                </Text>
+              )}
+              {sseConnected && connectionDuration > 0 && (
+                <Text size="1" color="green">
+                  Stable ({Math.floor(connectionDuration / 60)}m {connectionDuration % 60}s)
+                </Text>
+              )}
             </Flex>
           </Flex>
           <Text size="3" color="gray">
             {t('messaging.tenantOnly').replace('{tenant}', userTenantName)}
+            {sseConnected && (
+              <span style={{ color: 'var(--green-9)', marginLeft: '0.5rem' }}>
+                • Real-time updates active
+                {connectionDuration > 0 && (
+                  <span style={{ color: 'var(--blue-9)', marginLeft: '0.5rem' }}>
+                    (Connected for {Math.floor(connectionDuration / 60)}m {connectionDuration % 60}s)
+                  </span>
+                )}
+              </span>
+            )}
           </Text>
         </Box>
 

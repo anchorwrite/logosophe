@@ -11,6 +11,8 @@ import SubscriberOptIn from "@/components/SubscriberOptIn";
 import SubscriberOptOut from "@/components/SubscriberOptOut";
 import { PreferencesButton } from "@/components/PreferencesButton";
 import { useUnreadMessageCount } from '@/hooks/useUnreadMessageCount';
+import { UnreadMessageBadge } from '@/components/harbor/UnreadMessageBadge';
+import { ConnectionStatusIndicator } from '@/components/harbor/ConnectionStatusIndicator';
 
 
 interface ProviderResponse {
@@ -61,6 +63,12 @@ function HarborAppBar({ lang }: { lang: Locale }) {
           <SvgIcon src="/img/svg/logo.svg" width="101px" height="64px" />
         </Box>
       </Link>
+      {/* Connection Status Indicator */}
+      {session?.user?.role === 'subscriber' && (
+        <Flex align="center" gap="2" style={{ marginLeft: '1rem' }}>
+          <ConnectionStatusIndicator size="small" showText={false} />
+        </Flex>
+      )}
       <Flex gap="4" align="center" p="2">
         {session?.user ? (
           <>
@@ -75,11 +83,7 @@ function HarborAppBar({ lang }: { lang: Locale }) {
                   <Link href={`/${lang}/harbor/messaging`}>
                     <Flex align="center" gap="2">
                       {t('messaging.subscriberMessaging')}
-                      {unreadCount > 0 && (
-                        <Badge color="red" size="1" style={{ minWidth: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          {unreadCount > 99 ? '99+' : unreadCount}
-                        </Badge>
-                      )}
+                      <UnreadMessageBadge />
                     </Flex>
                   </Link>
                 </Button>

@@ -347,6 +347,13 @@ export interface SSELinkRemoved {
   };
 }
 
+export interface SSEHeartbeat {
+  type: 'heartbeat';
+  data: {
+    timestamp: string;
+  };
+}
+
 export type SSEEvent = 
   | SSEConnectionEstablished
   | SSEMessageNew
@@ -356,7 +363,8 @@ export type SSEEvent =
   | SSEAttachmentAdded
   | SSEAttachmentRemoved
   | SSELinkAdded
-  | SSELinkRemoved;
+  | SSELinkRemoved
+  | SSEHeartbeat;
 
 // API Response types
 export interface ApiResponse<T = any> {
