@@ -221,6 +221,7 @@ export default async function SubscriberMessagingPage({ params }: { params: Prom
       userStats={userStats}
       recipients={recipients}
       systemSettings={systemSettings}
+      lang={lang}
     />
   );
 } 

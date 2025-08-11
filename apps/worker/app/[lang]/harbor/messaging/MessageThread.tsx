@@ -3,7 +3,9 @@
 import { useState, useEffect } from 'react';
 import { Box, Flex, Heading, Text, Button, Card, Badge, Dialog } from '@radix-ui/themes';
 import TextArea from '@/common/TextArea';
+import { MessageAttachments } from '../../../components/harbor/messaging/MessageAttachments';
 import { useTranslation } from 'react-i18next';
+import { MessageAttachment } from '@/types/messaging';
 
 interface RecentMessage {
   Id: number;
@@ -15,6 +17,8 @@ interface RecentMessage {
   IsRead: boolean;
   MessageType: string;
   RecipientCount: number;
+  HasAttachments?: boolean;
+  AttachmentCount?: number;
 }
 
 interface MessageThreadProps {
@@ -33,6 +37,8 @@ export function MessageThread({ message, userEmail, onClose, onMessageUpdate }: 
   const [success, setSuccess] = useState<string | null>(null);
   const [recipients, setRecipients] = useState<Array<{ Email: string; Name?: string }>>([]);
   const [isLoadingRecipients, setIsLoadingRecipients] = useState(true);
+  const [attachments, setAttachments] = useState<MessageAttachment[]>([]);
+  const [isLoadingAttachments, setIsLoadingAttachments] = useState(false);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -60,6 +66,31 @@ export function MessageThread({ message, userEmail, onClose, onMessageUpdate }: 
 
     fetchRecipients();
   }, [message.Id]);
+
+  // Fetch attachments for this message
+  useEffect(() => {
+    if (message.HasAttachments && message.AttachmentCount && message.AttachmentCount > 0) {
+      const fetchAttachments = async () => {
+        setIsLoadingAttachments(true);
+        try {
+          const response = await fetch(`/api/messaging/attachments/message?messageId=${message.Id}`);
+          if (response.ok) {
+            const data = await response.json() as { attachments: MessageAttachment[] };
+            setAttachments(data.attachments || []);
+          } else {
+            const errorData = await response.json();
+            console.error('API error fetching attachments:', errorData);
+          }
+        } catch (error) {
+          console.error('Error fetching attachments:', error);
+        } finally {
+          setIsLoadingAttachments(false);
+        }
+      };
+
+      fetchAttachments();
+    }
+  }, [message.Id, message.HasAttachments, message.AttachmentCount]);
 
   const handleReply = async () => {
     if (!replyBody.trim()) {
@@ -185,6 +216,24 @@ export function MessageThread({ message, userEmail, onClose, onMessageUpdate }: 
                     </Text>
                   </Card>
                 </Box>
+
+                {/* Attachments Section */}
+                {message.HasAttachments && message.AttachmentCount && message.AttachmentCount > 0 && (
+                  <Box>
+                    <Text size="2" color="gray" mb="2">{t('messaging.attachments')}</Text>
+                    {isLoadingAttachments ? (
+                      <Text size="3" color="gray">Loading attachments...</Text>
+                    ) : attachments.length > 0 ? (
+                      <MessageAttachments 
+                        attachments={attachments}
+                        messageId={message.Id}
+                        canDelete={false}
+                      />
+                    ) : (
+                      <Text size="3" color="gray">No attachments found</Text>
+                    )}
+                  </Box>
+                )}
 
                 <Flex gap="2" align="center">
                   <Text size="1" color="gray">

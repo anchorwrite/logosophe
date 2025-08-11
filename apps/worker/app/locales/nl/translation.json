@@ -543,7 +543,9 @@
     "deleteError": "Fout bij verwijderen bericht",
     "messageDeleted": "Bericht succesvol verwijderd",
     "archiveError": "Fout bij archiveren bericht",
-    "messageArchived": "Bericht succesvol gearchiveerd"
+    "messageArchived": "Bericht succesvol gearchiveerd",
+    "newMessageReceived": "Nieuw bericht ontvangen!",
+    "attachments": "Bijlagen"
   },
   "preferences": {
     "title": "Voorkeuren",

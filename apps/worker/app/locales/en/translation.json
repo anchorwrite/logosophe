@@ -778,7 +778,9 @@
     "deleteError": "Error deleting message",
     "messageDeleted": "Message deleted successfully",
     "archiveError": "Error archiving message",
-    "messageArchived": "Message archived successfully"
+    "messageArchived": "Message archived successfully",
+    "newMessageReceived": "New message received!",
+    "attachments": "Attachments"
   },
 
   "preferences": {

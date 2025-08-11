@@ -1,7 +1,8 @@
 import { NextRequest } from 'next/server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
-import { checkAccess } from '@/lib/access-control';
-import { SystemLogs } from '@/lib/system-logs';
+import { auth } from '@/auth';
+import { isSystemAdmin, isTenantAdminFor } from '@/lib/access';
+import { MessagingEventBroadcaster, createMessageReadEventData } from '@/lib/messaging-events';
 
 
 interface MarkReadRequest {
@@ -10,21 +11,19 @@ interface MarkReadRequest {
 
 export async function POST(request: NextRequest) {
   try {
-    const access = await checkAccess({
-      requireAuth: true,
-    });
-
-    if (!access.hasAccess || !access.email) {
+    const context = await getCloudflareContext({ async: true });
+    const db = context.env.DB;
+    
+    // Check authentication
+    const session = await auth();
+    if (!session?.user?.email) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401,
         headers: { 'Content-Type': 'application/json' }
       });
     }
 
-    const { env } = await getCloudflareContext({async: true});
-    const db = env.DB;
-    const systemLogs = new SystemLogs(db);
-
+    const userEmail = session.user.email;
     const body: MarkReadRequest = await request.json();
     const { messageId } = body;
 
@@ -35,15 +34,16 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Check if user is a recipient of this message
+    // Check if user is a recipient of this message and get tenant info
     const checkRecipientQuery = `
-      SELECT mr.Id, mr.IsRead
+      SELECT mr.Id, mr.IsRead, m.TenantId
       FROM MessageRecipients mr
+      INNER JOIN Messages m ON mr.MessageId = m.Id
       WHERE mr.MessageId = ? AND mr.RecipientEmail = ?
     `;
 
     const recipientResult = await db.prepare(checkRecipientQuery)
-      .bind(messageId, access.email)
+      .bind(messageId, userEmail)
       .first() as any;
 
     if (!recipientResult) {
@@ -71,20 +71,18 @@ export async function POST(request: NextRequest) {
     const readAt = new Date().toISOString();
     
     await db.prepare(updateQuery)
-      .bind(readAt, messageId, access.email)
+      .bind(readAt, messageId, userEmail)
       .run();
 
-    // Log the read action
-    await systemLogs.createLog({
-      logType: 'ACTIVITY',
-      timestamp: readAt,
-      userEmail: access.email,
-      activityType: 'MESSAGE_READ',
-      metadata: {
-        messageId,
-        readAt
-      }
-    });
+    // Broadcast SSE event for message read
+    const eventData = createMessageReadEventData(
+      messageId,
+      recipientResult.TenantId,
+      userEmail,
+      readAt
+    );
+
+    MessagingEventBroadcaster.broadcastMessageRead(recipientResult.TenantId, eventData);
 
     return new Response(JSON.stringify({ 
       success: true, 

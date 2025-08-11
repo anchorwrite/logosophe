@@ -5,6 +5,11 @@ import { Box, Flex, Heading, Text, Button, Card, Badge, TextField, Select } from
 import { useTranslation } from 'react-i18next';
 import { MessageThread } from './MessageThread';
 import TextArea from '@/common/TextArea';
+import { FileAttachmentManager } from '../../../components/harbor/messaging/FileAttachmentManager';
+import { UnifiedMessageComposer } from '../../../components/harbor/messaging/UnifiedMessageComposer';
+import { MessageAttachments } from '../../../components/harbor/messaging/MessageAttachments';
+import { MessageAttachmentDisplay } from '../../../components/harbor/messaging/MessageAttachmentDisplay';
+import { CreateAttachmentRequest, SSEEvent, SSEMessageNew, SSEMessageRead, SSEMessageDelete, SSEMessageUpdate, SSEAttachmentAdded, SSEAttachmentRemoved, SSELinkAdded, SSELinkRemoved } from '@/types/messaging';
 import type { Locale } from '@/types/i18n';
 
 interface RecentMessage {
@@ -17,6 +22,10 @@ interface RecentMessage {
   IsRead: boolean;
   MessageType: string;
   RecipientCount: number;
+  HasAttachments?: boolean;
+  AttachmentCount?: number;
+  HasLinks?: boolean;
+  LinkCount?: number;
 }
 
 interface UserStats {
@@ -52,6 +61,7 @@ interface SubscriberMessagingInterfaceProps {
   userStats: UserStats;
   recipients: Recipient[];
   systemSettings: SystemSettings;
+  lang: string;
 }
 
 export function SubscriberMessagingInterface({
@@ -62,7 +72,8 @@ export function SubscriberMessagingInterface({
   recentMessages,
   userStats,
   recipients,
-  systemSettings
+  systemSettings,
+  lang
 }: SubscriberMessagingInterfaceProps) {
   const { t } = useTranslation('translations');
   const [selectedMessage, setSelectedMessage] = useState<RecentMessage | null>(null);
@@ -70,12 +81,16 @@ export function SubscriberMessagingInterface({
   const [composeSubject, setComposeSubject] = useState('');
   const [composeBody, setComposeBody] = useState('');
   const [selectedRecipients, setSelectedRecipients] = useState<string[]>([]);
+  const [selectedAttachments, setSelectedAttachments] = useState<CreateAttachmentRequest[]>([]);
   const [isSending, setIsSending] = useState(false);
   const [messages, setMessages] = useState<RecentMessage[]>(recentMessages);
   const [stats, setStats] = useState<UserStats>(userStats);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [sseConnected, setSseConnected] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const eventSourceRef = useRef<EventSource | null>(null);
+  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -85,8 +100,225 @@ export function SubscriberMessagingInterface({
     scrollToBottom();
   }, [messages]);
 
+  // SSE Connection Management
+  useEffect(() => {
+    if (!userTenantId || !userEmail) {
+      return;
+    }
+
+    const connectEventSource = async () => {
+      // Close existing connection if any
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+        eventSourceRef.current = null;
+      }
+
+      try {
+        // Connect to the SSE stream endpoint
+        const sseUrl = `/api/messaging/stream/${userTenantId}`;
+        const eventSource = new EventSource(sseUrl);
+        eventSourceRef.current = eventSource;
+
+        eventSource.onopen = () => {
+          setSseConnected(true);
+          console.log('SSE connection established for messaging');
+        };
+
+        eventSource.onmessage = (event) => {
+          try {
+            const sseEvent: SSEEvent = JSON.parse(event.data);
+            handleSSEEvent(sseEvent);
+          } catch (error) {
+            console.error('Error parsing SSE message:', error);
+          }
+        };
+
+        eventSource.onerror = (error) => {
+          console.error('SSE connection error:', error);
+          setSseConnected(false);
+          
+          // Retry connection with exponential backoff
+          if (reconnectTimeoutRef.current) {
+            clearTimeout(reconnectTimeoutRef.current);
+          }
+          reconnectTimeoutRef.current = setTimeout(() => {
+            connectEventSource();
+          }, 2000);
+        };
+      } catch (error) {
+        console.error('Error creating SSE connection:', error);
+        setSseConnected(false);
+      }
+    };
+
+    // Connect when component mounts
+    connectEventSource();
+
+    // Cleanup function
+    return () => {
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+        eventSourceRef.current = null;
+      }
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = null;
+      }
+    };
+  }, [userTenantId, userEmail]);
+
+  // Handle SSE events
+  const handleSSEEvent = (event: SSEEvent) => {
+    switch (event.type) {
+      case 'message:new':
+        handleNewMessage(event.data);
+        break;
+      case 'message:read':
+        handleMessageRead(event.data);
+        break;
+      case 'message:delete':
+        handleMessageDelete(event.data);
+        break;
+      case 'message:update':
+        handleMessageUpdate(event.data);
+        break;
+      case 'message:attachment:added':
+        handleAttachmentAdded(event.data);
+        break;
+      case 'message:attachment:removed':
+        handleAttachmentRemoved(event.data);
+        break;
+      case 'message:link:added':
+        handleLinkAdded(event.data);
+        break;
+      case 'message:link:removed':
+        handleLinkRemoved(event.data);
+        break;
+      case 'connection:established':
+        console.log('SSE connection confirmed:', event.data);
+        break;
+      default:
+        console.log('Unhandled SSE event type:', (event as any).type);
+    }
+  };
+
+  // Handle new message event
+  const handleNewMessage = (data: SSEMessageNew['data']) => {
+    // Only add if it's not from the current user and the current user is a recipient
+    if (data.senderEmail !== userEmail && data.recipients.includes(userEmail)) {
+      const newMessage: RecentMessage = {
+        Id: data.messageId,
+        Subject: data.subject,
+        Body: data.body,
+        SenderEmail: data.senderEmail,
+        SenderName: data.senderEmail, // Will be updated when we fetch the actual message
+        CreatedAt: data.timestamp,
+        IsRead: false,
+        MessageType: 'subscriber',
+        RecipientCount: data.recipients.length,
+        HasAttachments: data.hasAttachments,
+        AttachmentCount: data.attachmentCount
+      };
+
+      setMessages(prev => [newMessage, ...prev]);
+      setStats(prev => ({
+        ...prev,
+        totalMessages: prev.totalMessages + 1,
+        unreadMessages: prev.unreadMessages + 1
+      }));
+
+      // Show notification
+      setSuccess(t('messaging.newMessageReceived'));
+      setTimeout(() => setSuccess(null), 5000);
+    }
+  };
+
+  // Handle message read event
+  const handleMessageRead = (data: SSEMessageRead['data']) => {
+    if (data.readBy === userEmail) {
+      setMessages(prev => prev.map(msg => 
+        msg.Id === data.messageId 
+          ? { ...msg, IsRead: true }
+          : msg
+      ));
+      
+      setStats(prev => ({
+        ...prev,
+        unreadMessages: Math.max(0, prev.unreadMessages - 1)
+      }));
+    }
+  };
+
+  // Handle message delete event
+  const handleMessageDelete = (data: SSEMessageDelete['data']) => {
+    setMessages(prev => prev.filter(msg => msg.Id !== data.messageId));
+    
+    // Update stats if needed
+    const deletedMessage = messages.find(msg => msg.Id === data.messageId);
+    if (deletedMessage) {
+      setStats(prev => ({
+        ...prev,
+        totalMessages: Math.max(0, prev.totalMessages - 1),
+        unreadMessages: deletedMessage.IsRead ? prev.unreadMessages : Math.max(0, prev.unreadMessages - 1)
+      }));
+    }
+  };
+
+  // Handle message update event
+  const handleMessageUpdate = (data: SSEMessageUpdate['data']) => {
+    setMessages(prev => prev.map(msg => 
+      msg.Id === data.messageId 
+        ? { ...msg, ...data.changes }
+        : msg
+    ));
+  };
+
+  // Handle attachment added event
+  const handleAttachmentAdded = (data: SSEAttachmentAdded['data']) => {
+    // Update message to reflect new attachment
+    setMessages(prevMessages => 
+      prevMessages.map(msg => 
+        msg.Id === data.messageId 
+          ? { 
+              ...msg, 
+              HasAttachments: true, 
+              AttachmentCount: (msg.AttachmentCount || 0) + 1 
+            }
+          : msg
+      )
+    );
+  };
+
+  // Handle attachment removed event
+  const handleAttachmentRemoved = (data: SSEAttachmentRemoved['data']) => {
+    // Update message to reflect removed attachment
+    setMessages(prevMessages => 
+      prevMessages.map(msg => 
+        msg.Id === data.messageId 
+          ? { 
+              ...msg, 
+              AttachmentCount: Math.max(0, (msg.AttachmentCount || 0) - 1),
+              HasAttachments: (msg.AttachmentCount || 0) > 1
+            }
+          : msg
+      )
+    );
+  };
+
+  // Handle link added event
+  const handleLinkAdded = (data: SSELinkAdded['data']) => {
+    // Handle link added event - could update UI to show link previews
+    console.log('Link added to message:', data);
+  };
+
+  // Handle link removed event
+  const handleLinkRemoved = (data: SSELinkRemoved['data']) => {
+    // Handle link removed event
+    console.log('Link removed from message:', data);
+  };
+
   const handleSendMessage = async () => {
-    if (!composeSubject.trim() || !composeBody.trim() || selectedRecipients.length === 0) {
+    if (!composeSubject.trim() || (!composeBody.trim() && selectedAttachments.length === 0) || selectedRecipients.length === 0) {
       setError(t('messaging.fillAllFields'));
       return;
     }
@@ -109,7 +341,9 @@ export function SubscriberMessagingInterface({
           subject: composeSubject,
           body: composeBody,
           recipients: selectedRecipients,
-          messageType: 'subscriber'
+          messageType: 'subscriber',
+          tenantId: userTenantId,
+          attachments: selectedAttachments
         }),
       });
 
@@ -144,6 +378,7 @@ export function SubscriberMessagingInterface({
       setComposeSubject('');
       setComposeBody('');
       setSelectedRecipients([]);
+      setSelectedAttachments([]);
       setIsComposing(false);
       setSuccess(t('messaging.messageSent'));
       
@@ -261,7 +496,30 @@ export function SubscriberMessagingInterface({
       <Flex direction="column" gap="6">
         {/* Header */}
         <Box>
-          <Heading size="6" mb="2">{t('messaging.subscriberMessaging')}</Heading>
+          <Flex justify="between" align="center" mb="2">
+            <Heading size="6">{t('messaging.subscriberMessaging')}</Heading>
+            <Flex gap="2" align="center">
+              <Badge 
+                color={sseConnected ? "green" : "red"} 
+                size="2"
+                style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '0.5rem' 
+                }}
+              >
+                <Box 
+                  style={{ 
+                    width: '8px', 
+                    height: '8px', 
+                    borderRadius: '50%', 
+                    backgroundColor: sseConnected ? 'var(--green-9)' : 'var(--red-9)' 
+                  }} 
+                />
+                {sseConnected ? 'Connected' : 'Disconnected'}
+              </Badge>
+            </Flex>
+          </Flex>
           <Text size="3" color="gray">
             {t('messaging.tenantOnly').replace('{tenant}', userTenantName)}
           </Text>
@@ -310,137 +568,74 @@ export function SubscriberMessagingInterface({
         {/* Compose Message */}
         {isComposing && (
           <Card size="3">
-            <Flex direction="column" gap="4">
-              <Heading size="4">{t('messaging.composeMessage')}</Heading>
-              
-              <Flex direction="column" gap="3">
-                <Box>
-                  <Text size="2" weight="bold" mb="2">{t('messaging.subject')}</Text>
-                  <TextField.Root>
-                    <TextField.Input
-                      value={composeSubject}
-                      onChange={(e) => setComposeSubject(e.target.value)}
-                      placeholder={t('messaging.subjectPlaceholder')}
-                      size="3"
-                    />
-                  </TextField.Root>
-                </Box>
+            <UnifiedMessageComposer
+              tenantId={userTenantId}
+              userEmail={userEmail}
+              recipients={recipients.map(r => r.Email)}
+              onSend={async (messageData) => {
+                try {
+                  const response = await fetch('/api/messaging/send', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                    },
+                                          body: JSON.stringify({
+                        subject: messageData.subject,
+                        body: messageData.body,
+                        recipients: messageData.recipients,
+                        messageType: 'subscriber',
+                        tenantId: userTenantId,
+                        attachments: messageData.attachments,
+                        links: messageData.links
+                      }),
+                  });
 
-                <Box>
-                  <Text size="2" weight="bold" mb="2">{t('messaging.recipients')}</Text>
+                  if (!response.ok) {
+                    const errorData = await response.json() as { error?: string };
+                    throw new Error(errorData.error || t('messaging.sendError'));
+                  }
+
+                  const result = await response.json() as { messageId: number };
                   
-                  {/* Recipient Selection */}
-                  <Flex direction="column" gap="2">
-                    {/* Recipients List */}
-                    <Box style={{ 
-                      border: '1px solid var(--gray-6)', 
-                      borderRadius: 'var(--radius-3)',
-                      maxHeight: '200px',
-                      overflowY: 'auto',
-                      padding: '0.5rem'
-                    }}>
-                      {availableRecipients.length === 0 ? (
-                        <Text size="2" color="gray" align="center" style={{ padding: '0.5rem' }}>
-                          {t('messaging.noRecipients')}
-                        </Text>
-                      ) : (
-                        <Flex direction="column" gap="1">
-                          {availableRecipients.map((recipient) => (
-                            <Flex 
-                              key={recipient.Email} 
-                              align="center" 
-                              gap="2" 
-                              p="1"
-                              style={{ 
-                                cursor: 'pointer',
-                                borderRadius: 'var(--radius-2)',
-                                backgroundColor: selectedRecipients.includes(recipient.Email) 
-                                  ? 'var(--blue-3)' 
-                                  : 'transparent'
-                              }}
-                              onClick={() => {
-                                if (selectedRecipients.includes(recipient.Email)) {
-                                  setSelectedRecipients(prev => prev.filter(r => r !== recipient.Email));
-                                } else {
-                                  setSelectedRecipients(prev => [...prev, recipient.Email]);
-                                }
-                              }}
-                            >
-                              <input
-                                type="checkbox"
-                                checked={selectedRecipients.includes(recipient.Email)}
-                                onChange={() => {}} // Handled by onClick above
-                                style={{ margin: 0 }}
-                              />
-                              <Text size="2">
-                                {recipient.Name || recipient.Email}
-                              </Text>
-                            </Flex>
-                          ))}
-                        </Flex>
-                      )}
-                    </Box>
-                    
-                    {/* Action Buttons */}
-                    {availableRecipients.length > 0 && (
-                      <Flex gap="2" wrap="wrap">
-                        <Button 
-                          size="1" 
-                          variant="soft"
-                          onClick={() => {
-                            const allEmails = availableRecipients.map(r => r.Email);
-                            setSelectedRecipients(allEmails);
-                          }}
-                          disabled={selectedRecipients.length === availableRecipients.length}
-                        >
-                          {t('messaging.selectAll')}
-                        </Button>
-                        <Button 
-                          size="1" 
-                          variant="soft"
-                          onClick={() => setSelectedRecipients([])}
-                          disabled={selectedRecipients.length === 0}
-                        >
-                          {t('messaging.clearAll')}
-                        </Button>
-                      </Flex>
-                    )}
-                  </Flex>
-                  
-                  <Text size="1" color="gray" mt="1">
-                    {t('messaging.recipientLimit').replace('{current}', selectedRecipients.length.toString()).replace('{max}', systemSettings.maxRecipients.toString())}
-                  </Text>
-                </Box>
+                  // Add the new message to the list
+                  const newMessage: RecentMessage = {
+                    Id: result.messageId,
+                    Subject: messageData.subject,
+                    Body: messageData.body,
+                    SenderEmail: userEmail,
+                    SenderName: userName,
+                    CreatedAt: new Date().toISOString(),
+                    IsRead: false,
+                    MessageType: 'subscriber',
+                    RecipientCount: messageData.recipients.length,
+                    HasAttachments: messageData.attachments.length > 0,
+                    AttachmentCount: messageData.attachments.length,
+                    HasLinks: messageData.links.length > 0,
+                    LinkCount: messageData.links.length
+                  };
 
-                <Box>
-                  <Text size="2" weight="bold" mb="2">{t('messaging.message')}</Text>
-                  <Box style={{ minHeight: '120px' }}>
-                    <TextArea
-                      name="messageBody"
-                      placeholder={t('messaging.messagePlaceholder')}
-                      value={composeBody}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement> | React.ChangeEvent<HTMLTextAreaElement>) => setComposeBody(e.target.value)}
-                    />
-                  </Box>
-                </Box>
+                  setMessages([newMessage, ...messages]);
+                  setStats(prev => ({
+                    ...prev,
+                    totalMessages: prev.totalMessages + 1,
+                    sentMessages: prev.sentMessages + 1
+                  }));
 
-                <Flex gap="3" justify="end">
-                  <Button 
-                    variant="soft" 
-                    onClick={() => setIsComposing(false)}
-                    disabled={isSending}
-                  >
-                    {t('common.cancel')}
-                  </Button>
-                  <Button 
-                    onClick={handleSendMessage}
-                    disabled={isSending || !composeSubject.trim() || !composeBody.trim() || selectedRecipients.length === 0}
-                  >
-                    {isSending ? t('messaging.sending') : t('messaging.send')}
-                  </Button>
-                </Flex>
-              </Flex>
-            </Flex>
+                  // Reset compose form
+                  setIsComposing(false);
+                  setSuccess(t('messaging.messageSent'));
+                  setTimeout(() => setSuccess(null), 3000);
+                } catch (error) {
+                  console.error('Error sending message:', error);
+                  setError(error instanceof Error ? error.message : t('messaging.sendError'));
+                  setTimeout(() => setError(null), 5000);
+                }
+              }}
+              onCancel={() => setIsComposing(false)}
+              isSending={isSending}
+              maxRecipients={systemSettings.maxRecipients}
+              lang={lang}
+            />
           </Card>
         )}
 
@@ -506,6 +701,24 @@ export function SubscriberMessagingInterface({
                       }}>
                         {message.Body}
                       </Text>
+                      
+                      {/* Attachments and Links Indicators */}
+                      <Flex gap="2" align="center" wrap="wrap">
+                        {message.HasAttachments && message.AttachmentCount && message.AttachmentCount > 0 && (
+                          <Flex gap="1" align="center">
+                            <Text size="1" color="blue">
+                              📎 {message.AttachmentCount} {message.AttachmentCount === 1 ? t('messaging.attachment') : t('messaging.attachments')}
+                            </Text>
+                          </Flex>
+                        )}
+                        {message.HasLinks && message.LinkCount && message.LinkCount > 0 && (
+                          <Flex gap="1" align="center">
+                            <Text size="1" color="green">
+                              🔗 {message.LinkCount} {message.LinkCount === 1 ? t('messaging.link') : t('messaging.links')}
+                            </Text>
+                          </Flex>
+                        )}
+                      </Flex>
                       
                       <Flex justify="between" align="center">
                         <Text size="1" color="gray">

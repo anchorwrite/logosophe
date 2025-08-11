@@ -544,7 +544,9 @@
     "deleteError": "Error al eliminar mensaje",
     "messageDeleted": "Mensaje eliminado con éxito",
     "archiveError": "Error al archivar mensaje",
-    "messageArchived": "Mensaje archivado con éxito"
+    "messageArchived": "Mensaje archivado con éxito",
+    "newMessageReceived": "¡Nuevo mensaje recibido!",
+    "attachments": "Adjuntos"
   },
   "preferences": {
     "title": "Preferencias",

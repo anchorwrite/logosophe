@@ -1,179 +1,195 @@
 import { NextRequest } from 'next/server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
-import { checkAccess } from '@/lib/access-control';
-import { checkRateLimit, getSystemSettings, updateRateLimit } from '@/lib/messaging';
-import { SystemLogs } from '@/lib/system-logs';
-import type { D1Result } from '@cloudflare/workers-types';
-
-
-interface SendMessageRequest {
-  subject: string;
-  body: string;
-  recipients: string[];
-  messageType: string;
-}
+import { auth } from '@/auth';
+import { isSystemAdmin, isTenantAdminFor } from '@/lib/access';
+import { MessagingEventBroadcaster, createMessageNewEventData } from '@/lib/messaging-events';
+import { CreateMessageRequest, CreateAttachmentRequest, CreateLinkRequest } from '@/types/messaging';
 
 export async function POST(request: NextRequest) {
   try {
-    const access = await checkAccess({
-      requireAuth: true,
-    });
-
-    if (!access.hasAccess || !access.email) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+    const context = await getCloudflareContext({ async: true });
+    const db = context.env.DB;
+    
+    // Check authentication
+    const session = await auth();
+    if (!session?.user?.email) {
+      return new Response(JSON.stringify({ success: false, error: 'Unauthorized' }), {
         status: 401,
         headers: { 'Content-Type': 'application/json' }
       });
     }
 
-    const { env } = await getCloudflareContext({async: true});
-    const db = env.DB;
-    const systemLogs = new SystemLogs(db);
+    const userEmail = session.user.email;
+    const body: CreateMessageRequest = await request.json();
+    
+    const { subject, body: messageBody, recipients, tenantId, messageType = 'direct', priority = 'normal', attachments = [], links = [] } = body;
+    
+    // Validate required fields
+    if (!subject || !messageBody || !recipients || recipients.length === 0 || !tenantId) {
+      return new Response(JSON.stringify({ 
+        success: false, 
+        error: 'Missing required fields: subject, body, recipients, tenantId' 
+      }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
 
-    // Get system settings
-    const settings = await getSystemSettings();
-    if (settings.messaging_enabled !== 'true') {
-      return new Response(JSON.stringify({ error: 'Messaging system is disabled' }), {
+    // Check if user has access to this tenant
+    let hasAccess = false;
+    
+    // System admins have access to all tenants
+    if (await isSystemAdmin(userEmail, db)) {
+      hasAccess = true;
+    } else {
+      // Check if user is a tenant admin for this tenant
+      if (await isTenantAdminFor(userEmail, tenantId)) {
+        hasAccess = true;
+      } else {
+        // Check if user is a member of this tenant
+        const userTenant = await db.prepare(`
+          SELECT 1 FROM TenantUsers 
+          WHERE TenantId = ? AND Email = ?
+        `).bind(tenantId, userEmail).first();
+        
+        hasAccess = !!userTenant;
+      }
+    }
+
+    if (!hasAccess) {
+      return new Response(JSON.stringify({ 
+        success: false, 
+        error: 'Forbidden: User does not have access to this tenant' 
+      }), {
         status: 403,
         headers: { 'Content-Type': 'application/json' }
       });
     }
 
-    // Parse request body
-    const body: SendMessageRequest = await request.json();
-    
-    // Validate request
-    if (!body.subject?.trim() || !body.body?.trim() || !body.recipients?.length) {
-      return new Response(JSON.stringify({ error: 'Missing required fields' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' }
-      });
-    }
+    // Validate recipients exist in the tenant
+    const recipientValidation = await db.prepare(`
+      SELECT Email FROM TenantUsers 
+      WHERE TenantId = ? AND Email IN (${recipients.map(() => '?').join(',')})
+    `).bind(tenantId, ...recipients).all();
 
-    const maxRecipients = Number(settings.messaging_max_recipients) || 10;
-    if (body.recipients.length > maxRecipients) {
+    const validRecipients = recipientValidation.results.map(r => r.Email) as string[];
+    const invalidRecipients = recipients.filter(email => !validRecipients.includes(email));
+
+    if (invalidRecipients.length > 0) {
       return new Response(JSON.stringify({ 
-        error: `Maximum ${maxRecipients} recipients allowed` 
+        success: false, 
+        error: `Invalid recipients: ${invalidRecipients.join(', ')}` 
       }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' }
       });
     }
 
-    // Check rate limit
-    const rateLimitResult = await checkRateLimit(access.email);
-    if (!rateLimitResult.allowed) {
-      return new Response(JSON.stringify({ 
-        error: `Rate limit exceeded. Please wait ${rateLimitResult.waitSeconds} seconds.` 
-      }), {
-        status: 429,
-        headers: { 'Content-Type': 'application/json' }
-      });
-    }
+    // Start transaction
+    const transaction = await db.batch([
+      // Insert message
+      db.prepare(`
+        INSERT INTO Messages (Subject, Body, SenderEmail, TenantId, MessageType, Priority, HasAttachments, AttachmentCount)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `).bind(subject, messageBody, userEmail, tenantId, messageType, priority, attachments.length > 0, attachments.length),
+      
+      // Get the inserted message ID
+      db.prepare('SELECT last_insert_rowid() as messageId')
+    ]);
 
-    // Validate recipients
-    const recipientsQuery = `
-      SELECT tu.Email, s.Name, tu.TenantId
-      FROM TenantUsers tu
-      LEFT JOIN Subscribers s ON tu.Email = s.Email
-      WHERE tu.Email IN (${body.recipients.map(() => '?').join(',')})
-      AND s.Active = TRUE AND s.Banned = FALSE
-    `;
-
-    const recipientsResult = await db.prepare(recipientsQuery)
-      .bind(...body.recipients)
-      .all() as D1Result<any>;
-
-    const validRecipients = recipientsResult.results || [];
-    
-    if (validRecipients.length !== body.recipients.length) {
-      return new Response(JSON.stringify({ 
-        error: 'Some recipients are invalid or not accessible' 
-      }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' }
-      });
-    }
-
-    // Insert message
-    const insertMessageQuery = `
-      INSERT INTO Messages (Subject, Body, SenderEmail, TenantId, MessageType, Priority, CreatedAt)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `;
-
-    const tenantId = validRecipients[0]?.TenantId || 'system';
-    const priority = body.messageType === 'announcement' ? 'high' : 'normal';
-    const createdAt = new Date().toISOString();
-
-    const messageResult = await db.prepare(insertMessageQuery)
-      .bind(
-        body.subject.trim(),
-        body.body.trim(),
-        access.email,
-        tenantId,
-        body.messageType,
-        priority,
-        createdAt
-      )
-      .run();
-
-    const messageId = messageResult.meta.last_row_id;
+    const messageId = (transaction[1].results[0] as { messageId: number }).messageId;
 
     // Insert recipients
-    const insertRecipientQuery = `
-      INSERT INTO MessageRecipients (MessageId, RecipientEmail, IsRead)
-      VALUES (?, ?, FALSE)
-    `;
-
-    const recipientPromises = validRecipients.map(recipient =>
-      db.prepare(insertRecipientQuery)
-        .bind(messageId, recipient.Email)
-        .run()
+    const recipientInserts = validRecipients.map(email => 
+      db.prepare(`
+        INSERT INTO MessageRecipients (MessageId, RecipientEmail, TenantId)
+        VALUES (?, ?, ?)
+      `).bind(messageId, email, tenantId)
     );
 
-    await Promise.all(recipientPromises);
-
-    // Update rate limit after successful message send
-    await updateRateLimit(access.email);
-
-    // Log the message
-    await systemLogs.logMessagingOperation({
-      userEmail: access.email,
-      activityType: 'SEND_MESSAGE',
-      targetId: messageId.toString(),
-      targetName: body.subject,
-      tenantId: tenantId,
-      ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,
-      userAgent: request.headers.get('user-agent') || undefined,
-      metadata: {
-        messageId,
-        subject: body.subject,
-        messageType: body.messageType,
-        recipientCount: validRecipients.length,
-        recipients: validRecipients.map(r => r.Email)
+    // Insert attachments if any
+    const attachmentInserts = [];
+    for (const attachment of attachments) {
+      if (attachment.attachmentType === 'media_library' && attachment.mediaId) {
+        // Get media file info
+        const mediaFile = await db.prepare(`
+          SELECT FileName, FileSize, ContentType FROM MediaFiles WHERE Id = ?
+        `).bind(attachment.mediaId).first();
+        
+        if (mediaFile) {
+          attachmentInserts.push(
+            db.prepare(`
+              INSERT INTO MessageAttachments (MessageId, MediaId, AttachmentType, FileName, FileSize, ContentType)
+              VALUES (?, ?, ?, ?, ?, ?)
+            `).bind(messageId, attachment.mediaId, attachment.attachmentType, mediaFile.FileName, mediaFile.FileSize, mediaFile.ContentType)
+          );
+        }
       }
-    });
+      // Note: File uploads will be handled separately in the upload endpoint
+    }
 
-    // Return the created message
-    const createdMessage = {
-      Id: messageId,
-      Subject: body.subject,
-      Body: body.body,
-      SenderEmail: access.email,
-      SenderName: access.email, // We don't have name from checkAccess, so use email
-      CreatedAt: createdAt,
-      MessageType: body.messageType,
-      RecipientCount: validRecipients.length
-    };
+    // Insert links if any
+    const linkInserts = [];
+    for (const link of links) {
+      try {
+        const url = new URL(link.url);
+        const domain = url.hostname;
+        
+        linkInserts.push(
+          db.prepare(`
+            INSERT INTO MessageLinks (MessageId, Url, Domain)
+            VALUES (?, ?, ?)
+          `).bind(messageId, link.url, domain)
+        );
+      } catch (error) {
+        // Invalid URL, skip this link
+        console.warn(`Invalid URL in message: ${link.url}`);
+      }
+    }
 
-    return new Response(JSON.stringify(createdMessage), {
-      status: 201,
+    // Execute all inserts
+    const allInserts = [...recipientInserts, ...attachmentInserts, ...linkInserts];
+    if (allInserts.length > 0) {
+      await db.batch(allInserts);
+    }
+
+    // Broadcast SSE event for new message
+    const eventData = createMessageNewEventData(
+      messageId,
+      tenantId,
+      userEmail,
+      validRecipients,
+      subject,
+      messageBody,
+      attachments.length > 0,
+      attachments.length
+    );
+
+    MessagingEventBroadcaster.broadcastMessageNew(tenantId, eventData);
+
+    return new Response(JSON.stringify({
+      success: true,
+      data: {
+        messageId,
+        subject,
+        body: messageBody,
+        recipientEmails: validRecipients,
+        tenantId,
+        hasAttachments: attachments.length > 0,
+        attachmentCount: attachments.length,
+        linksCount: links.length
+      }
+    }), {
+      status: 200,
       headers: { 'Content-Type': 'application/json' }
     });
 
   } catch (error) {
     console.error('Error sending message:', error);
-    return new Response(JSON.stringify({ error: 'Internal server error' }), {
+    return new Response(JSON.stringify({ 
+      success: false, 
+      error: 'Internal server error' 
+    }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' }
     });
