@@ -20,8 +20,9 @@ export async function GET(request: NextRequest) {
 
     // Get user's tenant information
     const userTenantQuery = `
-      SELECT tu.TenantId
+      SELECT tu.TenantId, t.Name as TenantName
       FROM TenantUsers tu
+      LEFT JOIN Tenants t ON tu.TenantId = t.Id
       WHERE tu.Email = ?
     `;
 
@@ -34,6 +35,7 @@ export async function GET(request: NextRequest) {
     }
 
     const userTenantId = userTenantResult.TenantId;
+    const userTenantName = userTenantResult.TenantName || userTenantId;
 
     // Get unread message count for the user within their tenant
     const unreadCountQuery = `
@@ -55,8 +57,41 @@ export async function GET(request: NextRequest) {
 
     const unreadCount = unreadCountResult?.unreadCount || 0;
 
+    // Get recent unread messages for preview (limit to 3)
+    const recentUnreadQuery = `
+      SELECT 
+        m.Id,
+        m.Subject,
+        m.SenderEmail,
+        s.Name as SenderName,
+        m.CreatedAt,
+        m.HasAttachments,
+        m.AttachmentCount
+      FROM Messages m
+      LEFT JOIN MessageRecipients mr ON m.Id = mr.MessageId
+      LEFT JOIN Subscribers s ON m.SenderEmail = s.Email
+      LEFT JOIN TenantUsers tu_sender ON m.SenderEmail = tu_sender.Email
+      LEFT JOIN TenantUsers tu_recipient ON mr.RecipientEmail = tu_recipient.Email
+      WHERE mr.RecipientEmail = ?
+      AND mr.IsRead = FALSE
+      AND (tu_sender.TenantId = ? OR tu_recipient.TenantId = ?)
+      AND m.IsDeleted = FALSE
+      AND m.MessageType = 'subscriber'
+      ORDER BY m.CreatedAt DESC
+      LIMIT 3
+    `;
+
+    const recentUnreadResult = await db.prepare(recentUnreadQuery)
+      .bind(session.user.email, userTenantId, userTenantId)
+      .all() as any;
+
+    const recentUnreadMessages = recentUnreadResult.results || [];
+
     return NextResponse.json({ 
       unreadCount,
+      tenantId: userTenantId,
+      tenantName: userTenantName,
+      recentUnreadMessages,
       timestamp: new Date().toISOString()
     });
 
