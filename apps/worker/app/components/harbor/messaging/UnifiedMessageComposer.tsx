@@ -138,14 +138,27 @@ export const UnifiedMessageComposer: React.FC<UnifiedMessageComposerProps> = ({
                 backgroundColor: selectedRecipients.includes(email) ? 'var(--blue-2)' : 'transparent',
                 borderRadius: 'var(--radius-2)',
                 cursor: 'pointer'
-              }} onClick={() => handleRecipientToggle(email)}>
+              }}>
                 <input
                   type="checkbox"
                   checked={selectedRecipients.includes(email)}
-                  onChange={() => handleRecipientToggle(email)}
-                  style={{ margin: 0 }}
+                  onChange={(e) => {
+                    e.stopPropagation();
+                    handleRecipientToggle(email);
+                  }}
+                  style={{ 
+                    margin: 0,
+                    cursor: 'pointer',
+                    pointerEvents: 'auto'
+                  }}
                 />
-                <Text size="2">{email}</Text>
+                <Text 
+                  size="2" 
+                  style={{ cursor: 'pointer' }}
+                  onClick={() => handleRecipientToggle(email)}
+                >
+                  {email}
+                </Text>
               </Flex>
             ))}
           </Box>
