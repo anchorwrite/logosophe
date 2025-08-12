@@ -66,6 +66,35 @@ export async function GET(
         let lastMessageId: number | null = null;
         let lastMessageTime: string | null = null;
         let lastUnreadCount: number | null = null;
+        
+        // Initialize with current latest message to establish baseline
+        const initializeBaseline = async () => {
+          const baselineQuery = `
+            SELECT Id, CreatedAt FROM Messages 
+            WHERE TenantId = ? AND IsDeleted = FALSE
+            ORDER BY CreatedAt DESC, Id DESC
+            LIMIT 1
+          `;
+          
+          const baselineMessage = await db.prepare(baselineQuery)
+            .bind(tenantId)
+            .first() as { Id: number; CreatedAt: string } | null;
+          
+          if (baselineMessage) {
+            lastMessageId = baselineMessage.Id;
+            lastMessageTime = baselineMessage.CreatedAt;
+            console.log(`SSE baseline initialized for tenant ${tenantId}: messageId=${lastMessageId}, time=${lastMessageTime}`);
+          } else {
+            console.log(`SSE baseline initialized for tenant ${tenantId}: no existing messages`);
+          }
+        };
+        
+        // Initialize baseline immediately and wait for it to complete
+        initializeBaseline().then(() => {
+          console.log(`SSE baseline initialization completed for tenant ${tenantId}`);
+        }).catch(error => {
+          console.error(`SSE baseline initialization failed for tenant ${tenantId}:`, error);
+        });
     
         const pollInterval = setInterval(async () => {
           try {
@@ -81,71 +110,80 @@ export async function GET(
               .bind(tenantId)
               .first() as { Id: number; CreatedAt: string } | null;
 
-                          if (latestMessage && (latestMessage.Id !== lastMessageId || latestMessage.CreatedAt !== lastMessageTime)) {
-                // Get new messages since last check
-                let newMessagesQuery = `
-                  SELECT m.*, 
-                         GROUP_CONCAT(mr.RecipientEmail) as Recipients,
-                         GROUP_CONCAT(mr.IsRead) as ReadStatuses,
-                         GROUP_CONCAT(ml.Url) as LinkUrls,
-                         GROUP_CONCAT(ml.Title) as LinkTitles
-                  FROM Messages m
-                  LEFT JOIN MessageRecipients mr ON m.Id = mr.MessageId AND mr.IsDeleted = FALSE
-                  LEFT JOIN MessageLinks ml ON m.Id = ml.MessageId
-                  WHERE m.TenantId = ? AND m.IsDeleted = FALSE
-                `;
+            if (latestMessage && (latestMessage.Id !== lastMessageId || latestMessage.CreatedAt !== lastMessageTime)) {
+              console.log(`SSE polling detected new message for tenant ${tenantId}: latestId=${latestMessage.Id}, lastId=${lastMessageId}, latestTime=${latestMessage.CreatedAt}, lastTime=${lastMessageTime}`);
+              
+              // Get new messages since last check
+              let newMessagesQuery = `
+                SELECT m.*, 
+                       GROUP_CONCAT(mr.RecipientEmail) as Recipients,
+                       GROUP_CONCAT(mr.IsRead) as ReadStatuses,
+                       GROUP_CONCAT(ml.Url) as LinkUrls,
+                       GROUP_CONCAT(ml.Title) as LinkTitles
+                FROM Messages m
+                LEFT JOIN MessageRecipients mr ON m.Id = mr.MessageId AND mr.IsDeleted = FALSE
+                LEFT JOIN MessageLinks ml ON m.Id = ml.MessageId
+                WHERE m.TenantId = ? AND m.IsDeleted = FALSE
+              `;
 
-                let queryParams = [tenantId];
+              let queryParams = [tenantId];
 
-                if (lastMessageId && lastMessageTime) {
-                  // Use both time and ID to ensure we don't miss messages or get duplicates
-                  newMessagesQuery += ` AND (m.CreatedAt > ? OR (m.CreatedAt = ? AND m.Id > ?))`;
-                  queryParams.push(lastMessageTime, lastMessageTime, lastMessageId.toString());
-                }
-
-                newMessagesQuery += ` GROUP BY m.Id ORDER BY m.CreatedAt ASC, m.Id ASC`;
-
-                const newMessages = await db.prepare(newMessagesQuery)
-                  .bind(...queryParams)
-                  .all() as any;
-
-                if (newMessages.results && newMessages.results.length > 0) {
-                  for (const message of newMessages.results) {
-                    // Parse recipients and read statuses
-                    const recipients = message.Recipients ? message.Recipients.split(',') : [];
-                    const readStatuses = message.ReadStatuses ? message.ReadStatuses.split(',').map((s: string) => s === '1') : [];
-                    
-                    // Parse links
-                    const linkUrls = message.LinkUrls ? message.LinkUrls.split(',') : [];
-                    const linkTitles = message.LinkTitles ? message.LinkTitles.split(',') : [];
-                    const links = linkUrls.map((url: string, index: number) => ({
-                      url,
-                      title: linkTitles[index] || url
-                    }));
-
-                    const sseMessage = `data: ${JSON.stringify({
-                      type: 'message:new',
-                      data: {
-                        messageId: message.Id,
-                        tenantId: message.TenantId,
-                        senderEmail: message.SenderEmail,
-                        recipients,
-                        subject: message.Subject,
-                        body: message.Body,
-                        hasAttachments: message.HasAttachments,
-                        attachmentCount: message.AttachmentCount,
-                        links,
-                        timestamp: message.CreatedAt
-                      }
-                    })}\n\n`;
-                    
-                    controller.enqueue(new TextEncoder().encode(sseMessage));
-                  }
-                  
-                  lastMessageId = latestMessage.Id;
-                  lastMessageTime = latestMessage.CreatedAt;
-                }
+              if (lastMessageId && lastMessageTime) {
+                // Use both time and ID to ensure we don't miss messages or get duplicates
+                newMessagesQuery += ` AND (m.CreatedAt > ? OR (m.CreatedAt = ? AND m.Id > ?))`;
+                queryParams.push(lastMessageTime, lastMessageTime, lastMessageId.toString());
               }
+
+              newMessagesQuery += ` GROUP BY m.Id ORDER BY m.CreatedAt ASC, m.Id ASC`;
+
+              const newMessages = await db.prepare(newMessagesQuery)
+                .bind(...queryParams)
+                .all() as any;
+
+              if (newMessages.results && newMessages.results.length > 0) {
+                console.log(`SSE sending ${newMessages.results.length} new messages for tenant ${tenantId}`);
+                
+                for (const message of newMessages.results) {
+                  // Parse recipients and read statuses
+                  const recipients = message.Recipients ? message.Recipients.split(',') : [];
+                  const readStatuses = message.ReadStatuses ? message.ReadStatuses.split(',').map((s: string) => s === '1') : [];
+                  
+                  // Parse links
+                  const linkUrls = message.LinkUrls ? message.LinkUrls.split(',') : [];
+                  const linkTitles = message.LinkTitles ? message.LinkTitles.split(',') : [];
+                  const links = linkUrls.map((url: string, index: number) => ({
+                    url,
+                    title: linkTitles[index] || url
+                  }));
+
+                  const sseMessage = `data: ${JSON.stringify({
+                    type: 'message:new',
+                    data: {
+                      messageId: message.Id,
+                      tenantId: message.TenantId,
+                      senderEmail: message.SenderEmail,
+                      recipients,
+                      subject: message.Subject,
+                      body: message.Body,
+                      hasAttachments: message.HasAttachments,
+                      attachmentCount: message.AttachmentCount,
+                      links,
+                      timestamp: message.CreatedAt
+                    }
+                  })}\n\n`;
+                  
+                  controller.enqueue(new TextEncoder().encode(sseMessage));
+                }
+                
+                lastMessageId = latestMessage.Id;
+                lastMessageTime = latestMessage.CreatedAt;
+                console.log(`SSE updated baseline for tenant ${tenantId}: newLastId=${lastMessageId}, newLastTime=${lastMessageTime}`);
+              } else {
+                console.log(`SSE no new messages found for tenant ${tenantId} despite change detection`);
+              }
+            } else {
+              console.log(`SSE polling no change detected for tenant ${tenantId}: latestId=${latestMessage?.Id}, lastId=${lastMessageId}`);
+            }
 
             // Check for unread count changes
             const unreadCountQuery = `

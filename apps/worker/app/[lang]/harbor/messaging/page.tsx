@@ -114,7 +114,7 @@ export default async function SubscriberMessagingPage({ params }: { params: Prom
     tenantId: userTenantId
   });
 
-  // Get user's recent messages within their tenant
+  // Get recent messages for the user within their tenant
   const recentMessagesQuery = `
     SELECT 
       m.Id,
@@ -127,7 +127,7 @@ export default async function SubscriberMessagingPage({ params }: { params: Prom
       m.MessageType,
       COUNT(DISTINCT mr.RecipientEmail) as RecipientCount
     FROM Messages m
-    LEFT JOIN MessageRecipients mr ON m.Id = mr.MessageId
+    LEFT JOIN MessageRecipients mr ON m.Id = mr.MessageId AND mr.IsDeleted = FALSE
     LEFT JOIN Subscribers s ON m.SenderEmail = s.Email
     LEFT JOIN TenantUsers tu_sender ON m.SenderEmail = tu_sender.Email
     LEFT JOIN TenantUsers tu_recipient ON mr.RecipientEmail = tu_recipient.Email
@@ -154,7 +154,7 @@ export default async function SubscriberMessagingPage({ params }: { params: Prom
       COUNT(DISTINCT CASE WHEN m.SenderEmail = ? THEN m.Id END) as sentMessages,
       COUNT(DISTINCT CASE WHEN mr.RecipientEmail = ? THEN m.Id END) as receivedMessages
     FROM Messages m
-    LEFT JOIN MessageRecipients mr ON m.Id = mr.MessageId
+    LEFT JOIN MessageRecipients mr ON m.Id = mr.MessageId AND mr.IsDeleted = FALSE
     LEFT JOIN TenantUsers tu_sender ON m.SenderEmail = tu_sender.Email
     LEFT JOIN TenantUsers tu_recipient ON mr.RecipientEmail = tu_recipient.Email
     WHERE (m.SenderEmail = ? OR mr.RecipientEmail = ?)
@@ -177,7 +177,7 @@ export default async function SubscriberMessagingPage({ params }: { params: Prom
           ELSE m.SenderEmail
         END as OtherParticipant
       FROM Messages m
-      LEFT JOIN MessageRecipients mr ON m.Id = mr.MessageId
+      LEFT JOIN MessageRecipients mr ON m.Id = mr.MessageId AND mr.IsDeleted = FALSE
       LEFT JOIN TenantUsers tu_sender ON m.SenderEmail = tu_sender.Email
       LEFT JOIN TenantUsers tu_recipient ON mr.RecipientEmail = tu_recipient.Email
       WHERE (m.SenderEmail = ? OR mr.RecipientEmail = ?)
