@@ -19,6 +19,8 @@ interface RecentMessage {
   RecipientCount: number;
   HasAttachments?: boolean;
   AttachmentCount?: number;
+  attachments?: MessageAttachment[];
+  links?: any[];
 }
 
 interface MessageThreadProps {
@@ -85,13 +87,29 @@ export function MessageThread({ message, userEmail, tenantId, onClose, onMessage
       return;
     }
 
+    console.log('MessageThread processing message:', message);
+    console.log('Message HasAttachments:', message.HasAttachments);
+    console.log('Message AttachmentCount:', message.AttachmentCount);
+    console.log('Message attachments array:', message.attachments);
+
+    // If attachments are already included in the message, use them
+    if (message.attachments && message.attachments.length > 0) {
+      console.log('Using attachments from message object:', message.attachments);
+      setAttachments(message.attachments);
+      setIsLoadingAttachments(false);
+      return;
+    }
+
+    // Fallback to fetching attachments if they're not included
     if (message.HasAttachments && message.AttachmentCount && message.AttachmentCount > 0) {
+      console.log('Fetching attachments via API...');
       const fetchAttachments = async () => {
         setIsLoadingAttachments(true);
         try {
           const response = await fetch(`/api/messaging/attachments/message/${message.Id}?tenantId=${tenantId}`);
           if (response.ok) {
             const data = await response.json() as { attachments: MessageAttachment[] };
+            console.log('API response for attachments:', data);
             setAttachments(data.attachments || []);
           } else {
             const errorData = await response.json();
@@ -105,8 +123,11 @@ export function MessageThread({ message, userEmail, tenantId, onClose, onMessage
       };
 
       fetchAttachments();
+    } else {
+      console.log('No attachments to fetch');
+      setIsLoadingAttachments(false);
     }
-  }, [message.Id, message.HasAttachments, message.AttachmentCount]);
+  }, [message.Id, message.HasAttachments, message.AttachmentCount, message.attachments]);
 
   const handleReply = async () => {
     if (!replyBody.trim()) {
