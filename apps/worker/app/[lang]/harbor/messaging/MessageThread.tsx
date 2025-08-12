@@ -89,7 +89,7 @@ export function MessageThread({ message, userEmail, tenantId, onClose, onMessage
       const fetchAttachments = async () => {
         setIsLoadingAttachments(true);
         try {
-          const response = await fetch(`/api/messaging/attachments/message?messageId=${message.Id}`);
+          const response = await fetch(`/api/messaging/attachments/message/${message.Id}?tenantId=${tenantId}`);
           if (response.ok) {
             const data = await response.json() as { attachments: MessageAttachment[] };
             setAttachments(data.attachments || []);
