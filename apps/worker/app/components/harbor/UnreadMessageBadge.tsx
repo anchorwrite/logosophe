@@ -1,7 +1,7 @@
 "use client";
 
 import { Box, Badge, Flex, Text } from '@radix-ui/themes';
-import { useUnreadMessageCount } from '@/hooks/useUnreadMessageCount';
+import { useMessaging } from '@/contexts/MessagingContext';
 
 interface UnreadMessageBadgeProps {
   showConnectionStatus?: boolean;
@@ -14,7 +14,7 @@ export function UnreadMessageBadge({
   size = 'medium',
   variant = 'default' 
 }: UnreadMessageBadgeProps) {
-  const { unreadCount, sseConnected, isLoading, error } = useUnreadMessageCount();
+  const { unreadCount, sseConnected, isLoading, error } = useMessaging();
 
   // Show loading indicator if still loading
   if (isLoading) {

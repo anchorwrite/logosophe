@@ -2,7 +2,6 @@ import { NextRequest } from 'next/server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { auth } from '@/auth';
 import { isSystemAdmin, isTenantAdminFor } from '@/lib/access';
-import { MessagingEventBroadcaster, createMessageNewEventData } from '@/lib/messaging-events';
 import { CreateMessageRequest, CreateAttachmentRequest, CreateLinkRequest } from '@/types/messaging';
 
 export async function POST(request: NextRequest) {
@@ -201,28 +200,9 @@ export async function POST(request: NextRequest) {
       console.log('No inserts to execute');
     }
 
-    // Broadcast SSE event for new message
-    const eventData = createMessageNewEventData(
-      messageId,
-      tenantId,
-      userEmail,
-      validRecipients,
-      subject,
-      messageBody,
-      attachments.length > 0,
-      attachments.length
-    );
-
-    console.log('Broadcasting SSE event for new message:', {
-      tenantId,
-      messageId,
-      recipients: validRecipients,
-      eventData
-    });
-
-    MessagingEventBroadcaster.broadcastMessageNew(tenantId, eventData);
-    
-    console.log('SSE event broadcast completed');
+    // SSE events are now handled by the polling-based endpoint
+    // No need to broadcast - clients will receive updates automatically
+    console.log('Message sent successfully - SSE updates handled by polling endpoint');
 
     return new Response(JSON.stringify({
       success: true,

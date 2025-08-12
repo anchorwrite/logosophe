@@ -1,7 +1,7 @@
 "use client";
 
 import { Box, Flex, Text, Badge } from '@radix-ui/themes';
-import { useUnreadMessageCount } from '@/hooks/useUnreadMessageCount';
+import { useMessaging } from '@/contexts/MessagingContext';
 
 interface ConnectionStatusIndicatorProps {
   size?: 'small' | 'medium' | 'large';
@@ -14,7 +14,7 @@ export function ConnectionStatusIndicator({
   showText = false,
   variant = 'minimal' 
 }: ConnectionStatusIndicatorProps) {
-  const { sseConnected, isLoading, unreadCount } = useUnreadMessageCount();
+  const { sseConnected, isLoading, unreadCount } = useMessaging();
 
   const getIndicatorSize = () => {
     switch (size) {

@@ -4,6 +4,7 @@ import { Container, Box, Flex } from '@radix-ui/themes';
 import type { Locale } from '@/types/i18n';
 import Footer from '@/components/Footer';
 import ScrollRestoration from '@/components/ScrollRestoration';
+import { MessagingProvider } from '@/contexts/MessagingContext';
 
 
 // Client component wrapper for Footer
@@ -64,7 +65,9 @@ export default async function HarborLayout({
         </Box>
         <Box asChild>
           <main>
-            {children}
+            <MessagingProvider>
+              {children}
+            </MessagingProvider>
           </main>
         </Box>
         <ClientFooter />

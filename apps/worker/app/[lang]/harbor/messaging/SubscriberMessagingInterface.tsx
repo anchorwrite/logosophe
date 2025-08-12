@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { Box, Flex, Heading, Text, Button, Card, Badge, TextField, Select } from '@radix-ui/themes';
 import { useTranslation } from 'react-i18next';
 import { MessageThread } from './MessageThread';
@@ -11,6 +11,7 @@ import { MessageAttachments } from '../../../components/harbor/messaging/Message
 import { MessageAttachmentDisplay } from '../../../components/harbor/messaging/MessageAttachmentDisplay';
 import { CreateAttachmentRequest, SSEEvent, SSEMessageNew, SSEMessageRead, SSEMessageDelete, SSEMessageUpdate, SSEAttachmentAdded, SSEAttachmentRemoved, SSELinkAdded, SSELinkRemoved } from '@/types/messaging';
 import type { Locale } from '@/types/i18n';
+import { useMessaging } from '@/contexts/MessagingContext';
 
 interface RecentMessage {
   Id: number;
@@ -83,18 +84,27 @@ export function SubscriberMessagingInterface({
   const [selectedRecipients, setSelectedRecipients] = useState<string[]>([]);
   const [selectedAttachments, setSelectedAttachments] = useState<CreateAttachmentRequest[]>([]);
   const [isSending, setIsSending] = useState(false);
-  const [messages, setMessages] = useState<RecentMessage[]>(recentMessages);
+  // Deduplicate initial messages to prevent React key conflicts
+  const deduplicatedMessages = recentMessages.filter((message, index, self) => 
+    index === self.findIndex(m => m.Id === message.Id)
+  );
+  
+  // Log if there were duplicates in the initial load
+  if (deduplicatedMessages.length !== recentMessages.length) {
+    console.warn('Duplicate messages found in initial load:', {
+      original: recentMessages.length,
+      deduplicated: deduplicatedMessages.length,
+      duplicates: recentMessages.length - deduplicatedMessages.length
+    });
+  }
+  
+  const [messages, setMessages] = useState<RecentMessage[]>(deduplicatedMessages);
   const [stats, setStats] = useState<UserStats>(userStats);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [sseConnected, setSseConnected] = useState(false);
-  const [connectionDuration, setConnectionDuration] = useState<number>(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const eventSourceRef = useRef<EventSource | null>(null);
-  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const connectionStartTimeRef = useRef<number | null>(null);
-  const reconnectAttemptsRef = useRef<number>(0);
-  const maxReconnectAttempts = 5; // Maximum reconnection attempts before giving up
+  const { sseConnected } = useMessaging();
+  const lastUnreadCountRef = useRef<number>(userStats.unreadMessages);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -104,112 +114,7 @@ export function SubscriberMessagingInterface({
     scrollToBottom();
   }, [messages]);
 
-  // Track connection duration
-  useEffect(() => {
-    if (!sseConnected || !connectionStartTimeRef.current) {
-      return;
-    }
-
-    const interval = setInterval(() => {
-      const duration = Math.floor((Date.now() - connectionStartTimeRef.current!) / 1000);
-      setConnectionDuration(duration);
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [sseConnected]);
-
-  // SSE Connection Management
-  useEffect(() => {
-    if (!userTenantId || !userEmail) {
-      return;
-    }
-
-    const connectEventSource = async () => {
-      // Close existing connection if any
-      if (eventSourceRef.current) {
-        eventSourceRef.current.close();
-        eventSourceRef.current = null;
-      }
-
-      try {
-        // Connect to the SSE stream endpoint
-        const sseUrl = `/api/messaging/stream/${userTenantId}`;
-        const eventSource = new EventSource(sseUrl);
-        eventSourceRef.current = eventSource;
-
-        eventSource.onopen = () => {
-          setSseConnected(true);
-          setError(null); // Clear any previous connection errors
-          connectionStartTimeRef.current = Date.now();
-          reconnectAttemptsRef.current = 0; // Reset reconnection attempts on successful connection
-          console.log('SSE connection established for messaging');
-        };
-
-        eventSource.onmessage = (event) => {
-          try {
-            console.log('SSE message received:', event.data);
-            const sseEvent: SSEEvent = JSON.parse(event.data);
-            console.log('Parsed SSE event:', sseEvent);
-            handleSSEEvent(sseEvent);
-          } catch (error) {
-            console.error('Error parsing SSE message:', error);
-          }
-        };
-
-        eventSource.onerror = (error) => {
-          console.error('SSE connection error:', error);
-          setSseConnected(false);
-          connectionStartTimeRef.current = null;
-          setConnectionDuration(0);
-          
-          // Clear any existing reconnection timeout
-          if (reconnectTimeoutRef.current) {
-            clearTimeout(reconnectTimeoutRef.current);
-          }
-          
-          // Check if we've exceeded max reconnection attempts
-          if (reconnectAttemptsRef.current >= maxReconnectAttempts) {
-            console.error('Max SSE reconnection attempts reached. Giving up.');
-            setError('Real-time connection failed after multiple attempts. Please refresh the page.');
-            return;
-          }
-          
-          // Implement exponential backoff for reconnection with much longer delays
-          // Start with 10s, then 20s, 40s, max 2 minutes to prevent rapid reconnection loops
-          const baseDelay = 10000; // 10 seconds base delay
-          const maxDelay = 120000; // 2 minutes max delay
-          const reconnectDelay = Math.min(baseDelay * Math.pow(2, reconnectAttemptsRef.current), maxDelay);
-          
-          console.log(`SSE connection lost. Attempt ${reconnectAttemptsRef.current + 1}/${maxReconnectAttempts}. Will reconnect in ${reconnectDelay/1000}s...`);
-          
-          reconnectTimeoutRef.current = setTimeout(() => {
-            reconnectAttemptsRef.current++;
-            console.log(`Attempting to reconnect SSE (attempt ${reconnectAttemptsRef.current})...`);
-            connectEventSource();
-          }, reconnectDelay);
-        };
-      } catch (error) {
-        console.error('Error creating SSE connection:', error);
-        setSseConnected(false);
-        setError('Failed to establish real-time connection');
-      }
-    };
-
-    // Connect when component mounts
-    connectEventSource();
-
-    // Cleanup function
-    return () => {
-      if (eventSourceRef.current) {
-        eventSourceRef.current.close();
-        eventSourceRef.current = null;
-      }
-      if (reconnectTimeoutRef.current) {
-        clearTimeout(reconnectTimeoutRef.current);
-        reconnectTimeoutRef.current = null;
-      }
-    };
-  }, [userTenantId, userEmail]);
+  // SSE connection is now handled by the shared MessagingContext
 
   // Handle SSE events
   const handleSSEEvent = (event: SSEEvent) => {
@@ -240,12 +145,10 @@ export function SubscriberMessagingInterface({
           handleLinkRemoved(event.data);
           break;
         case 'connection:established':
-          console.log('SSE connection confirmed:', event.data);
-          setSseConnected(true);
-          reconnectAttemptsRef.current = 0; // Reset reconnection attempts on connection confirmation
+          // Connection status is now handled by the shared MessagingContext
           break;
-        case 'heartbeat':
-          // Update connection activity without logging
+        case 'unread:update':
+          handleUnreadUpdate(event.data);
           break;
         default:
           console.log('Unhandled SSE event type:', (event as any).type);
@@ -256,18 +159,36 @@ export function SubscriberMessagingInterface({
     }
   };
 
-  // Handle new message event
+  // Handle unread count update
+  const handleUnreadUpdate = (data: { count: number; timestamp: string }) => {
+    try {
+      // Debounce unread count updates to prevent rapid re-renders
+      if (lastUnreadCountRef.current === data.count) {
+        return;
+      }
+      
+      lastUnreadCountRef.current = data.count;
+      
+      setStats(prev => {
+        // Only update if the count actually changed
+        if (prev.unreadMessages === data.count) {
+          return prev;
+        }
+        return {
+          ...prev,
+          unreadMessages: data.count
+        };
+      });
+    } catch (error) {
+      console.error('Error handling unread update:', error);
+    }
+  };
+
+    // Handle new message event
   const handleNewMessage = (data: SSEMessageNew['data']) => {
     try {
-      console.log('handleNewMessage called with data:', data);
-      console.log('Current user email:', userEmail);
-      console.log('Sender email:', data.senderEmail);
-      console.log('Recipients:', data.recipients);
-      console.log('Is recipient?', data.recipients.includes(userEmail));
-      
       // Only add if it's not from the current user and the current user is a recipient
       if (data.senderEmail !== userEmail && data.recipients.includes(userEmail)) {
-        console.log('Adding new message to UI');
         const newMessage: RecentMessage = {
           Id: data.messageId,
           Subject: data.subject,
@@ -282,7 +203,15 @@ export function SubscriberMessagingInterface({
           AttachmentCount: data.attachmentCount
         };
 
-        setMessages(prev => [newMessage, ...prev]);
+        setMessages(prev => {
+          // Check if message already exists to prevent duplicates
+          const messageExists = prev.some(msg => msg.Id === data.messageId);
+          if (messageExists) {
+            return prev;
+          }
+          return [newMessage, ...prev];
+        });
+        
         setStats(prev => ({
           ...prev,
           totalMessages: prev.totalMessages + 1,
@@ -292,9 +221,6 @@ export function SubscriberMessagingInterface({
         // Show notification
         setSuccess(t('messaging.newMessageReceived'));
         setTimeout(() => setSuccess(null), 5000);
-        console.log('New message added successfully');
-      } else {
-        console.log('Message not added - conditions not met');
       }
     } catch (error) {
       console.error('Error handling new message event:', error, data);
@@ -305,16 +231,26 @@ export function SubscriberMessagingInterface({
   const handleMessageRead = (data: SSEMessageRead['data']) => {
     try {
       if (data.readBy === userEmail) {
-        setMessages(prev => prev.map(msg => 
-          msg.Id === data.messageId 
-            ? { ...msg, IsRead: true }
-            : msg
-        ));
+        setMessages(prev => {
+          const messageIndex = prev.findIndex(msg => msg.Id === data.messageId);
+          if (messageIndex === -1 || prev[messageIndex].IsRead) {
+            return prev; // Message not found or already read
+          }
+          
+          const newMessages = [...prev];
+          newMessages[messageIndex] = { ...newMessages[messageIndex], IsRead: true };
+          return newMessages;
+        });
         
-        setStats(prev => ({
-          ...prev,
-          unreadMessages: Math.max(0, prev.unreadMessages - 1)
-        }));
+        setStats(prev => {
+          if (prev.unreadMessages <= 0) {
+            return prev;
+          }
+          return {
+            ...prev,
+            unreadMessages: prev.unreadMessages - 1
+          };
+        });
       }
     } catch (error) {
       console.error('Error handling message read event:', error, data);
@@ -357,17 +293,28 @@ export function SubscriberMessagingInterface({
   const handleAttachmentAdded = (data: SSEAttachmentAdded['data']) => {
     try {
       // Update message to reflect new attachment
-      setMessages(prevMessages => 
-        prevMessages.map(msg => 
-          msg.Id === data.messageId 
-            ? { 
-                ...msg, 
-                HasAttachments: true, 
-                AttachmentCount: (msg.AttachmentCount || 0) + 1 
-              }
-            : msg
-        )
-      );
+      setMessages(prevMessages => {
+        const messageIndex = prevMessages.findIndex(msg => msg.Id === data.messageId);
+        if (messageIndex === -1) {
+          return prevMessages;
+        }
+        
+        const message = prevMessages[messageIndex];
+        const newAttachmentCount = (message.AttachmentCount || 0) + 1;
+        
+        // Only update if the attachment count actually changed
+        if (message.HasAttachments && message.AttachmentCount === newAttachmentCount) {
+          return prevMessages;
+        }
+        
+        const newMessages = [...prevMessages];
+        newMessages[messageIndex] = {
+          ...message,
+          HasAttachments: true,
+          AttachmentCount: newAttachmentCount
+        };
+        return newMessages;
+      });
     } catch (error) {
       console.error('Error handling attachment added event:', error, data);
     }
@@ -377,17 +324,29 @@ export function SubscriberMessagingInterface({
   const handleAttachmentRemoved = (data: SSEAttachmentRemoved['data']) => {
     try {
       // Update message to reflect removed attachment
-      setMessages(prevMessages => 
-        prevMessages.map(msg => 
-          msg.Id === data.messageId 
-            ? { 
-                ...msg, 
-                AttachmentCount: Math.max(0, (msg.AttachmentCount || 0) - 1),
-                HasAttachments: (msg.AttachmentCount || 0) > 1
-              }
-            : msg
-        )
-      );
+      setMessages(prevMessages => {
+        const messageIndex = prevMessages.findIndex(msg => msg.Id === data.messageId);
+        if (messageIndex === -1) {
+          return prevMessages;
+        }
+        
+        const message = prevMessages[messageIndex];
+        const newAttachmentCount = Math.max(0, (message.AttachmentCount || 0) - 1);
+        const newHasAttachments = newAttachmentCount > 0;
+        
+        // Only update if the attachment count actually changed
+        if (message.AttachmentCount === newAttachmentCount && message.HasAttachments === newHasAttachments) {
+          return prevMessages;
+        }
+        
+        const newMessages = [...prevMessages];
+        newMessages[messageIndex] = {
+          ...message,
+          AttachmentCount: newAttachmentCount,
+          HasAttachments: newHasAttachments
+        };
+        return newMessages;
+      });
     } catch (error) {
       console.error('Error handling attachment removed event:', error, data);
     }
@@ -465,7 +424,15 @@ export function SubscriberMessagingInterface({
         RecipientCount: selectedRecipients.length
       };
 
-      setMessages([newMessage, ...messages]);
+      setMessages(prev => {
+        // Check if message already exists to prevent duplicates
+        const messageExists = prev.some(msg => msg.Id === result.messageId);
+        if (messageExists) {
+          console.log('Message already exists, not adding duplicate');
+          return prev;
+        }
+        return [newMessage, ...prev];
+      });
       setStats(prev => ({
         ...prev,
         totalMessages: prev.totalMessages + 1,
@@ -589,6 +556,12 @@ export function SubscriberMessagingInterface({
 
   const availableRecipients = recipients.filter(r => !r.IsBlocked);
 
+  // Memoize the messages list to prevent unnecessary re-renders
+  const memoizedMessages = useMemo(() => messages, [messages]);
+  
+  // Memoize stats to prevent unnecessary re-renders
+  const memoizedStats = useMemo(() => stats, [stats]);
+
   return (
     <Box p="6" style={{ maxWidth: '1200px', margin: '0 auto' }}>
       <Flex direction="column" gap="6">
@@ -616,16 +589,7 @@ export function SubscriberMessagingInterface({
                 />
                 {sseConnected ? 'Real-time Connected' : 'Real-time Disconnected'}
               </Badge>
-              {!sseConnected && reconnectTimeoutRef.current && (
-                <Text size="1" color="gray">
-                  Reconnecting...
-                </Text>
-              )}
-              {sseConnected && connectionDuration > 0 && (
-                <Text size="1" color="green">
-                  Stable ({Math.floor(connectionDuration / 60)}m {connectionDuration % 60}s)
-                </Text>
-              )}
+              {/* Connection status is now handled by the shared MessagingContext */}
             </Flex>
           </Flex>
           <Text size="3" color="gray">
@@ -633,11 +597,6 @@ export function SubscriberMessagingInterface({
             {sseConnected && (
               <span style={{ color: 'var(--green-9)', marginLeft: '0.5rem' }}>
                 • Real-time updates active
-                {connectionDuration > 0 && (
-                  <span style={{ color: 'var(--blue-9)', marginLeft: '0.5rem' }}>
-                    (Connected for {Math.floor(connectionDuration / 60)}m {connectionDuration % 60}s)
-                  </span>
-                )}
               </span>
             )}
           </Text>
@@ -648,25 +607,25 @@ export function SubscriberMessagingInterface({
           <Card key="total-messages" size="2">
             <Flex direction="column" gap="1">
               <Text size="2" color="gray">{t('messaging.totalMessages')}</Text>
-              <Text size="4" weight="bold">{stats.totalMessages}</Text>
+              <Text size="4" weight="bold">{memoizedStats.totalMessages}</Text>
             </Flex>
           </Card>
           <Card key="unread-messages" size="2">
             <Flex direction="column" gap="1">
               <Text size="2" color="gray">{t('messaging.unreadMessages')}</Text>
-              <Text size="4" weight="bold">{stats.unreadMessages}</Text>
+              <Text size="4" weight="bold">{memoizedStats.unreadMessages}</Text>
             </Flex>
           </Card>
           <Card key="sent-messages" size="2">
             <Flex direction="column" gap="1">
               <Text size="2" color="gray">{t('messaging.sentMessages')}</Text>
-              <Text size="4" weight="bold">{stats.sentMessages}</Text>
+              <Text size="4" weight="bold">{memoizedStats.sentMessages}</Text>
             </Flex>
           </Card>
           <Card key="active-conversations" size="2">
             <Flex direction="column" gap="1">
               <Text size="2" color="gray">{t('messaging.activeConversations')}</Text>
-              <Text size="4" weight="bold">{stats.activeConversations}</Text>
+              <Text size="4" weight="bold">{memoizedStats.activeConversations}</Text>
             </Flex>
           </Card>
         </Flex>
@@ -734,7 +693,15 @@ export function SubscriberMessagingInterface({
                     LinkCount: messageData.links.length
                   };
 
-                  setMessages([newMessage, ...messages]);
+                  setMessages(prev => {
+                    // Check if message already exists to prevent duplicates
+                    const messageExists = prev.some(msg => msg.Id === result.messageId);
+                    if (messageExists) {
+                      console.log('Message already exists, not adding duplicate');
+                      return prev;
+                    }
+                    return [newMessage, ...prev];
+                  });
                   setStats(prev => ({
                     ...prev,
                     totalMessages: prev.totalMessages + 1,
@@ -773,13 +740,13 @@ export function SubscriberMessagingInterface({
           <Flex direction="column" gap="4">
             <Heading size="4">{t('messaging.recentMessages')}</Heading>
             
-            {messages.length === 0 ? (
+            {memoizedMessages.length === 0 ? (
               <Box p="6" style={{ textAlign: 'center' }}>
                 <Text size="3" color="gray">{t('messaging.noMessages')}</Text>
               </Box>
             ) : (
               <Flex direction="column" gap="3">
-                {messages.map((message) => (
+                {memoizedMessages.map((message) => (
                   <Card 
                     key={message.Id} 
                     size="2" 

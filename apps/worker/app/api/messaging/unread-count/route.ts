@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
     const unreadCountQuery = `
       SELECT COUNT(DISTINCT m.Id) as unreadCount
       FROM Messages m
-      LEFT JOIN MessageRecipients mr ON m.Id = mr.MessageId
+      LEFT JOIN MessageRecipients mr ON m.Id = mr.MessageId AND mr.IsDeleted = FALSE
       LEFT JOIN TenantUsers tu_sender ON m.SenderEmail = tu_sender.Email
       LEFT JOIN TenantUsers tu_recipient ON mr.RecipientEmail = tu_recipient.Email
       WHERE mr.RecipientEmail = ?
@@ -68,7 +68,7 @@ export async function GET(request: NextRequest) {
         m.HasAttachments,
         m.AttachmentCount
       FROM Messages m
-      LEFT JOIN MessageRecipients mr ON m.Id = mr.MessageId
+      LEFT JOIN MessageRecipients mr ON m.Id = mr.MessageId AND mr.IsDeleted = FALSE
       LEFT JOIN Subscribers s ON m.SenderEmail = s.Email
       LEFT JOIN TenantUsers tu_sender ON m.SenderEmail = tu_sender.Email
       LEFT JOIN TenantUsers tu_recipient ON mr.RecipientEmail = tu_recipient.Email

@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { auth } from '@/auth';
 import { isSystemAdmin, isTenantAdminFor } from '@/lib/access';
-import { MessagingEventBroadcaster, createAttachmentEventData } from '@/lib/messaging-events';
+// Removed messaging events import - no longer needed
 
 export async function POST(request: NextRequest) {
   try {
@@ -158,19 +158,8 @@ export async function POST(request: NextRequest) {
       WHERE Id = ?
     `).bind(messageId, messageId).run();
 
-    // Broadcast attachment added event
-    const eventData = createAttachmentEventData(
-      parseInt(messageId),
-      tenantId,
-      attachmentId,
-      file.name,
-      file.size,
-      file.type,
-      'upload',
-      mediaFileId
-    );
-    
-    MessagingEventBroadcaster.broadcastAttachmentAdded(tenantId, eventData);
+    // SSE events are now handled by the polling-based endpoint
+    // No need to broadcast - clients will receive updates automatically
 
     return new Response(JSON.stringify({
       success: true,
