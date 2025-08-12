@@ -25,8 +25,6 @@ interface RecentMessage {
   RecipientCount: number;
   HasAttachments?: boolean;
   AttachmentCount?: number;
-  HasLinks?: boolean;
-  LinkCount?: number;
 }
 
 interface UserStats {
@@ -77,6 +75,7 @@ export function SubscriberMessagingInterface({
   lang
 }: SubscriberMessagingInterfaceProps) {
   const { t } = useTranslation('translations');
+  const { unreadCount } = useMessaging();
   const [selectedMessage, setSelectedMessage] = useState<RecentMessage | null>(null);
   const [isComposing, setIsComposing] = useState(false);
   const [composeSubject, setComposeSubject] = useState('');
@@ -100,6 +99,62 @@ export function SubscriberMessagingInterface({
   
   const [messages, setMessages] = useState<RecentMessage[]>(deduplicatedMessages);
   const [stats, setStats] = useState<UserStats>(userStats);
+
+  // Listen for SSE events to update messages in real-time
+  useEffect(() => {
+    const handleSSEMessage = (event: MessageEvent) => {
+      try {
+        const sseEvent = JSON.parse(event.data);
+        
+        if (sseEvent.type === 'message:new') {
+          const newMessageData = sseEvent.data;
+          
+          // Check if this message is for the current user (as recipient)
+          if (newMessageData.recipients.includes(userEmail)) {
+            // Create a new message object
+            const newMessage: RecentMessage = {
+              Id: newMessageData.messageId,
+              Subject: newMessageData.subject,
+              Body: newMessageData.body,
+              SenderEmail: newMessageData.senderEmail,
+              SenderName: newMessageData.senderEmail, // We'll need to get the actual name
+              CreatedAt: newMessageData.timestamp,
+              IsRead: false,
+              MessageType: 'subscriber',
+              RecipientCount: newMessageData.recipients.length,
+              HasAttachments: newMessageData.hasAttachments,
+              AttachmentCount: newMessageData.attachmentCount
+            };
+            
+            // Add to messages list if it doesn't already exist
+            setMessages(prev => {
+              const messageExists = prev.some(msg => msg.Id === newMessage.Id);
+              if (messageExists) {
+                return prev;
+              }
+              return [newMessage, ...prev];
+            });
+            
+            // Update stats
+            setStats(prev => ({
+              ...prev,
+              totalMessages: prev.totalMessages + 1,
+              unreadMessages: prev.unreadMessages + 1
+            }));
+          }
+        }
+      } catch (error) {
+        console.error('Error processing SSE message:', error);
+      }
+    };
+
+    // Add event listener for SSE messages
+    window.addEventListener('message', handleSSEMessage);
+    
+    return () => {
+      window.removeEventListener('message', handleSSEMessage);
+    };
+  }, [userEmail]);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -603,27 +658,27 @@ export function SubscriberMessagingInterface({
         </Box>
 
         {/* Stats */}
-        <Flex gap="4" wrap="wrap">
+        <Flex key="stats-container" gap="4" wrap="wrap">
           <Card key="total-messages" size="2">
-            <Flex direction="column" gap="1">
+            <Flex key="total-messages-content" direction="column" gap="1">
               <Text size="2" color="gray">{t('messaging.totalMessages')}</Text>
               <Text size="4" weight="bold">{memoizedStats.totalMessages}</Text>
             </Flex>
           </Card>
           <Card key="unread-messages" size="2">
-            <Flex direction="column" gap="1">
+            <Flex key="unread-messages-content" direction="column" gap="1">
               <Text size="2" color="gray">{t('messaging.unreadMessages')}</Text>
               <Text size="4" weight="bold">{memoizedStats.unreadMessages}</Text>
             </Flex>
           </Card>
           <Card key="sent-messages" size="2">
-            <Flex direction="column" gap="1">
+            <Flex key="sent-messages-content" direction="column" gap="1">
               <Text size="2" color="gray">{t('messaging.sentMessages')}</Text>
               <Text size="4" weight="bold">{memoizedStats.sentMessages}</Text>
             </Flex>
           </Card>
           <Card key="active-conversations" size="2">
-            <Flex direction="column" gap="1">
+            <Flex key="active-conversations-content" direction="column" gap="1">
               <Text size="2" color="gray">{t('messaging.activeConversations')}</Text>
               <Text size="4" weight="bold">{memoizedStats.activeConversations}</Text>
             </Flex>
@@ -674,11 +729,11 @@ export function SubscriberMessagingInterface({
                     throw new Error(errorData.error || t('messaging.sendError'));
                   }
 
-                  const result = await response.json() as { messageId: number };
+                  const result = await response.json() as { success: boolean; data: { messageId: number } };
                   
                   // Add the new message to the list
                   const newMessage: RecentMessage = {
-                    Id: result.messageId,
+                    Id: result.data.messageId,
                     Subject: messageData.subject,
                     Body: messageData.body,
                     SenderEmail: userEmail,
@@ -688,9 +743,7 @@ export function SubscriberMessagingInterface({
                     MessageType: 'subscriber',
                     RecipientCount: messageData.recipients.length,
                     HasAttachments: messageData.attachments.length > 0,
-                    AttachmentCount: messageData.attachments.length,
-                    HasLinks: messageData.links.length > 0,
-                    LinkCount: messageData.links.length
+                    AttachmentCount: messageData.attachments.length
                   };
 
                   console.log('New message created:', newMessage);
@@ -698,7 +751,7 @@ export function SubscriberMessagingInterface({
 
                   setMessages(prev => {
                     // Check if message already exists to prevent duplicates
-                    const messageExists = prev.some(msg => msg.Id === result.messageId);
+                    const messageExists = prev.some(msg => msg.Id === result.data.messageId);
                     if (messageExists) {
                       console.log('Message already exists, not adding duplicate');
                       return prev;
@@ -765,9 +818,9 @@ export function SubscriberMessagingInterface({
                       }
                     }}
                   >
-                    <Flex direction="column" gap="2">
-                      <Flex justify="between" align="center">
-                        <Flex gap="2" align="center">
+                    <Flex key={`message-${message.Id}-container`} direction="column" gap="2">
+                      <Flex key={`message-${message.Id}-header`} justify="between" align="center">
+                        <Flex key={`message-${message.Id}-sender`} gap="2" align="center">
                           <Text weight="bold" size="3">
                             {message.SenderName || message.SenderEmail}
                           </Text>
@@ -792,29 +845,22 @@ export function SubscriberMessagingInterface({
                         {message.Body}
                       </Text>
                       
-                      {/* Attachments and Links Indicators */}
-                      <Flex gap="2" align="center" wrap="wrap">
+                      {/* Attachments Indicators */}
+                      <Flex key={`message-${message.Id}-indicators`} gap="2" align="center" wrap="wrap">
                         {message.HasAttachments && message.AttachmentCount && message.AttachmentCount > 0 && (
-                          <Flex key="attachments" gap="1" align="center">
+                          <Flex key={`message-${message.Id}-attachments`} gap="1" align="center">
                             <Text size="1" color="blue">
                               📎 {message.AttachmentCount} {message.AttachmentCount === 1 ? t('messaging.attachment') : t('messaging.attachments')}
                             </Text>
                           </Flex>
                         )}
-                        {message.HasLinks && message.LinkCount && message.LinkCount > 0 && (
-                          <Flex key="links" gap="1" align="center">
-                            <Text size="1" color="green">
-                              🔗 {message.LinkCount} {message.LinkCount === 1 ? t('messaging.link') : t('messaging.links')}
-                            </Text>
-                          </Flex>
-                        )}
                       </Flex>
                       
-                      <Flex justify="between" align="center">
+                      <Flex key={`message-${message.Id}-footer`} justify="between" align="center">
                         <Text size="1" color="gray">
                           {t('messaging.recipientCount').replace('{count}', message.RecipientCount.toString())}
                         </Text>
-                        <Flex gap="1">
+                        <Flex key={`message-${message.Id}-actions`} gap="1">
                           <Text size="1" color="gray">
                             {message.MessageType}
                           </Text>

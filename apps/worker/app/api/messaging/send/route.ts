@@ -140,8 +140,8 @@ export async function POST(request: NextRequest) {
     // Insert attachments if any
     const attachmentInserts = [];
     for (const attachment of attachments) {
-      if (attachment.attachmentType === 'media_library' && attachment.mediaId) {
-        // Get media file info
+      if (attachment.mediaId) {
+        // Get media file info for both media_library and upload types
         const mediaFile = await db.prepare(`
           SELECT FileName, FileSize, ContentType FROM MediaFiles WHERE Id = ?
         `).bind(attachment.mediaId).first();
@@ -155,7 +155,6 @@ export async function POST(request: NextRequest) {
           );
         }
       }
-      // Note: File uploads will be handled separately in the upload endpoint
     }
 
     // Insert links if any
