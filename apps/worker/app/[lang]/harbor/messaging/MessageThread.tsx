@@ -41,6 +41,11 @@ export function MessageThread({ message, userEmail, tenantId, onClose, onMessage
   const [attachments, setAttachments] = useState<MessageAttachment[]>([]);
   const [isLoadingAttachments, setIsLoadingAttachments] = useState(false);
 
+  // Debug logging
+  console.log('MessageThread received message:', message);
+  console.log('Message ID:', message?.Id);
+  console.log('Message type:', typeof message?.Id);
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleString();
@@ -48,6 +53,11 @@ export function MessageThread({ message, userEmail, tenantId, onClose, onMessage
 
   // Fetch recipients for this message
   useEffect(() => {
+    if (!message?.Id) {
+      console.error('Message ID is undefined, cannot fetch recipients');
+      return;
+    }
+
     const fetchRecipients = async () => {
       try {
         const response = await fetch(`/api/messaging/messages/${message.Id}/recipients`);
@@ -70,6 +80,11 @@ export function MessageThread({ message, userEmail, tenantId, onClose, onMessage
 
   // Fetch attachments for this message
   useEffect(() => {
+    if (!message?.Id) {
+      console.error('Message ID is undefined, cannot fetch attachments');
+      return;
+    }
+
     if (message.HasAttachments && message.AttachmentCount && message.AttachmentCount > 0) {
       const fetchAttachments = async () => {
         setIsLoadingAttachments(true);
@@ -82,8 +97,8 @@ export function MessageThread({ message, userEmail, tenantId, onClose, onMessage
             const errorData = await response.json();
             console.error('API error fetching attachments:', errorData);
           }
-        } catch (error) {
-          console.error('Error fetching attachments:', error);
+        } catch (summary) {
+          console.error('Error fetching attachments:', summary);
         } finally {
           setIsLoadingAttachments(false);
         }

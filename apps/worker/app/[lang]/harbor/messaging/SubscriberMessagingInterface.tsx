@@ -693,6 +693,9 @@ export function SubscriberMessagingInterface({
                     LinkCount: messageData.links.length
                   };
 
+                  console.log('New message created:', newMessage);
+                  console.log('Message ID:', newMessage.Id);
+
                   setMessages(prev => {
                     // Check if message already exists to prevent duplicates
                     const messageExists = prev.some(msg => msg.Id === result.messageId);
