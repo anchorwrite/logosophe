@@ -24,11 +24,12 @@ interface RecentMessage {
 interface MessageThreadProps {
   message: RecentMessage;
   userEmail: string;
+  tenantId: string;
   onClose: () => void;
   onMessageUpdate: (message: RecentMessage) => void;
 }
 
-export function MessageThread({ message, userEmail, onClose, onMessageUpdate }: MessageThreadProps) {
+export function MessageThread({ message, userEmail, tenantId, onClose, onMessageUpdate }: MessageThreadProps) {
   const { t } = useTranslation('translations');
   const [isReplying, setIsReplying] = useState(false);
   const [replyBody, setReplyBody] = useState('');
@@ -111,7 +112,8 @@ export function MessageThread({ message, userEmail, onClose, onMessageUpdate }: 
           subject: `Re: ${message.Subject}`,
           body: replyBody,
           recipients: [message.SenderEmail],
-          messageType: 'subscriber'
+          messageType: 'subscriber',
+          tenantId: tenantId
         }),
       });
 

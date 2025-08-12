@@ -25,10 +25,21 @@ export async function POST(request: NextRequest) {
     const { subject, body: messageBody, recipients, tenantId, messageType = 'direct', priority = 'normal', attachments = [], links = [] } = body;
     
     // Validate required fields
-    if (!subject || !messageBody || !recipients || recipients.length === 0 || !tenantId) {
+    if (!subject || !recipients || recipients.length === 0 || !tenantId) {
       return new Response(JSON.stringify({ 
         success: false, 
-        error: 'Missing required fields: subject, body, recipients, tenantId' 
+        error: 'Missing required fields: subject, recipients, tenantId' 
+      }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Message must have either body, attachments, or links
+    if (!messageBody.trim() && attachments.length === 0 && links.length === 0) {
+      return new Response(JSON.stringify({ 
+        success: false, 
+        error: 'Message must contain body text, attachments, or links' 
       }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' }
@@ -149,11 +160,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Insert links if any
+    console.log('Processing links:', links);
     const linkInserts = [];
     for (const link of links) {
       try {
+        console.log('Processing link:', link);
         const url = new URL(link.url);
         const domain = url.hostname;
+        console.log('Extracted domain:', domain);
         
         linkInserts.push(
           db.prepare(`
@@ -161,16 +175,30 @@ export async function POST(request: NextRequest) {
             VALUES (?, ?, ?)
           `).bind(messageId, link.url, domain)
         );
+        console.log('Link insert prepared for:', link.url);
       } catch (error) {
         // Invalid URL, skip this link
+        console.error('Error processing link:', link, error);
         console.warn(`Invalid URL in message: ${link.url}`);
       }
     }
+    
+    console.log('Total link inserts prepared:', linkInserts.length);
 
     // Execute all inserts
     const allInserts = [...recipientInserts, ...attachmentInserts, ...linkInserts];
+    console.log('Executing batch insert with:', {
+      recipientInserts: recipientInserts.length,
+      attachmentInserts: attachmentInserts.length,
+      linkInserts: linkInserts.length,
+      total: allInserts.length
+    });
+    
     if (allInserts.length > 0) {
       await db.batch(allInserts);
+      console.log('Batch insert completed successfully');
+    } else {
+      console.log('No inserts to execute');
     }
 
     // Broadcast SSE event for new message
@@ -185,7 +213,16 @@ export async function POST(request: NextRequest) {
       attachments.length
     );
 
+    console.log('Broadcasting SSE event for new message:', {
+      tenantId,
+      messageId,
+      recipients: validRecipients,
+      eventData
+    });
+
     MessagingEventBroadcaster.broadcastMessageNew(tenantId, eventData);
+    
+    console.log('SSE event broadcast completed');
 
     return new Response(JSON.stringify({
       success: true,

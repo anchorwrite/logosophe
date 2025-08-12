@@ -649,6 +649,90 @@ const validRecipients = [...new Set([...tenantUsers, ...subscribers])];
 
 **Result**: User 303 can now successfully send messages to user 301 because the API properly validates recipients from both `TenantUsers` and `UserRoles` tables.
 
+### Missing TenantId Fix for Message Composition
+**Problem Identified**: Even after fixing the access control and recipient validation, user 303 was still getting a 400 error: "Missing required fields: subject, body, recipients, tenantId".
+
+**Root Cause (Deep Analysis)**: The issue was **NOT** in the client-side data flow, but in the **page-level tenant resolution**. The `SubscriberMessagingInterface` was receiving `userTenantId` as `undefined` because the page was only checking the `TenantUsers` table.
+
+**Complete Root Cause Chain**:
+1. **Page Level**: `page.tsx` only queried `TenantUsers` table for tenant information
+2. **User 303 Configuration**: 
+   - `TenantUsers`: role `user` (base tenant membership)
+   - `UserRoles`: role `subscriber` (additional capability)
+3. **Result**: Page couldn't find user 303's tenant, so `userTenantId` was undefined
+4. **Component Level**: `UnifiedMessageComposer` received `tenantId={undefined}` as a prop
+5. **Data Flow**: `messageData.tenantId` was undefined when passed to `onSend`
+6. **API Level**: Request body was missing `tenantId` field entirely
+7. **Validation**: API validation failed with "Missing required fields" error
+
+**Solution Implemented**: Fixed the **page-level tenant resolution** to check both tables:
+
+**Before**:
+```typescript
+// In page.tsx - Only checked TenantUsers table
+const userTenantQuery = `
+  SELECT tu.TenantId, tu.RoleId, t.Name as TenantName
+  FROM TenantUsers tu
+  LEFT JOIN Tenants t ON tu.TenantId = t.Id
+  WHERE tu.Email = ?
+`;
+
+const userTenantResult = await db.prepare(userTenantQuery)
+  .bind(session.user.email)
+  .first() as any;
+
+if (!userTenantResult?.TenantId) {
+  redirect(`/${lang}/harbor`); // ❌ User 303 redirected away
+}
+```
+
+**After**:
+```typescript
+// In page.tsx - Check both TenantUsers and UserRoles tables
+let userTenantId: string;
+let userTenantName: string;
+
+if (userTenantResult?.TenantId) {
+  // User found in TenantUsers table
+  userTenantId = userTenantResult.TenantId;
+  userTenantName = userTenantResult.TenantName || userTenantId;
+} else {
+  // Check UserRoles table for subscriber role
+  const userRoleQuery = `
+    SELECT ur.TenantId, t.Name as TenantName
+    FROM UserRoles ur
+    LEFT JOIN Tenants t ON ur.TenantId = t.Id
+    WHERE ur.Email = ? AND ur.RoleId = 'subscriber'
+  `;
+  
+  const userRoleResult = await db.prepare(userRoleQuery)
+    .bind(session.user.email)
+    .first() as any;
+  
+  if (userRoleResult?.TenantId) {
+    userTenantId = userRoleResult.TenantId;
+    userTenantName = userRoleResult.TenantName || userTenantId;
+  } else {
+    redirect(`/${lang}/harbor`);
+  }
+}
+```
+
+**Complete Data Flow Fix**:
+1. **Page Level**: Now correctly resolves tenant from both `TenantUsers` and `UserRoles` tables
+2. **Component Level**: `UnifiedMessageComposer` receives correct `tenantId` prop
+3. **Data Flow**: `messageData.tenantId` contains the correct tenant ID
+4. **API Level**: Request body includes all required fields including `tenantId`
+5. **Validation**: API validation passes successfully
+
+**Result**: The API now receives all required fields including `tenantId`, allowing proper validation and message processing.
+
+**Key Lessons**:
+1. **Always trace the complete data flow** from page → component → API
+2. **Check both tables** when resolving user roles and tenant access
+3. **The issue can be upstream** from where the error appears
+4. **Systematic debugging** with comprehensive logging reveals the true root cause
+
 ### Common Pitfalls to Avoid
 1. **Parameter Order**: Access control functions expect `(userEmail, db)` not `(db, userEmail)`
 2. **Column Names**: Database uses `MediaId` not `MediaFileId`, `R2Key` not `FileKey`
