@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { auth } from '@/auth';
 import { isSystemAdmin, isTenantAdminFor } from '@/lib/access';
-import { MessagingEventBroadcaster, createLinkEventData } from '@/lib/messaging-events';
+// Removed messaging events import - no longer needed
 
 export async function DELETE(
   request: NextRequest,
@@ -92,17 +92,8 @@ export async function DELETE(
       DELETE FROM MessageLinks WHERE Id = ?
     `).bind(linkId).run();
 
-    // Broadcast SSE event for link removed
-    const eventData = createLinkEventData(
-      parseInt(link.MessageId as string),
-      link.TenantId as string,
-      parseInt(linkId), // linkId
-      link.Url as string,
-      link.Title as string,
-      link.Domain as string
-    );
-
-    MessagingEventBroadcaster.broadcastLinkRemoved(link.TenantId as string, eventData);
+    // SSE events are now handled by the polling-based endpoint
+    // No need to broadcast - clients will receive updates automatically
 
     return new Response(JSON.stringify({
       success: true,

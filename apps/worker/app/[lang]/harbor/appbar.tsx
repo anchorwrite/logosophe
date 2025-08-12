@@ -10,7 +10,7 @@ import type { Locale } from '@/types/i18n';
 import SubscriberOptIn from "@/components/SubscriberOptIn";
 import SubscriberOptOut from "@/components/SubscriberOptOut";
 import { PreferencesButton } from "@/components/PreferencesButton";
-import { useUnreadMessageCount } from '@/hooks/useUnreadMessageCount';
+import { useMessaging } from '@/contexts/MessagingContext';
 import { UnreadMessageBadge } from '@/components/harbor/UnreadMessageBadge';
 import { ConnectionStatusIndicator } from '@/components/harbor/ConnectionStatusIndicator';
 
@@ -24,7 +24,8 @@ function HarborAppBar({ lang }: { lang: Locale }) {
   const { t, i18n } = useTranslation('translations');
   const [isLoading, setIsLoading] = useState(true);
   const [provider, setProvider] = useState<string>('');
-  const { unreadCount } = useUnreadMessageCount();
+  const { unreadCount } = useMessaging();
+
 
   const { data: session } = useSession();
 

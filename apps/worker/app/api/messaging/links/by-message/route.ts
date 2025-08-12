@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { auth } from '@/auth';
 import { isSystemAdmin, isTenantAdminFor } from '@/lib/access';
-import { MessagingEventBroadcaster, createLinkEventData } from '@/lib/messaging-events';
+// Removed messaging events import - no longer needed
 
 // Simple link validation function
 function isValidUrl(url: string): boolean {
@@ -301,17 +301,8 @@ export async function POST(
       WHERE Id = ?
     `).bind(messageId, messageId).run();
 
-    // Broadcast link added event
-    const eventData = createLinkEventData(
-      parseInt(messageId),
-      tenantId,
-      linkId,
-      url,
-      title || domain,
-      domain
-    );
-    
-    MessagingEventBroadcaster.broadcastLinkAdded(tenantId, eventData);
+    // SSE events are now handled by the polling-based endpoint
+    // No need to broadcast - clients will receive updates automatically
 
     return new Response(JSON.stringify({
       success: true,
@@ -460,17 +451,8 @@ export async function DELETE(
       WHERE Id = ?
     `).bind(link.MessageId, link.MessageId, link.MessageId).run();
 
-    // Broadcast link removed event
-    const eventData = createLinkEventData(
-      linkDetails.messageId,
-      linkDetails.tenantId,
-      linkDetails.linkId,
-      linkDetails.url,
-      linkDetails.title,
-      linkDetails.domain
-    );
-    
-    MessagingEventBroadcaster.broadcastLinkRemoved(tenantId, eventData);
+    // SSE events are now handled by the polling-based endpoint
+    // No need to broadcast - clients will receive updates automatically
 
     return new Response(JSON.stringify({
       success: true,

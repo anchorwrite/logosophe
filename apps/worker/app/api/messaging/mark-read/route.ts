@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { auth } from '@/auth';
 import { isSystemAdmin, isTenantAdminFor } from '@/lib/access';
-import { MessagingEventBroadcaster, createMessageReadEventData } from '@/lib/messaging-events';
+// Removed messaging events import - no longer needed
 
 
 interface MarkReadRequest {
@@ -74,15 +74,8 @@ export async function POST(request: NextRequest) {
       .bind(readAt, messageId, userEmail)
       .run();
 
-    // Broadcast SSE event for message read
-    const eventData = createMessageReadEventData(
-      messageId,
-      recipientResult.TenantId,
-      userEmail,
-      readAt
-    );
-
-    MessagingEventBroadcaster.broadcastMessageRead(recipientResult.TenantId, eventData);
+    // SSE events are now handled by the polling-based endpoint
+    // No need to broadcast - clients will receive updates automatically
 
     return new Response(JSON.stringify({ 
       success: true, 

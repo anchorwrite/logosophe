@@ -2,7 +2,6 @@ import { NextRequest } from 'next/server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { auth } from '@/auth';
 import { isSystemAdmin, isTenantAdminFor } from '@/lib/access';
-import { MessagingEventBroadcaster, createAttachmentEventData } from '@/lib/messaging-events';
 
 export async function DELETE(
   request: NextRequest,
@@ -125,19 +124,8 @@ export async function DELETE(
       WHERE Id = ?
     `).bind(attachment.MessageId, attachment.MessageId, attachment.MessageId).run();
 
-    // Broadcast attachment removed event
-    const eventData = createAttachmentEventData(
-      attachmentDetails.messageId,
-      attachmentDetails.tenantId,
-      attachmentDetails.attachmentId,
-      attachmentDetails.fileName,
-      attachmentDetails.fileSize,
-      attachmentDetails.contentType,
-      attachmentDetails.attachmentType as 'media_library' | 'upload',
-      attachmentDetails.mediaId
-    );
-    
-    MessagingEventBroadcaster.broadcastAttachmentRemoved(tenantId, eventData);
+    // SSE events are now handled by the polling-based endpoint
+    // No need to broadcast - clients will receive updates automatically
 
     return new Response(JSON.stringify({
       success: true,

@@ -347,9 +347,10 @@ export interface SSELinkRemoved {
   };
 }
 
-export interface SSEHeartbeat {
-  type: 'heartbeat';
+export interface SSEUnreadUpdate {
+  type: 'unread:update';
   data: {
+    count: number;
     timestamp: string;
   };
 }
@@ -364,7 +365,7 @@ export type SSEEvent =
   | SSEAttachmentRemoved
   | SSELinkAdded
   | SSELinkRemoved
-  | SSEHeartbeat;
+  | SSEUnreadUpdate;
 
 // API Response types
 export interface ApiResponse<T = any> {

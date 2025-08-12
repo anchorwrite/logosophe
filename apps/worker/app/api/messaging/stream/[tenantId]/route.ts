@@ -1,119 +1,199 @@
 import { NextRequest } from 'next/server';
-import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { auth } from '@/auth';
-import { isSystemAdmin, isTenantAdminFor } from '@/lib/access';
-import { addConnection, removeConnection } from '@/lib/messaging-events-broadcaster';
+import { getCloudflareContext } from '@opennextjs/cloudflare';
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ tenantId: string }> }
 ) {
-  let session;
-  let userEmail: string;
-  let tenantId: string;
+  const { tenantId } = await params;
   
   try {
-    const context = await getCloudflareContext({ async: true });
-    const db = context.env.DB;
-    
-    // Check authentication
-    session = await auth();
+    // Get user session
+    const session = await auth();
     if (!session?.user?.email) {
       return new Response('Unauthorized', { status: 401 });
     }
 
-    userEmail = session.user.email;
-    const paramsResult = await params;
-    tenantId = paramsResult.tenantId;
+    const userEmail = session.user.email;
 
-    // Check if user has access to this tenant
-    let hasAccess = false;
+    // Get database context
+    const { env } = await getCloudflareContext({async: true});
+    const db = env.DB;
+
+    // Verify user has access to this tenant
+    const userTenantQuery = `
+      SELECT ur.TenantId, ur.RoleId, t.Name as TenantName
+      FROM UserRoles ur
+      LEFT JOIN Tenants t ON ur.TenantId = t.Id
+      WHERE ur.Email = ? AND ur.TenantId = ?
+    `;
+
+    const userTenantResult = await db.prepare(userTenantQuery)
+      .bind(userEmail, tenantId)
+      .first() as any;
+
+    if (!userTenantResult?.TenantId) {
+      return new Response('Access denied to this tenant', { status: 403 });
+    }
+
+    // Get messaging polling interval from system settings (default 10 seconds)
+    const pollingIntervalSetting = await db.prepare(`
+      SELECT Value FROM SystemSettings 
+      WHERE Key = 'messaging_ssePollingIntervalMs'
+    `).first() as { Value: string } | null;
     
-    // System admins have access to all tenants
-    if (await isSystemAdmin(userEmail, db)) {
-      hasAccess = true;
-    } else {
-      // Check if user is a tenant admin for this tenant
-      if (await isTenantAdminFor(userEmail, tenantId)) {
-        hasAccess = true;
-      } else {
-        // Check if user is a member of this tenant
-        const userTenant = await db.prepare(`
-          SELECT 1 FROM TenantUsers 
-          WHERE TenantId = ? AND Email = ?
-        `).bind(tenantId, userEmail).first();
-        
-        hasAccess = !!userTenant;
-      }
-    }
-
-    if (!hasAccess) {
-      return new Response('Forbidden', { status: 403 });
-    }
+    const pollingInterval = pollingIntervalSetting 
+      ? parseInt(pollingIntervalSetting.Value) 
+      : 30000; // Default to 30 seconds to reduce re-renders
 
     // Create SSE stream
     const stream = new ReadableStream({
       start(controller) {
-        const now = new Date();
-        
-        // Create connection info object (matching the interface from messaging-events-broadcaster)
-        const connectionInfo = {
-          controller,
-          userEmail,
-          connectedAt: now,
-          lastActivity: now
-        };
-
-        // Add connection to the tenant's connection set
-        console.log(`Adding SSE connection for tenant ${tenantId}, user ${userEmail}`);
-        addConnection(tenantId, connectionInfo);
-        console.log(`SSE connection added successfully for tenant ${tenantId}`);
-
-        // Send initial connection confirmation
-        const data = JSON.stringify({
+        // Send initial connection message
+        const initialMessage = `data: ${JSON.stringify({
           type: 'connection:established',
           data: {
             tenantId,
             userEmail,
-            timestamp: now.toISOString()
+            timestamp: new Date().toISOString()
           }
-        });
+        })}\n\n`;
         
-        controller.enqueue(new TextEncoder().encode(`data: ${data}\n\n`));
-        console.log(`Sent connection confirmation to user ${userEmail}`);
+        controller.enqueue(new TextEncoder().encode(initialMessage));
 
-        // Set up heartbeat to keep connection alive and detect dead connections
-        // Send heartbeat every 10 seconds to keep connections active
-        const heartbeatInterval = setInterval(() => {
+        // Set up polling for new messages
+        let lastMessageId: number | null = null;
+        let lastMessageTime: string | null = null;
+        let lastUnreadCount: number | null = null;
+    
+        const pollInterval = setInterval(async () => {
           try {
-            const heartbeatData = JSON.stringify({
-              type: 'heartbeat',
-              data: {
-                timestamp: new Date().toISOString()
-              }
-            });
+            // Get the latest message ID to check for new messages
+            const latestMessageQuery = `
+              SELECT Id, CreatedAt FROM Messages 
+              WHERE TenantId = ? AND IsDeleted = FALSE
+              ORDER BY CreatedAt DESC, Id DESC
+              LIMIT 1
+            `;
             
-            controller.enqueue(new TextEncoder().encode(`data: ${heartbeatData}\n\n`));
-            connectionInfo.lastActivity = new Date();
-            console.log(`Heartbeat sent to ${userEmail} at ${new Date().toISOString()}`);
+            const latestMessage = await db.prepare(latestMessageQuery)
+              .bind(tenantId)
+              .first() as { Id: number; CreatedAt: string } | null;
+
+                          if (latestMessage && (latestMessage.Id !== lastMessageId || latestMessage.CreatedAt !== lastMessageTime)) {
+                // Get new messages since last check
+                let newMessagesQuery = `
+                  SELECT m.*, 
+                         GROUP_CONCAT(mr.RecipientEmail) as Recipients,
+                         GROUP_CONCAT(mr.IsRead) as ReadStatuses,
+                         GROUP_CONCAT(ml.Url) as LinkUrls,
+                         GROUP_CONCAT(ml.Title) as LinkTitles
+                  FROM Messages m
+                  LEFT JOIN MessageRecipients mr ON m.Id = mr.MessageId AND mr.IsDeleted = FALSE
+                  LEFT JOIN MessageLinks ml ON m.Id = ml.MessageId
+                  WHERE m.TenantId = ? AND m.IsDeleted = FALSE
+                `;
+
+                let queryParams = [tenantId];
+
+                if (lastMessageId && lastMessageTime) {
+                  // Use both time and ID to ensure we don't miss messages or get duplicates
+                  newMessagesQuery += ` AND (m.CreatedAt > ? OR (m.CreatedAt = ? AND m.Id > ?))`;
+                  queryParams.push(lastMessageTime, lastMessageTime, lastMessageId.toString());
+                }
+
+                newMessagesQuery += ` GROUP BY m.Id ORDER BY m.CreatedAt ASC, m.Id ASC`;
+
+                const newMessages = await db.prepare(newMessagesQuery)
+                  .bind(...queryParams)
+                  .all() as any;
+
+                if (newMessages.results && newMessages.results.length > 0) {
+                  for (const message of newMessages.results) {
+                    // Parse recipients and read statuses
+                    const recipients = message.Recipients ? message.Recipients.split(',') : [];
+                    const readStatuses = message.ReadStatuses ? message.ReadStatuses.split(',').map((s: string) => s === '1') : [];
+                    
+                    // Parse links
+                    const linkUrls = message.LinkUrls ? message.LinkUrls.split(',') : [];
+                    const linkTitles = message.LinkTitles ? message.LinkTitles.split(',') : [];
+                    const links = linkUrls.map((url: string, index: number) => ({
+                      url,
+                      title: linkTitles[index] || url
+                    }));
+
+                    const sseMessage = `data: ${JSON.stringify({
+                      type: 'message:new',
+                      data: {
+                        messageId: message.Id,
+                        tenantId: message.TenantId,
+                        senderEmail: message.SenderEmail,
+                        recipients,
+                        subject: message.Subject,
+                        body: message.Body,
+                        hasAttachments: message.HasAttachments,
+                        attachmentCount: message.AttachmentCount,
+                        links,
+                        timestamp: message.CreatedAt
+                      }
+                    })}\n\n`;
+                    
+                    controller.enqueue(new TextEncoder().encode(sseMessage));
+                  }
+                  
+                  lastMessageId = latestMessage.Id;
+                  lastMessageTime = latestMessage.CreatedAt;
+                }
+              }
+
+            // Check for unread count changes
+            const unreadCountQuery = `
+              SELECT COUNT(DISTINCT m.Id) as unreadCount 
+              FROM Messages m 
+              LEFT JOIN MessageRecipients mr ON m.Id = mr.MessageId AND mr.IsDeleted = FALSE
+              LEFT JOIN TenantUsers tu_sender ON m.SenderEmail = tu_sender.Email 
+              LEFT JOIN TenantUsers tu_recipient ON mr.RecipientEmail = tu_recipient.Email 
+              WHERE mr.RecipientEmail = ? 
+                AND mr.IsRead = FALSE 
+                AND (tu_sender.TenantId = ? OR tu_recipient.TenantId = ?) 
+                AND m.IsDeleted = FALSE 
+                AND m.MessageType = 'subscriber'
+            `;
+            
+            const unreadResult = await db.prepare(unreadCountQuery)
+              .bind(userEmail, tenantId, tenantId)
+              .first() as { unreadCount: number } | null;
+
+            if (unreadResult && unreadResult.unreadCount !== lastUnreadCount) {
+              const unreadMessage = `data: ${JSON.stringify({
+                type: 'unread:update',
+                data: {
+                  count: unreadResult.unreadCount,
+                  timestamp: new Date().toISOString()
+                }
+              })}\n\n`;
+              
+              controller.enqueue(new TextEncoder().encode(unreadMessage));
+              lastUnreadCount = unreadResult.unreadCount;
+            }
+
           } catch (error) {
-            // Connection is dead, clear interval and remove connection
-            console.log(`Heartbeat failed for ${userEmail}, removing connection`);
-            clearInterval(heartbeatInterval);
-            removeConnection(tenantId, controller);
+            console.error('SSE polling error:', error);
+            const errorMessage = `data: ${JSON.stringify({
+              type: 'error',
+              error: 'Failed to poll for updates',
+              timestamp: new Date().toISOString()
+            })}\n\n`;
+            
+            controller.enqueue(new TextEncoder().encode(errorMessage));
           }
-        }, 10000); // Send heartbeat every 10 seconds instead of 30
+        }, pollingInterval); // Use configurable polling interval
 
-        // Update activity on any data sent
-        const originalEnqueue = controller.enqueue.bind(controller);
-        controller.enqueue = function(chunk) {
-          connectionInfo.lastActivity = new Date();
-          return originalEnqueue(chunk);
-        };
-
-        // Handle client disconnect
+        // Clean up on close
         request.signal.addEventListener('abort', () => {
-          removeConnection(tenantId, controller);
+          clearInterval(pollInterval);
+          controller.close();
         });
       }
     });
@@ -121,12 +201,10 @@ export async function GET(
     return new Response(stream, {
       headers: {
         'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache, no-transform',
+        'Cache-Control': 'no-cache',
         'Connection': 'keep-alive',
-        'Keep-Alive': 'timeout=300, max=1000',
         'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'Cache-Control',
-        'X-Accel-Buffering': 'no'
+        'Access-Control-Allow-Headers': 'Cache-Control'
       }
     });
 
@@ -138,8 +216,7 @@ export async function GET(
       console.error('Error details:', {
         message: error.message,
         stack: error.stack,
-        tenantId: (await params).tenantId,
-        userEmail: session?.user?.email
+        tenantId: (await params).tenantId
       });
     }
     

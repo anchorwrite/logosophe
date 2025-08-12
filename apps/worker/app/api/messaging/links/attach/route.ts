@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { auth } from '@/auth';
 import { isSystemAdmin, isTenantAdminFor } from '@/lib/access';
-import { MessagingEventBroadcaster, createLinkEventData } from '@/lib/messaging-events';
+// Removed messaging events import - no longer needed
 
 export async function POST(request: NextRequest) {
   try {
@@ -136,17 +136,8 @@ export async function POST(request: NextRequest) {
 
     const linkId = linkResult.meta.last_row_id;
 
-    // Broadcast SSE event for link added
-    const eventData = createLinkEventData(
-      parseInt(messageId),
-      tenantId,
-      linkId,
-      url,
-      title,
-      domain
-    );
-
-    MessagingEventBroadcaster.broadcastLinkAdded(tenantId, eventData);
+    // SSE events are now handled by the polling-based endpoint
+    // No need to broadcast - clients will receive updates automatically
 
     return new Response(JSON.stringify({
       success: true,
