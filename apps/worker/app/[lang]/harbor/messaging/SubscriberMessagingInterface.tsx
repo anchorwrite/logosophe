@@ -792,14 +792,14 @@ export function SubscriberMessagingInterface({
                       {/* Attachments and Links Indicators */}
                       <Flex gap="2" align="center" wrap="wrap">
                         {message.HasAttachments && message.AttachmentCount && message.AttachmentCount > 0 && (
-                          <Flex gap="1" align="center">
+                          <Flex key="attachments" gap="1" align="center">
                             <Text size="1" color="blue">
                               📎 {message.AttachmentCount} {message.AttachmentCount === 1 ? t('messaging.attachment') : t('messaging.attachments')}
                             </Text>
                           </Flex>
                         )}
                         {message.HasLinks && message.LinkCount && message.LinkCount > 0 && (
-                          <Flex gap="1" align="center">
+                          <Flex key="links" gap="1" align="center">
                             <Text size="1" color="green">
                               🔗 {message.LinkCount} {message.LinkCount === 1 ? t('messaging.link') : t('messaging.links')}
                             </Text>

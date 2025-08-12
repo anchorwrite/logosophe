@@ -120,19 +120,29 @@ export async function POST(request: NextRequest) {
       }
     });
 
+    // Determine MediaType based on file content type
+    let mediaType = 'document'; // default
+    if (file.type.startsWith('image/')) {
+      mediaType = 'image';
+    } else if (file.type.startsWith('video/')) {
+      mediaType = 'video';
+    } else if (file.type.startsWith('audio/')) {
+      mediaType = 'audio';
+    }
+
     // Insert into MediaFiles table
     const mediaFileResult = await db.prepare(`
-      INSERT INTO MediaFiles (FileName, FileSize, ContentType, FileKey, TenantId, UploadedBy, FileType, CreatedAt)
+      INSERT INTO MediaFiles (FileName, FileSize, ContentType, R2Key, UploadedBy, MediaType, UploadDate, Language)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `).bind(
       file.name,
       file.size,
       file.type,
       key,
-      tenantId,
       userEmail,
-      'messaging',
-      new Date().toISOString()
+      mediaType,
+      new Date().toISOString(),
+      'en'
     ).run();
 
     const mediaFileId = mediaFileResult.meta.last_row_id;
