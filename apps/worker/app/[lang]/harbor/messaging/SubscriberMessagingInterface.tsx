@@ -25,6 +25,8 @@ interface RecentMessage {
   RecipientCount: number;
   HasAttachments?: boolean;
   AttachmentCount?: number;
+  attachments?: any[];
+  links?: any[];
 }
 
 interface UserStats {
@@ -100,61 +102,61 @@ export function SubscriberMessagingInterface({
   const [messages, setMessages] = useState<RecentMessage[]>(deduplicatedMessages);
   const [stats, setStats] = useState<UserStats>(userStats);
 
-  // Listen for SSE events to update messages in real-time
+  // Poll for new messages periodically to ensure real-time updates
   useEffect(() => {
-    const handleSSEMessage = (event: MessageEvent) => {
+    const pollForNewMessages = async () => {
       try {
-        const sseEvent = JSON.parse(event.data);
-        
-        if (sseEvent.type === 'message:new') {
-          const newMessageData = sseEvent.data;
-          
-          // Check if this message is for the current user (as recipient)
-          if (newMessageData.recipients.includes(userEmail)) {
-            // Create a new message object
-            const newMessage: RecentMessage = {
-              Id: newMessageData.messageId,
-              Subject: newMessageData.subject,
-              Body: newMessageData.body,
-              SenderEmail: newMessageData.senderEmail,
-              SenderName: newMessageData.senderEmail, // We'll need to get the actual name
-              CreatedAt: newMessageData.timestamp,
-              IsRead: false,
-              MessageType: 'subscriber',
-              RecipientCount: newMessageData.recipients.length,
-              HasAttachments: newMessageData.hasAttachments,
-              AttachmentCount: newMessageData.attachmentCount
-            };
-            
-            // Add to messages list if it doesn't already exist
+        // Fetch recent messages to check for updates
+        const response = await fetch(`/api/messaging/get?tenantId=${userTenantId}&limit=50`);
+        if (response.ok) {
+          const data = await response.json() as { success: boolean; messages?: RecentMessage[] };
+          console.log('Polling response:', data);
+          if (data.success && data.messages) {
+            // Update messages list with any new ones and update existing ones
             setMessages(prev => {
-              const messageExists = prev.some(msg => msg.Id === newMessage.Id);
-              if (messageExists) {
-                return prev;
+              const newMessages = data.messages!.filter((newMsg: RecentMessage) => 
+                !prev.some(existingMsg => existingMsg.Id === newMsg.Id)
+              );
+              
+              // Update existing messages with new data (like attachments)
+              const updatedMessages = prev.map(existingMsg => {
+                const updatedMsg = data.messages!.find(newMsg => newMsg.Id === existingMsg.Id);
+                if (updatedMsg) {
+                  // Merge the data, keeping existing properties but updating with new ones
+                  return { ...existingMsg, ...updatedMsg };
+                }
+                return existingMsg;
+              });
+              
+              if (newMessages.length > 0) {
+                console.log(`Found ${newMessages.length} new messages via polling:`, newMessages);
+                console.log('New message details:', newMessages[0]);
+                if (newMessages[0].HasAttachments) {
+                  console.log('New message has attachments:', newMessages[0].attachments);
+                }
+                return [...newMessages, ...updatedMessages];
               }
-              return [newMessage, ...prev];
+              
+              // Even if no new messages, return updated messages to ensure attachments are included
+              return updatedMessages;
             });
-            
-            // Update stats
-            setStats(prev => ({
-              ...prev,
-              totalMessages: prev.totalMessages + 1,
-              unreadMessages: prev.unreadMessages + 1
-            }));
           }
         }
       } catch (error) {
-        console.error('Error processing SSE message:', error);
+        console.error('Error polling for new messages:', error);
       }
     };
 
-    // Add event listener for SSE messages
-    window.addEventListener('message', handleSSEMessage);
+    // Poll every 10 seconds for new messages
+    const pollInterval = setInterval(pollForNewMessages, 10000);
+    
+    // Initial poll
+    pollForNewMessages();
     
     return () => {
-      window.removeEventListener('message', handleSSEMessage);
+      clearInterval(pollInterval);
     };
-  }, [userEmail]);
+  }, [userTenantId]);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -743,7 +745,18 @@ export function SubscriberMessagingInterface({
                     MessageType: 'subscriber',
                     RecipientCount: messageData.recipients.length,
                     HasAttachments: messageData.attachments.length > 0,
-                    AttachmentCount: messageData.attachments.length
+                    AttachmentCount: messageData.attachments.length,
+                    attachments: messageData.attachments.map(att => ({
+                      Id: att.mediaId || 0,
+                      MessageId: result.data.messageId,
+                      MediaId: att.mediaId || 0,
+                      AttachmentType: att.attachmentType,
+                      FileName: att.file?.name || 'Unknown file',
+                      FileSize: att.file?.size || 0,
+                      ContentType: att.file?.type || 'application/octet-stream',
+                      CreatedAt: new Date().toISOString()
+                    })),
+                    links: messageData.links || []
                   };
 
                   console.log('New message created:', newMessage);

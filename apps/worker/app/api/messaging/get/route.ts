@@ -148,51 +148,29 @@ export async function GET(request: NextRequest) {
 
       // Transform to response format
       const messageResponse = {
-        id: message.Id,
-        senderEmail: message.SenderEmail,
-        subject: message.Subject,
-        body: message.Body,
-        tenantId: message.TenantId,
-        messageType: message.MessageType,
-        priority: message.Priority,
-        createdAt: message.CreatedAt,
-        expiresAt: message.ExpiresAt,
-        isDeleted: message.IsDeleted,
-        isRecalled: message.IsRecalled,
-        recalledAt: message.RecalledAt,
-        recallReason: message.RecallReason,
-        isArchived: message.IsArchived,
-        archivedAt: message.ArchivedAt,
-        deletedAt: message.DeletedAt,
-        hasAttachments: message.HasAttachments,
-        attachmentCount: message.AttachmentCount,
-        recipients: recipientsResult.results.map(r => ({
-          Id: r.Id,
-          MessageId: r.MessageId,
-          RecipientEmail: r.RecipientEmail,
-          IsRead: r.IsRead,
-          ReadAt: r.ReadAt,
-          IsDeleted: r.IsDeleted,
-          DeletedAt: r.DeletedAt,
-          IsForwarded: r.IsForwarded,
-          ForwardedAt: r.ForwardedAt,
-          IsSaved: r.IsSaved,
-          SavedAt: r.SavedAt,
-          IsReplied: r.IsReplied,
-          RepliedAt: r.RepliedAt,
-          IsArchived: r.IsArchived,
-          ArchivedAt: r.ArchivedAt
-        })),
+        Id: message.Id,
+        Subject: message.Subject,
+        Body: message.Body,
+        SenderEmail: message.SenderEmail,
+        SenderName: message.SenderName || message.SenderEmail,
+        CreatedAt: message.CreatedAt,
+        IsRead: message.IsRead,
+        MessageType: message.MessageType,
+        RecipientCount: recipientsResult.results.length,
+        HasAttachments: attachmentsResult.results.length > 0,
+        AttachmentCount: attachmentsResult.results.length,
+        // Include attachments data for the frontend
         attachments: attachmentsResult.results.map(a => ({
-          id: a.Id,
-          fileName: a.FileName,
-          fileSize: a.FileSize,
-          contentType: a.ContentType,
-          attachmentType: a.AttachmentType,
-          mediaId: a.MediaId,
-          downloadUrl: `/api/media/download/${a.MediaId}`,
-          previewUrl: (a.ContentType as string).startsWith('image/') ? `/api/media/preview/${a.MediaId}` : undefined
+          Id: a.Id,
+          MessageId: a.MessageId,
+          MediaId: a.MediaId,
+          AttachmentType: a.AttachmentType,
+          FileName: a.FileName,
+          FileSize: a.FileSize,
+          ContentType: a.ContentType,
+          CreatedAt: a.CreatedAt
         })),
+        // Include links data for the frontend
         links: linksResult.results.map(l => ({
           id: l.Id,
           url: l.Url,
@@ -223,8 +201,9 @@ export async function GET(request: NextRequest) {
       WHERE m.TenantId = ? AND mr.RecipientEmail = ? AND m.IsDeleted = FALSE AND mr.IsDeleted = FALSE
     `).bind(userEmail, userEmail, tenantId, userEmail, tenantId, userEmail).first();
 
-    const response = {
-      items: messages,
+    return new Response(JSON.stringify({
+      success: true,
+      messages: messages,
       total,
       page,
       pageSize,
@@ -237,11 +216,6 @@ export async function GET(request: NextRequest) {
         attachmentsCount: statsResult?.attachmentsCount || 0,
         linksCount: statsResult?.linksCount || 0
       }
-    };
-
-    return new Response(JSON.stringify({
-      success: true,
-      data: response
     }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' }
