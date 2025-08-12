@@ -39,11 +39,12 @@ export function UnreadMessageBadge({
     );
   }
 
-  // Don't show anything if there's an error or no unread messages
-  if (error || unreadCount === 0) {
+  // Don't show anything if there's an error
+  if (error) {
     return null;
   }
 
+  // Always show the badge, even when count is 0
   const getBadgeSize = () => {
     switch (size) {
       case 'small':
@@ -60,7 +61,7 @@ export function UnreadMessageBadge({
   return (
     <Flex align="center" gap="1">
       <Badge 
-        color="red" 
+        color={unreadCount > 0 ? "red" : "gray"} 
         size="1" 
         style={{ 
           minWidth: badgeSize.width, 
@@ -72,6 +73,7 @@ export function UnreadMessageBadge({
           fontWeight: 'bold',
           borderRadius: '50%'
         }}
+        title={unreadCount > 0 ? `${unreadCount} unread message${unreadCount === 1 ? '' : 's'}` : 'No unread messages'}
       >
         {unreadCount > 99 ? '99+' : unreadCount}
       </Badge>

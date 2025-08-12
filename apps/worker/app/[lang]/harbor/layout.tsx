@@ -43,7 +43,7 @@ export default async function HarborLayout({
   const { lang } = await params;
 
   return (
-    <>
+    <MessagingProvider>
       <ScrollRestoration />
       <Flex direction="column" style={{ minHeight: '100vh' }}>
         <Box asChild style={{ 
@@ -65,13 +65,11 @@ export default async function HarborLayout({
         </Box>
         <Box asChild>
           <main>
-            <MessagingProvider>
-              {children}
-            </MessagingProvider>
+            {children}
           </main>
         </Box>
         <ClientFooter />
       </Flex>
-    </>
+    </MessagingProvider>
   );
 } 
