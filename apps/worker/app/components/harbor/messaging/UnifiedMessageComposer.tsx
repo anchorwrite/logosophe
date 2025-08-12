@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Box, Button, Flex, Heading, Text, TextField, TextArea } from '@radix-ui/themes';
 import { FileAttachmentManager } from './FileAttachmentManager';
 import { MessageLinkSharing } from './MessageLinkSharing';
@@ -16,6 +16,7 @@ interface UnifiedMessageComposerProps {
     recipients: string[];
     attachments: CreateAttachmentRequest[];
     links: Array<{ url: string; title: string; domain: string }>;
+    tenantId: string;
   }) => void;
   onCancel?: () => void;
   isSending?: boolean;
@@ -39,6 +40,12 @@ export const UnifiedMessageComposer: React.FC<UnifiedMessageComposerProps> = ({
   const [selectedAttachments, setSelectedAttachments] = useState<CreateAttachmentRequest[]>([]);
   const [selectedLinks, setSelectedLinks] = useState<Array<{ url: string; title: string; domain: string }>>([]);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (recipients.length > 0) {
+      setSelectedRecipients([recipients[0]]);
+    }
+  }, [recipients]);
 
   const handleRecipientToggle = useCallback((email: string) => {
     setSelectedRecipients(prev => 
@@ -71,14 +78,17 @@ export const UnifiedMessageComposer: React.FC<UnifiedMessageComposerProps> = ({
     }
 
     setError(null);
-    onSend({
+    const messageData = {
       subject: subject.trim(),
       body: body.trim(),
       recipients: selectedRecipients,
       attachments: selectedAttachments,
-      links: selectedLinks
-    });
-  }, [subject, body, selectedRecipients, selectedAttachments, maxRecipients, onSend]);
+      links: selectedLinks,
+      tenantId: tenantId
+    };
+    
+    onSend(messageData);
+  }, [subject, body, selectedRecipients, selectedAttachments, maxRecipients, tenantId, selectedLinks]);
 
   const handleCancel = useCallback(() => {
     if (onCancel) {

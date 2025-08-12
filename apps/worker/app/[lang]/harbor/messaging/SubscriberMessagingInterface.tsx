@@ -93,6 +93,8 @@ export function SubscriberMessagingInterface({
   const eventSourceRef = useRef<EventSource | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const connectionStartTimeRef = useRef<number | null>(null);
+  const reconnectAttemptsRef = useRef<number>(0);
+  const maxReconnectAttempts = 5; // Maximum reconnection attempts before giving up
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -139,12 +141,15 @@ export function SubscriberMessagingInterface({
           setSseConnected(true);
           setError(null); // Clear any previous connection errors
           connectionStartTimeRef.current = Date.now();
+          reconnectAttemptsRef.current = 0; // Reset reconnection attempts on successful connection
           console.log('SSE connection established for messaging');
         };
 
         eventSource.onmessage = (event) => {
           try {
+            console.log('SSE message received:', event.data);
             const sseEvent: SSEEvent = JSON.parse(event.data);
+            console.log('Parsed SSE event:', sseEvent);
             handleSSEEvent(sseEvent);
           } catch (error) {
             console.error('Error parsing SSE message:', error);
@@ -162,10 +167,24 @@ export function SubscriberMessagingInterface({
             clearTimeout(reconnectTimeoutRef.current);
           }
           
-          // Implement exponential backoff for reconnection
-          const reconnectDelay = Math.min(2000 * Math.pow(2, 0), 30000); // Start with 2s, max 30s
+          // Check if we've exceeded max reconnection attempts
+          if (reconnectAttemptsRef.current >= maxReconnectAttempts) {
+            console.error('Max SSE reconnection attempts reached. Giving up.');
+            setError('Real-time connection failed after multiple attempts. Please refresh the page.');
+            return;
+          }
+          
+          // Implement exponential backoff for reconnection with much longer delays
+          // Start with 10s, then 20s, 40s, max 2 minutes to prevent rapid reconnection loops
+          const baseDelay = 10000; // 10 seconds base delay
+          const maxDelay = 120000; // 2 minutes max delay
+          const reconnectDelay = Math.min(baseDelay * Math.pow(2, reconnectAttemptsRef.current), maxDelay);
+          
+          console.log(`SSE connection lost. Attempt ${reconnectAttemptsRef.current + 1}/${maxReconnectAttempts}. Will reconnect in ${reconnectDelay/1000}s...`);
+          
           reconnectTimeoutRef.current = setTimeout(() => {
-            console.log(`Attempting to reconnect in ${reconnectDelay}ms...`);
+            reconnectAttemptsRef.current++;
+            console.log(`Attempting to reconnect SSE (attempt ${reconnectAttemptsRef.current})...`);
             connectEventSource();
           }, reconnectDelay);
         };
@@ -223,6 +242,7 @@ export function SubscriberMessagingInterface({
         case 'connection:established':
           console.log('SSE connection confirmed:', event.data);
           setSseConnected(true);
+          reconnectAttemptsRef.current = 0; // Reset reconnection attempts on connection confirmation
           break;
         case 'heartbeat':
           // Update connection activity without logging
@@ -239,8 +259,15 @@ export function SubscriberMessagingInterface({
   // Handle new message event
   const handleNewMessage = (data: SSEMessageNew['data']) => {
     try {
+      console.log('handleNewMessage called with data:', data);
+      console.log('Current user email:', userEmail);
+      console.log('Sender email:', data.senderEmail);
+      console.log('Recipients:', data.recipients);
+      console.log('Is recipient?', data.recipients.includes(userEmail));
+      
       // Only add if it's not from the current user and the current user is a recipient
       if (data.senderEmail !== userEmail && data.recipients.includes(userEmail)) {
+        console.log('Adding new message to UI');
         const newMessage: RecentMessage = {
           Id: data.messageId,
           Subject: data.subject,
@@ -265,6 +292,9 @@ export function SubscriberMessagingInterface({
         // Show notification
         setSuccess(t('messaging.newMessageReceived'));
         setTimeout(() => setSuccess(null), 5000);
+        console.log('New message added successfully');
+      } else {
+        console.log('Message not added - conditions not met');
       }
     } catch (error) {
       console.error('Error handling new message event:', error, data);
@@ -654,7 +684,7 @@ export function SubscriberMessagingInterface({
         )}
 
         {/* Compose Message */}
-        {isComposing && (
+        {isComposing && userTenantId && (
           <Card size="3">
             <UnifiedMessageComposer
               tenantId={userTenantId}
@@ -662,20 +692,22 @@ export function SubscriberMessagingInterface({
               recipients={recipients.map(r => r.Email)}
               onSend={async (messageData) => {
                 try {
+                  const requestBody = {
+                    subject: messageData.subject,
+                    body: messageData.body,
+                    recipients: messageData.recipients,
+                    messageType: 'subscriber',
+                    tenantId: messageData.tenantId,
+                    attachments: messageData.attachments,
+                    links: messageData.links
+                  };
+                  
                   const response = await fetch('/api/messaging/send', {
                     method: 'POST',
                     headers: {
                       'Content-Type': 'application/json',
                     },
-                                          body: JSON.stringify({
-                        subject: messageData.subject,
-                        body: messageData.body,
-                        recipients: messageData.recipients,
-                        messageType: 'subscriber',
-                        tenantId: userTenantId,
-                        attachments: messageData.attachments,
-                        links: messageData.links
-                      }),
+                    body: JSON.stringify(requestBody),
                   });
 
                   if (!response.ok) {
@@ -853,6 +885,7 @@ export function SubscriberMessagingInterface({
           <MessageThread
             message={selectedMessage}
             userEmail={userEmail}
+            tenantId={userTenantId}
             onClose={() => setSelectedMessage(null)}
             onMessageUpdate={(updatedMessage) => {
               setMessages(prev => 

@@ -69,15 +69,41 @@ export default async function SubscriberMessagingPage({ params }: { params: Prom
     .bind(session.user.email)
     .first() as any;
 
-  console.log('Messaging page - User tenant result:', userTenantResult);
+  console.log('Messaging page - User tenant result from TenantUsers:', userTenantResult);
 
-  if (!userTenantResult?.TenantId) {
-    console.log('Messaging page - No tenant found, redirecting to harbor');
-    redirect(`/${lang}/harbor`);
+  let userTenantId: string;
+  let userTenantName: string;
+
+  if (userTenantResult?.TenantId) {
+    // User found in TenantUsers table
+    userTenantId = userTenantResult.TenantId;
+    userTenantName = userTenantResult.TenantName || userTenantId;
+  } else {
+    // Check UserRoles table for subscriber role
+    const userRoleQuery = `
+      SELECT ur.TenantId, t.Name as TenantName
+      FROM UserRoles ur
+      LEFT JOIN Tenants t ON ur.TenantId = t.Id
+      WHERE ur.Email = ? AND ur.RoleId = 'subscriber'
+    `;
+    
+    const userRoleResult = await db.prepare(userRoleQuery)
+      .bind(session.user.email)
+      .first() as any;
+    
+    console.log('Messaging page - User tenant result from UserRoles:', userRoleResult);
+    
+    if (userRoleResult?.TenantId) {
+      userTenantId = userRoleResult.TenantId;
+      userTenantName = userRoleResult.TenantName || userTenantId;
+    } else {
+      console.log('Messaging page - No tenant found in either table, redirecting to harbor');
+      redirect(`/${lang}/harbor`);
+    }
   }
 
-  const userTenantId = userTenantResult.TenantId;
-  const userTenantName = userTenantResult.TenantName || userTenantId;
+  console.log('Messaging page - Final userTenantId:', userTenantId);
+  console.log('Messaging page - Final userTenantName:', userTenantName);
 
   // Log access
   await systemLogs.createLog({
