@@ -353,8 +353,8 @@ export async function POST(request: Request) {
           // Delete workflow messages and history
           await db.prepare(`
             DELETE FROM WorkflowMessages 
-            WHERE SenderEmail = ? OR RecipientEmail = ?
-          `).bind(email, email).run();
+            WHERE SenderEmail = ?
+          `).bind(email).run();
 
           await db.prepare(`
             DELETE FROM WorkflowHistory 
@@ -364,7 +364,7 @@ export async function POST(request: Request) {
           // Delete workflow participants
           await db.prepare(`
             DELETE FROM WorkflowParticipants 
-            WHERE Email = ?
+            WHERE ParticipantEmail = ?
           `).bind(email).run();
 
           // Delete media files uploaded by this user
