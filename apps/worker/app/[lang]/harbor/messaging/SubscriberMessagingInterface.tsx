@@ -111,16 +111,27 @@ export function SubscriberMessagingInterface({
           const data = await response.json() as { success: boolean; messages?: RecentMessage[] };
           console.log('Polling response:', data);
           if (data.success && data.messages) {
-            // Update messages list with any new ones and update existing ones
+            // Only update messages if there are actual changes
             setMessages(prev => {
               const newMessages = data.messages!.filter((newMsg: RecentMessage) => 
                 !prev.some(existingMsg => existingMsg.Id === newMsg.Id)
               );
               
-              // Update existing messages with new data (like attachments)
+              // Check if existing messages need updates (e.g., new attachments)
+              let hasUpdates = false;
               const updatedMessages = prev.map(existingMsg => {
                 const updatedMsg = data.messages!.find(newMsg => newMsg.Id === existingMsg.Id);
                 if (updatedMsg) {
+                  // Check if there are actual changes (new attachments, etc.)
+                  const hasAttachmentChanges = updatedMsg.attachments && 
+                    (!existingMsg.attachments || 
+                     JSON.stringify(updatedMsg.attachments) !== JSON.stringify(existingMsg.attachments));
+                  
+                  if (hasAttachmentChanges) {
+                    hasUpdates = true;
+                    console.log(`Updating message ${existingMsg.Id} with new attachment data`);
+                  }
+                  
                   // Merge the data, keeping existing properties but updating with new ones
                   return { ...existingMsg, ...updatedMsg };
                 }
@@ -136,8 +147,14 @@ export function SubscriberMessagingInterface({
                 return [...newMessages, ...updatedMessages];
               }
               
-              // Even if no new messages, return updated messages to ensure attachments are included
-              return updatedMessages;
+              // Only return updated messages if there are actual changes
+              if (hasUpdates) {
+                console.log('Updating existing messages with new data');
+                return updatedMessages;
+              }
+              
+              // No changes, return the same array reference to prevent re-renders
+              return prev;
             });
           }
         }
@@ -146,8 +163,8 @@ export function SubscriberMessagingInterface({
       }
     };
 
-    // Poll every 10 seconds for new messages
-    const pollInterval = setInterval(pollForNewMessages, 10000);
+    // Poll every 30 seconds for new messages (reduced frequency to prevent excessive re-renders)
+    const pollInterval = setInterval(pollForNewMessages, 30000);
     
     // Initial poll
     pollForNewMessages();
@@ -158,17 +175,11 @@ export function SubscriberMessagingInterface({
   }, [userTenantId]);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+
   const { sseConnected } = useMessaging();
   const lastUnreadCountRef = useRef<number>(userStats.unreadMessages);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+  // Removed auto-scroll behavior to prevent page jumping
 
   // SSE connection is now handled by the shared MessagingContext
 
@@ -732,6 +743,9 @@ export function SubscriberMessagingInterface({
 
                   const result = await response.json() as { success: boolean; data: { messageId: number } };
                   
+                  console.log('Message data being sent:', messageData);
+                  console.log('Attachments in messageData:', messageData.attachments);
+                  
                   // Add the new message to the list
                   const newMessage: RecentMessage = {
                     Id: result.data.messageId,
@@ -749,11 +763,11 @@ export function SubscriberMessagingInterface({
                       Id: att.mediaId || 0,
                       MessageId: result.data.messageId,
                       AttachmentType: att.attachmentType,
-                      FileName: att.file?.name || 'Unknown file',
-                      FileSize: att.file?.size || 0,
-                      ContentType: att.file?.type || 'application/octet-stream',
+                      FileName: att.fileName || att.file?.name || 'Unknown file',
+                      FileSize: att.fileSize || att.file?.size || 0,
+                      ContentType: att.contentType || att.file?.type || 'application/octet-stream',
                       CreatedAt: new Date().toISOString(),
-                      R2Key: '', // Will be set when file is actually uploaded
+                      R2Key: att.r2Key || '', // Use the R2Key from the uploaded file
                       UploadDate: new Date().toISOString()
                     })),
                     links: messageData.links || []
@@ -761,6 +775,9 @@ export function SubscriberMessagingInterface({
 
                   console.log('New message created:', newMessage);
                   console.log('Message ID:', newMessage.Id);
+                  console.log('New message attachments:', newMessage.attachments);
+                  console.log('New message HasAttachments:', newMessage.HasAttachments);
+                  console.log('New message AttachmentCount:', newMessage.AttachmentCount);
 
                   setMessages(prev => {
                     // Check if message already exists to prevent duplicates
@@ -926,7 +943,7 @@ export function SubscriberMessagingInterface({
           />
         )}
 
-        <div ref={messagesEndRef} />
+
       </Flex>
     </Box>
   );
