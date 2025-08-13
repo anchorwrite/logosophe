@@ -35,12 +35,13 @@ export interface MessageRecipient {
 export interface MessageAttachment {
   Id: number;
   MessageId: number;
-  MediaId: number; // Note: database uses 'MediaId' not 'MediaFileId'
   AttachmentType: 'media_library' | 'upload';
   FileName: string;
   FileSize: number;
   ContentType: string;
   CreatedAt: string;
+  R2Key: string;
+  UploadDate: string;
 }
 
 export interface MessageLink {
