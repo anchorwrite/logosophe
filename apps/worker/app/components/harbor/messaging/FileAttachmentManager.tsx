@@ -72,10 +72,14 @@ export const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
 
         if (response.ok) {
           const result = await response.json() as any;
-          if (result.success && result.data?.mediaFileId) {
+          if (result.success && result.data?.key) {
             newAttachments.push({
-              mediaId: result.data.mediaFileId,
-              attachmentType: 'upload' as const
+              mediaId: Date.now(), // Generate temporary ID for frontend tracking
+              attachmentType: 'upload' as const,
+              fileName: result.data.fileName,
+              fileSize: result.data.fileSize,
+              contentType: result.data.contentType,
+              r2Key: result.data.key
             });
           } else {
             setUploadError(`Failed to upload ${file.name}: Invalid response format`);
@@ -201,14 +205,17 @@ export const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
                   <Flex justify="between" align="center">
                     <Flex align="center" gap="2">
                       <Paperclip size={14} />
-                      <Text size="2">File ID: {attachment.mediaId}</Text>
+                      <Text size="2">{attachment.fileName || `File ID: ${attachment.mediaId}`}</Text>
+                      {attachment.fileSize && (
+                        <Text size="1" color="gray">({formatFileSize(attachment.fileSize)})</Text>
+                      )}
                     </Flex>
-                                         <Button 
-                       size="1" 
-                       variant="soft" 
-                       color="red"
-                       onClick={() => attachment.mediaId && removeAttachment(attachment.mediaId)}
-                     >
+                    <Button 
+                      size="1" 
+                      variant="soft" 
+                      color="red"
+                      onClick={() => attachment.mediaId && removeAttachment(attachment.mediaId)}
+                    >
                       <X size={12} />
                     </Button>
                   </Flex>

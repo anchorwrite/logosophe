@@ -76,6 +76,10 @@ export interface CreateAttachmentRequest {
   mediaId?: number; // For media library files - database uses 'MediaId'
   file?: File; // For desktop uploads
   attachmentType: 'media_library' | 'upload';
+  fileName?: string; // For uploaded files
+  fileSize?: number; // For uploaded files
+  contentType?: string; // For uploaded files
+  r2Key?: string; // For uploaded files
 }
 
 export interface CreateLinkRequest {
