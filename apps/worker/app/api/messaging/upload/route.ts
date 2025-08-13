@@ -120,45 +120,20 @@ export async function POST(request: NextRequest) {
       }
     });
 
-    // Determine MediaType based on file content type
-    let mediaType = 'document'; // default
-    if (file.type.startsWith('image/')) {
-      mediaType = 'image';
-    } else if (file.type.startsWith('video/')) {
-      mediaType = 'video';
-    } else if (file.type.startsWith('audio/')) {
-      mediaType = 'audio';
-    }
-
-    // Insert into MediaFiles table
-    const mediaFileResult = await db.prepare(`
-      INSERT INTO MediaFiles (FileName, FileSize, ContentType, R2Key, UploadedBy, MediaType, UploadDate, Language)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `).bind(
-      file.name,
-      file.size,
-      file.type,
-      key,
-      userEmail,
-      mediaType,
-      new Date().toISOString(),
-      'en'
-    ).run();
-
-    const mediaFileId = mediaFileResult.meta.last_row_id;
-
-    // If this is for a specific message, add it as an attachment
+    // If this is for a specific message, add it as an attachment directly
     if (messageId) {
       await db.prepare(`
-        INSERT INTO MessageAttachments (MessageId, MediaId, AttachmentType, FileName, FileSize, ContentType)
-        VALUES (?, ?, ?, ?, ?, ?)
+        INSERT INTO MessageAttachments (MessageId, MediaId, AttachmentType, FileName, FileSize, ContentType, R2Key, UploadDate)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       `).bind(
         parseInt(messageId),
-        mediaFileId,
+        null, // MediaId is no longer needed since we store file data directly
         'upload',
         file.name,
         file.size,
-        file.type
+        file.type,
+        key,
+        new Date().toISOString()
       ).run();
 
       // Update message attachment count
@@ -175,7 +150,7 @@ export async function POST(request: NextRequest) {
     return new Response(JSON.stringify({
       success: true,
       data: {
-        mediaFileId,
+        mediaFileId: null, // No longer using MediaFiles
         fileName: file.name,
         fileSize: file.size,
         contentType: file.type,

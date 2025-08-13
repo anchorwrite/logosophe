@@ -8,7 +8,6 @@ import TextArea from '@/common/TextArea';
 import { FileAttachmentManager } from '../../../components/harbor/messaging/FileAttachmentManager';
 import { UnifiedMessageComposer } from '../../../components/harbor/messaging/UnifiedMessageComposer';
 import { MessageAttachments } from '../../../components/harbor/messaging/MessageAttachments';
-import { MessageAttachmentDisplay } from '../../../components/harbor/messaging/MessageAttachmentDisplay';
 import { CreateAttachmentRequest, SSEEvent, SSEMessageNew, SSEMessageRead, SSEMessageDelete, SSEMessageUpdate, SSEAttachmentAdded, SSEAttachmentRemoved, SSELinkAdded, SSELinkRemoved } from '@/types/messaging';
 import type { Locale } from '@/types/i18n';
 import { useMessaging } from '@/contexts/MessagingContext';
@@ -749,12 +748,13 @@ export function SubscriberMessagingInterface({
                     attachments: messageData.attachments.map(att => ({
                       Id: att.mediaId || 0,
                       MessageId: result.data.messageId,
-                      MediaId: att.mediaId || 0,
                       AttachmentType: att.attachmentType,
                       FileName: att.file?.name || 'Unknown file',
                       FileSize: att.file?.size || 0,
                       ContentType: att.file?.type || 'application/octet-stream',
-                      CreatedAt: new Date().toISOString()
+                      CreatedAt: new Date().toISOString(),
+                      R2Key: '', // Will be set when file is actually uploaded
+                      UploadDate: new Date().toISOString()
                     })),
                     links: messageData.links || []
                   };

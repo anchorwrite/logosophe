@@ -132,10 +132,8 @@ export async function GET(request: NextRequest) {
 
       // Get attachments
       const attachmentsResult = await db.prepare(`
-        SELECT ma.Id, ma.MessageId, ma.MediaId, ma.AttachmentType, ma.FileName, ma.FileSize, ma.ContentType, ma.CreatedAt,
-               mf.R2Key
+        SELECT ma.Id, ma.MessageId, ma.AttachmentType, ma.FileName, ma.FileSize, ma.ContentType, ma.CreatedAt, ma.R2Key
         FROM MessageAttachments ma
-        INNER JOIN MediaFiles mf ON ma.MediaId = mf.Id
         WHERE ma.MessageId = ?
       `).bind(message.Id).all();
 
@@ -163,7 +161,6 @@ export async function GET(request: NextRequest) {
         attachments: attachmentsResult.results.map(a => ({
           Id: a.Id,
           MessageId: a.MessageId,
-          MediaId: a.MediaId,
           AttachmentType: a.AttachmentType,
           FileName: a.FileName,
           FileSize: a.FileSize,
