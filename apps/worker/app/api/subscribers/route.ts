@@ -358,8 +358,8 @@ export async function POST(request: Request) {
 
           await db.prepare(`
             DELETE FROM WorkflowHistory 
-            WHERE UserEmail = ?
-          `).bind(email).run();
+            WHERE InitiatorEmail = ? OR CompletedBy = ? OR DeletedBy = ? OR EventPerformedBy = ?
+          `).bind(email, email, email, email).run();
 
           // Delete workflow participants
           await db.prepare(`
@@ -370,7 +370,7 @@ export async function POST(request: Request) {
           // Delete media files uploaded by this user
           await db.prepare(`
             DELETE FROM MediaFiles 
-            WHERE CreatedBy = ?
+            WHERE UploadedBy = ?
           `).bind(email).run();
 
           // Delete media access records
@@ -382,7 +382,7 @@ export async function POST(request: Request) {
           // Delete user blocks
           await db.prepare(`
             DELETE FROM UserBlocks 
-            WHERE BlockedEmail = ? OR BlockedBy = ?
+            WHERE BlockedEmail = ? OR BlockerEmail = ?
           `).bind(email, email).run();
 
           // Delete user roles
