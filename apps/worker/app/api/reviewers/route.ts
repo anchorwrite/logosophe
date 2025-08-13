@@ -72,6 +72,7 @@ export const GET = async (request: Request) => {
       FROM Subscribers u
       JOIN TenantUsers tu ON u.Email = tu.Email
       WHERE tu.TenantId = ?
+      AND u.Active = TRUE
       AND (u.Moderate = 1 OR u.Post = 1)
       ORDER BY u.Name
     `).bind(tenantId).all();

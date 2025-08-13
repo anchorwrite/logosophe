@@ -12,6 +12,8 @@ interface Subscriber {
   Provider: string;
   Joined: string;
   LastSignin: string;
+  Active: boolean;
+  Left?: string;
 }
 
 interface SubscribersResponse {
@@ -68,7 +70,7 @@ export default function SubscriberDeletePage() {
         <Box mb="6">
           <Heading align="center" size="6">Subscriber Deletion</Heading>
           <Text as="p" align="center" color="gray" mt="2">
-            Delete subscribers and all their associated records
+            View and hard delete subscribers (both active and inactive) and all their associated records
           </Text>
         </Box>
 

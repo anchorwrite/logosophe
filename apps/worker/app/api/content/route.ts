@@ -161,7 +161,7 @@ export async function GET(request: NextRequest) {
 async function checkIfSubscriber(email: string, db: any): Promise<boolean> {
   try {
     const result = await db.prepare(`
-      SELECT COUNT(*) as count FROM Subscribers WHERE Email = ?
+              SELECT COUNT(*) as count FROM Subscribers WHERE Email = ? AND Active = TRUE
     `).bind(email).first();
     
     return Number(result?.count ?? 0) > 0;

@@ -77,7 +77,7 @@ export async function getUserRole(email: string): Promise<string | null> {
 
   // Finally check Subscribers table
   const subscriberResult = await db.prepare(
-    'SELECT * FROM Subscribers WHERE Email = ?'
+    'SELECT * FROM Subscribers WHERE Email = ? AND Active = TRUE'
   ).bind(email).first();
   if (subscriberResult) {
     return 'subscriber';

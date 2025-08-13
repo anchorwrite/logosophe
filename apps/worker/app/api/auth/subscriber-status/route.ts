@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
 
     // Check if user is a subscriber
     const result = await db.prepare(`
-      SELECT COUNT(*) as count FROM Subscribers WHERE Email = ?
+      SELECT COUNT(*) as count FROM Subscribers WHERE Email = ? AND Active = TRUE
     `).bind(userEmail).first();
     
     const isSubscriber = Number(result?.count ?? 0) > 0;

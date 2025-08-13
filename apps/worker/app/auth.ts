@@ -319,7 +319,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth(async () => {
             } else {
               // Check Subscribers table
               const subscriberResult = await db.prepare(
-                'SELECT 1 FROM Subscribers WHERE Email = ?'
+                'SELECT 1 FROM Subscribers WHERE Email = ? AND Active = TRUE'
               ).bind(session.user.email).first();
               
               if (subscriberResult) {

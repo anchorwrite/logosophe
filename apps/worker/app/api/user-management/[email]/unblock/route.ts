@@ -32,7 +32,7 @@ export async function POST(
 
     // Check if user exists in Subscribers table
     const subscriber = await db.prepare(
-      'SELECT Email FROM Subscribers WHERE Email = ?'
+              'SELECT Email FROM Subscribers WHERE Email = ? AND Active = TRUE'
     ).bind(email).first() as { Email: string } | null;
 
     if (!subscriber) {

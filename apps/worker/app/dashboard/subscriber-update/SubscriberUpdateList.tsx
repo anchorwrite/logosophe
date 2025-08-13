@@ -12,6 +12,7 @@ interface Subscriber {
   Joined: string;
   LastSignin: string;
   Active: boolean;
+  Left?: string;
   Banned: boolean;
   Post: boolean;
   Moderate: boolean;
@@ -294,7 +295,16 @@ export function SubscriberUpdateList({ subscribers }: SubscriberUpdateListProps)
                 <Flex gap="2" align="center">
                   {subscriber.Active && <Text color="green">Active</Text>}
                   {subscriber.Banned && <Text color="red">Banned</Text>}
-                  {!subscriber.Active && !subscriber.Banned && <Text color="gray">Inactive</Text>}
+                  {!subscriber.Active && !subscriber.Banned && (
+                    <Flex gap="2" align="center">
+                      <Text color="gray">Inactive</Text>
+                      {subscriber.Left && (
+                        <Text size="1" color="gray">
+                          (Left: {new Date(subscriber.Left).toLocaleDateString()})
+                        </Text>
+                      )}
+                    </Flex>
+                  )}
                 </Flex>
               </Table.Cell>
               <Table.Cell align="right" style={{ whiteSpace: 'nowrap' }}>

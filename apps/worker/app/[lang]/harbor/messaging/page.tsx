@@ -128,7 +128,7 @@ export default async function SubscriberMessagingPage({ params }: { params: Prom
       COUNT(DISTINCT mr.RecipientEmail) as RecipientCount
     FROM Messages m
     LEFT JOIN MessageRecipients mr ON m.Id = mr.MessageId AND mr.IsDeleted = FALSE
-    LEFT JOIN Subscribers s ON m.SenderEmail = s.Email
+    LEFT JOIN Subscribers s ON m.SenderEmail = s.Email AND s.Active = TRUE
     LEFT JOIN TenantUsers tu_sender ON m.SenderEmail = tu_sender.Email
     LEFT JOIN TenantUsers tu_recipient ON mr.RecipientEmail = tu_recipient.Email
     WHERE (m.SenderEmail = ? OR mr.RecipientEmail = ?)
@@ -213,7 +213,7 @@ export default async function SubscriberMessagingPage({ params }: { params: Prom
       FALSE as IsOnline,
       CASE WHEN ub.BlockedEmail IS NOT NULL THEN 1 ELSE 0 END as IsBlocked
     FROM TenantUsers tu
-    LEFT JOIN Subscribers s ON tu.Email = s.Email
+    LEFT JOIN Subscribers s ON tu.Email = s.Email AND s.Active = TRUE
     LEFT JOIN UserRoles ur ON tu.Email = ur.Email AND tu.TenantId = ur.TenantId
     LEFT JOIN UserBlocks ub ON tu.Email = ub.BlockedEmail AND tu.TenantId = ub.TenantId AND ub.IsActive = TRUE
     WHERE tu.TenantId = ?
