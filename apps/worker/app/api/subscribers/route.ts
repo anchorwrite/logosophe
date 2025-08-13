@@ -158,7 +158,36 @@ export async function POST(request: Request) {
         ).bind(body.Id).first();
 
         if (existingSubscriber) {
-          return NextResponse.json("Already a subscriber", { status: 400 });
+          // If subscriber exists and is active, they're already subscribed
+          if (existingSubscriber.Active) {
+            return NextResponse.json("Already a subscriber", { status: 400 });
+          }
+          
+          // If subscriber exists but is inactive, reactivate them
+          await db.prepare(`
+            UPDATE Subscribers 
+            SET Active = TRUE, Left = NULL, UpdatedAt = CURRENT_TIMESTAMP
+            WHERE Email = ?
+          `).bind(body.Id).run();
+
+          // Ensure subscriber role exists
+          const userTenant = await db.prepare(`
+            SELECT TenantId FROM TenantUsers WHERE Email = ?
+          `).bind(body.Id).first() as { TenantId: string } | undefined;
+
+          if (userTenant) {
+            await db.prepare(`
+              INSERT OR IGNORE INTO UserRoles (TenantId, Email, RoleId)
+              VALUES (?, ?, 'subscriber')
+            `).bind(userTenant.TenantId, body.Id).run();
+          } else {
+            await db.prepare(`
+              INSERT OR IGNORE INTO UserRoles (TenantId, Email, RoleId)
+              VALUES ('default', ?, 'subscriber')
+            `).bind(body.Id).run();
+          }
+
+          return NextResponse.json("Subscriber reactivated successfully");
         }
 
         // Validate provider

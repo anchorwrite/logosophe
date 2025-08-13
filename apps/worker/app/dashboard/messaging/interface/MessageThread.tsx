@@ -101,7 +101,7 @@ export function MessageThread({
             </Heading>
             <Flex align="center" gap="2" style={{ marginBottom: '0.5rem' }}>
               <Text size="2" weight="medium">
-                From: {message.SenderName || message.SenderEmail}
+                From: {message.SenderName ? `${message.SenderName} (${message.SenderEmail})` : message.SenderEmail}
               </Text>
               <Badge variant="soft">{message.MessageType}</Badge>
               {message.RecipientCount > 1 && (
@@ -157,10 +157,7 @@ export function MessageThread({
                 }}>
                   <Box>
                     <Text size="2" weight="medium">
-                      {recipient.Name || 'Unknown User'}
-                    </Text>
-                    <Text size="1" color="gray">
-                      {recipient.Email}
+                      {recipient.Name ? `${recipient.Name} (${recipient.Email})` : recipient.Email}
                     </Text>
                   </Box>
                   <Flex align="center" gap="2">

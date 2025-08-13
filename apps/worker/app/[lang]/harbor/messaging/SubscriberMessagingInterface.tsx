@@ -852,7 +852,7 @@ export function SubscriberMessagingInterface({
                       <Flex key={`message-${message.Id}-header`} justify="between" align="center">
                         <Flex key={`message-${message.Id}-sender`} gap="2" align="center">
                           <Text weight="bold" size="3">
-                            {message.SenderName || message.SenderEmail}
+                            {message.SenderName ? `${message.SenderName} (${message.SenderEmail})` : message.SenderEmail}
                           </Text>
                           {message.SenderEmail === userEmail && (
                             <Badge color="blue" size="1">{t('messaging.sent')}</Badge>

@@ -89,17 +89,14 @@ export async function GET(
       SELECT 
         ma.Id,
         ma.MessageId,
-        ma.MediaFileId,
         ma.AttachmentType,
         ma.FileName,
         ma.FileSize,
         ma.ContentType,
         ma.CreatedAt,
-        mf.FileKey,
-        mf.MediaType,
-        mf.CreatedBy
+        ma.R2Key,
+        ma.UploadDate
       FROM MessageAttachments ma
-      INNER JOIN MediaFiles mf ON ma.MediaFileId = mf.Id
       WHERE ma.MessageId = ?
       ORDER BY ma.CreatedAt ASC
     `).bind(messageId).all();
@@ -108,20 +105,18 @@ export async function GET(
     const formattedAttachments = attachments.results?.map(attachment => ({
       id: attachment.Id,
       messageId: attachment.MessageId,
-      mediaFileId: attachment.MediaFileId,
       attachmentType: attachment.AttachmentType as string,
       fileName: attachment.FileName as string,
       fileSize: attachment.FileSize,
       contentType: attachment.ContentType as string,
       createdAt: attachment.CreatedAt,
-      fileKey: attachment.FileKey as string,
-      mediaType: attachment.MediaType as string,
-      createdBy: attachment.CreatedBy as string,
-      // Generate download URL (this would need to be implemented based on your storage system)
-      downloadUrl: `/api/media/download/${attachment.MediaFileId}`,
+      r2Key: attachment.R2Key as string,
+      uploadDate: attachment.UploadDate as string,
+      // Generate download URL using the new messaging-specific endpoints
+      downloadUrl: `/api/messaging/attachments/${attachment.Id}/download`,
       // Generate preview URL for supported file types
       previewUrl: (attachment.ContentType as string).startsWith('image/') ? 
-        `/api/media/preview/${attachment.MediaFileId}` : null
+        `/api/messaging/attachments/${attachment.Id}/preview` : null
     })) || [];
 
     return new Response(JSON.stringify({
