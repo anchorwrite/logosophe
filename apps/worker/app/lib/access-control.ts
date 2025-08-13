@@ -126,7 +126,7 @@ export async function checkAccess(options: AccessControlOptions): Promise<Access
     let subscriberResult: unknown = null;
     try {
       const subRaw = await db.prepare(
-        'SELECT * FROM Subscribers WHERE Email = ?'
+        'SELECT * FROM Subscribers WHERE Email = ? AND Active = TRUE'
       ).bind(email).first();
       if (subRaw && typeof subRaw === 'object') {
         subscriberResult = subRaw;

@@ -104,7 +104,7 @@ export async function POST(request: Request) {
                 CreatedAt,
                 UpdatedAt
               FROM Subscribers 
-              WHERE Email = ?
+              WHERE Email = ? AND Active = TRUE
             `).bind(identifier).first<SubscriberRow>();
             return NextResponse.json({ success: true, results: subscriber ? [subscriber] : [] });
           } catch (error) {
@@ -152,7 +152,7 @@ export async function POST(request: Request) {
       }
 
       case 'insert': {
-        // Check if user already exists
+        // Check if user already exists (including inactive ones)
         const existingSubscriber = await db.prepare(
           'SELECT * FROM Subscribers WHERE Email = ?'
         ).bind(body.Id).first();
@@ -270,12 +270,117 @@ export async function POST(request: Request) {
         // Don't delete from TenantUsers - keep basic tenant membership
         // The user should retain their basic 'user' role for basic access
 
-        // Then delete the subscriber record
+        // Soft delete the subscriber record instead of hard deleting
         await db.prepare(
-          'DELETE FROM Subscribers WHERE Email = ?'
+          'UPDATE Subscribers SET Active = FALSE, Left = CURRENT_TIMESTAMP WHERE Email = ?'
         ).bind(body.Id).run();
 
         return NextResponse.json("Record deleted successfully");
+      }
+
+      case 'hardDelete': {
+        if (!body.Id) {
+          return NextResponse.json({ error: "Missing subscriber ID" }, { status: 400 });
+        }
+
+        // Only system admins can perform hard deletes
+        if (!await isSystemAdmin(session.user.email, db)) {
+          return NextResponse.json({ error: "Only system admins can perform hard deletes" }, { status: 401 });
+        }
+
+        const email = body.Id;
+
+        try {
+          // Start with the most dependent tables and work backwards
+          
+          // Delete message attachments and links
+          await db.prepare(`
+            DELETE FROM MessageAttachments 
+            WHERE MessageId IN (
+              SELECT Id FROM Messages WHERE SenderEmail = ? OR Id IN (
+                SELECT MessageId FROM MessageRecipients WHERE RecipientEmail = ?
+              )
+            )
+          `).bind(email, email).run();
+
+          // Delete message recipients
+          await db.prepare(`
+            DELETE FROM MessageRecipients 
+            WHERE MessageId IN (
+              SELECT Id FROM Messages WHERE SenderEmail = ? OR Id IN (
+                SELECT MessageId FROM MessageRecipients WHERE RecipientEmail = ?
+              )
+            )
+          `).bind(email, email).run();
+
+          // Delete messages
+          await db.prepare(`
+            DELETE FROM Messages 
+            WHERE SenderEmail = ? OR Id IN (
+              SELECT MessageId FROM MessageRecipients WHERE RecipientEmail = ?
+            )
+          `).bind(email, email).run();
+
+          // Delete workflow messages and history
+          await db.prepare(`
+            DELETE FROM WorkflowMessages 
+            WHERE SenderEmail = ? OR RecipientEmail = ?
+          `).bind(email, email).run();
+
+          await db.prepare(`
+            DELETE FROM WorkflowHistory 
+            WHERE UserEmail = ?
+          `).bind(email).run();
+
+          // Delete workflow participants
+          await db.prepare(`
+            DELETE FROM WorkflowParticipants 
+            WHERE Email = ?
+          `).bind(email).run();
+
+          // Delete media files uploaded by this user
+          await db.prepare(`
+            DELETE FROM MediaFiles 
+            WHERE CreatedBy = ?
+          `).bind(email).run();
+
+          // Delete media access records
+          await db.prepare(`
+            DELETE FROM MediaAccess 
+            WHERE GrantedBy = ?
+          `).bind(email).run();
+
+          // Delete user blocks
+          await db.prepare(`
+            DELETE FROM UserBlocks 
+            WHERE BlockedEmail = ? OR BlockedBy = ?
+          `).bind(email, email).run();
+
+          // Delete user roles
+          await db.prepare(`
+            DELETE FROM UserRoles 
+            WHERE Email = ?
+          `).bind(email).run();
+
+          // Delete tenant users
+          await db.prepare(`
+            DELETE FROM TenantUsers 
+            WHERE Email = ?
+          `).bind(email).run();
+
+          // Finally, delete the subscriber record
+          await db.prepare(`
+            DELETE FROM Subscribers 
+            WHERE Email = ?
+          `).bind(email).run();
+
+          return NextResponse.json("Subscriber and all associated records hard deleted successfully");
+        } catch (error) {
+          console.error('Error during hard delete:', error);
+          return NextResponse.json({ 
+            error: "Failed to hard delete subscriber. Some records may have been deleted. Check logs for details." 
+          }, { status: 500 });
+        }
       }
 
       default:
@@ -300,7 +405,7 @@ export async function GET(request: Request) {
     const url = new URL(request.url);
     const email = url.searchParams.get('email');
 
-    // If email is provided, return specific subscriber
+    // If email is provided, return specific subscriber (including inactive ones for admin purposes)
     if (email) {
       const subscriber = await db.prepare(
         'SELECT * FROM Subscribers WHERE Email = ?'
@@ -314,7 +419,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Return all subscribers for admin
+    // Return all subscribers for admin (including inactive ones for admin purposes)
     const subscribers = await db.prepare(
       'SELECT * FROM Subscribers ORDER BY CreatedAt DESC'
     ).all();

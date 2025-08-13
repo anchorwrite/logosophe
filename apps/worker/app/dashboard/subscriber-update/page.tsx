@@ -32,6 +32,7 @@ async function getSubscribers(db: D1Database): Promise<Subscriber[]> {
       s.Moderate,
       s.Track
     FROM Subscribers s
+    WHERE s.Active = TRUE
     ORDER BY s.CreatedAt DESC
   `).all();
   return (result.results as unknown) as Subscriber[];

@@ -72,7 +72,7 @@ export async function POST(
       await db.prepare('DELETE FROM WorkflowParticipants WHERE ParticipantEmail = ?').bind(email).run();
       
       // User management tables
-      await db.prepare('DELETE FROM Subscribers WHERE Email = ?').bind(email).run();
+              await db.prepare('UPDATE Subscribers SET Active = FALSE, Left = CURRENT_TIMESTAMP WHERE Email = ?').bind(email).run();
       await db.prepare('DELETE FROM TenantUsers WHERE Email = ?').bind(email).run();
       
       // Content tables (after TenantUsers is deleted)

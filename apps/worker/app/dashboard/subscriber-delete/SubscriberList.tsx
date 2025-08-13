@@ -10,6 +10,8 @@ interface Subscriber {
   Provider: string;
   Joined: string;
   LastSignin: string;
+  Active: boolean;
+  Left?: string;
 }
 
 interface SubscriberListProps {
@@ -18,12 +20,15 @@ interface SubscriberListProps {
 }
 
 async function deleteSubscriber(email: string) {
-  const response = await fetch('/api/subscriber-delete', {
+  const response = await fetch('/api/subscribers', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ email }),
+    body: JSON.stringify({ 
+      op: 'hardDelete', 
+      Id: email 
+    }),
   });
 
   if (!response.ok) {
@@ -190,6 +195,17 @@ export function SubscriberList({ subscribers, onRefresh }: SubscriberListProps) 
               </Flex>
             </Table.ColumnHeaderCell>
             <Table.ColumnHeaderCell 
+              onClick={() => handleSort('Active')}
+              style={{ cursor: 'pointer', whiteSpace: 'nowrap', minWidth: '100px' }}
+            >
+              <Flex gap="2" align="center">
+                Status
+                {sortField === 'Active' && (
+                  <Text size="1">{sortDirection === 'asc' ? '↑' : '↓'}</Text>
+                )}
+              </Flex>
+            </Table.ColumnHeaderCell>
+            <Table.ColumnHeaderCell 
               align="right"
               style={{ minWidth: '120px' }}
             >
@@ -197,7 +213,7 @@ export function SubscriberList({ subscribers, onRefresh }: SubscriberListProps) 
             </Table.ColumnHeaderCell>
           </Table.Row>
           <Table.Row>
-            {['Email', 'Name', 'Provider', 'Joined', 'LastSignin'].map((field) => (
+            {['Email', 'Name', 'Provider', 'Joined', 'LastSignin', 'Active'].map((field) => (
               <Table.Cell key={field}>
                 <Popover.Root open={openFilter === field} onOpenChange={(open) => setOpenFilter(open ? field : null)}>
                   <Popover.Trigger>
@@ -260,18 +276,37 @@ export function SubscriberList({ subscribers, onRefresh }: SubscriberListProps) 
               <Table.Cell style={{ whiteSpace: 'nowrap' }}>{subscriber.Provider}</Table.Cell>
               <Table.Cell style={{ whiteSpace: 'nowrap' }}>{new Date(subscriber.Joined).toLocaleDateString()}</Table.Cell>
               <Table.Cell style={{ whiteSpace: 'nowrap' }}>{new Date(subscriber.LastSignin).toLocaleDateString()}</Table.Cell>
+              <Table.Cell style={{ whiteSpace: 'nowrap' }}>
+                <Flex gap="2" align="center">
+                  <Text 
+                    size="2" 
+                    color={subscriber.Active ? 'green' : 'red'}
+                    weight="medium"
+                  >
+                    {subscriber.Active ? 'Active' : 'Inactive'}
+                  </Text>
+                  {!subscriber.Active && subscriber.Left && (
+                    <Text size="1" color="gray">
+                      (Left: {new Date(subscriber.Left).toLocaleDateString()})
+                    </Text>
+                  )}
+                </Flex>
+              </Table.Cell>
               <Table.Cell align="right" style={{ whiteSpace: 'nowrap' }}>
                 <Button
                   variant="soft"
                   color="red"
                   onClick={async () => {
                     if (confirm(
-                      `Are you sure you want to delete ${subscriber.Name} (${subscriber.Email})?\n\n` +
-                      'This will also delete:\n' +
-                      '- All associated tenant user records\n' +
-                      '- All associated user role assignments\n' +
-                      '- All associated user activity records\n\n' +
-                      'This action cannot be undone.'
+                      `Are you sure you want to HARD DELETE ${subscriber.Name} (${subscriber.Email})?\n\n` +
+                      'This will PERMANENTLY delete:\n' +
+                      '- All messages sent/received by this user\n' +
+                      '- All message attachments and links\n' +
+                      '- All workflow messages and history\n' +
+                      '- All media files uploaded by this user\n' +
+                      '- All tenant user records and role assignments\n' +
+                      '- The subscriber record itself\n\n' +
+                      '⚠️  This action cannot be undone and will break any existing references!'
                     )) {
                       try {
                         await deleteSubscriber(subscriber.Email);
