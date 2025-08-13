@@ -193,6 +193,26 @@ export async function POST(request: Request) {
           body.provider
         ).run();
 
+        // Add subscriber role to UserRoles table
+        // First, get the user's tenant from TenantUsers
+        const userTenant = await db.prepare(`
+          SELECT TenantId FROM TenantUsers WHERE Email = ?
+        `).bind(body.Id).first() as { TenantId: string } | undefined;
+
+        if (userTenant) {
+          // Add subscriber role for the user's tenant
+          await db.prepare(`
+            INSERT OR IGNORE INTO UserRoles (TenantId, Email, RoleId)
+            VALUES (?, ?, 'subscriber')
+          `).bind(userTenant.TenantId, body.Id).run();
+        } else {
+          // If no tenant found, add to default tenant
+          await db.prepare(`
+            INSERT OR IGNORE INTO UserRoles (TenantId, Email, RoleId)
+            VALUES ('default', ?, 'subscriber')
+          `).bind(body.Id).run();
+        }
+
         return NextResponse.json("Subscriber created successfully");
       }
 
@@ -242,10 +262,13 @@ export async function POST(request: Request) {
           return NextResponse.json({ error: "Only system admins can delete other users' emails" }, { status: 401 });
         }
 
-        // First, delete associated records in TenantUsers
+        // Delete subscriber role from UserRoles (but keep basic user role)
         await db.prepare(
-          'DELETE FROM TenantUsers WHERE Email = ?'
+          'DELETE FROM UserRoles WHERE Email = ? AND RoleId = "subscriber"'
         ).bind(body.Id).run();
+
+        // Don't delete from TenantUsers - keep basic tenant membership
+        // The user should retain their basic 'user' role for basic access
 
         // Then delete the subscriber record
         await db.prepare(
