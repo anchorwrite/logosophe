@@ -36,6 +36,17 @@ export function SubscriberUpdateList({ subscribers }: SubscriberUpdateListProps)
   const [wildcardFilters, setWildcardFilters] = useState<Record<string, string>>({});
   const [openFilter, setOpenFilter] = useState<string | null>(null);
 
+  // Helper function to safely format dates
+  const formatDate = (dateString: string | null | undefined): string => {
+    if (!dateString) return 'N/A';
+    try {
+      const date = new Date(dateString);
+      return isNaN(date.getTime()) ? 'N/A' : date.toLocaleDateString();
+    } catch {
+      return 'N/A';
+    }
+  };
+
   const handleSort = (field: string) => {
     if (sortField === field) {
       setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
@@ -289,8 +300,12 @@ export function SubscriberUpdateList({ subscribers }: SubscriberUpdateListProps)
               <Table.Cell style={{ whiteSpace: 'nowrap' }}>{subscriber.Email}</Table.Cell>
               <Table.Cell style={{ whiteSpace: 'nowrap' }}>{subscriber.Name}</Table.Cell>
               <Table.Cell style={{ whiteSpace: 'nowrap' }}>{subscriber.Provider}</Table.Cell>
-              <Table.Cell style={{ whiteSpace: 'nowrap' }}>{new Date(subscriber.Joined).toLocaleDateString()}</Table.Cell>
-              <Table.Cell style={{ whiteSpace: 'nowrap' }}>{new Date(subscriber.LastSignin).toLocaleDateString()}</Table.Cell>
+              <Table.Cell style={{ whiteSpace: 'nowrap' }}>
+                {formatDate(subscriber.Joined)}
+              </Table.Cell>
+              <Table.Cell style={{ whiteSpace: 'nowrap' }}>
+                {formatDate(subscriber.LastSignin)}
+              </Table.Cell>
               <Table.Cell>
                 <Flex gap="2" align="center">
                   {subscriber.Active && <Text color="green">Active</Text>}
@@ -300,7 +315,7 @@ export function SubscriberUpdateList({ subscribers }: SubscriberUpdateListProps)
                       <Text color="gray">Inactive</Text>
                       {subscriber.Left && (
                         <Text size="1" color="gray">
-                          (Left: {new Date(subscriber.Left).toLocaleDateString()})
+                          (Left: {formatDate(subscriber.Left)})
                         </Text>
                       )}
                     </Flex>

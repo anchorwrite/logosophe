@@ -165,7 +165,8 @@ export async function GET(request: NextRequest) {
           FileName: a.FileName,
           FileSize: a.FileSize,
           ContentType: a.ContentType,
-          CreatedAt: a.CreatedAt
+          CreatedAt: a.CreatedAt,
+          R2Key: a.R2Key
         })),
         // Include links data for the frontend
         links: linksResult.results.map(l => ({

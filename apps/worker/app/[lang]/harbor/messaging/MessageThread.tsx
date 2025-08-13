@@ -91,10 +91,12 @@ export function MessageThread({ message, userEmail, tenantId, onClose, onMessage
     console.log('Message HasAttachments:', message.HasAttachments);
     console.log('Message AttachmentCount:', message.AttachmentCount);
     console.log('Message attachments array:', message.attachments);
+    console.log('Message full object:', JSON.stringify(message, null, 2));
 
     // If attachments are already included in the message, use them
     if (message.attachments && message.attachments.length > 0) {
       console.log('Using attachments from message object:', message.attachments);
+      console.log('First attachment details:', message.attachments[0]);
       setAttachments(message.attachments);
       setIsLoadingAttachments(false);
       return;
@@ -147,7 +149,7 @@ export function MessageThread({ message, userEmail, tenantId, onClose, onMessage
         body: JSON.stringify({
           subject: `Re: ${message.Subject}`,
           body: replyBody,
-          recipients: [message.SenderEmail],
+          recipients: recipients.map(r => r.Email),
           messageType: 'subscriber',
           tenantId: tenantId
         }),
@@ -207,36 +209,27 @@ export function MessageThread({ message, userEmail, tenantId, onClose, onMessage
             <Card size="3">
               <Flex direction="column" gap="3">
                 <Flex justify="between" align="center">
-                  <Flex gap="2" align="center">
-                    <Text weight="bold" size="3">
-                      {message.SenderName || message.SenderEmail}
-                    </Text>
-                    {message.SenderEmail === userEmail && (
-                      <Badge color="blue" size="1">{t('messaging.sent')}</Badge>
-                    )}
-                    {!message.IsRead && message.SenderEmail !== userEmail && (
-                      <Badge color="red" size="1">{t('messaging.unread')}</Badge>
-                    )}
-                  </Flex>
                   <Text size="2" color="gray">
                     {formatDate(message.CreatedAt)}
                   </Text>
                 </Flex>
 
                 <Box>
-                  <Text size="2" color="gray" mb="2">{t('messaging.from')}</Text>
-                  <Text size="3">{message.SenderEmail}</Text>
+                  <Text size="2" color="gray" mb="2">{t('messaging.from')}: </Text>
+                  <Text size="3">
+                    {message.SenderName ? `${message.SenderName} (${message.SenderEmail})` : message.SenderEmail}
+                  </Text>
                 </Box>
 
                 <Box>
-                  <Text size="2" color="gray" mb="2">{t('messaging.to')}</Text>
+                  <Text size="2" color="gray" mb="2">{t('messaging.to')}: </Text>
                   {isLoadingRecipients ? (
                     <Text size="3" color="gray">Loading recipients...</Text>
                   ) : recipients.length > 0 ? (
                     <Text size="3">
                       {recipients.map((recipient, index) => (
                         <span key={recipient.Email}>
-                          {recipient.Name || recipient.Email}
+                          {recipient.Name ? `${recipient.Name} (${recipient.Email})` : recipient.Email}
                           {index < recipients.length - 1 ? ', ' : ''}
                         </span>
                       ))}
@@ -270,6 +263,13 @@ export function MessageThread({ message, userEmail, tenantId, onClose, onMessage
                     ) : (
                       <Text size="3" color="gray">No attachments found</Text>
                     )}
+                    {/* Debug info */}
+                    <Text size="1" color="gray" mt="2">
+                      Debug: HasAttachments={message.HasAttachments.toString()}, 
+                      AttachmentCount={message.AttachmentCount}, 
+                      attachments.length={attachments.length}, 
+                      isLoadingAttachments={isLoadingAttachments.toString()}
+                    </Text>
                   </Box>
                 )}
 
@@ -301,9 +301,9 @@ export function MessageThread({ message, userEmail, tenantId, onClose, onMessage
                     <Flex direction="column" gap="3">
                       {/* Recipients Field */}
                       <Box>
-                        <Text size="2" weight="bold" mb="2">{t('messaging.to')}</Text>
+                        <Text size="2" weight="bold" mb="2">{t('messaging.to')}: </Text>
                         <Text size="3" color="gray">
-                          {message.SenderEmail}
+                          {message.SenderName ? `${message.SenderName} (${message.SenderEmail})` : message.SenderEmail}
                         </Text>
                       </Box>
 
