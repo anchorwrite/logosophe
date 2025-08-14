@@ -5,6 +5,7 @@ import type { Locale } from '@/types/i18n';
 import Footer from '@/components/Footer';
 import ScrollRestoration from '@/components/ScrollRestoration';
 import { MessagingProvider } from '@/contexts/MessagingContext';
+import { WorkflowMessagingProvider } from '@/contexts/WorkflowMessagingContext';
 
 
 // Client component wrapper for Footer
@@ -44,32 +45,34 @@ export default async function HarborLayout({
 
   return (
     <MessagingProvider>
-      <ScrollRestoration />
-      <Flex direction="column" style={{ minHeight: '100vh' }}>
-        <Box asChild style={{ 
-          position: 'sticky', 
-          top: 0, 
-          zIndex: 50, 
-          width: '100%', 
-          borderBottom: '1px solid var(--gray-6)',
-          backgroundColor: 'var(--color-panel-solid)',
-          backdropFilter: 'blur(8px)'
-        }}>
-          <header>
-            <Container size="3">
-              <Box style={{ height: '3.5rem', display: 'flex', alignItems: 'center' }}>
-                <HarborAppBar lang={lang} />
-              </Box>
-            </Container>
-          </header>
-        </Box>
-        <Box asChild>
-          <main>
-            {children}
-          </main>
-        </Box>
-        <ClientFooter />
-      </Flex>
+      <WorkflowMessagingProvider>
+        <ScrollRestoration />
+        <Flex direction="column" style={{ minHeight: '100vh' }}>
+          <Box asChild style={{ 
+            position: 'sticky', 
+            top: 0, 
+            zIndex: 50, 
+            width: '100%', 
+            borderBottom: '1px solid var(--gray-6)',
+            backgroundColor: 'var(--color-panel-solid)',
+            backdropFilter: 'blur(8px)'
+          }}>
+            <header>
+              <Container size="3">
+                <Box style={{ height: '3.5rem', display: 'flex', alignItems: 'center' }}>
+                  <HarborAppBar lang={lang} />
+                </Box>
+              </Container>
+            </header>
+          </Box>
+          <Box asChild>
+            <main>
+              {children}
+            </main>
+          </Box>
+          <ClientFooter />
+        </Flex>
+      </WorkflowMessagingProvider>
     </MessagingProvider>
   );
 } 

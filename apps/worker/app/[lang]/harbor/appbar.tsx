@@ -11,7 +11,9 @@ import SubscriberOptIn from "@/components/SubscriberOptIn";
 import SubscriberOptOut from "@/components/SubscriberOptOut";
 import { PreferencesButton } from "@/components/PreferencesButton";
 import { useMessaging } from '@/contexts/MessagingContext';
+import { useWorkflowMessaging } from '@/contexts/WorkflowMessagingContext';
 import { UnreadMessageBadge } from '@/components/harbor/UnreadMessageBadge';
+import { UnreadWorkflowBadge } from '@/components/harbor/UnreadWorkflowBadge';
 import { ConnectionStatusIndicator } from '@/components/harbor/ConnectionStatusIndicator';
 
 
@@ -25,6 +27,7 @@ function HarborAppBar({ lang }: { lang: Locale }) {
   const [isLoading, setIsLoading] = useState(true);
   const [provider, setProvider] = useState<string>('');
   const { unreadCount } = useMessaging();
+  const { unreadCount: workflowUnreadCount } = useWorkflowMessaging();
 
 
   const { data: session } = useSession();
@@ -66,9 +69,10 @@ function HarborAppBar({ lang }: { lang: Locale }) {
       </Link>
       {/* Connection Status Indicator */}
       {session?.user?.role === 'subscriber' && (
-        <Flex align="center" gap="2" style={{ marginLeft: '1rem' }}>
+        <Flex align="center" gap="4" style={{ marginLeft: '1rem' }}>
           <ConnectionStatusIndicator size="small" showText={false} />
           <UnreadMessageBadge />
+          <UnreadWorkflowBadge />
         </Flex>
       )}
       <Flex gap="4" align="center" p="2">

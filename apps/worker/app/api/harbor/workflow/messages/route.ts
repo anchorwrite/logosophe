@@ -153,9 +153,11 @@ export async function POST(request: NextRequest) {
     ).run();
 
     // If media files are attached, create separate messages for each
+    const mediaMessageIds: string[] = [];
     if (requestData.mediaFileIds && requestData.mediaFileIds.length > 0) {
       for (const mediaFileId of requestData.mediaFileIds) {
         const mediaMessageId = crypto.randomUUID();
+        mediaMessageIds.push(mediaMessageId);
         
         await db.prepare(`
           INSERT INTO WorkflowMessages (Id, WorkflowId, SenderEmail, MessageType, MediaFileId, Content, CreatedAt)
@@ -169,6 +171,40 @@ export async function POST(request: NextRequest) {
           '📎 Attached: ' + (await getMediaFileName(db, mediaFileId)),
           createdAt
         ).run();
+      }
+    }
+
+    // Create read tracking records for all participants (except sender)
+    const participantsQuery = `
+      SELECT ParticipantEmail FROM WorkflowParticipants 
+      WHERE WorkflowId = ? AND ParticipantEmail != ?
+    `;
+    
+    const participants = await db.prepare(participantsQuery)
+      .bind(workflowId, access.email)
+      .all() as { results: { ParticipantEmail: string }[] };
+
+    if (participants.results) {
+      // Create read tracking for the main message
+      for (const participant of participants.results) {
+        await db.prepare(`
+          INSERT OR IGNORE INTO WorkflowMessageRecipients 
+          (WorkflowMessageId, ParticipantEmail, IsRead, CreatedAt)
+          VALUES (?, ?, FALSE, ?)
+        `).bind(messageId, participant.ParticipantEmail, createdAt).run();
+      }
+
+      // Create read tracking for media messages if any
+      if (mediaMessageIds.length > 0) {
+        for (const mediaMessageId of mediaMessageIds) {
+          for (const participant of participants.results) {
+            await db.prepare(`
+              INSERT OR IGNORE INTO WorkflowMessageRecipients 
+              (WorkflowMessageId, ParticipantEmail, IsRead, CreatedAt)
+              VALUES (?, ?, FALSE, ?)
+            `).bind(mediaMessageId, participant.ParticipantEmail, createdAt).run();
+          }
+        }
       }
     }
 
