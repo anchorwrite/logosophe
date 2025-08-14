@@ -2,6 +2,7 @@
 
 import React, { useState, useCallback } from 'react';
 import { Box, Flex, Text, Button, TextField, Badge } from '@radix-ui/themes';
+import { useTranslation } from 'react-i18next';
 
 interface Link {
   url: string;
@@ -26,6 +27,7 @@ export const MessageLinkSharing: React.FC<MessageLinkSharingProps> = ({
   disabled = false,
   lang
 }) => {
+  const { t } = useTranslation('translations');
   const [showLinkInput, setShowLinkInput] = useState(false);
   const [linkUrl, setLinkUrl] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -91,7 +93,7 @@ export const MessageLinkSharing: React.FC<MessageLinkSharingProps> = ({
     <Box className="message-link-sharing">
       <Flex direction="column" gap="3">
         <Flex align="center" justify="between">
-          <Text size="2" weight="bold">Links</Text>
+          <Text size="2" weight="bold">{t('messaging.links')}</Text>
           <Flex align="center" gap="2">
             <Text size="1" color="gray">
               {links.length}/{maxLinks}
@@ -103,7 +105,7 @@ export const MessageLinkSharing: React.FC<MessageLinkSharingProps> = ({
                 onClick={() => setShowLinkInput(true)}
                 disabled={disabled}
               >
-                🔗 Add Link
+                🔗 {t('messaging.addLink')}
               </Button>
             )}
           </Flex>

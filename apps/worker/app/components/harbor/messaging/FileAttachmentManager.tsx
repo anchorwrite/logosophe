@@ -2,6 +2,7 @@
 
 import React, { useState, useCallback, useRef } from 'react';
 import { Box, Button, Text, Flex, Checkbox, Select, Card } from '@radix-ui/themes';
+import { useTranslation } from 'react-i18next';
 import { Upload, X, Check, Paperclip } from 'lucide-react';
 import { MessageAttachment, CreateAttachmentRequest } from '@/types/messaging';
 
@@ -26,6 +27,7 @@ export const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
   maxFiles = 10,
   allowedTypes = ['image/*', 'application/pdf', 'text/*', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']
 }) => {
+  const { t } = useTranslation('translations');
   const [attachments, setAttachments] = useState<CreateAttachmentRequest[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
@@ -39,7 +41,7 @@ export const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
 
     // Check file count limit
     if (attachments.length + files.length > maxFiles) {
-      alert(`Maximum ${maxFiles} files allowed`);
+      alert(t('messaging.maxFilesExceeded').replace('{max}', maxFiles.toString()));
       return;
     }
 
@@ -50,13 +52,15 @@ export const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
     for (const file of files) {
       // Check file size
       if (file.size > maxFileSize) {
-        alert(`File ${file.name} is too large. Maximum size is ${formatFileSize(maxFileSize)}`);
+        alert(t('messaging.fileTooLarge')
+          .replace('{fileName}', file.name)
+          .replace('{maxSize}', formatFileSize(maxFileSize)));
         continue;
       }
 
       // Check file type
       if (!isFileTypeAllowed(file.type, allowedTypes)) {
-        alert(`File type ${file.type} is not allowed`);
+        alert(t('messaging.fileTypeNotAllowed').replace('{fileType}', file.type));
         continue;
       }
 
@@ -82,15 +86,17 @@ export const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
               r2Key: result.data.key
             });
           } else {
-            setUploadError(`Failed to upload ${file.name}: Invalid response format`);
+            setUploadError(t('messaging.uploadFailedInvalidResponse').replace('{fileName}', file.name));
           }
         } else {
           const error = await response.json() as { error: string };
-          setUploadError(`Failed to upload ${file.name}: ${error.error}`);
+          setUploadError(t('messaging.uploadFailedWithError')
+            .replace('{fileName}', file.name)
+            .replace('{error}', error.error));
         }
       } catch (error) {
         console.error('Upload error:', error);
-        setUploadError(`Failed to upload ${file.name}`);
+        setUploadError(t('messaging.uploadFailed').replace('{fileName}', file.name));
       }
     }
 
@@ -149,13 +155,13 @@ export const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
               <Paperclip style={{ width: '2rem', height: '2rem', color: 'var(--gray-9)' }} />
               <Flex direction="column" gap="2">
                 <Text size="4" weight="medium">
-                  {isUploading ? 'Uploading...' : 'Click to attach files'}
+                  {isUploading ? t('messaging.uploading') : t('messaging.clickToAttachFiles')}
                 </Text>
                 <Text size="2" color="gray">
-                  Supports images, documents, and other file types
+                  {t('messaging.supportsFileTypes')}
                 </Text>
                 <Text size="1" color="gray">
-                  Max file size: {formatFileSize(maxFileSize)}
+                  {t('messaging.maxFileSize').replace('{maxSize}', formatFileSize(maxFileSize))}
                 </Text>
               </Flex>
             </Flex>
