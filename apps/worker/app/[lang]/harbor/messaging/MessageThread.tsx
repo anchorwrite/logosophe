@@ -224,7 +224,7 @@ export function MessageThread({ message, userEmail, tenantId, onClose, onMessage
                 <Box>
                   <Text size="2" color="gray" mb="2">{t('messaging.to')}: </Text>
                   {isLoadingRecipients ? (
-                    <Text size="3" color="gray">Loading recipients...</Text>
+                    <Text size="3" color="gray">{t('messaging.loadingRecipients')}</Text>
                   ) : recipients.length > 0 ? (
                     <Text size="3">
                       {recipients.map((recipient, index) => (
@@ -235,7 +235,7 @@ export function MessageThread({ message, userEmail, tenantId, onClose, onMessage
                       ))}
                     </Text>
                   ) : (
-                    <Text size="3" color="gray">No recipients found</Text>
+                    <Text size="3" color="gray">{t('messaging.noRecipientsFound')}</Text>
                   )}
                 </Box>
 
@@ -253,7 +253,7 @@ export function MessageThread({ message, userEmail, tenantId, onClose, onMessage
                   <Box>
                     <Text size="2" color="gray" mb="2">{t('messaging.attachments')}</Text>
                     {isLoadingAttachments ? (
-                      <Text size="3" color="gray">Loading attachments...</Text>
+                      <Text size="3" color="gray">{t('messaging.loadingAttachments')}</Text>
                     ) : attachments.length > 0 ? (
                       <MessageAttachments 
                         attachments={attachments}
@@ -261,7 +261,7 @@ export function MessageThread({ message, userEmail, tenantId, onClose, onMessage
                         canDelete={false}
                       />
                     ) : (
-                      <Text size="3" color="gray">No attachments found</Text>
+                      <Text size="3" color="gray">{t('messaging.noAttachmentsFound')}</Text>
                     )}
                     {/* Debug info */}
                     <Text size="1" color="gray" mt="2">

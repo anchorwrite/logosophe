@@ -2,6 +2,7 @@
 
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Box, Button, Flex, Heading, Text, TextField, TextArea } from '@radix-ui/themes';
+import { useTranslation } from 'react-i18next';
 import { FileAttachmentManager } from './FileAttachmentManager';
 import { MessageLinkSharing } from './MessageLinkSharing';
 import { CreateAttachmentRequest } from '@/types/messaging';
@@ -34,6 +35,7 @@ export const UnifiedMessageComposer: React.FC<UnifiedMessageComposerProps> = ({
   maxRecipients = 10,
   lang
 }) => {
+  const { t } = useTranslation('translations');
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
   const [selectedRecipients, setSelectedRecipients] = useState<string[]>([]);
@@ -58,22 +60,22 @@ export const UnifiedMessageComposer: React.FC<UnifiedMessageComposerProps> = ({
 
   const handleSend = useCallback(() => {
     if (!subject.trim()) {
-      setError('Subject is required');
+      setError(t('messaging.subjectRequired'));
       return;
     }
 
     if (!body.trim() && selectedAttachments.length === 0 && selectedLinks.length === 0) {
-      setError('Message body, attachments, or links are required');
+      setError(t('messaging.messageBodyRequired'));
       return;
     }
 
     if (selectedRecipients.length === 0) {
-      setError('At least one recipient is required');
+      setError(t('messaging.recipientRequired'));
       return;
     }
 
     if (selectedRecipients.length > maxRecipients) {
-      setError(`Maximum ${maxRecipients} recipients allowed`);
+      setError(t('messaging.maxRecipientsExceeded').replace('{max}', maxRecipients.toString()));
       return;
     }
 
@@ -104,7 +106,7 @@ export const UnifiedMessageComposer: React.FC<UnifiedMessageComposerProps> = ({
   return (
     <Box className="unified-message-composer">
       <Flex direction="column" gap="4">
-        <Heading size="4">Compose Message</Heading>
+        <Heading size="4">{t('messaging.composeMessage')}</Heading>
         
         {error && (
           <Box p="3" style={{ 
@@ -133,7 +135,7 @@ export const UnifiedMessageComposer: React.FC<UnifiedMessageComposerProps> = ({
         {/* Recipients */}
         <Box>
           <Text size="2" weight="bold" mb="2">
-            Recipients ({selectedRecipients.length}/{maxRecipients})
+            {t('messaging.recipients')} ({selectedRecipients.length}/{maxRecipients})
           </Text>
           
           <Box style={{ 
@@ -176,11 +178,11 @@ export const UnifiedMessageComposer: React.FC<UnifiedMessageComposerProps> = ({
 
         {/* Message Body */}
         <Box>
-          <Text size="2" weight="bold" mb="2">Message</Text>
+          <Text size="2" weight="bold" mb="2">{t('messaging.message')}</Text>
           <Box style={{ minHeight: '120px' }}>
             <TextArea
               name="messageBody"
-              placeholder="Type your message here..."
+              placeholder={t('messaging.typeYourMessage')}
               value={body}
               onChange={(e: React.ChangeEvent<HTMLInputElement> | React.ChangeEvent<HTMLTextAreaElement>) => setBody(e.target.value)}
               rows={4}
@@ -190,7 +192,7 @@ export const UnifiedMessageComposer: React.FC<UnifiedMessageComposerProps> = ({
 
         {/* Attachments */}
         <Box>
-          <Text size="2" weight="bold" mb="2">Attachments</Text>
+          <Text size="2" weight="bold" mb="2">{t('messaging.attachments')}</Text>
           <FileAttachmentManager
             tenantId={tenantId}
             userEmail={userEmail}
@@ -228,13 +230,13 @@ export const UnifiedMessageComposer: React.FC<UnifiedMessageComposerProps> = ({
             onClick={handleCancel}
             disabled={isSending}
           >
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button 
             onClick={handleSend}
             disabled={!canSend || isSending}
           >
-            {isSending ? 'Sending...' : 'Send Message'}
+            {isSending ? t('messaging.sending') : t('messaging.send')}
           </Button>
         </Flex>
       </Flex>

@@ -654,7 +654,7 @@ export function SubscriberMessagingInterface({
                     backgroundColor: sseConnected ? 'var(--green-9)' : 'var(--red-9)' 
                   }} 
                 />
-                {sseConnected ? 'Real-time Connected' : 'Real-time Disconnected'}
+                {sseConnected ? t('messaging.realTimeConnected') : t('messaging.realTimeDisconnected')}
               </Badge>
               {/* Connection status is now handled by the shared MessagingContext */}
             </Flex>
@@ -663,7 +663,7 @@ export function SubscriberMessagingInterface({
             {t('messaging.tenantOnly').replace('{tenant}', userTenantName)}
             {sseConnected && (
               <span style={{ color: 'var(--green-9)', marginLeft: '0.5rem' }}>
-                • Real-time updates active
+                {t('messaging.realTimeUpdatesActive')}
               </span>
             )}
           </Text>

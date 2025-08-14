@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/common/Button';
 import { CreateLinkRequest, LinkPreview } from '@/types/messaging';
 
@@ -24,6 +25,7 @@ export const LinkAttachmentManager: React.FC<LinkAttachmentManagerProps> = ({
   existingLinks = [],
   maxLinks = 5
 }) => {
+  const { t } = useTranslation('translations');
   const [links, setLinks] = useState<CreateLinkRequest[]>(existingLinks);
   const [newUrl, setNewUrl] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -31,12 +33,12 @@ export const LinkAttachmentManager: React.FC<LinkAttachmentManagerProps> = ({
 
   const handleAddLink = useCallback(async () => {
     if (!newUrl.trim()) {
-      setError('Please enter a URL');
+      setError(t('messaging.pleaseEnterUrl'));
       return;
     }
 
     if (links.length >= maxLinks) {
-      setError(`Maximum ${maxLinks} links allowed`);
+      setError(t('messaging.maximumLinksAllowed').replace('{max}', maxLinks.toString()));
       return;
     }
 
@@ -44,7 +46,7 @@ export const LinkAttachmentManager: React.FC<LinkAttachmentManagerProps> = ({
     try {
       new URL(newUrl);
     } catch {
-      setError('Please enter a valid URL');
+      setError(t('messaging.pleaseEnterValidUrl'));
       return;
     }
 
@@ -75,15 +77,15 @@ export const LinkAttachmentManager: React.FC<LinkAttachmentManagerProps> = ({
           onLinksChange(updatedLinks);
           setNewUrl('');
         } else {
-          setError(result.error || 'Failed to process link');
+          setError(result.error || t('messaging.failedToProcessLink'));
         }
       } else {
         const error = await response.json() as { error: string };
-        setError(error.error || 'Failed to process link');
+        setError(error.error || t('messaging.failedToProcessLink'));
       }
     } catch (error) {
       console.error('Error processing link:', error);
-      setError('Failed to process link');
+      setError(t('messaging.failedToProcessLink'));
     } finally {
       setIsProcessing(false);
     }
@@ -119,7 +121,7 @@ export const LinkAttachmentManager: React.FC<LinkAttachmentManagerProps> = ({
             onClick={handleAddLink}
             color="#fff"
           >
-            {isProcessing ? 'Processing...' : 'Add Link'}
+            {isProcessing ? t('messaging.processing') : t('messaging.addLink')}
           </Button>
         </div>
         
@@ -133,7 +135,7 @@ export const LinkAttachmentManager: React.FC<LinkAttachmentManagerProps> = ({
 
       {links.length > 0 && (
         <div className="links-list">
-          <h4>Attached Links ({links.length}/{maxLinks})</h4>
+          <h4>{t('messaging.attachedLinks').replace('{count}', links.length.toString()).replace('{max}', maxLinks.toString())}</h4>
           {links.map((link, index) => (
             <div key={index} className="link-item">
               <div className="link-info">
