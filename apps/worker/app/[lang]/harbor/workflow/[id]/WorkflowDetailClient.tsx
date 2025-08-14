@@ -10,6 +10,7 @@ import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { useToast } from '@/components/Toast';
 import MediaFileSelector from '@/components/MediaFileSelector';
 import WorkflowInvitations from '@/components/WorkflowInvitations';
+import { useWorkflowReadTracking } from '@/hooks/useWorkflowReadTracking';
 
 import { Eye, Download, Paperclip } from 'lucide-react';
 
@@ -92,6 +93,12 @@ export function WorkflowDetailClient({ workflowId, userEmail, userTenantId, lang
       i18n.changeLanguage(lang);
     }
   }, [lang, i18n]);
+
+  // Auto-mark workflow messages as read when this component mounts
+  useWorkflowReadTracking({ 
+    workflowId, 
+    autoMarkAsRead: true 
+  });
   const [workflow, setWorkflow] = useState<Workflow | null>(null);
   const [participants, setParticipants] = useState<any[]>([]);
   const [messages, setMessages] = useState<WorkflowMessage[]>([]);
