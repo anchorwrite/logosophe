@@ -55,7 +55,7 @@ export const LinkAttachmentManager: React.FC<LinkAttachmentManagerProps> = ({
 
     try {
       // Process the link to get metadata
-      const response = await fetch('/api/messaging/process-link', {
+              const response = await fetch('/api/harbor/messaging/process-link', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

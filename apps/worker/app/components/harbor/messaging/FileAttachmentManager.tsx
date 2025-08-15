@@ -69,7 +69,7 @@ export const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
         formData.append('file', file);
         formData.append('tenantId', tenantId);
 
-        const response = await fetch('/api/messaging/upload', {
+        const response = await fetch('/api/harbor/messaging/upload', {
           method: 'POST',
           body: formData,
         });

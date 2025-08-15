@@ -10,8 +10,8 @@ This document outlines the plan to upgrade the user-facing messaging feature in 
 
 ## Current Architecture
 The messaging system currently uses a traditional request-response pattern:
-- Messages are sent via POST to `/api/messaging/send`
-- Messages are retrieved via GET from `/api/messages` and `/api/messaging/messages`
+- Messages are sent via POST to `/api/harbor/messaging/send` (subscribers) or `/api/dashboard/messaging/send` (admins)
+- Messages are retrieved via GET from `/api/harbor/messaging/messages` (subscribers) or `/api/dashboard/messaging/messages` (admins)
 - UI components manually refresh or poll for updates
 - No real-time updates are available
 - **Current Limitations**: No file attachment support, no link sharing capabilities
@@ -26,7 +26,7 @@ The messaging system currently uses a traditional request-response pattern:
 ### 1. Core SSE Infrastructure
 
 #### 1.1 SSE Endpoint Creation
-- **Endpoint**: `/api/messaging/stream/[tenantId]/route.ts`
+- **Endpoint**: `/api/harbor/messaging/stream/[tenantId]/route.ts`
 - **Purpose**: Establish persistent SSE connections for real-time message updates
 - **Security**: Tenant-scoped, user authentication required
 - **Pattern**: Follow existing workflow SSE implementation in `/api/workflow/[id]/stream/route.ts`
@@ -46,7 +46,7 @@ The messaging system currently uses a traditional request-response pattern:
 - `message:attachment:removed` - File attachment removed from message
 
 #### 2.2 Broadcasting Triggers
-- **Message Send**: Broadcast `message:new` when `/api/messaging/send` is called
+- **Message Send**: Broadcast `message:new` when `/api/harbor/messaging/send` is called
 - **Read Status**: Broadcast `message:read` when marking messages as read
 - **Message Actions**: Broadcast appropriate events for delete/update operations
 - **File Attachments**: Broadcast `message:attachment:added` when files are attached
@@ -90,10 +90,10 @@ ALTER TABLE Messages ADD COLUMN AttachmentCount INTEGER DEFAULT 0;
 ```
 
 #### 3.2 File Attachment API Endpoints
-- **POST** `/api/messaging/attachments/upload` - Upload new files from desktop
-- **POST** `/api/messaging/attachments/attach` - Attach existing media library files
-- **DELETE** `/api/messaging/attachments/[id]` - Remove attachment from message
-- **GET** `/api/messaging/attachments/[messageId]` - Get attachments for a message
+- **POST** `/api/harbor/messaging/attachments/upload` - Upload new files from desktop
+- **POST** `/api/harbor/messaging/attachments/attach` - Attach existing media library files
+- **DELETE** `/api/harbor/messaging/attachments/[id]` - Remove attachment from message
+- **GET** `/api/harbor/messaging/attachments/[messageId]` - Get attachments for a message
 
 #### 3.3 File Attachment Types
 - **Media Library Files**: Select from existing files in user's media library
@@ -134,8 +134,8 @@ CREATE TABLE IF NOT EXISTS MessageLinks (
 ```
 
 #### 4.3 Link Processing API
-- **POST** `/api/messaging/links/process` - Process and validate links
-- **GET** `/api/messaging/links/preview` - Get link preview metadata
+- **POST** `/api/harbor/messaging/links/process` - Process and validate links
+- **GET** `/api/harbor/messaging/links/preview` - Get link preview metadata
 - **Link Preview Service**: External service for fetching link metadata
 
 #### 4.4 Link Display Features
@@ -170,7 +170,7 @@ CREATE TABLE IF NOT EXISTS MessageLinks (
 
 #### 6.1 Unread Message Indicator
 - **Location**: Add messaging navigation item to harbor appbar with unread count badge
-- **API Endpoint**: Create `/api/messaging/unread-count/route.ts` for fetching unread count
+- **API Endpoint**: Create `/api/harbor/messaging/unread-count/route.ts` for fetching unread count
 - **Real-Time Updates**: Use SSE to update unread count badge in real-time
 - **Navigation**: Link directly to messaging interface from appbar
 
@@ -208,7 +208,7 @@ CREATE TABLE IF NOT EXISTS MessageLinks (
 
 ### Phase 1: Core SSE Infrastructure & Database Schema (Week 1)
 1. Create database migration for new attachment and link tables
-2. Create `/api/messaging/stream/[tenantId]/route.ts`
+2. Create `/api/harbor/messaging/stream/[tenantId]/route.ts`
 3. Implement connection management system
 4. Set up event broadcasting framework
 5. Add basic event types and payloads
@@ -243,7 +243,7 @@ CREATE TABLE IF NOT EXISTS MessageLinks (
 - Security and access control for links
 
 ### Phase 4: Event Integration & SSE Broadcasting (Week 4) ✅ COMPLETED
-1. ✅ Update `/api/messaging/send/route.ts` to broadcast events
+1. ✅ Update `/api/harbor/messaging/send/route.ts` to broadcast events
 2. ✅ Integrate event broadcasting with file attachments and links
 3. ✅ Test event flow and connection management
 4. ✅ Implement error handling and fallbacks
@@ -284,7 +284,7 @@ CREATE TABLE IF NOT EXISTS MessageLinks (
 - Professional connection status display
 
 ### Phase 6: Harbor Appbar Integration (Week 6) ✅ COMPLETED
-1. ✅ Create `/api/messaging/unread-count/route.ts` endpoint (enhanced)
+1. ✅ Create `/api/harbor/messaging/unread-count/route.ts` endpoint (enhanced)
 2. ✅ Implement `useUnreadMessageCount` custom hook (enhanced with SSE)
 3. ✅ Update harbor appbar to include messaging navigation with unread indicator
 4. ✅ Integrate SSE updates for real-time badge updates
@@ -378,6 +378,33 @@ MessageRecipients.DeletedAt DATETIME
 - File storage and processing scalability
 - Link preview service performance
 - Horizontal scaling capabilities
+
+## API Route Reorganization ✅ COMPLETED
+
+### New API Structure
+The messaging system has been reorganized to provide clear separation between harbor (subscriber) and dashboard (admin) functionality:
+
+**Harbor Messaging APIs** (`/api/harbor/messaging/*`):
+- `/api/harbor/messaging/send` - Send messages (subscribers)
+- `/api/harbor/messaging/stream/[tenantId]` - SSE streaming
+- `/api/harbor/messaging/unread-count` - Unread message count
+- `/api/harbor/messaging/attachments/*` - File attachment management
+- `/api/harbor/messaging/links/*` - Link sharing functionality
+- `/api/harbor/messaging/messages/[id]` - Individual message operations
+
+**Dashboard Messaging APIs** (`/api/dashboard/messaging/*`):
+- `/api/dashboard/messaging/send` - Send messages (admins)
+- `/api/dashboard/messaging/messages/[id]` - Message management (admins)
+- `/api/dashboard/messaging/blocks/*` - User blocking management
+- `/api/dashboard/messaging/recipients` - Recipient management
+- `/api/dashboard/messaging/system` - System controls
+- `/api/dashboard/messaging/route.ts` - Dashboard statistics
+
+### Benefits of Reorganization
+- **Clear Separation**: Harbor and dashboard functionality are completely separate
+- **No Route Conflicts**: Each interface has its own API namespace
+- **Maintainability**: Easier to maintain and extend each interface independently
+- **Security**: Clear access control boundaries between subscriber and admin APIs
 
 ## Current Implementation Status
 
@@ -640,8 +667,8 @@ LEFT JOIN MessageRecipients mr ON m.Id = mr.MessageId AND mr.IsDeleted = FALSE
 **Solution Implemented**: Updated all relevant SSE polling queries to include proper deletion filtering:
 
 **Files Updated**:
-- `apps/worker/app/api/messaging/stream/[tenantId]/route.ts`
-- `apps/worker/app/api/messaging/unread-count/route.ts`
+- `apps/worker/app/api/harbor/messaging/stream/[tenantId]/route.ts`
+- `apps/worker/app/api/harbor/messaging/unread-count/route.ts`
 
 **Query Fixes Applied**:
 ```sql
@@ -791,9 +818,9 @@ title={unreadCount > 0 ?
 
 ### Redundant API Calls Issue and Solution
 **Problem Identified**: Multiple redundant API calls causing performance issues:
-- **Multiple SSE Stream Connections**: 3+ connections to `/api/messaging/stream/default`
+- **Multiple SSE Stream Connections**: 3+ connections to `/api/harbor/messaging/stream/default`
 - **Excessive Session Checks**: Repeated calls to `/api/auth/session`
-- **Aggressive Unread Count Polling**: Multiple instances polling `/api/messaging/unread-count`
+- **Aggressive Unread Count Polling**: Multiple instances polling `/api/harbor/messaging/unread-count`
 
 **Root Cause**: The `useUnreadMessageCount` hook was used in 3 different components:
 1. `UnreadMessageBadge` - Shows unread count badge
@@ -837,7 +864,7 @@ Error: D1_ERROR: table MessageRecipients has no column named TenantId: SQLITE_ER
 - **`MessageRecipients` table**: Contains individual recipients (many per message) without `TenantId`
 - **Relationship**: `MessageRecipients.MessageId` → `Messages.Id` (foreign key)
 
-**Solution Implemented**: Fixed the INSERT statement in `/api/messaging/send/route.ts`:
+**Solution Implemented**: Fixed the INSERT statement in `/api/harbor/messaging/send/route.ts`:
 - **Before**: `INSERT INTO MessageRecipients (MessageId, RecipientEmail, TenantId)`
 - **After**: `INSERT INTO MessageRecipients (MessageId, RecipientEmail)`
 - **Result**: Proper database normalization where tenant context flows from `Messages.TenantId` → `MessageRecipients` through foreign key relationship
@@ -881,7 +908,7 @@ Error: D1_ERROR: table MessageRecipients has no column named TenantId: SQLITE_ER
 - **`UserRoles` table**: role `subscriber` (additional capability)
 - **Expected Behavior**: Should have messaging access due to `subscriber` role
 
-**Solution Implemented**: Fixed the access control logic in `/api/messaging/send/route.ts`:
+**Solution Implemented**: Fixed the access control logic in `/api/harbor/messaging/send/route.ts`:
 - **Before**: Only checked `TenantUsers` table for tenant membership
 - **After**: Checks both tables following the `.cursorules` pattern:
   1. **System Admin**: Full access to all tenants
@@ -926,7 +953,7 @@ if (await isTenantAdminFor(userEmail, tenantId)) {
 - **`TenantUsers` table**: role `user` (base tenant membership)
 - **Expected Behavior**: Should be a valid recipient for subscriber messaging
 
-**Solution Implemented**: Fixed the recipient validation logic in `/api/messaging/send/route.ts`:
+**Solution Implemented**: Fixed the recipient validation logic in `/api/harbor/messaging/send/route.ts`:
 - **Before**: Only checked `TenantUsers` table for recipient validation
 - **After**: Checks both tables following the same pattern as access control:
   1. **Tenant Users**: Recipients found in `TenantUsers` table

@@ -30,7 +30,7 @@ export function SystemControlsClient({ initialData }: SystemControlsClientProps)
 
   const updateSetting = async (setting: keyof SystemSettings, value: any) => {
     try {
-      const response = await fetch('/api/messaging/system', {
+      const response = await fetch('/api/dashboard/messaging/system', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

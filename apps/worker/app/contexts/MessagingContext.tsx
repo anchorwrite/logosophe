@@ -41,7 +41,7 @@ export function MessagingProvider({ children }: MessagingProviderProps) {
     setError(null);
 
     try {
-      const response = await fetch('/api/messaging/unread-count', {
+      const response = await fetch('/api/harbor/messaging/unread-count', {
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
@@ -94,7 +94,7 @@ export function MessagingProvider({ children }: MessagingProviderProps) {
     const connectSSE = async () => {
       try {
         // Get user's tenant ID from the unread count endpoint
-        const response = await fetch('/api/messaging/unread-count', {
+        const response = await fetch('/api/harbor/messaging/unread-count', {
           credentials: 'include',
         });
         
@@ -114,7 +114,7 @@ export function MessagingProvider({ children }: MessagingProviderProps) {
         }
 
         // Create SSE connection
-        const sseUrl = `/api/messaging/stream/${userTenantId}`;
+        const sseUrl = `/api/harbor/messaging/stream/${userTenantId}`;
         const eventSource = new EventSource(sseUrl);
         eventSourceRef.current = eventSource;
 

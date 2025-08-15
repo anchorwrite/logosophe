@@ -40,7 +40,7 @@ export function MessageThread({
   useEffect(() => {
     const fetchRecipients = async () => {
       try {
-        const response = await fetch(`/api/messaging/messages/${message.Id}/recipients`);
+        const response = await fetch(`/api/dashboard/messaging/messages/${message.Id}/recipients`);
         if (response.ok) {
           const data = await response.json() as { recipients: MessageRecipient[] };
           setRecipients(data.recipients || []);
@@ -72,9 +72,13 @@ export function MessageThread({
     if (!canRecall) return;
 
     try {
-      const response = await fetch(`/api/messaging/messages/${message.Id}/recall`, {
-        method: 'POST',
-      });
+                      const response = await fetch(`/api/dashboard/messaging/messages/${message.Id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ action: 'recall' }),
+        });
 
       if (response.ok) {
         // Update UI to show recalled status

@@ -106,7 +106,7 @@ export function SubscriberMessagingInterface({
     const pollForNewMessages = async () => {
       try {
         // Fetch recent messages to check for updates
-        const response = await fetch(`/api/messaging/get?tenantId=${userTenantId}&limit=50`);
+        const response = await fetch(`/api/harbor/messaging/get?tenantId=${userTenantId}&limit=50`);
         if (response.ok) {
           const data = await response.json() as { success: boolean; messages?: RecentMessage[] };
           console.log('Polling response:', data);
@@ -456,7 +456,7 @@ export function SubscriberMessagingInterface({
     setError(null);
 
     try {
-      const response = await fetch('/api/messaging/send', {
+              const response = await fetch('/api/harbor/messaging/send', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -524,7 +524,7 @@ export function SubscriberMessagingInterface({
 
   const handleMarkAsRead = async (messageId: number) => {
     try {
-      const response = await fetch(`/api/messaging/mark-read`, {
+              const response = await fetch(`/api/harbor/messaging/mark-read`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -554,7 +554,7 @@ export function SubscriberMessagingInterface({
     }
 
     try {
-      const response = await fetch(`/api/messaging/messages/${messageId}/delete`, {
+              const response = await fetch(`/api/harbor/messaging/messages/${messageId}/delete`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -582,7 +582,7 @@ export function SubscriberMessagingInterface({
 
   const handleArchiveMessage = async (messageId: number) => {
     try {
-      const response = await fetch(`/api/messaging/messages/${messageId}/archive`, {
+              const response = await fetch(`/api/harbor/messaging/messages/${messageId}/archive`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -728,7 +728,7 @@ export function SubscriberMessagingInterface({
                     links: messageData.links
                   };
                   
-                  const response = await fetch('/api/messaging/send', {
+                  const response = await fetch('/api/harbor/messaging/send', {
                     method: 'POST',
                     headers: {
                       'Content-Type': 'application/json',
