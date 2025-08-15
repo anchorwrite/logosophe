@@ -70,53 +70,47 @@ export function UnreadWorkflowBadge({
         }}
         title={sseConnected ? 'Workflow updates active' : 'Workflow updates disconnected'}
       >
-        {/* Left asterisk */}
-        <Text 
-          size="1" 
+        {/* Left square */}
+        <Box 
           style={{
-            color: sseConnected ? 'var(--green-9)' : 'var(--orange-9)',
-            fontWeight: 'bold',
-            fontSize: '12px'
+            width: '6px',
+            height: '6px',
+            backgroundColor: sseConnected ? 'var(--green-9)' : 'var(--orange-9)',
+            opacity: 0.8
           }}
-        >
-          *
-        </Text>
+        />
         
-        {/* Unread count number */}
-        {unreadCount > 0 && (
-          <Badge 
-            color="red" 
-            size="1" 
-            style={{ 
-              minWidth: badgeSize.width, 
-              height: badgeSize.height, 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'center',
-              fontSize: badgeSize.fontSize,
-              fontWeight: 'bold',
-              borderRadius: '4px',
-              border: '1px solid white',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
-              margin: '0 2px'
-            }}
-            title={`${unreadCount} unread workflow message${unreadCount === 1 ? '' : 's'}`}
-          >
-            {unreadCount > 99 ? '99+' : unreadCount}
-          </Badge>
-        )}
-        
-        {/* Right asterisk */}
-        <Text 
+        {/* Unread count number - always show, even when 0 */}
+        <Badge 
+          color={unreadCount > 0 ? "red" : "gray"} 
           size="1" 
-          style={{
-            color: sseConnected ? 'var(--green-9)' : 'var(--orange-9)',
+          style={{ 
+            minWidth: badgeSize.width, 
+            height: badgeSize.height, 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center',
+            fontSize: badgeSize.fontSize,
             fontWeight: 'bold',
-            fontSize: '12px'
+            borderRadius: '4px',
+            border: '1px solid white',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+            margin: '0 2px'
           }}
+          title={unreadCount > 0 ? `${unreadCount} unread workflow message${unreadCount === 1 ? '' : 's'}` : 'No unread workflow messages'}
         >
-          *
-        </Text>
+          {unreadCount > 99 ? '99+' : unreadCount}
+        </Badge>
+        
+        {/* Right square */}
+        <Box 
+          style={{
+            width: '6px',
+            height: '6px',
+            backgroundColor: sseConnected ? 'var(--green-9)' : 'var(--orange-9)',
+            opacity: 0.8
+          }}
+        />
       </Box>
       
       {variant === 'detailed' && (
@@ -125,19 +119,7 @@ export function UnreadWorkflowBadge({
         </Text>
       )}
       
-      {showConnectionStatus && (
-        <Box 
-          style={{ 
-            width: '6px', 
-            height: '6px', 
-            borderRadius: '50%', 
-            backgroundColor: sseConnected ? 'var(--green-9)' : 'var(--orange-9)',
-            opacity: 0.8,
-            marginLeft: '4px'
-          }} 
-          title={sseConnected ? 'Real-time workflow updates active' : 'Real-time workflow updates disconnected'}
-        />
-      )}
+
       
       {isLoading && (
         <Box 
