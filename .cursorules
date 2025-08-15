@@ -543,6 +543,17 @@ tenant_users:
   - Tenant admins can send broadcast/announcement messages
   - Regular users need explicit 'message:send' permission
 
+### API Route Organization
+- **Harbor Messaging** (`/api/harbor/messaging/*`): Subscriber-facing messaging functionality
+  - Real-time messaging with SSE streaming
+  - File attachments and link sharing
+  - User message composition and management
+- **Dashboard Messaging** (`/api/dashboard/messaging/*`): Admin-facing messaging management
+  - System-wide message management
+  - User blocking and recipient management
+  - System controls and statistics
+- **Clear Separation**: No route conflicts between harbor and dashboard APIs
+
 
 ## Messaging Features
 - Real-time messaging with FIFO queue for offline users
@@ -580,13 +591,28 @@ tenant_users:
 - Admin-only access to system controls
 
 ## API Endpoint Structure
-- /api/messages: Main messaging (GET, POST)
-- /api/messages/[id]: Individual message operations (GET, PUT, DELETE, POST for recall)
-- /api/messages/blocks: User blocking (GET, POST, DELETE)
-- /api/messages/recipients: Recipient listing (GET)
-- /api/messages/system: System controls (GET, PUT, POST for cleanup)
-- All endpoints require authentication and proper tenant access
-- Consistent error handling and logging patterns
+
+### Harbor Messaging APIs (Subscribers)
+- `/api/harbor/messaging/send`: Send messages (POST)
+- `/api/harbor/messaging/stream/[tenantId]`: SSE streaming for real-time updates
+- `/api/harbor/messaging/unread-count`: Get unread message count (GET)
+- `/api/harbor/messaging/attachments/*`: File attachment management
+- `/api/harbor/messaging/links/*`: Link sharing functionality
+- `/api/harbor/messaging/messages/[id]`: Individual message operations (GET, PUT, DELETE)
+
+### Dashboard Messaging APIs (Admins)
+- `/api/dashboard/messaging/send`: Send messages (POST)
+- `/api/dashboard/messaging/messages/[id]`: Message management (GET, PUT, DELETE)
+- `/api/dashboard/messaging/blocks/*`: User blocking management
+- `/api/dashboard/messaging/recipients`: Recipient listing (GET)
+- `/api/dashboard/messaging/system`: System controls (GET, PUT, POST for cleanup)
+- `/api/dashboard/messaging/route.ts`: Dashboard statistics (GET)
+
+### API Design Principles
+- **Clear Separation**: Harbor and dashboard APIs are completely separate
+- **No Route Conflicts**: Each interface has its own namespace
+- **Consistent Patterns**: All endpoints require authentication and proper tenant access
+- **Error Handling**: Consistent error handling and logging patterns across all APIs
 
 ## Logging Integration
 - Uses existing SystemLogs table for messaging activities

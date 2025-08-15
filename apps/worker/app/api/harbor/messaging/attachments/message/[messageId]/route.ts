@@ -113,10 +113,10 @@ export async function GET(
       r2Key: attachment.R2Key as string,
       uploadDate: attachment.UploadDate as string,
       // Generate download URL using the new messaging-specific endpoints
-      downloadUrl: `/api/messaging/attachments/${attachment.Id}/download`,
+                downloadUrl: `/api/harbor/messaging/attachments/${attachment.Id}/download`,
       // Generate preview URL for supported file types
       previewUrl: (attachment.ContentType as string).startsWith('image/') ? 
-        `/api/messaging/attachments/${attachment.Id}/preview` : null
+        `/api/harbor/messaging/attachments/${attachment.Id}/preview` : null
     })) || [];
 
     return new Response(JSON.stringify({

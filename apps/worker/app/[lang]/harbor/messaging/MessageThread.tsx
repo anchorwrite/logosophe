@@ -62,7 +62,7 @@ export function MessageThread({ message, userEmail, tenantId, onClose, onMessage
 
     const fetchRecipients = async () => {
       try {
-        const response = await fetch(`/api/messaging/messages/${message.Id}/recipients`);
+        const response = await fetch(`/api/harbor/messaging/messages/${message.Id}/recipients`);
         if (response.ok) {
           const data = await response.json() as { recipients: Array<{ Email: string; Name?: string }> };
           setRecipients(data.recipients || []);
@@ -108,7 +108,7 @@ export function MessageThread({ message, userEmail, tenantId, onClose, onMessage
       const fetchAttachments = async () => {
         setIsLoadingAttachments(true);
         try {
-          const response = await fetch(`/api/messaging/attachments/message/${message.Id}?tenantId=${tenantId}`);
+          const response = await fetch(`/api/harbor/messaging/attachments/message/${message.Id}?tenantId=${tenantId}`);
           if (response.ok) {
             const data = await response.json() as { attachments: MessageAttachment[] };
             console.log('API response for attachments:', data);
@@ -141,7 +141,7 @@ export function MessageThread({ message, userEmail, tenantId, onClose, onMessage
     setError(null);
 
     try {
-      const response = await fetch('/api/messaging/send', {
+              const response = await fetch('/api/harbor/messaging/send', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

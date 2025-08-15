@@ -168,7 +168,7 @@ export function useUnreadMessageCount() {
         }
 
         // Create new SSE connection
-        const sseUrl = `/api/messaging/stream/${userTenantId}`;
+        const sseUrl = `/api/harbor/messaging/stream/${userTenantId}`;
         globalEventSource = new EventSource(sseUrl);
         globalConnectionTenantId = userTenantId;
         globalConnectionCount = 1;

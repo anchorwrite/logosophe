@@ -55,7 +55,7 @@ export function CreateBlockClient({ accessibleTenants, tenantUsers, currentUserE
         for (const tenantId of accessibleTenants) {
           try {
             console.log(`Attempting to block user in tenant: ${tenantId}`);
-            const response = await fetch('/api/messages/blocks', {
+            const response = await fetch('/api/dashboard/messaging/blocks', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -94,7 +94,7 @@ export function CreateBlockClient({ accessibleTenants, tenantUsers, currentUserE
         }
       } else {
         // Block user in specific tenant
-        const response = await fetch('/api/messages/blocks', {
+        const response = await fetch('/api/dashboard/messaging/blocks', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

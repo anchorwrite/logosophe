@@ -164,6 +164,12 @@ export default async function MessagingAdminPage() {
               <Heading size="3">-</Heading>
             </Box>
           </Card>
+          <Card style={{ flex: '1', minWidth: '200px' }}>
+            <Box style={{ padding: '1rem' }}>
+              <Text size="2" color="gray">Messages with Attachments</Text>
+              <Heading size="3">-</Heading>
+            </Box>
+          </Card>
         </Flex>
       </Box>
     </Container>

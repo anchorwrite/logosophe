@@ -22,11 +22,13 @@ interface SystemSettings {
 
 interface MessageComposerProps {
   recipients: Recipient[];
+  accessibleTenants: string[];
   onSend: (messageData: {
     subject: string;
     body: string;
     recipients: string[];
     messageType: string;
+    tenantId?: string;
   }) => void;
   onCancel: () => void;
   systemSettings: SystemSettings;
@@ -34,6 +36,7 @@ interface MessageComposerProps {
 
 export function MessageComposer({
   recipients,
+  accessibleTenants,
   onSend,
   onCancel,
   systemSettings
@@ -42,10 +45,16 @@ export function MessageComposer({
   const [body, setBody] = useState('');
   const [selectedRecipients, setSelectedRecipients] = useState<string[]>([]);
   const [messageType, setMessageType] = useState('direct');
+  const [selectedTenant, setSelectedTenant] = useState(accessibleTenants.length === 1 ? accessibleTenants[0] : '');
   const [isSending, setIsSending] = useState(false);
 
   const handleSend = async () => {
     if (!subject.trim() || !body.trim() || selectedRecipients.length === 0) {
+      return;
+    }
+
+    if (accessibleTenants.length > 1 && !selectedTenant) {
+      alert('Please select a tenant for this message');
       return;
     }
 
@@ -61,7 +70,8 @@ export function MessageComposer({
         subject: subject.trim(),
         body: body.trim(),
         recipients: selectedRecipients,
-        messageType
+        messageType,
+        tenantId: selectedTenant
       });
       
       // Reset form
@@ -69,6 +79,7 @@ export function MessageComposer({
       setBody('');
       setSelectedRecipients([]);
       setMessageType('direct');
+      setSelectedTenant(accessibleTenants.length === 1 ? accessibleTenants[0] : '');
     } catch (error) {
       console.error('Error sending message:', error);
     } finally {
@@ -120,6 +131,24 @@ export function MessageComposer({
             </Select.Content>
           </Select.Root>
         </Box>
+
+        {/* Tenant Selection (if multiple tenants) */}
+        {accessibleTenants.length > 1 && (
+          <Box>
+            <Text size="2" style={{ marginBottom: '0.5rem' }}>Tenant *</Text>
+            <Select.Root value={selectedTenant} onValueChange={setSelectedTenant}>
+              <Select.Trigger placeholder="Select tenant..." />
+              <Select.Content>
+                {accessibleTenants.map(tenantId => (
+                  <Select.Item key={tenantId} value={tenantId}>{tenantId}</Select.Item>
+                ))}
+              </Select.Content>
+            </Select.Root>
+            <Text size="1" color="gray" style={{ marginTop: '0.25rem' }}>
+              Choose the tenant where this message will be sent
+            </Text>
+          </Box>
+        )}
 
         {/* Subject */}
         <Box>

@@ -33,7 +33,7 @@ export const MessageAttachments: React.FC<MessageAttachmentsProps> = ({
 
     try {
       // Use the messaging-specific download endpoint
-      const response = await fetch(`/api/messaging/attachments/${attachment.Id}/download`);
+              const response = await fetch(`/api/harbor/messaging/attachments/${attachment.Id}/download`);
       
       if (response.ok) {
         const blob = await response.blob();
@@ -65,7 +65,7 @@ export const MessageAttachments: React.FC<MessageAttachmentsProps> = ({
     try {
       // For images, we can show a preview using the messaging-specific preview endpoint
       if (attachment.ContentType.startsWith('image/')) {
-        const response = await fetch(`/api/messaging/attachments/${attachment.Id}/preview`);
+        const response = await fetch(`/api/harbor/messaging/attachments/${attachment.Id}/preview`);
         if (response.ok) {
           const blob = await response.blob();
           const url = window.URL.createObjectURL(blob);
@@ -75,7 +75,7 @@ export const MessageAttachments: React.FC<MessageAttachmentsProps> = ({
         }
       } else {
         // For other file types, try to open in browser or download
-        const response = await fetch(`/api/messaging/attachments/${attachment.Id}/download`);
+        const response = await fetch(`/api/harbor/messaging/attachments/${attachment.Id}/download`);
         if (response.ok) {
           const blob = await response.blob();
           const url = window.URL.createObjectURL(blob);

@@ -66,6 +66,7 @@ export function MessagingInterface({
   const [filterType, setFilterType] = useState<'all' | 'unread' | 'sent' | 'received'>('all');
   const [messages, setMessages] = useState<RecentMessage[]>(recentMessages);
   const [isOnline, setIsOnline] = useState(false);
+  const [isSending, setIsSending] = useState(false);
 
   // Filter messages based on search and filter
   const filteredMessages = messages.filter(message => {
@@ -89,32 +90,53 @@ export function MessagingInterface({
     body: string;
     recipients: string[];
     messageType: string;
+    tenantId?: string;
   }) => {
+    setIsSending(true);
     try {
-      const response = await fetch('/api/messaging/send', {
+      const response = await fetch('/api/dashboard/messaging/send', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(messageData),
+        body: JSON.stringify({
+          ...messageData,
+          tenantId: messageData.tenantId || accessibleTenants[0]
+        }),
       });
 
       if (response.ok) {
-        const newMessage = await response.json() as RecentMessage;
-        setMessages(prev => [newMessage, ...prev]);
-        setIsComposing(false);
+        const result = await response.json() as { success: boolean; message?: string; error?: string };
+        if (result.success) {
+          // Show success message and close composer
+          setIsComposing(false);
+          // Optionally refresh the page to show the new message
+          window.location.reload();
+        } else {
+          console.error('Failed to send message:', result.error);
+          alert(`Failed to send message: ${result.error}`);
+        }
       } else {
-        console.error('Failed to send message:', response.status);
+        const errorData = await response.json().catch(() => ({ error: 'Failed to send message' })) as { error?: string };
+        console.error('Failed to send message:', errorData.error || response.status);
+        alert(`Failed to send message: ${errorData.error || response.statusText}`);
       }
     } catch (error) {
       console.error('Error sending message:', error);
+      alert('Error sending message. Please try again.');
+    } finally {
+      setIsSending(false);
     }
   };
 
   const handleMarkAsRead = async (messageId: number) => {
     try {
-      const response = await fetch(`/api/messaging/messages/${messageId}/read`, {
-        method: 'POST',
+      const response = await fetch(`/api/dashboard/messaging/messages/${messageId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ action: 'mark-read' }),
       });
 
       if (response.ok) {
@@ -136,7 +158,7 @@ export function MessagingInterface({
               Messaging
             </Heading>
             <Text color="gray" size="3">
-              Real-time messaging with your team
+              Admin messaging interface for system management
             </Text>
           </Box>
           <Flex gap="2" align="center">
@@ -144,7 +166,7 @@ export function MessagingInterface({
               {isOnline ? 'Online' : 'Offline'}
             </Badge>
             <Button onClick={() => setIsComposing(true)}>
-              New Message
+              Compose Message
             </Button>
           </Flex>
         </Flex>
@@ -179,7 +201,7 @@ export function MessagingInterface({
         <Card style={{ flex: '1', display: 'flex', flexDirection: 'column' }}>
           <Box style={{ padding: '1.5rem', borderBottom: '1px solid var(--gray-6)' }}>
             <Heading size="4" style={{ marginBottom: '1rem' }}>
-              Messages
+              Recent Messages
             </Heading>
             
             {/* Search and Filters */}
@@ -213,7 +235,7 @@ export function MessagingInterface({
           <Box style={{ flex: '1', overflow: 'auto', padding: '0' }}>
             {filteredMessages.length === 0 ? (
               <Box style={{ textAlign: 'center', padding: '2rem' }}>
-                <Text color="gray">No messages found</Text>
+                <Text color="gray">No recent messages found</Text>
               </Box>
             ) : (
               filteredMessages.map((message) => (
@@ -273,6 +295,7 @@ export function MessagingInterface({
           {isComposing ? (
             <MessageComposer
               recipients={recipients}
+              accessibleTenants={accessibleTenants}
               onSend={handleSendMessage}
               onCancel={() => setIsComposing(false)}
               systemSettings={systemSettings}
@@ -291,7 +314,7 @@ export function MessagingInterface({
               height: '100%',
               color: 'var(--gray-9)'
             }}>
-              <Text>Select a message to view the conversation</Text>
+              <Text>Select a message to view details or compose a new message</Text>
             </Box>
           )}
         </Card>

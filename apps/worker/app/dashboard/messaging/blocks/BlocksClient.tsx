@@ -53,7 +53,7 @@ export function BlocksClient({ initialBlocks, accessibleTenants }: BlocksClientP
     
     setIsDeleting(true);
     try {
-      const response = await fetch(`/api/messages/blocks/${blockToDelete.Id}`, {
+      const response = await fetch(`/api/dashboard/messaging/blocks/${blockToDelete.Id}`, {
         method: 'DELETE',
       });
       
