@@ -90,36 +90,60 @@ export function MessagingInterface({
     body: string;
     recipients: string[];
     messageType: string;
-    tenantId?: string;
+    tenantId?: string | string[];
   }) => {
     setIsSending(true);
     try {
-      const response = await fetch('/api/dashboard/messaging/send', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...messageData,
-          tenantId: messageData.tenantId || accessibleTenants[0]
-        }),
-      });
+      // Handle multiple tenants by sending to each one separately
+      const tenantIds = Array.isArray(messageData.tenantId) ? messageData.tenantId : [messageData.tenantId || accessibleTenants[0]];
+      
+      let successCount = 0;
+      let errorCount = 0;
+      
+      for (const tenantId of tenantIds) {
+        try {
+          const response = await fetch('/api/dashboard/messaging/send', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              ...messageData,
+              tenantId: tenantId
+            }),
+          });
 
-      if (response.ok) {
-        const result = await response.json() as { success: boolean; message?: string; error?: string };
-        if (result.success) {
-          // Show success message and close composer
-          setIsComposing(false);
-          // Optionally refresh the page to show the new message
-          window.location.reload();
-        } else {
-          console.error('Failed to send message:', result.error);
-          alert(`Failed to send message: ${result.error}`);
+          if (response.ok) {
+            const result = await response.json() as { success: boolean; message?: string; error?: string };
+            if (result.success) {
+              successCount++;
+            } else {
+              errorCount++;
+              console.error(`Failed to send message to tenant ${tenantId}:`, result.error);
+            }
+          } else {
+            errorCount++;
+            const errorData = await response.json().catch(() => ({ error: 'Failed to send message' })) as { error?: string };
+            console.error(`Failed to send message to tenant ${tenantId}:`, errorData.error || response.status);
+          }
+        } catch (error) {
+          errorCount++;
+          console.error(`Error sending message to tenant ${tenantId}:`, error);
         }
+      }
+
+      // Show results and handle success/failure
+      if (successCount > 0) {
+        if (errorCount > 0) {
+          alert(`Message sent to ${successCount} tenant(s) successfully. Failed to send to ${errorCount} tenant(s).`);
+        } else {
+          alert(`Message sent to ${successCount} tenant(s) successfully!`);
+        }
+        // Close composer and refresh page
+        setIsComposing(false);
+        window.location.reload();
       } else {
-        const errorData = await response.json().catch(() => ({ error: 'Failed to send message' })) as { error?: string };
-        console.error('Failed to send message:', errorData.error || response.status);
-        alert(`Failed to send message: ${errorData.error || response.statusText}`);
+        alert('Failed to send message to any tenants. Please try again.');
       }
     } catch (error) {
       console.error('Error sending message:', error);
@@ -129,25 +153,7 @@ export function MessagingInterface({
     }
   };
 
-  const handleMarkAsRead = async (messageId: number) => {
-    try {
-      const response = await fetch(`/api/dashboard/messaging/messages/${messageId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ action: 'mark-read' }),
-      });
 
-      if (response.ok) {
-        setMessages(prev => prev.map(msg => 
-          msg.Id === messageId ? { ...msg, IsRead: true } : msg
-        ));
-      }
-    } catch (error) {
-      console.error('Error marking message as read:', error);
-    }
-  };
 
   return (
     <Container size="4">
@@ -304,7 +310,6 @@ export function MessagingInterface({
             <MessageThread
               message={selectedMessage}
               userEmail={userEmail}
-              onMarkAsRead={handleMarkAsRead}
             />
           ) : (
             <Box style={{ 

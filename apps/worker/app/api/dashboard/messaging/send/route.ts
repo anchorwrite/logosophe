@@ -104,15 +104,17 @@ export async function POST(request: NextRequest) {
       }, { status: 429 });
     }
 
-    // Insert message
+
+
+    // Insert message into Messages table
     const messageResult = await db.prepare(`
-      INSERT INTO Messages (Subject, Body, SenderEmail, TenantId, MessageType, Priority, CreatedAt, HasAttachments, AttachmentCount)
-      VALUES (?, ?, ?, ?, ?, ?, datetime('now'), FALSE, 0)
-    `).bind(subject.trim(), messageBody.trim(), session.user.email, targetTenantId, messageType, priority).run();
+      INSERT INTO Messages (Subject, Body, SenderEmail, SenderType, TenantId, MessageType, Priority, CreatedAt, HasAttachments, AttachmentCount)
+      VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'), FALSE, 0)
+    `).bind(subject.trim(), messageBody.trim(), session.user.email, isAdmin ? 'admin' : 'tenant', targetTenantId, messageType, priority).run();
 
     const messageId = messageResult.meta.last_row_id;
 
-    // Insert recipients
+    // Insert recipients into MessageRecipients table
     for (const recipient of recipients) {
       await db.prepare(`
         INSERT INTO MessageRecipients (MessageId, RecipientEmail)

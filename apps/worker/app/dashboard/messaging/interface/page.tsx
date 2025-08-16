@@ -61,29 +61,56 @@ export default async function MessagingInterfacePage() {
   });
 
   // Get user's recent messages
-  const recentMessagesQuery = `
-    SELECT 
-      m.Id,
-      m.Subject,
-      m.Body,
-      m.SenderEmail,
-      s.Name as SenderName,
-      m.CreatedAt,
-      CASE WHEN mr.RecipientEmail = ? THEN mr.IsRead ELSE FALSE END as IsRead,
-      m.MessageType,
-      COUNT(DISTINCT mr.RecipientEmail) as RecipientCount
-    FROM Messages m
-    LEFT JOIN MessageRecipients mr ON m.Id = mr.MessageId
-    LEFT JOIN Subscribers s ON m.SenderEmail = s.Email
-    WHERE (m.SenderEmail = ? OR mr.RecipientEmail = ?)
-    AND m.IsDeleted = FALSE
-    GROUP BY m.Id
-    ORDER BY m.CreatedAt DESC
-    LIMIT 20
-  `;
+  let recentMessagesQuery: string;
+  let queryParams: any[];
+
+  if (isAdmin) {
+    // System admins see messages where they are sender or recipient (across all tenants)
+    recentMessagesQuery = `
+      SELECT DISTINCT
+        m.Id,
+        m.Subject,
+        m.Body,
+        m.SenderEmail,
+        COALESCE(s.Name, m.SenderEmail) as SenderName,
+        m.CreatedAt,
+        m.MessageType,
+        (SELECT COUNT(DISTINCT mr2.RecipientEmail) FROM MessageRecipients mr2 WHERE mr2.MessageId = m.Id AND mr2.IsDeleted = FALSE) as RecipientCount,
+        (SELECT CASE WHEN COUNT(*) > 0 THEN TRUE ELSE FALSE END FROM MessageRecipients mr3 WHERE mr3.MessageId = m.Id AND mr3.RecipientEmail = ? AND mr3.IsDeleted = FALSE) as IsRead
+      FROM Messages m
+      LEFT JOIN Subscribers s ON m.SenderEmail = s.Email
+      WHERE (m.SenderEmail = ? OR EXISTS (SELECT 1 FROM MessageRecipients mr4 WHERE mr4.MessageId = m.Id AND mr4.RecipientEmail = ? AND mr4.IsDeleted = FALSE))
+      AND m.IsDeleted = FALSE
+      ORDER BY m.CreatedAt DESC
+      LIMIT 20
+    `;
+    queryParams = [session.user.email, session.user.email, session.user.email];
+  } else {
+    // Tenant admins see messages where they are sender or recipient
+    recentMessagesQuery = `
+      SELECT DISTINCT
+        m.Id,
+        m.Subject,
+        m.Body,
+        m.SenderEmail,
+        COALESCE(s.Name, m.SenderEmail) as SenderName,
+        m.CreatedAt,
+        m.MessageType,
+        (SELECT COUNT(DISTINCT mr2.RecipientEmail) FROM MessageRecipients mr2 WHERE mr2.MessageId = m.Id AND mr2.IsDeleted = FALSE) as RecipientCount,
+        (SELECT CASE WHEN COUNT(*) > 0 THEN TRUE ELSE FALSE END FROM MessageRecipients mr3 WHERE mr3.MessageId = m.Id AND mr3.RecipientEmail = ? AND mr3.IsDeleted = FALSE) as IsRead
+      FROM Messages m
+      LEFT JOIN Subscribers s ON m.SenderEmail = s.Email
+      WHERE (m.SenderEmail = ? OR EXISTS (SELECT 1 FROM MessageRecipients mr4 WHERE mr4.MessageId = m.Id AND mr4.RecipientEmail = ? AND mr4.IsDeleted = FALSE))
+      AND m.TenantId IN (${accessibleTenants.map(() => '?').join(',')})
+      AND m.IsDeleted = FALSE
+      ORDER BY m.CreatedAt DESC
+      LIMIT 20
+    `;
+    queryParams = [session.user.email, session.user.email, session.user.email, ...accessibleTenants];
+  }
 
   const recentMessagesResult = await db.prepare(recentMessagesQuery)
-    .bind(session.user.email, session.user.email, session.user.email)
+    .bind(...queryParams)
     .all() as D1Result<RecentMessage>;
   
   const recentMessages = recentMessagesResult.results || [];
@@ -112,26 +139,61 @@ export default async function MessagingInterfacePage() {
     activeConversations: recentMessages.length
   };
 
-  // Get available recipients for the user
+  // Get available recipients for the user (one entry per user with consolidated roles)
   const recipientsQuery = `
     SELECT 
-      tu.Email,
-      s.Name,
-      tu.TenantId,
-      tu.RoleId,
+      Email,
+      Name,
+      TenantId,
+      GROUP_CONCAT(RoleId, ', ') as RoleId,
       FALSE as IsOnline,
-      CASE WHEN ub.BlockedEmail IS NOT NULL THEN 1 ELSE 0 END as IsBlocked
-    FROM TenantUsers tu
-    LEFT JOIN Subscribers s ON tu.Email = s.Email
-    LEFT JOIN UserBlocks ub ON tu.Email = ub.BlockedEmail AND tu.TenantId = ub.TenantId AND ub.IsActive = TRUE
-    WHERE tu.TenantId IN (${accessibleTenants.map(() => '?').join(',')})
-    AND s.Active = TRUE AND s.Banned = FALSE
-    AND tu.Email != ?
-    ORDER BY s.Name, tu.Email
+      MAX(IsBlocked) as IsBlocked
+    FROM (
+      -- Get all users with their primary role from TenantUsers
+      SELECT 
+        tu.Email,
+        s.Name,
+        tu.TenantId,
+        tu.RoleId,
+        CASE WHEN ub.BlockedEmail IS NOT NULL THEN 1 ELSE 0 END as IsBlocked
+      FROM TenantUsers tu
+      LEFT JOIN Subscribers s ON tu.Email = s.Email
+      LEFT JOIN UserBlocks ub ON tu.Email = ub.BlockedEmail AND tu.TenantId = ub.TenantId AND ub.IsActive = TRUE
+      WHERE tu.TenantId IN (${accessibleTenants.map(() => '?').join(',')})
+      AND s.Active = TRUE AND s.Banned = FALSE
+      AND tu.Email != ?
+      
+      UNION ALL
+      
+      -- Get additional roles from UserRoles (including subscribers)
+      SELECT 
+        ur.Email,
+        s.Name,
+        ur.TenantId,
+        ur.RoleId,
+        CASE WHEN ub.BlockedEmail IS NOT NULL THEN 1 ELSE 0 END as IsBlocked
+      FROM UserRoles ur
+      LEFT JOIN Subscribers s ON ur.Email = s.Email
+      LEFT JOIN UserBlocks ub ON ur.Email = ub.BlockedEmail AND ur.TenantId = ur.TenantId AND ub.IsActive = TRUE
+      WHERE ur.TenantId IN (${accessibleTenants.map(() => '?').join(',')})
+      AND ur.RoleId IN ('subscriber', 'reviewer', 'author', 'editor')
+      AND s.Active = TRUE AND s.Banned = FALSE
+      AND ur.Email != ?
+    )
+    GROUP BY Email, Name, TenantId
+    ORDER BY Name, Email
   `;
 
+  // Create bind parameters array to match the SQL placeholders exactly
+  const recipientsBindParams = [
+    ...accessibleTenants,        // First IN clause for TenantUsers
+    session.user.email,          // First != clause for TenantUsers
+    ...accessibleTenants,        // Second IN clause for UserRoles  
+    session.user.email           // Second != clause for UserRoles
+  ];
+
   const recipientsResult = await db.prepare(recipientsQuery)
-    .bind(...accessibleTenants, session.user.email)
+    .bind(...recipientsBindParams)
     .all() as D1Result<any>;
   
   const recipients = recipientsResult.results || [];
