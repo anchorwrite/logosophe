@@ -2,24 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { Heading, Text, Flex, Card, Button, Box, TextField, Badge, Select } from '@radix-ui/themes';
-
-interface Recipient {
-  Email: string;
-  Name: string;
-  TenantId: string;
-  RoleId: string;
-  IsOnline: boolean;
-  IsBlocked: boolean;
-  BlockerEmail?: string;
-}
-
-interface SystemSettings {
-  messagingEnabled: boolean;
-  rateLimitSeconds: number;
-  maxRecipients: number;
-  recallWindowSeconds: number;
-  messageExpiryDays: number;
-}
+import { useToast } from '@/components/Toast';
+import type { RecentMessage, Recipient, SystemSettings } from './types';
 
 interface MessageComposerProps {
   recipients: Recipient[];
@@ -34,6 +18,9 @@ interface MessageComposerProps {
   }) => void;
   onCancel: () => void;
   systemSettings: SystemSettings;
+  replyToMessage?: RecentMessage;
+  forwardMessage?: RecentMessage;
+  hideTenantSelection?: boolean;
 }
 
 export function MessageComposer({
@@ -42,8 +29,12 @@ export function MessageComposer({
   userEmail,
   onSend,
   onCancel,
-  systemSettings
+  systemSettings,
+  replyToMessage,
+  forwardMessage,
+  hideTenantSelection = false
 }: MessageComposerProps) {
+  const { showToast } = useToast();
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
   const [selectedRecipients, setSelectedRecipients] = useState<string[]>([]);
@@ -56,13 +47,52 @@ export function MessageComposer({
     setSelectedRecipients([]);
   }, [selectedTenant]);
 
+  // Handle reply and forward message data
+  useEffect(() => {
+    if (replyToMessage) {
+      // Reply: Pre-fill subject with "Re:" prefix and set recipients to sender
+      setSubject(`Re: ${replyToMessage.Subject}`);
+      setBody('');
+      setSelectedRecipients([replyToMessage.SenderEmail]);
+      setMessageType('direct');
+      // For replies, set the tenant directly from the original message
+      setSelectedTenant(replyToMessage.TenantId);
+    } else if (forwardMessage) {
+      // Forward: Pre-fill subject with "Fwd:" prefix and include original message
+      setSubject(`Fwd: ${forwardMessage.Subject}`);
+      setBody(`\n\n--- Forwarded message ---\nFrom: ${forwardMessage.SenderName || forwardMessage.SenderEmail}\nDate: ${new Date(forwardMessage.CreatedAt).toLocaleString()}\nSubject: ${forwardMessage.Subject}\n\n${forwardMessage.Body}`);
+      setSelectedRecipients([]);
+      setMessageType('direct');
+    }
+  }, [replyToMessage, forwardMessage]);
+
   const handleSend = async () => {
-    if (!subject.trim() || !body.trim() || selectedRecipients.length === 0) {
+    // For replies, we don't need to check selectedRecipients
+    if (!subject.trim() || !body.trim()) {
+      showToast({
+        type: 'warning',
+        title: 'Missing Information',
+        content: 'Please fill in both subject and message body'
+      });
+      return;
+    }
+
+    // For replies, we have the recipient from the original message
+    if (!replyToMessage && selectedRecipients.length === 0) {
+      showToast({
+        type: 'warning',
+        title: 'No Recipients',
+        content: 'Please select at least one recipient for your message'
+      });
       return;
     }
 
     if (accessibleTenants.length > 1 && !selectedTenant) {
-      alert('Please select a tenant for this message');
+      showToast({
+        type: 'warning',
+        title: 'Tenant Required',
+        content: 'Please select a tenant for this message'
+      });
       return;
     }
 
@@ -71,8 +101,13 @@ export function MessageComposer({
       // The backend will need to handle this case
     }
 
-    if (selectedRecipients.length > systemSettings.maxRecipients) {
-      alert(`Maximum ${systemSettings.maxRecipients} recipients allowed`);
+    // For replies, we don't need to check recipient count limits
+    if (!replyToMessage && selectedRecipients.length > systemSettings.maxRecipients) {
+      showToast({
+        type: 'warning',
+        title: 'Too Many Recipients',
+        content: `Maximum ${systemSettings.maxRecipients} recipients allowed`
+      });
       return;
     }
 
@@ -85,12 +120,24 @@ export function MessageComposer({
         actualTenantId = accessibleTenants;
       }
 
+      // For replies, use the original sender as recipient; otherwise use selectedRecipients
+      const messageRecipients = replyToMessage ? [replyToMessage.SenderEmail] : selectedRecipients;
+      
       await onSend({
         subject: subject.trim(),
         body: body.trim(),
-        recipients: selectedRecipients,
+        recipients: messageRecipients,
         messageType,
         tenantId: actualTenantId
+      });
+      
+      // Show success toast
+      showToast({
+        type: 'success',
+        title: 'Message Sent',
+        content: replyToMessage 
+          ? 'Reply sent successfully' 
+          : `Message sent to ${messageRecipients.length} recipient${messageRecipients.length > 1 ? 's' : ''}`
       });
       
       // Reset form
@@ -101,6 +148,13 @@ export function MessageComposer({
       setSelectedTenant(accessibleTenants.length === 1 ? accessibleTenants[0] : '');
     } catch (error) {
       console.error('Error sending message:', error);
+      
+      // Show error toast
+      showToast({
+        type: 'error',
+        title: 'Send Failed',
+        content: 'Failed to send message. Please try again.'
+      });
     } finally {
       setIsSending(false);
     }
@@ -147,7 +201,7 @@ export function MessageComposer({
             </Button>
             <Button 
               onClick={handleSend}
-              disabled={!subject.trim() || !body.trim() || selectedRecipients.length === 0 || isSending}
+              disabled={!subject.trim() || !body.trim() || (!replyToMessage && selectedRecipients.length === 0) || isSending}
             >
               {isSending ? 'Sending...' : 'Send Message'}
             </Button>
@@ -186,8 +240,8 @@ export function MessageComposer({
           )}
         </Box>
 
-        {/* Tenant Selection (if multiple tenants) */}
-        {accessibleTenants.length > 1 && (
+        {/* Tenant Selection (if multiple tenants) - Hidden for replies */}
+        {accessibleTenants.length > 1 && !hideTenantSelection && (
           <Box>
             <Text size="2" style={{ marginBottom: '0.5rem' }}>Tenant *</Text>
             <Flex gap="2" align="center">
@@ -223,6 +277,16 @@ export function MessageComposer({
             </Text>
           </Box>
         )}
+        
+        {/* Tenant info for replies (when tenant selection is hidden) */}
+        {accessibleTenants.length > 1 && hideTenantSelection && replyToMessage && (
+          <Box>
+            <Text size="2" style={{ marginBottom: '0.5rem' }}>Tenant</Text>
+            <Text size="2" color="gray" style={{ padding: '0.5rem', backgroundColor: 'var(--gray-3)', borderRadius: '4px' }}>
+              {replyToMessage.TenantId} (automatically set for reply)
+            </Text>
+          </Box>
+        )}
 
         {/* Subject */}
         <Box>
@@ -238,96 +302,123 @@ export function MessageComposer({
 
         {/* Recipients */}
         <Box>
-          <Flex justify="between" align="center" style={{ marginBottom: '0.5rem' }}>
-            <Text size="2">
-              Recipients ({selectedRecipients.length}/{systemSettings.maxRecipients})
-              {availableRecipients.length > 0 && (
-                <Text size="1" color="gray" style={{ marginLeft: '0.5rem' }}>
-                  • {availableRecipients.filter(r => !r.IsBlocked).length} available, {availableRecipients.filter(r => r.IsBlocked).length} blocked for selected tenant(s)
-                </Text>
-              )}
-            </Text>
-            {availableRecipients.length > 0 && (
-              <Flex gap="2">
-                <Button 
-                  variant="soft" 
-                  size="1"
-                  onClick={() => setSelectedRecipients(availableRecipients.filter(r => !r.IsBlocked).map(r => r.Email))}
-                  disabled={selectedRecipients.length === availableRecipients.filter(r => !r.IsBlocked).length}
-                >
-                  Select All
-                </Button>
-                <Button 
-                  variant="soft" 
-                  size="1"
-                  onClick={() => setSelectedRecipients([])}
-                  disabled={selectedRecipients.length === 0}
-                >
-                  Clear All
-                </Button>
-              </Flex>
-            )}
-          </Flex>
-          <Box style={{ 
-            maxHeight: '120px', 
-            overflow: 'auto', 
-            border: '1px solid var(--gray-6)', 
-            borderRadius: '4px',
-            padding: '0.5rem'
-          }}>
-            {availableRecipients.length === 0 ? (
-              <Text size="2" color="gray">
-                {!selectedTenant 
-                  ? 'Please select a tenant to see available recipients'
-                  : selectedTenant === 'all'
-                  ? 'No recipients available across all tenants'
-                  : `No recipients available in tenant: ${selectedTenant}`
-                }
+          {/* For replies, show a simple recipient display instead of selection UI */}
+          {replyToMessage ? (
+            <Box>
+              <Text size="2" style={{ marginBottom: '0.5rem' }}>Reply To</Text>
+              <Box style={{ 
+                padding: '0.75rem',
+                backgroundColor: 'var(--gray-3)',
+                border: '1px solid var(--gray-6)',
+                borderRadius: '4px'
+              }}>
+                <Flex align="center" gap="2">
+                  <Text size="2" weight="medium">
+                    {replyToMessage.SenderName || replyToMessage.SenderEmail}
+                  </Text>
+                  <Text size="1" color="gray">
+                    {replyToMessage.SenderEmail} • {replyToMessage.TenantId}
+                  </Text>
+                </Flex>
+              </Box>
+              <Text size="1" color="gray" style={{ marginTop: '0.5rem' }}>
+                ✓ Replying to the sender of the original message
               </Text>
-            ) : (
-              <Flex direction="column" gap="1">
-                {availableRecipients.map((recipient) => (
-                  <Flex key={recipient.Email} align="center" gap="2">
-                    <input
-                      type="checkbox"
-                      id={recipient.Email}
-                      checked={selectedRecipients.includes(recipient.Email)}
-                      onChange={() => handleRecipientToggle(recipient.Email)}
-                      disabled={
-                        recipient.IsBlocked || 
-                        (selectedRecipients.length >= systemSettings.maxRecipients && !selectedRecipients.includes(recipient.Email))
-                      }
-                    />
-                    <label 
-                      htmlFor={recipient.Email} 
-                      style={{ 
-                        cursor: recipient.IsBlocked ? 'not-allowed' : 'pointer', 
-                        flex: '1',
-                        opacity: recipient.IsBlocked ? 0.6 : 1
-                      }}
+            </Box>
+          ) : (
+            <>
+              <Flex justify="between" align="center" style={{ marginBottom: '0.5rem' }}>
+                <Text size="2">
+                  Recipients ({selectedRecipients.length}/{systemSettings.maxRecipients})
+                  {availableRecipients.length > 0 && (
+                    <Text size="1" color="gray" style={{ marginLeft: '0.5rem' }}>
+                      • {availableRecipients.filter(r => !r.IsBlocked).length} available, {availableRecipients.filter(r => r.IsBlocked).length} blocked for selected tenant(s)
+                    </Text>
+                  )}
+                </Text>
+                {availableRecipients.length > 0 && (
+                  <Flex gap="2">
+                    <Button 
+                      variant="soft" 
+                      size="1"
+                      onClick={() => setSelectedRecipients(availableRecipients.filter(r => !r.IsBlocked).map(r => r.Email))}
+                      disabled={selectedRecipients.length === availableRecipients.filter(r => !r.IsBlocked).length}
                     >
-                      <Flex align="center" gap="2">
-                        <Text size="2" weight="medium" style={{ color: recipient.IsBlocked ? 'var(--gray-9)' : 'inherit' }}>
-                          {recipient.Name || 'Unknown User'}
-                        </Text>
-                        <Text size="1" color="gray">
-                          {recipient.Email}
-                        </Text>
-                        <Badge size="1" variant="soft">{recipient.TenantId}</Badge>
-                        {recipient.IsBlocked ? (
-                          <Badge size="1" color="red" variant="solid">
-                            {recipient.BlockerEmail && recipient.BlockerEmail !== userEmail ? 'ADMIN BLOCKED' : 'USER BLOCKED'}
-                          </Badge>
-                        ) : recipient.IsOnline ? (
-                          <Badge size="1" color="green">Online</Badge>
-                        ) : null}
-                      </Flex>
-                    </label>
+                      Select All
+                    </Button>
+                    <Button 
+                      variant="soft" 
+                      size="1"
+                      onClick={() => setSelectedRecipients([])}
+                      disabled={selectedRecipients.length === 0}
+                    >
+                      Clear All
+                    </Button>
                   </Flex>
-                ))}
+                )}
               </Flex>
-            )}
-          </Box>
+              <Box style={{ 
+                maxHeight: '120px', 
+                overflow: 'auto', 
+                border: '1px solid var(--gray-6)', 
+                borderRadius: '4px',
+                padding: '0.5rem'
+              }}>
+                {availableRecipients.length === 0 ? (
+                  <Text size="2" color="gray">
+                    {!selectedTenant 
+                      ? 'Please select a tenant to see available recipients'
+                      : selectedTenant === 'all'
+                      ? 'No recipients available across all tenants'
+                      : `No recipients available in tenant: ${selectedTenant}`
+                    }
+                  </Text>
+                ) : (
+                  <Flex direction="column" gap="1">
+                    {availableRecipients.map((recipient) => (
+                      <Flex key={recipient.Email} align="center" gap="2">
+                        <input
+                          type="checkbox"
+                          id={recipient.Email}
+                          checked={selectedRecipients.includes(recipient.Email)}
+                          onChange={() => handleRecipientToggle(recipient.Email)}
+                          disabled={
+                            recipient.IsBlocked || 
+                            (selectedRecipients.length >= systemSettings.maxRecipients && !selectedRecipients.includes(recipient.Email))
+                          }
+                        />
+                        <label 
+                          htmlFor={recipient.Email} 
+                          style={{ 
+                            cursor: recipient.IsBlocked ? 'not-allowed' : 'pointer', 
+                            flex: '1',
+                            opacity: recipient.IsBlocked ? 0.6 : 1
+                          }}
+                        >
+                          <Flex align="center" gap="2">
+                            <Text size="2" weight="medium" style={{ color: recipient.IsBlocked ? 'var(--gray-9)' : 'inherit' }}>
+                              {recipient.Name || 'Unknown User'}
+                            </Text>
+                            <Text size="1" color="gray">
+                              {recipient.Email}
+                            </Text>
+                            <Badge size="1" variant="soft">{recipient.TenantId}</Badge>
+                            {recipient.IsBlocked ? (
+                              <Badge size="1" color="red" variant="solid">
+                                {recipient.BlockerEmail && recipient.BlockerEmail !== userEmail ? 'ADMIN BLOCKED' : 'USER BLOCKED'}
+                              </Badge>
+                            ) : recipient.IsOnline ? (
+                              <Badge size="1" color="green">Online</Badge>
+                            ) : null}
+                          </Flex>
+                        </label>
+                      </Flex>
+                    ))}
+                  </Flex>
+                )}
+              </Box>
+            </>
+          )}
         </Box>
 
         {/* Message Body */}

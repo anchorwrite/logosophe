@@ -4,43 +4,10 @@ import { useState, useEffect } from 'react';
 import { Container, Heading, Text, Flex, Card, Button, Box, TextField, Badge, Avatar, Separator } from '@radix-ui/themes';
 import { MessageThread } from './MessageThread';
 import { MessageComposer } from './MessageComposer';
+import { useToast } from '@/components/Toast';
+import type { RecentMessage, UserStats, Recipient, SystemSettings } from './types';
 
-interface RecentMessage {
-  Id: number;
-  Subject: string;
-  Body: string;
-  SenderEmail: string;
-  SenderName: string;
-  CreatedAt: string;
-  IsRead: boolean;
-  MessageType: string;
-  RecipientCount: number;
-}
 
-interface UserStats {
-  totalMessages: number;
-  unreadMessages: number;
-  sentMessages: number;
-  activeConversations: number;
-}
-
-interface Recipient {
-  Email: string;
-  Name: string;
-  TenantId: string;
-  RoleId: string;
-  IsOnline: boolean;
-  IsBlocked: boolean;
-  BlockerEmail?: string;
-}
-
-interface SystemSettings {
-  messagingEnabled: boolean;
-  rateLimitSeconds: number;
-  maxRecipients: number;
-  recallWindowSeconds: number;
-  messageExpiryDays: number;
-}
 
 interface MessagingInterfaceProps {
   userEmail: string;
@@ -61,6 +28,7 @@ export function MessagingInterface({
   accessibleTenants,
   systemSettings
 }: MessagingInterfaceProps) {
+  const { showToast } = useToast();
   const [selectedMessage, setSelectedMessage] = useState<RecentMessage | null>(null);
   const [isComposing, setIsComposing] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -68,6 +36,62 @@ export function MessagingInterface({
   const [messages, setMessages] = useState<RecentMessage[]>(recentMessages);
   const [isOnline, setIsOnline] = useState(false);
   const [isSending, setIsSending] = useState(false);
+  const [lastStatusCheck, setLastStatusCheck] = useState<Date | null>(null);
+  const [lastMessageRefresh, setLastMessageRefresh] = useState<Date | null>(null);
+  const [replyToMessage, setReplyToMessage] = useState<RecentMessage | null>(null);
+  const [forwardMessage, setForwardMessage] = useState<RecentMessage | null>(null);
+
+  // Check system status
+  const checkSystemStatus = async () => {
+    try {
+      const response = await fetch('/api/dashboard/messaging/status');
+      if (response.ok) {
+        const statusData = await response.json() as { isOnline: boolean; messagingEnabled: boolean; timestamp: string };
+        setIsOnline(statusData.isOnline);
+        setLastStatusCheck(new Date());
+      } else {
+        console.error('Failed to fetch system status:', response.status);
+        setIsOnline(false);
+      }
+    } catch (error) {
+      console.error('Error checking system status:', error);
+      setIsOnline(false);
+    }
+  };
+
+  // Refresh message list
+  const refreshMessages = async () => {
+    try {
+      const response = await fetch('/api/dashboard/messaging/messages');
+      if (response.ok) {
+        const messagesData = await response.json() as { messages: RecentMessage[] };
+        setMessages(messagesData.messages);
+        setLastMessageRefresh(new Date());
+      } else {
+        console.error('Failed to fetch messages:', response.status);
+      }
+    } catch (error) {
+      console.error('Error refreshing messages:', error);
+    }
+  };
+
+  // Check system status on mount and every 60 seconds
+  useEffect(() => {
+    checkSystemStatus();
+    
+    const interval = setInterval(checkSystemStatus, 60000); // 60 seconds
+    
+    return () => clearInterval(interval);
+  }, []);
+
+  // Refresh messages on mount and every 30 seconds
+  useEffect(() => {
+    refreshMessages();
+    
+    const interval = setInterval(refreshMessages, 30000); // 30 seconds
+    
+    return () => clearInterval(interval);
+  }, []);
 
   // Filter messages based on search and filter
   const filteredMessages = messages.filter(message => {
@@ -136,19 +160,35 @@ export function MessagingInterface({
       // Show results and handle success/failure
       if (successCount > 0) {
         if (errorCount > 0) {
-          alert(`Message sent to ${successCount} tenant(s) successfully. Failed to send to ${errorCount} tenant(s).`);
+          showToast({
+            type: 'warning',
+            title: 'Partial Success',
+            content: `Message sent to ${successCount} tenant(s) successfully. Failed to send to ${errorCount} tenant(s).`
+          });
         } else {
-          alert(`Message sent to ${successCount} tenant(s) successfully!`);
+          showToast({
+            type: 'success',
+            title: 'Message Sent',
+            content: `Message sent to ${successCount} tenant(s) successfully!`
+          });
         }
         // Close composer and refresh page
         setIsComposing(false);
         window.location.reload();
       } else {
-        alert('Failed to send message to any tenants. Please try again.');
+        showToast({
+          type: 'error',
+          title: 'Send Failed',
+          content: 'Failed to send message to any tenants. Please try again.'
+        });
       }
     } catch (error) {
       console.error('Error sending message:', error);
-      alert('Error sending message. Please try again.');
+      showToast({
+        type: 'error',
+        title: 'Send Error',
+        content: 'Error sending message. Please try again.'
+      });
     } finally {
       setIsSending(false);
     }
@@ -169,9 +209,19 @@ export function MessagingInterface({
             </Text>
           </Box>
           <Flex gap="2" align="center">
-            <Badge variant={isOnline ? 'solid' : 'soft'} color={isOnline ? 'green' : 'gray'}>
-              {isOnline ? 'Online' : 'Offline'}
+            <Badge 
+              variant={isOnline ? 'solid' : 'soft'} 
+              color={isOnline ? 'green' : 'red'}
+              title={isOnline ? 
+                'Messaging system is operational and accessible' : 
+                'Messaging system is disabled or experiencing issues'
+              }
+            >
+              {isOnline ? 'System Online' : 'System Offline'}
             </Badge>
+            <Button variant="soft" onClick={refreshMessages} title="Refresh message list">
+              Refresh
+            </Button>
             <Button onClick={() => setIsComposing(true)}>
               Compose Message
             </Button>
@@ -207,9 +257,14 @@ export function MessagingInterface({
         {/* Message List */}
         <Card style={{ flex: '1', display: 'flex', flexDirection: 'column' }}>
           <Box style={{ padding: '1.5rem', borderBottom: '1px solid var(--gray-6)' }}>
-            <Heading size="4" style={{ marginBottom: '1rem' }}>
-              Recent Messages
-            </Heading>
+            <Flex justify="between" align="center" style={{ marginBottom: '1rem' }}>
+              <Heading size="4">Recent Messages</Heading>
+              {lastMessageRefresh && (
+                <Text size="1" color="gray">
+                  Last updated: {lastMessageRefresh.toLocaleTimeString()}
+                </Text>
+              )}
+            </Flex>
             
             {/* Search and Filters */}
             <Flex gap="2" style={{ marginBottom: '1rem' }}>
@@ -230,10 +285,10 @@ export function MessagingInterface({
                   fontSize: '14px'
                 }}
               >
-                <option value="all">All</option>
-                <option value="unread">Unread</option>
-                <option value="sent">Sent</option>
-                <option value="received">Received</option>
+                <option value="all">All ({messages.length})</option>
+                <option value="unread">Unread ({messages.filter(m => !m.IsRead && m.SenderEmail !== userEmail).length})</option>
+                <option value="sent">Sent ({messages.filter(m => m.SenderEmail === userEmail).length})</option>
+                <option value="received">Received ({messages.filter(m => m.SenderEmail !== userEmail).length})</option>
               </select>
             </Flex>
           </Box>
@@ -251,11 +306,19 @@ export function MessagingInterface({
                   style={{
                     padding: '1rem',
                     borderBottom: '1px solid var(--gray-6)',
+                    borderLeft: !message.IsRead && message.SenderEmail !== userEmail ? '3px solid var(--red-9)' : 'none',
                     cursor: 'pointer',
                     backgroundColor: selectedMessage?.Id === message.Id ? 'var(--gray-3)' : 'transparent',
                     transition: 'background-color 0.2s'
                   }}
-                  onClick={() => setSelectedMessage(message)}
+                  onClick={() => {
+                    setSelectedMessage(message);
+                    // If this is an unread received message, refresh the message list to update read status
+                    if (!message.IsRead && message.SenderEmail !== userEmail) {
+                      // Refresh messages after a short delay to allow the mark-read API to complete
+                      setTimeout(() => refreshMessages(), 500);
+                    }
+                  }}
                 >
                   <Flex justify="between" align="start" style={{ marginBottom: '0.5rem' }}>
                     <Box style={{ flex: '1' }}>
@@ -264,10 +327,13 @@ export function MessagingInterface({
                           {message.SenderName || message.SenderEmail}
                         </Text>
                         {!message.IsRead && message.SenderEmail !== userEmail && (
-                          <Badge size="1" color="red">New</Badge>
+                          <Badge size="1" color="red">Unread</Badge>
                         )}
                         {message.MessageType === 'broadcast' && (
                           <Badge size="1" variant="soft">Broadcast</Badge>
+                        )}
+                        {message.MessageType === 'announcement' && (
+                          <Badge size="1" variant="soft">Announcement</Badge>
                         )}
                       </Flex>
                       <Text weight="medium" size="3" style={{ marginBottom: '0.25rem' }}>
@@ -305,13 +371,32 @@ export function MessagingInterface({
               accessibleTenants={accessibleTenants}
               userEmail={userEmail}
               onSend={handleSendMessage}
-              onCancel={() => setIsComposing(false)}
+              onCancel={() => {
+                setIsComposing(false);
+                setReplyToMessage(null);
+                setForwardMessage(null);
+              }}
               systemSettings={systemSettings}
+              replyToMessage={replyToMessage || undefined}
+              forwardMessage={forwardMessage || undefined}
+              hideTenantSelection={!!replyToMessage}
             />
           ) : selectedMessage ? (
             <MessageThread
               message={selectedMessage}
               userEmail={userEmail}
+              onReply={(message) => {
+                // Switch to compose mode with reply data
+                setReplyToMessage(message);
+                setForwardMessage(null);
+                setIsComposing(true);
+              }}
+              onForward={(message) => {
+                // Switch to compose mode with forward data
+                setForwardMessage(message);
+                setReplyToMessage(null);
+                setIsComposing(true);
+              }}
             />
           ) : (
             <Box style={{ 

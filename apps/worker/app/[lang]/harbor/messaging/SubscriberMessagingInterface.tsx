@@ -267,7 +267,7 @@ export function SubscriberMessagingInterface({
           SenderName: data.senderEmail, // Will be updated when we fetch the actual message
           CreatedAt: data.timestamp,
           IsRead: false,
-          MessageType: 'subscriber',
+          MessageType: 'direct',
           RecipientCount: data.recipients.length,
           HasAttachments: data.hasAttachments,
           AttachmentCount: data.attachmentCount
@@ -468,7 +468,7 @@ export function SubscriberMessagingInterface({
           subject: composeSubject,
           body: composeBody,
           recipients: selectedRecipients,
-          messageType: 'subscriber',
+          messageType: 'direct',
           tenantId: userTenantId,
           attachments: selectedAttachments
         }),
@@ -490,7 +490,7 @@ export function SubscriberMessagingInterface({
         SenderName: userName,
         CreatedAt: new Date().toISOString(),
         IsRead: false,
-        MessageType: 'subscriber',
+        MessageType: 'direct',
         RecipientCount: selectedRecipients.length
       };
 

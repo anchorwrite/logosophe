@@ -48,7 +48,6 @@ export async function GET(request: NextRequest) {
       AND mr.IsRead = FALSE
       AND (tu_sender.TenantId = ? OR tu_recipient.TenantId = ?)
       AND m.IsDeleted = FALSE
-      AND m.MessageType = 'subscriber'
       AND NOT EXISTS (
         SELECT 1 FROM UserBlocks ub 
         WHERE (ub.BlockerEmail = ? AND ub.BlockedEmail = m.SenderEmail AND ub.TenantId = ? AND ub.IsActive = TRUE)
@@ -81,7 +80,7 @@ export async function GET(request: NextRequest) {
       AND mr.IsRead = FALSE
       AND (tu_sender.TenantId = ? OR tu_recipient.TenantId = ?)
       AND m.IsDeleted = FALSE
-      AND m.MessageType = 'subscriber'
+
       AND NOT EXISTS (
         SELECT 1 FROM UserBlocks ub 
         WHERE (ub.BlockerEmail = ? AND ub.BlockedEmail = m.SenderEmail AND ub.TenantId = ? AND ub.IsActive = TRUE)

@@ -196,7 +196,7 @@ export async function GET(
                 AND mr.IsRead = FALSE 
                 AND (tu_sender.TenantId = ? OR tu_recipient.TenantId = ?) 
                 AND m.IsDeleted = FALSE 
-                AND m.MessageType = 'subscriber'
+          
             `;
             
             const unreadResult = await db.prepare(unreadCountQuery)

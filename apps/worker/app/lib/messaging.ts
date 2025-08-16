@@ -249,7 +249,24 @@ export async function canSendMessage(
     SELECT Email FROM TenantUsers WHERE Email IN (${recipients.map(() => '?').join(',')}) AND TenantId = ?
   `).bind(...recipients, tenantId).all();
   
-  const validEmails = validRecipients.results?.map(r => r.Email) || [];
+  // Also check UserRoles table for subscribers
+  const subscriberValidation = await db.prepare(`
+    SELECT Email FROM UserRoles 
+    WHERE TenantId = ? AND Email IN (${recipients.map(() => '?').join(',')}) AND RoleId = 'subscriber'
+  `).bind(tenantId, ...recipients).all();
+  
+  // Check if any recipients are system admins (who have global access)
+  const adminValidation = await db.prepare(`
+    SELECT Email FROM Credentials 
+    WHERE Email IN (${recipients.map(() => '?').join(',')}) AND Role IN ('admin', 'tenant')
+  `).bind(...recipients).all();
+  
+  // Combine all results (tenant users, subscribers, and system admins)
+  const tenantUsers = validRecipients.results?.map(r => r.Email) || [];
+  const subscribers = subscriberValidation.results?.map(r => r.Email) || [];
+  const systemAdmins = adminValidation.results?.map(r => r.Email) || [];
+  const validEmails = [...new Set([...tenantUsers, ...subscribers, ...systemAdmins])];
+  
   const invalidRecipients = recipients.filter(r => !validEmails.includes(r));
   
   if (invalidRecipients.length > 0) {

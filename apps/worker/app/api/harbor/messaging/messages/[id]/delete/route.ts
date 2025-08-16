@@ -24,7 +24,6 @@ export async function POST(
     const { env } = await getCloudflareContext({async: true});
     const db = env.DB;
     const systemLogs = new SystemLogs(db);
-    const { id } = await params;
     const messageId = parseInt(id);
 
     if (isNaN(messageId)) {
@@ -58,23 +57,23 @@ export async function POST(
     if (accessResult.SenderEmail === access.email) {
       await db.prepare(`
         UPDATE Messages 
-        SET IsDeleted = TRUE, DeletedAt = ?
+        SET IsDeleted = TRUE, DeletedAt = datetime('now')
         WHERE Id = ?
-      `).bind(new Date().toISOString(), messageId).run();
+      `).bind(messageId).run();
 
       // Also mark all recipients as deleted
       await db.prepare(`
         UPDATE MessageRecipients 
-        SET IsDeleted = TRUE, DeletedAt = ?
+        SET IsDeleted = TRUE, DeletedAt = datetime('now')
         WHERE MessageId = ?
-      `).bind(new Date().toISOString(), messageId).run();
+      `).bind(messageId).run();
     } else {
       // If user is a recipient, only mark their recipient record as deleted
       await db.prepare(`
         UPDATE MessageRecipients 
-        SET IsDeleted = TRUE, DeletedAt = ?
+        SET IsDeleted = TRUE, DeletedAt = datetime('now')
         WHERE MessageId = ? AND RecipientEmail = ?
-      `).bind(new Date().toISOString(), messageId, access.email).run();
+      `).bind(messageId, access.email).run();
     }
 
     // Log the deletion
