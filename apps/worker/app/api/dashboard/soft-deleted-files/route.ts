@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
     if (!isGlobalAdmin) {
       const tenantResult = await db.prepare(`
         SELECT TenantId FROM TenantUsers 
-        WHERE Email = ? AND Role = 'tenant'
+        WHERE Email = ? AND RoleId = 'tenant'
       `).bind(access.email).all();
       userTenants = (tenantResult.results || []) as Array<{ TenantId: string }>;
       

@@ -38,29 +38,24 @@ export async function isSystemAdmin(email: string, db: D1Database): Promise<bool
 }
 
 /**
- * Get all tenants a user has access to
+ * Check if a user is a tenant admin (either in Credentials or TenantUsers table)
  */
-export async function getUserTenants(email: string): Promise<Tenant[]> {
-  const { env } = await getCloudflareContext({async: true});
-  const db = env.DB;
+export async function isTenantAdmin(email: string, db: D1Database): Promise<boolean> {
+  // Check if user is a Credentials tenant admin
+  const credentialsUser = await db.prepare(`
+    SELECT 1 FROM Credentials WHERE Email = ? AND Role = 'tenant'
+  `).bind(email).first();
   
-  // System admins have access to all tenants
-  if (await isSystemAdmin(email, db)) {
-    const tenants = await db.prepare(`
-      SELECT Id, Name, Description, CreatedAt, UpdatedAt FROM Tenants
-    `).all() as D1Result<Tenant>;
-    return tenants.results || [];
+  if (credentialsUser) {
+    return true;
   }
-
-  // Get tenants where user is a member
-  const tenants = await db.prepare(`
-    SELECT t.Id, t.Name, t.Description, t.CreatedAt, t.UpdatedAt
-    FROM Tenants t
-    JOIN TenantUsers tu ON t.Id = tu.TenantId
-    WHERE tu.Email = ?
-  `).bind(email).all() as D1Result<Tenant>;
-
-  return tenants.results || [];
+  
+  // Check if user is a TenantUsers tenant admin
+  const tenantUser = await db.prepare(`
+    SELECT 1 FROM TenantUsers WHERE Email = ? AND RoleId = 'tenant'
+  `).bind(email).first();
+  
+  return !!tenantUser;
 }
 
 /**
@@ -75,8 +70,8 @@ export async function isTenantAdminFor(email: string, tenantId: string): Promise
     return true;
   }
 
-  // Check if user is a tenant admin and belongs to the tenant
-  const tenantAdmin = await db.prepare(`
+  // Check if user is a Credentials tenant admin and belongs to the tenant
+  const credentialsTenantAdmin = await db.prepare(`
     SELECT 1 FROM TenantUsers tu
     JOIN Credentials c ON tu.Email = c.Email
     WHERE tu.Email = ? 
@@ -85,7 +80,20 @@ export async function isTenantAdminFor(email: string, tenantId: string): Promise
     LIMIT 1
   `).bind(email, tenantId).first();
 
-  return !!tenantAdmin;
+  if (credentialsTenantAdmin) {
+    return true;
+  }
+
+  // Check if user is a TenantUsers tenant admin for this specific tenant
+  const tenantUserAdmin = await db.prepare(`
+    SELECT 1 FROM TenantUsers 
+    WHERE Email = ? 
+    AND TenantId = ?
+    AND RoleId = 'tenant'
+    LIMIT 1
+  `).bind(email, tenantId).first();
+
+  return !!tenantUserAdmin;
 }
 
 /**

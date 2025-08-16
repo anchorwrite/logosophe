@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
-import { isSystemAdmin, getUserTenants } from '@/lib/access';
+import { isSystemAdmin } from '@/lib/access';
 import { logMessagingActivity } from '@/lib/messaging';
 
 export async function GET(request: NextRequest) {
@@ -17,10 +17,21 @@ export async function GET(request: NextRequest) {
 
     // Check if user is system admin or tenant admin
     const isAdmin = await isSystemAdmin(session.user.email, db);
-    const accessibleTenants = await getUserTenants(session.user.email);
+    const isTenantAdmin = !isAdmin && await db.prepare(`
+      SELECT 1 FROM Credentials WHERE Email = ? AND Role = 'tenant'
+    `).bind(session.user.email).first();
 
-    if (!isAdmin && accessibleTenants.length === 0) {
+    if (!isAdmin && !isTenantAdmin) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
+    }
+
+    // Get tenant IDs from query parameter (frontend should pass this)
+    const tenantIdsParam = request.nextUrl.searchParams.get('tenantIds');
+    let accessibleTenants: Array<{ Id: string }> = [];
+    
+    if (!isAdmin && tenantIdsParam) {
+      const tenantIds = tenantIdsParam.split(',');
+      accessibleTenants = tenantIds.map(id => ({ Id: id }));
     }
 
     // Get system-wide unread message statistics for admins

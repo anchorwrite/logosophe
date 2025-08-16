@@ -3,9 +3,10 @@ import { redirect } from 'next/navigation';
 import { Container, Box, Card, Text, Heading } from '@radix-ui/themes';
 import { DataTable } from '@/components/table';
 import type { TableConfig } from '@/types/table';
-import { getUserTenants } from '@/lib/access';
+import { isSystemAdmin } from '@/lib/access';
 import { TenantSelector } from '@/components/TenantSelector';
 import { headers } from 'next/headers';
+import { getCloudflareContext } from '@opennextjs/cloudflare';
 
 
 const reviewerConfig: TableConfig = {
@@ -26,7 +27,29 @@ export default async function ReviewersPage() {
   }
 
   // Get user's accessible tenants
-  const tenants = await getUserTenants(session.user.email);
+  const { env } = await getCloudflareContext({async: true});
+  const db = env.DB;
+  
+  const isAdmin = await isSystemAdmin(session.user.email, db);
+  let tenants: Array<{ Id: string; Name: string; Description: string; CreatedAt: string; UpdatedAt: string }> = [];
+  
+  if (isAdmin) {
+    // System admins have access to all tenants
+    const tenantsResult = await db.prepare(`
+      SELECT Id, Name, Description, CreatedAt, UpdatedAt FROM Tenants
+    `).all();
+    tenants = (tenantsResult.results || []) as Array<{ Id: string; Name: string; Description: string; CreatedAt: string; UpdatedAt: string }>;
+  } else {
+    // Get tenants where user is a member
+    const tenantsResult = await db.prepare(`
+      SELECT t.Id, t.Name, t.Description, t.CreatedAt, t.UpdatedAt
+      FROM Tenants t
+      JOIN TenantUsers tu ON t.Id = tu.TenantId
+      WHERE tu.Email = ?
+    `).bind(session.user.email).all();
+    tenants = (tenantsResult.results || []) as Array<{ Id: string; Name: string; Description: string; CreatedAt: string; UpdatedAt: string }>;
+  }
+  
   if (!tenants.length) {
     redirect('/harbor');
   }

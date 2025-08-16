@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Button, Table, Flex, Text, Popover, Box, Checkbox } from '@radix-ui/themes';
 import { useToast } from "@/components/Toast";
+import { DeleteConfirmationDialog } from '@/components/DeleteConfirmationDialog';
 
 interface Subscriber {
   Email: string;
@@ -48,6 +49,16 @@ export function SubscriberList({ subscribers, onRefresh }: SubscriberListProps) 
   const [filters, setFilters] = useState<Record<string, string[]>>({});
   const [wildcardFilters, setWildcardFilters] = useState<Record<string, string>>({});
   const [openFilter, setOpenFilter] = useState<string | null>(null);
+  const [deleteDialog, setDeleteDialog] = useState<{
+    isOpen: boolean;
+    subscriberName: string;
+    subscriberEmail: string;
+  }>({
+    isOpen: false,
+    subscriberName: '',
+    subscriberEmail: ''
+  });
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Helper function to safely format dates
   const formatDate = (dateString: string | null | undefined): string => {
@@ -71,6 +82,36 @@ export function SubscriberList({ subscribers, onRefresh }: SubscriberListProps) 
 
   const getUniqueValues = (field: string): string[] => {
     return Array.from(new Set(subscribers.map(row => String(row[field as keyof Subscriber] || ''))));
+  };
+
+  const handleDeleteClick = (subscriberName: string, subscriberEmail: string) => {
+    setDeleteDialog({
+      isOpen: true,
+      subscriberName,
+      subscriberEmail
+    });
+  };
+
+  const handleDeleteConfirm = async () => {
+    setIsDeleting(true);
+    try {
+      await deleteSubscriber(deleteDialog.subscriberEmail);
+      showToast({
+        title: 'Success',
+        content: 'Subscriber deleted successfully',
+        type: 'success'
+      });
+      onRefresh?.();
+    } catch (error) {
+      console.error('Error deleting subscriber:', error);
+      showToast({
+        title: 'Error',
+        content: 'Failed to delete subscriber',
+        type: 'error'
+      });
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const handleFilterChange = (fieldName: string, value: string) => {
@@ -311,36 +352,7 @@ export function SubscriberList({ subscribers, onRefresh }: SubscriberListProps) 
                 <Button
                   variant="soft"
                   color="red"
-                  onClick={async () => {
-                    if (confirm(
-                      `Are you sure you want to HARD DELETE ${subscriber.Name} (${subscriber.Email})?\n\n` +
-                      'This will PERMANENTLY delete:\n' +
-                      '- All messages sent/received by this user\n' +
-                      '- All message attachments and links\n' +
-                      '- All workflow messages and history\n' +
-                      '- All media files uploaded by this user\n' +
-                      '- All tenant user records and role assignments\n' +
-                      '- The subscriber record itself\n\n' +
-                      '⚠️  This action cannot be undone and will break any existing references!'
-                    )) {
-                      try {
-                        await deleteSubscriber(subscriber.Email);
-                        showToast({
-                          title: 'Success',
-                          content: 'Subscriber deleted successfully',
-                          type: 'success'
-                        });
-                        onRefresh?.();
-                      } catch (error) {
-                        console.error('Error deleting subscriber:', error);
-                        showToast({
-                          title: 'Error',
-                          content: 'Failed to delete subscriber',
-                          type: 'error'
-                        });
-                      }
-                    }
-                  }}
+                  onClick={() => handleDeleteClick(subscriber.Name, subscriber.Email)}
                 >
                   Delete
                 </Button>
@@ -384,6 +396,15 @@ export function SubscriberList({ subscribers, onRefresh }: SubscriberListProps) 
           </Button>
         </Flex>
       </Flex>
+
+      <DeleteConfirmationDialog
+        isOpen={deleteDialog.isOpen}
+        onOpenChange={(open) => setDeleteDialog(prev => ({ ...prev, isOpen: open }))}
+        subscriberName={deleteDialog.subscriberName}
+        subscriberEmail={deleteDialog.subscriberEmail}
+        onConfirm={handleDeleteConfirm}
+        isLoading={isDeleting}
+      />
     </>
   );
 } 
