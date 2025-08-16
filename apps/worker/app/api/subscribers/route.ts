@@ -48,42 +48,114 @@ export async function POST(request: Request) {
     switch(body.op) {
       case 'select': {
         if (body.Id === '*') {
-          // Only admins can view all subscribers
-          if (!await isSystemAdmin(session.user.email, db)) {
+          // Check if user is admin or tenant admin
+          const isGlobalAdmin = await isSystemAdmin(session.user.email, db);
+          const isTenantAdmin = !isGlobalAdmin && await db.prepare(`
+            SELECT 1 FROM Credentials WHERE Email = ? AND Role = 'tenant'
+          `).bind(session.user.email).first();
+
+          if (!isGlobalAdmin && !isTenantAdmin) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
           }
+
           try {
-            const results = await db.prepare(`
-              SELECT 
-                Email as Id,
-                Email,
-                Name,
-                Provider,
-                EmailVerified,
-                Joined,
-                Signin,
-                Left,
-                Active,
-                Banned,
-                Post,
-                Moderate,
-                Track,
-                CreatedAt,
-                UpdatedAt
-              FROM Subscribers 
-              ORDER BY CreatedAt DESC
-            `).all<SubscriberRow>();
-            return NextResponse.json({ success: true, results: results.results || [] });
+            if (isGlobalAdmin) {
+              // Global admin can see all subscribers
+              const results = await db.prepare(`
+                SELECT 
+                  Email as Id,
+                  Email,
+                  Name,
+                  Provider,
+                  EmailVerified,
+                  Joined,
+                  Signin,
+                  Left,
+                  Active,
+                  Banned,
+                  Post,
+                  Moderate,
+                  Track,
+                  CreatedAt,
+                  UpdatedAt
+                FROM Subscribers 
+                ORDER BY CreatedAt DESC
+              `).all<SubscriberRow>();
+              return NextResponse.json({ success: true, results: results.results || [] });
+            } else {
+              // Tenant admin can only see subscribers from their tenant(s)
+              const userTenants = await db.prepare(`
+                SELECT TenantId FROM TenantUsers 
+                WHERE Email = ? AND RoleId = 'tenant'
+              `).bind(session.user.email).all();
+              
+              if (!userTenants.results || userTenants.results.length === 0) {
+                return NextResponse.json({ error: "No tenant access found" }, { status: 403 });
+              }
+              
+              const tenantIds = userTenants.results.map(t => t.TenantId);
+              const placeholders = tenantIds.map(() => '?').join(',');
+              
+              const results = await db.prepare(`
+                SELECT 
+                  s.Email as Id,
+                  s.Email,
+                  s.Name,
+                  s.Provider,
+                  s.EmailVerified,
+                  s.Joined,
+                  s.Signin,
+                  s.Left,
+                  s.Active,
+                  s.Banned,
+                  s.Post,
+                  s.Moderate,
+                  s.Track,
+                  s.CreatedAt,
+                  s.UpdatedAt
+                FROM Subscribers s
+                INNER JOIN TenantUsers tu ON s.Email = tu.Email
+                WHERE tu.TenantId IN (${placeholders})
+                ORDER BY s.CreatedAt DESC
+              `).bind(...tenantIds).all<SubscriberRow>();
+              return NextResponse.json({ success: true, results: results.results || [] });
+            }
           } catch (error) {
             console.error('Error fetching subscribers:', error);
             return NextResponse.json({ error: "Error fetching subscribers" }, { status: 500 });
           }
         } else {
-          // Check if user is admin or requesting their own record
+          // Check if user is admin, tenant admin, or requesting their own record
           const identifier = body.Id || body.email || body.Email;
           const isUserAdmin = await isSystemAdmin(session.user.email, db);
-          if (!isUserAdmin && identifier !== session.user.email) {
+          const isUserTenantAdmin = !isUserAdmin && await db.prepare(`
+            SELECT 1 FROM Credentials WHERE Email = ? AND Role = 'tenant'
+          `).bind(session.user.email).first();
+          
+          if (!isUserAdmin && !isUserTenantAdmin && identifier !== session.user.email) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+          }
+          
+          // If tenant admin is accessing someone else's record, verify they belong to the same tenant
+          if (isUserTenantAdmin && identifier !== session.user.email) {
+            const targetUserTenant = await db.prepare(`
+              SELECT tu.TenantId FROM TenantUsers tu
+              WHERE tu.Email = ?
+            `).bind(identifier).first();
+            
+            if (!targetUserTenant) {
+              return NextResponse.json({ error: "User not found in any tenant" }, { status: 404 });
+            }
+            
+            const userTenants = await db.prepare(`
+              SELECT TenantId FROM TenantUsers 
+              WHERE Email = ? AND RoleId = 'tenant'
+            `).bind(session.user.email).all();
+            
+            const userTenantIds = userTenants.results?.map(t => t.TenantId) || [];
+            if (!userTenantIds.includes(targetUserTenant.TenantId)) {
+              return NextResponse.json({ error: "Access denied to user from different tenant" }, { status: 403 });
+            }
           }
           try {
             const subscriber = await db.prepare(`
@@ -312,12 +384,48 @@ export async function POST(request: Request) {
           return NextResponse.json({ error: "Missing subscriber ID" }, { status: 400 });
         }
 
-        // Only system admins can perform hard deletes
-        if (!await isSystemAdmin(session.user.email, db)) {
-          return NextResponse.json({ error: "Only system admins can perform hard deletes" }, { status: 401 });
-        }
-
         const email = body.Id;
+        const isGlobalAdmin = await isSystemAdmin(session.user.email, db);
+        
+        if (!isGlobalAdmin) {
+          // Check if user is a tenant admin
+          const isTenantAdmin = await db.prepare(`
+            SELECT 1 FROM Credentials WHERE Email = ? AND Role = 'tenant'
+          `).bind(session.user.email).first();
+
+          if (!isTenantAdmin) {
+            return NextResponse.json({ error: "Only system admins and tenant admins can perform hard deletes" }, { status: 401 });
+          }
+
+          // For tenant admins, check if the target user is in multiple tenants
+          const targetUserTenants = await db.prepare(`
+            SELECT TenantId FROM TenantUsers WHERE Email = ?
+          `).bind(email).all();
+
+          if (!targetUserTenants.results || targetUserTenants.results.length === 0) {
+            return NextResponse.json({ error: "User not found in any tenant" }, { status: 404 });
+          }
+
+          // If user is in multiple tenants, only system admins can delete them
+          if (targetUserTenants.results.length > 1) {
+            return NextResponse.json({ 
+              error: "Cannot delete user who is in multiple tenants. Only system admins can perform this operation." 
+            }, { status: 403 });
+          }
+
+          // Check if the tenant admin has access to the tenant where the user exists
+          const userTenantId = targetUserTenants.results[0].TenantId;
+          const tenantAdminAccess = await db.prepare(`
+            SELECT 1 FROM TenantUsers 
+            WHERE Email = ? AND TenantId = ? AND RoleId = 'tenant'
+          `).bind(session.user.email, userTenantId).first();
+
+          if (!tenantAdminAccess) {
+            return NextResponse.json({ 
+              error: "You can only delete users from tenants you have admin access to" 
+            }, { status: 403 });
+          }
+        }
 
         try {
           // Start with the most dependent tables and work backwards
@@ -443,17 +551,45 @@ export async function GET(request: Request) {
       return NextResponse.json(subscriber || { error: "Not found" });
     }
 
-    // If no email provided, check if user is admin
-    if (!await isSystemAdmin(session.user.email, db)) {
+    // If no email provided, check if user is admin or tenant admin
+    const isGlobalAdmin = await isSystemAdmin(session.user.email, db);
+    const isTenantAdmin = !isGlobalAdmin && await db.prepare(`
+      SELECT 1 FROM Credentials WHERE Email = ? AND Role = 'tenant'
+    `).bind(session.user.email).first();
+
+    if (!isGlobalAdmin && !isTenantAdmin) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Return all subscribers for admin (including inactive ones for admin purposes)
-    const subscribers = await db.prepare(
-      'SELECT * FROM Subscribers ORDER BY CreatedAt DESC'
-    ).all();
-
-    return NextResponse.json(subscribers.results || []);
+    if (isGlobalAdmin) {
+      // Global admin can see all subscribers
+      const subscribers = await db.prepare(
+        'SELECT * FROM Subscribers ORDER BY CreatedAt DESC'
+      ).all();
+      return NextResponse.json(subscribers.results || []);
+    } else {
+      // Tenant admin can only see subscribers from their tenant(s)
+      const userTenants = await db.prepare(`
+        SELECT TenantId FROM TenantUsers 
+        WHERE Email = ? AND RoleId = 'tenant'
+      `).bind(session.user.email).all();
+      
+      if (!userTenants.results || userTenants.results.length === 0) {
+        return NextResponse.json({ error: "No tenant access found" }, { status: 403 });
+      }
+      
+      const tenantIds = userTenants.results.map(t => t.TenantId);
+      const placeholders = tenantIds.map(() => '?').join(',');
+      
+      const subscribers = await db.prepare(`
+        SELECT s.* FROM Subscribers s
+        INNER JOIN TenantUsers tu ON s.Email = tu.Email
+        WHERE tu.TenantId IN (${placeholders})
+        ORDER BY s.CreatedAt DESC
+      `).bind(...tenantIds).all();
+      
+      return NextResponse.json(subscribers.results || []);
+    }
   } catch (error) {
     console.error('Subscriber fetch error:', error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
