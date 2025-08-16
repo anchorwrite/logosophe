@@ -25,13 +25,11 @@ interface MessageRecipient {
 interface MessageThreadProps {
   message: RecentMessage;
   userEmail: string;
-  onMarkAsRead: (messageId: number) => void;
 }
 
 export function MessageThread({
   message,
-  userEmail,
-  onMarkAsRead
+  userEmail
 }: MessageThreadProps) {
   const [recipients, setRecipients] = useState<MessageRecipient[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -61,12 +59,8 @@ export function MessageThread({
     setCanRecall(timeDiff < 300); // 5 minutes recall window
   }, [message.Id, message.CreatedAt]);
 
-  useEffect(() => {
-    // Mark message as read if user is a recipient and message is unread
-    if (!message.IsRead && message.SenderEmail !== userEmail) {
-      onMarkAsRead(message.Id);
-    }
-  }, [message.Id, message.IsRead, message.SenderEmail, userEmail, onMarkAsRead]);
+  // Note: Removed auto-mark-as-read logic since this is the dashboard interface
+  // where admin users are typically the senders, not recipients
 
   const handleRecall = async () => {
     if (!canRecall) return;
