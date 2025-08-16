@@ -2,38 +2,29 @@
 
 import { useState, useEffect } from 'react';
 import { Heading, Text, Flex, Card, Button, Box, Badge, Avatar, Separator } from '@radix-ui/themes';
+import type { RecentMessage, MessageRecipient } from './types';
 
-interface RecentMessage {
-  Id: number;
-  Subject: string;
-  Body: string;
-  SenderEmail: string;
-  SenderName: string;
-  CreatedAt: string;
-  IsRead: boolean;
-  MessageType: string;
-  RecipientCount: number;
-}
 
-interface MessageRecipient {
-  Email: string;
-  Name: string;
-  IsRead: boolean;
-  ReadAt: string | null;
-}
 
 interface MessageThreadProps {
   message: RecentMessage;
   userEmail: string;
+  onReply?: (message: RecentMessage) => void;
+  onForward?: (message: RecentMessage) => void;
 }
 
 export function MessageThread({
   message,
-  userEmail
+  userEmail,
+  onReply,
+  onForward
 }: MessageThreadProps) {
   const [recipients, setRecipients] = useState<MessageRecipient[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [canRecall, setCanRecall] = useState(false);
+  const [isArchiving, setIsArchiving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  
+  const isSender = message.SenderEmail === userEmail;
 
   useEffect(() => {
     const fetchRecipients = async () => {
@@ -52,39 +43,111 @@ export function MessageThread({
 
     fetchRecipients();
 
-    // Check if message can be recalled
-    const messageDate = new Date(message.CreatedAt);
-    const now = new Date();
-    const timeDiff = (now.getTime() - messageDate.getTime()) / 1000; // seconds
-    setCanRecall(timeDiff < 300); // 5 minutes recall window
-  }, [message.Id, message.CreatedAt]);
+
+
+    // Mark message as read if user is a recipient and message is unread
+    if (!isSender && !message.IsRead) {
+      markMessageAsRead();
+    }
+  }, [message.Id, message.CreatedAt, message.IsRead, isSender]);
+
+  const markMessageAsRead = async () => {
+    try {
+      const response = await fetch(`/api/dashboard/messaging/messages/${message.Id}/mark-read`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ messageId: message.Id }),
+      });
+
+      if (response.ok) {
+        // Update the message's read status locally
+        // This will be reflected in the parent component when it refreshes
+        console.log('Message marked as read');
+      }
+    } catch (error) {
+      console.error('Error marking message as read:', error);
+    }
+  };
+
+  const handleReply = () => {
+    if (onReply) {
+      onReply(message);
+    }
+  };
+
+  const handleForward = () => {
+    if (onForward) {
+      onForward(message);
+    }
+  };
+
+  const handleArchive = async () => {
+    if (isArchiving) return;
+    
+    setIsArchiving(true);
+    try {
+      const response = await fetch(`/api/dashboard/messaging/messages/${message.Id}/archive`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ messageId: message.Id }),
+      });
+
+      if (response.ok) {
+        // Archive successful - could show a success message or update UI
+        console.log('Message archived successfully');
+        // Note: The parent component will need to refresh to show updated status
+      } else {
+        const errorData = await response.json() as { error?: string };
+        console.error('Failed to archive message:', errorData.error);
+      }
+    } catch (error) {
+      console.error('Error archiving message:', error);
+    } finally {
+      setIsArchiving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (isDeleting) return;
+    
+    // Confirm deletion
+    if (!confirm('Are you sure you want to delete this message? This action cannot be undone.')) {
+      return;
+    }
+    
+    setIsDeleting(true);
+    try {
+      const response = await fetch(`/api/harbor/messaging/messages/${message.Id}/delete`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        // Delete successful - could show a success message or update UI
+        console.log('Message deleted successfully');
+        // Note: The parent component will need to refresh to show updated status
+      } else {
+        const errorData = await response.json() as { error?: string };
+        console.error('Failed to delete message:', errorData.error);
+      }
+    } catch (error) {
+      console.error('Error deleting message:', error);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   // Note: Removed auto-mark-as-read logic since this is the dashboard interface
   // where admin users are typically the senders, not recipients
 
-  const handleRecall = async () => {
-    if (!canRecall) return;
 
-    try {
-                      const response = await fetch(`/api/dashboard/messaging/messages/${message.Id}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ action: 'recall' }),
-        });
 
-      if (response.ok) {
-        // Update UI to show recalled status
-        // This would typically trigger a WebSocket update
-        console.log('Message recalled successfully');
-      }
-    } catch (error) {
-      console.error('Error recalling message:', error);
-    }
-  };
-
-  const isSender = message.SenderEmail === userEmail;
   const readCount = recipients.filter(r => r.IsRead).length;
   const totalRecipients = recipients.length;
 
@@ -128,13 +191,8 @@ export function MessageThread({
             </Text>
           </Box>
           <Flex gap="2">
-            {isSender && canRecall && (
-              <Button size="1" variant="soft" color="red" onClick={handleRecall}>
-                Recall
-              </Button>
-            )}
             {message.MessageType === 'direct' && (
-              <Button size="1" variant="soft">
+              <Button size="1" variant="soft" onClick={handleReply}>
                 Reply
               </Button>
             )}
@@ -152,43 +210,45 @@ export function MessageThread({
           </Box>
         </Card>
 
-        {/* Recipients Section */}
-        <Box>
-          <Heading size="3" style={{ marginBottom: '1rem' }}>
-            Recipients ({readCount}/{totalRecipients} read)
-          </Heading>
-          
-          {isLoading ? (
-            <Text color="gray">Loading recipients...</Text>
-          ) : recipients.length === 0 ? (
-            <Text color="gray">No recipients found</Text>
-          ) : (
-            <Flex direction="column" gap="2">
-              {recipients.map((recipient) => (
-                <Flex key={recipient.Email} justify="between" align="center" style={{
-                  padding: '0.5rem',
-                  border: '1px solid var(--gray-6)',
-                  borderRadius: '4px'
-                }}>
-                  <Box>
-                    <Text size="2" weight="medium">
-                      {recipient.Name ? `${recipient.Name} (${recipient.Email})` : recipient.Email}
-                    </Text>
-                  </Box>
-                  <Flex align="center" gap="2">
-                    {recipient.IsRead ? (
-                      <Badge size="1" color="green">
-                        Read {recipient.ReadAt ? new Date(recipient.ReadAt).toLocaleString() : ''}
-                      </Badge>
-                    ) : (
-                      <Badge size="1" color="gray">Unread</Badge>
-                    )}
+        {/* Recipients Section - Only show if not the sender */}
+        {!isSender && (
+          <Box>
+            <Heading size="3" style={{ marginBottom: '1rem' }}>
+              Recipients ({readCount}/{totalRecipients} read)
+            </Heading>
+            
+            {isLoading ? (
+              <Text color="gray">Loading recipients...</Text>
+            ) : recipients.length === 0 ? (
+              <Text color="gray">No recipients found</Text>
+            ) : (
+              <Flex direction="column" gap="2">
+                {recipients.map((recipient) => (
+                  <Flex key={recipient.Email} justify="between" align="center" style={{
+                    padding: '0.5rem',
+                    border: '1px solid var(--gray-6)',
+                    borderRadius: '4px'
+                  }}>
+                    <Box>
+                      <Text size="2" weight="medium">
+                        {recipient.Name ? `${recipient.Name} (${recipient.Email})` : recipient.Email}
+                      </Text>
+                    </Box>
+                    <Flex align="center" gap="2">
+                      {recipient.IsRead ? (
+                        <Badge size="1" color="green">
+                          Read {recipient.ReadAt ? new Date(recipient.ReadAt).toLocaleString() : ''}
+                        </Badge>
+                      ) : (
+                        <Badge size="1" color="gray">Unread</Badge>
+                      )}
+                    </Flex>
                   </Flex>
-                </Flex>
-              ))}
-            </Flex>
-          )}
-        </Box>
+                ))}
+              </Flex>
+            )}
+          </Box>
+        )}
       </Box>
 
       {/* Message Actions */}
@@ -199,11 +259,14 @@ export function MessageThread({
             {isSender ? 'You sent this message' : 'You received this message'}
           </Text>
           <Flex gap="2">
-            <Button size="1" variant="soft">
+            <Button size="1" variant="soft" onClick={handleForward}>
               Forward
             </Button>
-            <Button size="1" variant="soft">
-              Archive
+            <Button size="1" variant="soft" onClick={handleArchive} disabled={isArchiving}>
+              {isArchiving ? 'Archiving...' : 'Archive'}
+            </Button>
+            <Button size="1" variant="soft" color="red" onClick={handleDelete} disabled={isDeleting}>
+              {isDeleting ? 'Deleting...' : 'Delete'}
             </Button>
           </Flex>
         </Flex>

@@ -78,10 +78,17 @@ export async function POST(request: NextRequest) {
       WHERE TenantId = ? AND Email IN (${recipients.map(() => '?').join(',')}) AND RoleId = 'subscriber'
     `).bind(targetTenantId, ...recipients).all() as D1Result<any>;
 
-    // Combine both results
+    // Check if any recipients are system admins (who have global access)
+    const adminValidation = await db.prepare(`
+      SELECT Email FROM Credentials 
+      WHERE Email IN (${recipients.map(() => '?').join(',')}) AND Role IN ('admin', 'tenant')
+    `).bind(...recipients).all() as D1Result<any>;
+
+    // Combine all results (tenant users, subscribers, and system admins)
     const tenantUsers = recipientValidation.results.map(r => r.Email) as string[];
     const subscribers = subscriberValidation.results.map(r => r.Email) as string[];
-    const validRecipients = [...new Set([...tenantUsers, ...subscribers])];
+    const systemAdmins = adminValidation.results.map(r => r.Email) as string[];
+    const validRecipients = [...new Set([...tenantUsers, ...subscribers, ...systemAdmins])];
 
     if (validRecipients.length !== recipients.length) {
       const invalidRecipients = recipients.filter(r => !validRecipients.includes(r));

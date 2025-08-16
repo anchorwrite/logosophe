@@ -128,6 +128,12 @@ export async function POST(request: NextRequest) {
       WHERE TenantId = ? AND Email IN (${recipients.map(() => '?').join(',')}) AND RoleId = 'subscriber'
     `).bind(tenantId, ...recipients).all();
 
+    // Check if any recipients are system admins (who have global access)
+    const adminValidation = await db.prepare(`
+      SELECT Email FROM Credentials 
+      WHERE Email IN (${recipients.map(() => '?').join(',')}) AND Role IN ('admin', 'tenant')
+    `).bind(...recipients).all();
+
     // Check for blocked recipients (using updated blocking logic that respects system-wide blocks)
     const blockedRecipients: string[] = [];
     for (const recipient of recipients) {
@@ -146,10 +152,11 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Combine both results
+    // Combine all results (tenant users, subscribers, and system admins)
     const tenantUsers = recipientValidation.results.map(r => r.Email) as string[];
     const subscribers = subscriberValidation.results.map(r => r.Email) as string[];
-    const validRecipients = [...new Set([...tenantUsers, ...subscribers])];
+    const systemAdmins = adminValidation.results.map(r => r.Email) as string[];
+    const validRecipients = [...new Set([...tenantUsers, ...subscribers, ...systemAdmins])];
     
     const invalidRecipients = recipients.filter(email => !validRecipients.includes(email));
 

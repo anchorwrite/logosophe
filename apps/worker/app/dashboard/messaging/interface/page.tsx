@@ -6,26 +6,10 @@ import { getUserMessagingTenants, getSystemSettings } from '@/lib/messaging';
 import { SystemLogs } from '@/lib/system-logs';
 import { MessagingInterface } from './MessagingInterface';
 import type { D1Result } from '@cloudflare/workers-types';
+import type { RecentMessage, UserStats, Recipient, SystemSettings } from './types';
 
 
-interface RecentMessage {
-  Id: number;
-  Subject: string;
-  Body: string;
-  SenderEmail: string;
-  SenderName: string;
-  CreatedAt: string;
-  IsRead: boolean;
-  MessageType: string;
-  RecipientCount: number;
-}
 
-interface UserStats {
-  totalMessages: number;
-  unreadMessages: number;
-  sentMessages: number;
-  activeConversations: number;
-}
 
 export default async function MessagingInterfacePage() {
   const session = await auth();
@@ -75,12 +59,14 @@ export default async function MessagingInterfacePage() {
         COALESCE(s.Name, m.SenderEmail) as SenderName,
         m.CreatedAt,
         m.MessageType,
+        m.TenantId,
         (SELECT COUNT(DISTINCT mr2.RecipientEmail) FROM MessageRecipients mr2 WHERE mr2.MessageId = m.Id AND mr2.IsDeleted = FALSE) as RecipientCount,
         (SELECT CASE WHEN COUNT(*) > 0 THEN TRUE ELSE FALSE END FROM MessageRecipients mr3 WHERE mr3.MessageId = m.Id AND mr3.RecipientEmail = ? AND mr3.IsDeleted = FALSE) as IsRead
       FROM Messages m
       LEFT JOIN Subscribers s ON m.SenderEmail = s.Email
       WHERE (m.SenderEmail = ? OR EXISTS (SELECT 1 FROM MessageRecipients mr4 WHERE mr4.MessageId = m.Id AND mr4.RecipientEmail = ? AND mr4.IsDeleted = FALSE))
       AND m.IsDeleted = FALSE
+      AND m.IsArchived = FALSE
       ORDER BY m.CreatedAt DESC
       LIMIT 20
     `;
@@ -96,6 +82,7 @@ export default async function MessagingInterfacePage() {
         COALESCE(s.Name, m.SenderEmail) as SenderName,
         m.CreatedAt,
         m.MessageType,
+        m.TenantId,
         (SELECT COUNT(DISTINCT mr2.RecipientEmail) FROM MessageRecipients mr2 WHERE mr2.MessageId = m.Id AND mr2.IsDeleted = FALSE) as RecipientCount,
         (SELECT CASE WHEN COUNT(*) > 0 THEN TRUE ELSE FALSE END FROM MessageRecipients mr3 WHERE mr3.MessageId = m.Id AND mr3.RecipientEmail = ? AND mr3.IsDeleted = FALSE) as IsRead
       FROM Messages m
@@ -103,6 +90,7 @@ export default async function MessagingInterfacePage() {
       WHERE (m.SenderEmail = ? OR EXISTS (SELECT 1 FROM MessageRecipients mr4 WHERE mr4.MessageId = m.Id AND mr4.RecipientEmail = ? AND mr4.IsDeleted = FALSE))
       AND m.TenantId IN (${accessibleTenants.map(() => '?').join(',')})
       AND m.IsDeleted = FALSE
+      AND m.IsArchived = FALSE
       ORDER BY m.CreatedAt DESC
       LIMIT 20
     `;
@@ -126,6 +114,7 @@ export default async function MessagingInterfacePage() {
     LEFT JOIN MessageRecipients mr ON m.Id = mr.MessageId
     WHERE (m.SenderEmail = ? OR mr.RecipientEmail = ?)
     AND m.IsDeleted = FALSE
+    AND m.IsArchived = FALSE
   `;
 
   const statsResult = await db.prepare(statsQuery)

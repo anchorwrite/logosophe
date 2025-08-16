@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Container, Heading, Text, Flex, Card, Button, Box, Table, Badge, TextField, Dialog } from '@radix-ui/themes';
 import Link from 'next/link';
+import { useToast } from '@/components/Toast';
 
 interface UserBlock {
   Id: number;
@@ -22,6 +23,7 @@ interface BlocksClientProps {
 }
 
 export function BlocksClient({ initialBlocks, accessibleTenants }: BlocksClientProps) {
+  const { showToast } = useToast();
   const [blocks, setBlocks] = useState<UserBlock[]>(initialBlocks);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTenant, setSelectedTenant] = useState('');
@@ -62,13 +64,28 @@ export function BlocksClient({ initialBlocks, accessibleTenants }: BlocksClientP
         setBlocks(prevBlocks => prevBlocks.filter(block => block.Id !== blockToDelete.Id));
         setShowDeleteDialog(false);
         setBlockToDelete(null);
+        
+        // Show success toast
+        showToast({
+          type: 'success',
+          title: 'Block Deleted',
+          content: 'User block has been removed successfully'
+        });
       } else {
         const errorData = await response.json().catch(() => ({ error: 'Failed to delete block' })) as { error?: string };
-        alert(`Error deleting block: ${errorData.error || 'Unknown error'}`);
+        showToast({
+          type: 'error',
+          title: 'Delete Failed',
+          content: `Error deleting block: ${errorData.error || 'Unknown error'}`
+        });
       }
     } catch (error) {
       console.error('Error deleting block:', error);
-      alert('Error deleting block. Please try again.');
+      showToast({
+        type: 'error',
+        title: 'Delete Error',
+        content: 'Error deleting block. Please try again.'
+      });
     } finally {
       setIsDeleting(false);
     }
