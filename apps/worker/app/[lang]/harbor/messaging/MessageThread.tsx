@@ -49,8 +49,26 @@ export function MessageThread({ message, userEmail, tenantId, onClose, onMessage
   console.log('Message type:', typeof message?.Id);
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleString();
+    // Ensure proper timezone handling by explicitly parsing the date
+    let date: Date;
+    
+    // Handle different date string formats
+    if (dateString.includes('T')) {
+      // ISO format (e.g., "2025-01-15T10:30:00.000Z")
+      date = new Date(dateString);
+    } else if (dateString.includes(' ')) {
+      // SQLite datetime format (e.g., "2025-01-15 10:30:00")
+      // Convert to ISO format for proper timezone handling
+      const isoString = dateString.replace(' ', 'T') + '.000Z';
+      date = new Date(isoString);
+    } else {
+      // Fallback
+      date = new Date(dateString);
+    }
+    
+    return date.toLocaleString([], {
+      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+    });
   };
 
   // Fetch recipients for this message
@@ -149,8 +167,8 @@ export function MessageThread({ message, userEmail, tenantId, onClose, onMessage
         body: JSON.stringify({
           subject: `Re: ${message.Subject}`,
           body: replyBody,
-          recipients: recipients.map(r => r.Email),
-          messageType: 'subscriber',
+          recipients: [message.SenderEmail],
+          messageType: 'direct',
           tenantId: tenantId
         }),
       });
@@ -281,11 +299,26 @@ export function MessageThread({ message, userEmail, tenantId, onClose, onMessage
                     • {recipients.length} {t('messaging.recipients')}
                   </Text>
                 </Flex>
+                
+                {/* Message Type Explanation */}
+                {message.MessageType !== 'direct' && (
+                  <Box style={{ marginTop: '1rem', padding: '1rem', backgroundColor: 'var(--blue-2)', borderRadius: '4px', border: '1px solid var(--blue-6)' }}>
+                    <Text size="2" color="blue" weight="medium">
+                      {message.MessageType === 'broadcast' ? '📢 Broadcast Message' : '📋 Announcement'}
+                    </Text>
+                    <Text size="1" color="blue" style={{ marginTop: '0.5rem' }}>
+                      {message.MessageType === 'broadcast' 
+                        ? 'This is a one-way broadcast message. Replies are not allowed.'
+                        : 'This is an official announcement. Replies are not allowed.'
+                      }
+                    </Text>
+                  </Box>
+                )}
               </Flex>
             </Card>
 
-            {/* Reply Section */}
-            {message.SenderEmail !== userEmail && (
+            {/* Reply Section - Only show for Direct Messages */}
+            {message.SenderEmail !== userEmail && message.MessageType === 'direct' && (
               <Card size="3">
                 <Flex direction="column" gap="3">
                   <Heading size="3">{t('messaging.reply')}</Heading>

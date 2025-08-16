@@ -112,18 +112,83 @@ export async function updateRateLimit(senderEmail: string): Promise<void> {
 }
 
 /**
- * Check if user is blocked by recipient
+ * Check if user is blocked by recipient OR if recipient is blocked by user
+ * System-wide blocks (from admins) override personal blocks
  */
 export async function isUserBlocked(senderEmail: string, recipientEmail: string, tenantId: string): Promise<boolean> {
   const { env } = await getCloudflareContext({async: true});
   const db = env.DB;
   
-  const block = await db.prepare(`
+  // First check for system-wide blocks (from admins) - these override personal blocks
+  const systemBlockQuery = `
+    SELECT 1 FROM UserBlocks 
+    WHERE BlockerEmail IN (
+      SELECT Email FROM Credentials WHERE Role IN ('admin', 'tenant')
+    )
+    AND (BlockedEmail = ? OR BlockedEmail = ?)
+    AND IsActive = TRUE
+  `;
+  
+  const systemBlock = await db.prepare(systemBlockQuery)
+    .bind(senderEmail, recipientEmail)
+    .first();
+  
+  if (systemBlock) {
+    return true; // System-wide block found, override personal blocks
+  }
+  
+  // Check if recipient has blocked sender (personal block)
+  const recipientBlockedSender = await db.prepare(`
     SELECT 1 FROM UserBlocks 
     WHERE BlockerEmail = ? AND BlockedEmail = ? AND TenantId = ? AND IsActive = TRUE
+    AND BlockerEmail NOT IN (
+      SELECT Email FROM Credentials WHERE Role IN ('admin', 'tenant')
+    )
   `).bind(recipientEmail, senderEmail, tenantId).first();
   
-  return !!block;
+  // Check if sender has blocked recipient (personal block)
+  const senderBlockedRecipient = await db.prepare(`
+    SELECT 1 FROM UserBlocks 
+    WHERE BlockerEmail = ? AND BlockedEmail = ? AND TenantId = ? AND IsActive = TRUE
+    AND BlockerEmail NOT IN (
+      SELECT Email FROM Credentials WHERE Role IN ('admin', 'tenant')
+    )
+  `).bind(senderEmail, recipientEmail, tenantId).first();
+  
+  return !!(recipientBlockedSender || senderBlockedRecipient);
+}
+
+/**
+ * Check if a user is blocked by anyone in a specific tenant
+ * System-wide blocks (from admins) override personal blocks
+ */
+export async function isUserBlockedInTenant(userEmail: string, tenantId: string): Promise<boolean> {
+  const { env } = await getCloudflareContext({async: true});
+  const db = env.DB;
+  
+  // Check for system-wide blocks first (these override personal blocks)
+  const systemBlock = await db.prepare(`
+    SELECT 1 FROM UserBlocks 
+    WHERE BlockedEmail = ? AND IsActive = TRUE
+    AND BlockerEmail IN (
+      SELECT Email FROM Credentials WHERE Role IN ('admin', 'tenant')
+    )
+  `).bind(userEmail).first();
+  
+  if (systemBlock) {
+    return true; // System-wide block found
+  }
+  
+  // Check for personal blocks in this tenant
+  const personalBlock = await db.prepare(`
+    SELECT 1 FROM UserBlocks 
+    WHERE BlockedEmail = ? AND TenantId = ? AND IsActive = TRUE
+    AND BlockerEmail NOT IN (
+      SELECT Email FROM Credentials WHERE Role IN ('admin', 'tenant')
+    )
+  `).bind(userEmail, tenantId).first();
+  
+  return !!personalBlock;
 }
 
 /**
@@ -147,7 +212,20 @@ export async function canSendMessage(
   // Check if user is system admin
   const isAdmin = await isSystemAdmin(senderEmail, db);
   if (isAdmin) {
-    return { allowed: true, blockedRecipients: [] };
+    // Even admins can't send to blocked users
+    const blockedRecipients: string[] = [];
+    for (const recipient of recipients) {
+      if (await isUserBlocked(senderEmail, recipient, tenantId)) {
+        blockedRecipients.push(recipient);
+      }
+    }
+    return { allowed: true, blockedRecipients };
+  }
+  
+  // Check if user is blocked by anyone in this tenant
+  const isSenderBlocked = await isUserBlockedInTenant(senderEmail, tenantId);
+  if (isSenderBlocked) {
+    return { allowed: false, blockedRecipients: [], error: 'You are blocked from sending messages in this tenant' };
   }
   
   // Check if user is tenant admin

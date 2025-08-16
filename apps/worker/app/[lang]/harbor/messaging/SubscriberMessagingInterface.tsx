@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { Box, Flex, Heading, Text, Button, Card, Badge, TextField, Select } from '@radix-ui/themes';
 import { useTranslation } from 'react-i18next';
+import { useRouter } from 'next/navigation';
 import { MessageThread } from './MessageThread';
 import TextArea from '@/common/TextArea';
 import { FileAttachmentManager } from '../../../components/harbor/messaging/FileAttachmentManager';
@@ -42,6 +43,7 @@ interface Recipient {
   RoleId: string;
   IsOnline: boolean;
   IsBlocked: boolean;
+  BlockerEmail?: string;
 }
 
 interface SystemSettings {
@@ -77,6 +79,7 @@ export function SubscriberMessagingInterface({
 }: SubscriberMessagingInterfaceProps) {
   const { t } = useTranslation('translations');
   const { unreadCount } = useMessaging();
+  const router = useRouter();
   const [selectedMessage, setSelectedMessage] = useState<RecentMessage | null>(null);
   const [isComposing, setIsComposing] = useState(false);
   const [composeSubject, setComposeSubject] = useState('');
@@ -608,16 +611,38 @@ export function SubscriberMessagingInterface({
   };
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
+    // Ensure proper timezone handling by explicitly parsing the date
+    let date: Date;
+    
+    // Handle different date string formats
+    if (dateString.includes('T')) {
+      // ISO format (e.g., "2025-01-15T10:30:00.000Z")
+      date = new Date(dateString);
+    } else if (dateString.includes(' ')) {
+      // SQLite datetime format (e.g., "2025-01-15 10:30:00")
+      // Convert to ISO format for proper timezone handling
+      const isoString = dateString.replace(' ', 'T') + '.000Z';
+      date = new Date(isoString);
+    } else {
+      // Fallback
+      date = new Date(dateString);
+    }
+    
     const now = new Date();
-    const diffInHours = (now.getTime() - date.getTime()) // (1000 * 60 * 60);
+    const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
     
     if (diffInHours < 24) {
-      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      return date.toLocaleTimeString([], { 
+        hour: '2-digit', 
+        minute: '2-digit',
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+      });
     } else if (diffInHours < 48) {
       return t('messaging.yesterday');
     } else {
-      return date.toLocaleDateString();
+      return date.toLocaleDateString([], {
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+      });
     }
   };
 
@@ -715,14 +740,14 @@ export function SubscriberMessagingInterface({
             <UnifiedMessageComposer
               tenantId={userTenantId}
               userEmail={userEmail}
-              recipients={recipients.map(r => r.Email)}
+              recipients={recipients}
               onSend={async (messageData) => {
                 try {
                   const requestBody = {
                     subject: messageData.subject,
                     body: messageData.body,
                     recipients: messageData.recipients,
-                    messageType: 'subscriber',
+                    messageType: 'direct',
                     tenantId: messageData.tenantId,
                     attachments: messageData.attachments,
                     links: messageData.links
@@ -755,7 +780,7 @@ export function SubscriberMessagingInterface({
                     SenderName: userName,
                     CreatedAt: new Date().toISOString(),
                     IsRead: false,
-                    MessageType: 'subscriber',
+                    MessageType: 'direct',
                     RecipientCount: messageData.recipients.length,
                     HasAttachments: messageData.attachments.length > 0,
                     AttachmentCount: messageData.attachments.length,
@@ -817,6 +842,12 @@ export function SubscriberMessagingInterface({
           <Flex gap="3">
             <Button onClick={() => setIsComposing(true)}>
               {t('messaging.newMessage')}
+            </Button>
+            <Button 
+              variant="soft" 
+              onClick={() => router.push(`/${lang}/harbor/messaging/blocks`)}
+            >
+              Blocked Users
             </Button>
           </Flex>
         )}

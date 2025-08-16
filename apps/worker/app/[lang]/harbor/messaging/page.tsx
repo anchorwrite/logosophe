@@ -134,7 +134,7 @@ export default async function SubscriberMessagingPage({ params }: { params: Prom
     WHERE (m.SenderEmail = ? OR mr.RecipientEmail = ?)
     AND (tu_sender.TenantId = ? OR tu_recipient.TenantId = ?)
     AND m.IsDeleted = FALSE
-    AND m.MessageType = 'subscriber'
+    AND m.MessageType = 'direct'
     GROUP BY m.Id
     ORDER BY m.CreatedAt DESC
     LIMIT 20
@@ -160,7 +160,7 @@ export default async function SubscriberMessagingPage({ params }: { params: Prom
     WHERE (m.SenderEmail = ? OR mr.RecipientEmail = ?)
     AND (tu_sender.TenantId = ? OR tu_recipient.TenantId = ?)
     AND m.IsDeleted = FALSE
-    AND m.MessageType = 'subscriber'
+    AND m.MessageType = 'direct'
   `;
 
   const statsResult = await db.prepare(statsQuery)
@@ -183,7 +183,7 @@ export default async function SubscriberMessagingPage({ params }: { params: Prom
       WHERE (m.SenderEmail = ? OR mr.RecipientEmail = ?)
       AND (tu_sender.TenantId = ? OR tu_recipient.TenantId = ?)
       AND m.IsDeleted = FALSE
-      AND m.MessageType = 'subscriber'
+      AND m.MessageType = 'direct'
       AND mr.RecipientEmail IS NOT NULL
     )
     SELECT COUNT(*) as conversationCount
@@ -211,7 +211,8 @@ export default async function SubscriberMessagingPage({ params }: { params: Prom
       tu.TenantId,
       tu.RoleId,
       FALSE as IsOnline,
-      CASE WHEN ub.BlockedEmail IS NOT NULL THEN 1 ELSE 0 END as IsBlocked
+      CASE WHEN ub.BlockedEmail IS NOT NULL THEN 1 ELSE 0 END as IsBlocked,
+      ub.BlockerEmail
     FROM TenantUsers tu
     LEFT JOIN Subscribers s ON tu.Email = s.Email AND s.Active = TRUE
     LEFT JOIN UserRoles ur ON tu.Email = ur.Email AND tu.TenantId = ur.TenantId
@@ -253,4 +254,4 @@ export default async function SubscriberMessagingPage({ params }: { params: Prom
       lang={lang}
     />
   );
-} 
+}

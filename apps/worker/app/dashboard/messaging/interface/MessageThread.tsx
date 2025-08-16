@@ -108,6 +108,21 @@ export function MessageThread({
                 </Badge>
               )}
             </Flex>
+            
+            {/* Message Type Explanation for non-direct messages */}
+            {message.MessageType !== 'direct' && (
+              <Box style={{ marginTop: '0.5rem', padding: '0.5rem', backgroundColor: 'var(--blue-2)', borderRadius: '4px', border: '1px solid var(--blue-6)' }}>
+                <Text size="1" color="blue" weight="medium">
+                  {message.MessageType === 'broadcast' ? '📢 Broadcast Message' : '📋 Announcement'}
+                </Text>
+                <Text size="1" color="blue">
+                  {message.MessageType === 'broadcast' 
+                    ? 'One-way communication - replies not allowed'
+                    : 'Official announcement - replies not allowed'
+                  }
+                </Text>
+              </Box>
+            )}
             <Text size="1" color="gray">
               {new Date(message.CreatedAt).toLocaleString()}
             </Text>
@@ -118,9 +133,11 @@ export function MessageThread({
                 Recall
               </Button>
             )}
-            <Button size="1" variant="soft">
-              Reply
-            </Button>
+            {message.MessageType === 'direct' && (
+              <Button size="1" variant="soft">
+                Reply
+              </Button>
+            )}
           </Flex>
         </Flex>
       </Box>

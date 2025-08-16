@@ -147,7 +147,8 @@ export default async function MessagingInterfacePage() {
       TenantId,
       GROUP_CONCAT(RoleId, ', ') as RoleId,
       FALSE as IsOnline,
-      MAX(IsBlocked) as IsBlocked
+      MAX(IsBlocked) as IsBlocked,
+      MAX(BlockerEmail) as BlockerEmail
     FROM (
       -- Get all users with their primary role from TenantUsers
       SELECT 
@@ -155,7 +156,8 @@ export default async function MessagingInterfacePage() {
         s.Name,
         tu.TenantId,
         tu.RoleId,
-        CASE WHEN ub.BlockedEmail IS NOT NULL THEN 1 ELSE 0 END as IsBlocked
+        CASE WHEN ub.BlockedEmail IS NOT NULL THEN 1 ELSE 0 END as IsBlocked,
+        ub.BlockerEmail
       FROM TenantUsers tu
       LEFT JOIN Subscribers s ON tu.Email = s.Email
       LEFT JOIN UserBlocks ub ON tu.Email = ub.BlockedEmail AND tu.TenantId = ub.TenantId AND ub.IsActive = TRUE
@@ -171,7 +173,8 @@ export default async function MessagingInterfacePage() {
         s.Name,
         ur.TenantId,
         ur.RoleId,
-        CASE WHEN ub.BlockedEmail IS NOT NULL THEN 1 ELSE 0 END as IsBlocked
+        CASE WHEN ub.BlockedEmail IS NOT NULL THEN 1 ELSE 0 END as IsBlocked,
+        ub.BlockerEmail
       FROM UserRoles ur
       LEFT JOIN Subscribers s ON ur.Email = s.Email
       LEFT JOIN UserBlocks ub ON ur.Email = ub.BlockedEmail AND ur.TenantId = ur.TenantId AND ub.IsActive = TRUE

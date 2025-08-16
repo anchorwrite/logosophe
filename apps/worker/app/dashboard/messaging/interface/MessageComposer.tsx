@@ -10,6 +10,7 @@ interface Recipient {
   RoleId: string;
   IsOnline: boolean;
   IsBlocked: boolean;
+  BlockerEmail?: string;
 }
 
 interface SystemSettings {
@@ -23,6 +24,7 @@ interface SystemSettings {
 interface MessageComposerProps {
   recipients: Recipient[];
   accessibleTenants: string[];
+  userEmail: string;
   onSend: (messageData: {
     subject: string;
     body: string;
@@ -37,6 +39,7 @@ interface MessageComposerProps {
 export function MessageComposer({
   recipients,
   accessibleTenants,
+  userEmail,
   onSend,
   onCancel,
   systemSettings
@@ -168,11 +171,19 @@ export function MessageComposer({
           <Select.Root value={messageType} onValueChange={setMessageType}>
             <Select.Trigger style={{ width: '200px' }} />
             <Select.Content>
-              <Select.Item value="direct">Direct Message</Select.Item>
-              <Select.Item value="broadcast">Broadcast</Select.Item>
-              <Select.Item value="announcement">Announcement</Select.Item>
+              <Select.Item value="direct">Direct Message (allows replies)</Select.Item>
+              <Select.Item value="broadcast">Broadcast (no replies)</Select.Item>
+              <Select.Item value="announcement">Announcement (no replies)</Select.Item>
             </Select.Content>
           </Select.Root>
+          {messageType !== 'direct' && (
+            <Text size="1" color="blue" style={{ marginTop: '0.5rem' }}>
+              💡 {messageType === 'broadcast' 
+                ? 'Broadcast messages are one-way communications that do not allow replies.'
+                : 'Announcement messages are official communications that do not allow replies.'
+              }
+            </Text>
+          )}
         </Box>
 
         {/* Tenant Selection (if multiple tenants) */}
@@ -304,7 +315,9 @@ export function MessageComposer({
                         </Text>
                         <Badge size="1" variant="soft">{recipient.TenantId}</Badge>
                         {recipient.IsBlocked ? (
-                          <Badge size="1" color="red" variant="solid">Blocked</Badge>
+                          <Badge size="1" color="red" variant="solid">
+                            {recipient.BlockerEmail && recipient.BlockerEmail !== userEmail ? 'ADMIN BLOCKED' : 'USER BLOCKED'}
+                          </Badge>
                         ) : recipient.IsOnline ? (
                           <Badge size="1" color="green">Online</Badge>
                         ) : null}
