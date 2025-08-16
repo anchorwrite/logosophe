@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
         ub.BlockerEmail,
         ub.BlockedEmail,
         ub.TenantId,
-        ub.BlockedAt,
+        ub.CreatedAt,
         ub.IsActive,
         s.Name as BlockedUserName
       FROM UserBlocks ub
@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
       WHERE ub.BlockerEmail = ? 
       AND ub.TenantId = ? 
       AND ub.IsActive = TRUE
-      ORDER BY ub.BlockedAt DESC
+      ORDER BY ub.CreatedAt DESC
     `;
 
     const blocksResult = await db.prepare(blocksQuery)
@@ -61,7 +61,8 @@ export async function GET(request: NextRequest) {
       success: true, 
       blocks: blocks.map((block: any) => ({
         ...block,
-        BlockedUserEmail: block.BlockedEmail
+        BlockedUserEmail: block.BlockedEmail,
+        BlockedAt: block.CreatedAt // Map CreatedAt to BlockedAt for frontend compatibility
       }))
     });
 
@@ -145,8 +146,8 @@ export async function POST(request: NextRequest) {
 
     // Create the block
     const insertBlockQuery = `
-      INSERT INTO UserBlocks (BlockerEmail, BlockedEmail, TenantId, BlockedAt, IsActive)
-      VALUES (?, ?, ?, datetime('now'), TRUE)
+      INSERT INTO UserBlocks (BlockerEmail, BlockedEmail, TenantId, IsActive)
+      VALUES (?, ?, ?, TRUE)
     `;
 
     await db.prepare(insertBlockQuery)
