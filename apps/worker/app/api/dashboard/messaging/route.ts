@@ -114,6 +114,25 @@ export async function POST(request: NextRequest) {
 
     // Create thread if this is a reply
     if (replyToMessageId) {
+      // Check if the parent message allows replies
+      const parentMessage = await db.prepare(`
+        SELECT MessageType FROM Messages WHERE Id = ? AND IsDeleted = FALSE
+      `).bind(replyToMessageId).first() as any;
+      
+      if (!parentMessage) {
+        return NextResponse.json({
+          success: false,
+          error: 'Parent message not found'
+        } as SendMessageResponse, { status: 404 });
+      }
+      
+      if (parentMessage.MessageType !== 'direct') {
+        return NextResponse.json({
+          success: false,
+          error: `Cannot reply to ${parentMessage.MessageType} messages. Only direct messages allow replies.`
+        } as SendMessageResponse, { status: 403 });
+      }
+      
       await db.prepare(`
         INSERT INTO MessageThreads (ParentMessageId, ChildMessageId)
         VALUES (?, ?)

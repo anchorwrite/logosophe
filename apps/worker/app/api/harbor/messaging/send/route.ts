@@ -1,7 +1,8 @@
 import { NextRequest } from 'next/server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { auth } from '@/auth';
-import { isSystemAdmin, isTenantAdminFor } from '@/lib/access';
+import { isSystemAdmin, isTenantAdminFor, hasPermission } from '@/lib/access';
+import { isUserBlocked, isUserBlockedInTenant } from '@/lib/messaging';
 import { CreateMessageRequest, CreateAttachmentRequest, CreateLinkRequest } from '@/types/messaging';
 
 export async function POST(request: NextRequest) {
@@ -86,6 +87,35 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    // Check if sender is blocked by anyone in this tenant (using updated blocking logic)
+    const senderBlocked = await isUserBlockedInTenant(userEmail, tenantId);
+    
+    if (senderBlocked) {
+      return new Response(JSON.stringify({ 
+        success: false, 
+        error: 'You are blocked from sending messages in this tenant' 
+      }), {
+        status: 403,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Validate message type permissions
+    if (messageType === 'broadcast' || messageType === 'announcement') {
+      // Only tenant admins can send broadcast/announcement messages
+      const isTenantAdmin = await isTenantAdminFor(userEmail, tenantId);
+      if (!isTenantAdmin) {
+        return new Response(JSON.stringify({ 
+          success: false, 
+          error: 'Only tenant admins can send broadcast or announcement messages' 
+        }), {
+          status: 403,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+    }
+    // For 'direct' messages, no additional permission check needed since user already passed tenant access validation
+
     // Validate recipients exist in the tenant
     const recipientValidation = await db.prepare(`
       SELECT Email FROM TenantUsers 
@@ -97,6 +127,24 @@ export async function POST(request: NextRequest) {
       SELECT Email FROM UserRoles 
       WHERE TenantId = ? AND Email IN (${recipients.map(() => '?').join(',')}) AND RoleId = 'subscriber'
     `).bind(tenantId, ...recipients).all();
+
+    // Check for blocked recipients (using updated blocking logic that respects system-wide blocks)
+    const blockedRecipients: string[] = [];
+    for (const recipient of recipients) {
+      if (await isUserBlocked(userEmail, recipient, tenantId)) {
+        blockedRecipients.push(recipient);
+      }
+    }
+    
+    if (blockedRecipients.length > 0) {
+      return new Response(JSON.stringify({ 
+        success: false, 
+        error: `Cannot send message to blocked recipients: ${blockedRecipients.join(', ')}` 
+      }), {
+        status: 403,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
 
     // Combine both results
     const tenantUsers = recipientValidation.results.map(r => r.Email) as string[];

@@ -31,6 +31,7 @@ interface Recipient {
   RoleId: string;
   IsOnline: boolean;
   IsBlocked: boolean;
+  BlockerEmail?: string;
 }
 
 interface SystemSettings {
@@ -302,6 +303,7 @@ export function MessagingInterface({
             <MessageComposer
               recipients={recipients}
               accessibleTenants={accessibleTenants}
+              userEmail={userEmail}
               onSend={handleSendMessage}
               onCancel={() => setIsComposing(false)}
               systemSettings={systemSettings}

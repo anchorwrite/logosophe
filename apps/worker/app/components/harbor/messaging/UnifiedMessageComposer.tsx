@@ -1,16 +1,26 @@
 'use client';
 
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { Box, Button, Flex, Heading, Text, TextField, TextArea } from '@radix-ui/themes';
+import { Box, Button, Flex, Heading, Text, TextField, TextArea, Badge } from '@radix-ui/themes';
 import { useTranslation } from 'react-i18next';
 import { FileAttachmentManager } from './FileAttachmentManager';
 import { MessageLinkSharing } from './MessageLinkSharing';
 import { CreateAttachmentRequest } from '@/types/messaging';
 
+interface Recipient {
+  Email: string;
+  Name: string;
+  TenantId: string;
+  RoleId: string;
+  IsOnline: boolean;
+  IsBlocked: boolean;
+  BlockerEmail?: string;
+}
+
 interface UnifiedMessageComposerProps {
   tenantId: string;
   userEmail: string;
-  recipients: string[];
+  recipients: Recipient[];
   onSend: (message: {
     subject: string;
     body: string;
@@ -45,18 +55,30 @@ export const UnifiedMessageComposer: React.FC<UnifiedMessageComposerProps> = ({
 
   useEffect(() => {
     if (recipients.length > 0) {
-      setSelectedRecipients([recipients[0]]);
+      // Only select the first non-blocked recipient
+      const firstNonBlocked = recipients.find(r => !r.IsBlocked);
+      if (firstNonBlocked) {
+        setSelectedRecipients([firstNonBlocked.Email]);
+      } else {
+        setSelectedRecipients([]);
+      }
     }
   }, [recipients]);
 
   const handleRecipientToggle = useCallback((email: string) => {
+    // Don't allow toggling blocked users
+    const recipient = recipients.find(r => r.Email === email);
+    if (recipient && recipient.IsBlocked) {
+      return;
+    }
+    
     setSelectedRecipients(prev => 
       prev.includes(email) 
         ? prev.filter(r => r !== email)
         : [...prev, email]
     );
     setError(null);
-  }, []);
+  }, [recipients]);
 
   const handleSend = useCallback(() => {
     if (!subject.trim()) {
@@ -79,18 +101,29 @@ export const UnifiedMessageComposer: React.FC<UnifiedMessageComposerProps> = ({
       return;
     }
 
+    // Safety check: filter out any blocked users from selectedRecipients
+    const validRecipients = selectedRecipients.filter(email => {
+      const recipient = recipients.find(r => r.Email === email);
+      return recipient && !recipient.IsBlocked;
+    });
+
+    if (validRecipients.length === 0) {
+      setError(t('messaging.noValidRecipients'));
+      return;
+    }
+
     setError(null);
     const messageData = {
       subject: subject.trim(),
       body: body.trim(),
-      recipients: selectedRecipients,
+      recipients: validRecipients,
       attachments: selectedAttachments,
       links: selectedLinks,
       tenantId: tenantId
     };
     
     onSend(messageData);
-  }, [subject, body, selectedRecipients, selectedAttachments, maxRecipients, tenantId, selectedLinks]);
+  }, [subject, body, selectedRecipients, selectedAttachments, maxRecipients, tenantId, selectedLinks, recipients]);
 
   const handleCancel = useCallback(() => {
     if (onCancel) {
@@ -145,32 +178,56 @@ export const UnifiedMessageComposer: React.FC<UnifiedMessageComposerProps> = ({
             borderRadius: 'var(--radius-3)',
             padding: '0.5rem'
           }}>
-            {recipients.map((email) => (
-              <Flex key={email} align="center" gap="2" p="2" style={{
-                backgroundColor: selectedRecipients.includes(email) ? 'var(--blue-2)' : 'transparent',
+            {recipients.map((recipient) => (
+              <Flex key={recipient.Email} align="center" gap="2" p="2" style={{
+                backgroundColor: selectedRecipients.includes(recipient.Email) ? 'var(--blue-2)' : 'transparent',
                 borderRadius: 'var(--radius-2)',
-                cursor: 'pointer'
+                cursor: recipient.IsBlocked ? 'not-allowed' : 'pointer',
+                opacity: recipient.IsBlocked ? 0.6 : 1
               }}>
                 <input
                   type="checkbox"
-                  checked={selectedRecipients.includes(email)}
+                  checked={selectedRecipients.includes(recipient.Email)}
                   onChange={(e) => {
                     e.stopPropagation();
-                    handleRecipientToggle(email);
+                    if (!recipient.IsBlocked) {
+                      handleRecipientToggle(recipient.Email);
+                    }
                   }}
+                  disabled={recipient.IsBlocked}
                   style={{ 
                     margin: 0,
-                    cursor: 'pointer',
-                    pointerEvents: 'auto'
+                    cursor: recipient.IsBlocked ? 'not-allowed' : 'pointer',
+                    pointerEvents: recipient.IsBlocked ? 'none' : 'auto'
                   }}
                 />
-                <Text 
-                  size="2" 
-                  style={{ cursor: 'pointer' }}
-                  onClick={() => handleRecipientToggle(email)}
-                >
-                  {email}
-                </Text>
+                <Flex align="center" gap="2" style={{ flex: 1 }}>
+                  <Text 
+                    size="2" 
+                    style={{ 
+                      cursor: recipient.IsBlocked ? 'not-allowed' : 'pointer',
+                      color: recipient.IsBlocked ? 'var(--gray-9)' : 'inherit'
+                    }}
+                    onClick={() => {
+                      if (!recipient.IsBlocked) {
+                        handleRecipientToggle(recipient.Email);
+                      }
+                    }}
+                  >
+                    {recipient.Name || recipient.Email}
+                  </Text>
+                  <Text size="1" color="gray">
+                    {recipient.Email}
+                  </Text>
+                  <Badge size="1" variant="soft">{recipient.TenantId}</Badge>
+                  {recipient.IsBlocked ? (
+                    <Badge size="1" color="red" variant="solid">
+                      {recipient.BlockerEmail === userEmail ? 'USER BLOCKED' : 'ADMIN BLOCKED'}
+                    </Badge>
+                  ) : recipient.IsOnline ? (
+                    <Badge size="1" color="green">Online</Badge>
+                  ) : null}
+                </Flex>
               </Flex>
             ))}
           </Box>

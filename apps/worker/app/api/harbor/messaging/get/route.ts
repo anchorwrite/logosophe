@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { auth } from '@/auth';
 import { isSystemAdmin, isTenantAdminFor } from '@/lib/access';
+import { isUserBlocked } from '@/lib/messaging';
 import { GetMessagesResponse, Message, MessageRecipient } from '@/types/messaging';
 
 export async function GET(request: NextRequest) {
@@ -70,14 +71,27 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Build the base query
+    // Build the base query with system-wide block override
     let baseQuery = `
       FROM Messages m
       INNER JOIN MessageRecipients mr ON m.Id = mr.MessageId
       WHERE m.TenantId = ? AND mr.RecipientEmail = ? AND m.IsDeleted = FALSE AND mr.IsDeleted = FALSE
+      AND NOT EXISTS (
+        SELECT 1 FROM UserBlocks ub 
+        WHERE (
+          -- System-wide blocks (from admins) override personal blocks
+          (ub.BlockerEmail IN (
+            SELECT Email FROM Credentials WHERE Role IN ('admin', 'tenant')
+          ) AND (ub.BlockedEmail = m.SenderEmail OR ub.BlockedEmail = ?))
+          OR
+          -- Personal blocks (bidirectional)
+          ((ub.BlockerEmail = ? AND ub.BlockedEmail = m.SenderEmail AND ub.TenantId = ? AND ub.IsActive = TRUE)
+          OR (ub.BlockerEmail = m.SenderEmail AND ub.BlockedEmail = ? AND ub.TenantId = ? AND ub.IsActive = TRUE))
+        )
+      )
     `;
     
-    const queryParams: any[] = [tenantId, userEmail];
+    const queryParams: any[] = [tenantId, userEmail, userEmail, userEmail, tenantId, userEmail, tenantId];
 
     // Add filters
     if (messageType) {
@@ -101,12 +115,12 @@ export async function GET(request: NextRequest) {
       queryParams.push(searchTerm, searchTerm);
     }
 
-    // Get total count
+    // Get total count (without pagination parameters)
     const countQuery = `SELECT COUNT(DISTINCT m.Id) as total ${baseQuery}`;
     const countResult = await db.prepare(countQuery).bind(...queryParams).first();
     const total = parseInt(countResult?.total as string) || 0;
 
-    // Get messages with pagination
+    // Get messages with pagination (add pagination parameters)
     const messagesQuery = `
       SELECT DISTINCT m.*, mr.IsRead, mr.ReadAt
       ${baseQuery}
@@ -115,8 +129,9 @@ export async function GET(request: NextRequest) {
     `;
     
     const offset = (page - 1) * pageSize;
+    const messagesParams = [...queryParams, pageSize, offset];
     const messagesResult = await db.prepare(messagesQuery)
-      .bind(...queryParams, pageSize, offset)
+      .bind(...messagesParams)
       .all();
 
     // Process messages to include attachments and links
@@ -185,7 +200,7 @@ export async function GET(request: NextRequest) {
     // Calculate pagination info
     const totalPages = Math.ceil(total / pageSize);
 
-    // Get message statistics
+    // Get message statistics with system-wide block override
     const statsResult = await db.prepare(`
       SELECT 
         COUNT(DISTINCT m.Id) as totalMessages,
@@ -193,11 +208,24 @@ export async function GET(request: NextRequest) {
         COUNT(DISTINCT CASE WHEN m.SenderEmail = ? THEN m.Id END) as sentMessages,
         COUNT(DISTINCT CASE WHEN m.SenderEmail != ? THEN m.Id END) as receivedMessages,
         SUM(m.AttachmentCount) as attachmentsCount,
-        (SELECT COUNT(*) FROM MessageLinks ml WHERE ml.MessageId IN (SELECT DISTINCT m2.Id FROM Messages m2 INNER JOIN MessageRecipients mr2 ON m2.Id = mr2.MessageId WHERE m2.TenantId = ? AND mr2.RecipientEmail = ? AND m2.IsDeleted = FALSE AND mr2.IsDeleted = FALSE)) as linksCount
+        0 as linksCount
       FROM Messages m
       INNER JOIN MessageRecipients mr ON m.Id = mr.MessageId
       WHERE m.TenantId = ? AND mr.RecipientEmail = ? AND m.IsDeleted = FALSE AND mr.IsDeleted = FALSE
-    `).bind(userEmail, userEmail, tenantId, userEmail, tenantId, userEmail).first();
+      AND NOT EXISTS (
+        SELECT 1 FROM UserBlocks ub 
+        WHERE (
+          -- System-wide blocks (from admins) override personal blocks
+          (ub.BlockerEmail IN (
+            SELECT Email FROM Credentials WHERE Role IN ('admin', 'tenant')
+          ) AND (ub.BlockedEmail = m.SenderEmail OR ub.BlockedEmail = ?))
+          OR
+          -- Personal blocks (bidirectional)
+          ((ub.BlockerEmail = ? AND ub.BlockedEmail = m.SenderEmail AND ub.TenantId = ? AND ub.IsActive = TRUE)
+          OR (ub.BlockerEmail = m.SenderEmail AND ub.BlockedEmail = ? AND ub.TenantId = ? AND ub.IsActive = TRUE))
+        )
+      )
+    `).bind(userEmail, userEmail, tenantId, userEmail, userEmail, userEmail, tenantId, userEmail, tenantId).first();
 
     return new Response(JSON.stringify({
       success: true,

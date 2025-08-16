@@ -49,10 +49,15 @@ export async function GET(request: NextRequest) {
       AND (tu_sender.TenantId = ? OR tu_recipient.TenantId = ?)
       AND m.IsDeleted = FALSE
       AND m.MessageType = 'subscriber'
+      AND NOT EXISTS (
+        SELECT 1 FROM UserBlocks ub 
+        WHERE (ub.BlockerEmail = ? AND ub.BlockedEmail = m.SenderEmail AND ub.TenantId = ? AND ub.IsActive = TRUE)
+        OR (ub.BlockerEmail = m.SenderEmail AND ub.BlockedEmail = ? AND ub.TenantId = ? AND ub.IsActive = TRUE)
+      )
     `;
 
     const unreadCountResult = await db.prepare(unreadCountQuery)
-      .bind(session.user.email, userTenantId, userTenantId)
+      .bind(session.user.email, userTenantId, userTenantId, session.user.email, userTenantId, session.user.email, userTenantId)
       .first() as { unreadCount: number };
 
     const unreadCount = unreadCountResult?.unreadCount || 0;
@@ -77,12 +82,17 @@ export async function GET(request: NextRequest) {
       AND (tu_sender.TenantId = ? OR tu_recipient.TenantId = ?)
       AND m.IsDeleted = FALSE
       AND m.MessageType = 'subscriber'
+      AND NOT EXISTS (
+        SELECT 1 FROM UserBlocks ub 
+        WHERE (ub.BlockerEmail = ? AND ub.BlockedEmail = m.SenderEmail AND ub.TenantId = ? AND ub.IsActive = TRUE)
+        OR (ub.BlockerEmail = m.SenderEmail AND ub.BlockedEmail = ? AND ub.TenantId = ? AND ub.IsActive = TRUE)
+      )
       ORDER BY m.CreatedAt DESC
       LIMIT 3
     `;
 
     const recentUnreadResult = await db.prepare(recentUnreadQuery)
-      .bind(session.user.email, userTenantId, userTenantId)
+      .bind(session.user.email, userTenantId, userTenantId, session.user.email, userTenantId, session.user.email, userTenantId)
       .all() as any;
 
     const recentUnreadMessages = recentUnreadResult.results || [];
