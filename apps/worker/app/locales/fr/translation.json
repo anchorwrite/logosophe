@@ -173,8 +173,15 @@
     "text": "Ce site est encore en développement et n'est pas tout à fait prêt pour le grand public, mais si tu souhaites en savoir plus et peut-être t'impliquer, n'hésite pas à nous le faire savoir. Ce n'est pas pour les programmeurs ou les développeurs web : c'est pour les auteurs qui ne souhaitent pas utiliser les approches conventionnelles, parfois coûteuses et compliquées, pour partager leur travail."
   },
   "ContactFormContent": {
-    "title": "Contacte-nous",
-    "text": "Remplis tous les champs puis clique sur Envoyer le message."
+    "title": "Contacte-nus",
+    "text": "Remplis tous les champs puis clique sur Envoyer le message.",
+    "yourName": "Ton nom",
+    "yourEmail": "Ton e-mail",
+    "yourSubject": "Ton sujet",
+    "yourMessage": "Ton message",
+    "send": "Envoyer",
+    "cancel": "Annuler",
+    "sending": "Envoi en cours..."
   },
   "ServicesContent": {
     "title": "C'est tout !",
@@ -897,5 +904,24 @@
   "fileInput": {
     "chooseFile": "Choisir un fichier",
     "noFileChosen": "Aucun fichier choisi"
+  },
+  "TenantApplicationContent": {
+    "title": "Demande de Locataire",
+    "content": "Remplis ce formulaire pour demander l'accès en tant que locataire. Nous examinerons ta demande et te répondrons bientôt.",
+    "yourName": "Ton nom",
+    "yourEmail": "Ton e-mail",
+    "organizationName": "Nom de l'Organisation",
+    "intendedUse": "Utilisation Prévue",
+    "additionalDetails": "Détails Supplémentaires",
+    "submitApplication": "Soumettre la Demande",
+    "submitting": "Soumission en cours...",
+    "cancel": "Annuler",
+    "applicationSubmittedSuccessfully": "Demande soumise avec succès",
+    "failedToSubmitApplication": "Échec de la soumission de la demande. Veuillez réessayer.",
+    "pleaseEnterYourName": "Entre ton nom",
+    "pleaseEnterValidEmailAddress": "Entre une adresse e-mail valide",
+    "pleaseEnterOrganizationName": "Entre le nom de ton organisation",
+    "pleaseDescribeIntendedUse": "Décris ton utilisation prévue",
+    "pleaseProvideAdditionalDetails": "Fournis des détails supplémentaires"
   }
 } 

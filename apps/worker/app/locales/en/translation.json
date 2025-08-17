@@ -170,7 +170,14 @@
   },
   "ContactFormContent": {
     "title": "Contact Us",
-    "text": "Please fill out all the fields and then click Send Message."
+    "text": "Please fill out all the fields and then click Send Message.",
+    "yourName": "Your Name",
+    "yourEmail": "Your Email",
+    "yourSubject": "Your Subject",
+    "yourMessage": "Your Message",
+    "send": "Send",
+    "cancel": "Cancel",
+    "sending": "Sending..."
   },
   "ServicesContent": {
     "title": "That's all there is to it!",
@@ -898,5 +905,24 @@
   "fileInput": {
     "chooseFile": "Choose File",
     "noFileChosen": "No file chosen"
+  },
+  "TenantApplicationContent": {
+    "title": "Tenant Application",
+    "content": "Please fill out this form to apply for tenant access. We'll review your application and get back to you soon.",
+    "yourName": "Your Name",
+    "yourEmail": "Your Email",
+    "organizationName": "Organization Name",
+    "intendedUse": "Intended Use",
+    "additionalDetails": "Additional Details",
+    "submitApplication": "Submit Application",
+    "submitting": "Submitting...",
+    "cancel": "Cancel",
+    "applicationSubmittedSuccessfully": "Application submitted successfully",
+    "failedToSubmitApplication": "Failed to submit application. Please try again.",
+    "pleaseEnterYourName": "Please enter your name",
+    "pleaseEnterValidEmailAddress": "Please enter a valid email address",
+    "pleaseEnterOrganizationName": "Please enter your organization name",
+    "pleaseDescribeIntendedUse": "Please describe your intended use",
+    "pleaseProvideAdditionalDetails": "Please provide additional details"
   }
 }

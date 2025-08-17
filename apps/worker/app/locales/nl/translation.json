@@ -181,7 +181,14 @@
   },
   "ContactFormContent": {
     "title": "Neem contact op",
-    "text": "Vul alle velden in en klik vervolgens op Bericht versturen."
+    "text": "Vul alle velden in en klik vervolgens op Bericht versturen.",
+    "yourName": "Je naam",
+    "yourEmail": "Je e-mail",
+    "yourSubject": "Je onderwerp",
+    "yourMessage": "Je bericht",
+    "send": "Versturen",
+    "cancel": "Annuleren",
+    "sending": "Versturen..."
   },
   "ServicesContent": {
     "title": "Dat is alles!",
@@ -894,5 +901,24 @@
   "fileInput": {
     "chooseFile": "Bestand kiezen",
     "noFileChosen": "Geen bestand gekozen"
+  },
+  "TenantApplicationContent": {
+    "title": "Huurdersaanvraag",
+    "content": "Vul dit formulier in om toegang als huurder aan te vragen. We zullen je aanvraag beoordelen en spoedig contact met je opnemen.",
+    "yourName": "Je naam",
+    "yourEmail": "Je e-mail",
+    "organizationName": "Organisatienaam",
+    "intendedUse": "Beoogd Gebruik",
+    "additionalDetails": "Extra Details",
+    "submitApplication": "Aanvraag Indienen",
+    "submitting": "Indienen...",
+    "cancel": "Annuleren",
+    "applicationSubmittedSuccessfully": "Aanvraag succesvol ingediend",
+    "failedToSubmitApplication": "Aanvraag kon niet worden ingediend. Probeer het opnieuw.",
+    "pleaseEnterYourName": "Voer je naam in",
+    "pleaseEnterValidEmailAddress": "Voer een geldig e-mailadres in",
+    "pleaseEnterOrganizationName": "Voer je organisatienaam in",
+    "pleaseDescribeIntendedUse": "Beschrijf je beoogde gebruik",
+    "pleaseProvideAdditionalDetails": "Geef extra details"
   }
 } 

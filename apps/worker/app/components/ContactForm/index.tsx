@@ -29,7 +29,7 @@ interface ApiResponse {
 }
 
 const ContactForm: React.FC<ContactFormProps> = ({ title, content, id }) => {
-  const { t, i18n } = useTranslation();
+  const { t, i18n } = useTranslation('translations');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -50,13 +50,13 @@ const ContactForm: React.FC<ContactFormProps> = ({ title, content, id }) => {
       message: "",
     },
     {
-      name: { required: true, message: t("Please enter your name", { ns: 'translations' }) },
+      name: { required: true, message: t("Please enter your name") },
       email: {
         required: true,
         pattern: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-        message: t("Please enter a valid email address", { ns: 'translations' }) },
-      subject: { required: true, message: t("Please enter a subject", { ns: 'translations' }) },
-      message: { required: true, message: t("Please enter a message", { ns: 'translations' }) },
+        message: t("Please enter a valid email address") },
+      subject: { required: true, message: t("Please enter a subject") },
+      message: { required: true, message: t("Please enter a message") },
     }
   );
 
@@ -131,7 +131,7 @@ const ContactForm: React.FC<ContactFormProps> = ({ title, content, id }) => {
             padding: '0 2rem'
           }}>
             <Text size="6" style={{ marginBottom: '2.5rem', lineHeight: 1.4 }}>
-              {t(title, { ns: 'translations' })}
+              {title}
             </Text>
             <Box style={{ 
               borderRadius: '3rem',
@@ -139,7 +139,7 @@ const ContactForm: React.FC<ContactFormProps> = ({ title, content, id }) => {
               marginTop: '2.5rem',
             }}>
               <Text as="p" style={{ margin: 0 }}>
-                {t(content, { ns: 'translations' })}
+                {content}
               </Text>
             </Box>
           </Box>
@@ -157,7 +157,7 @@ const ContactForm: React.FC<ContactFormProps> = ({ title, content, id }) => {
                 <Box>
                   <TextField.Root>
                     <TextField.Input
-                      placeholder={t("Your Name", { ns: 'translations' })}
+                      placeholder={t("ContactFormContent.yourName")}
                       value={values.name || ""}
                       name="name"
                       onChange={handleChange}
@@ -179,7 +179,7 @@ const ContactForm: React.FC<ContactFormProps> = ({ title, content, id }) => {
                 <Box>
                   <TextField.Root>
                     <TextField.Input
-                      placeholder={t("Your Email", { ns: 'translations' })}
+                      placeholder={t("ContactFormContent.yourEmail")}
                       value={values.email || ""}
                       name="email"
                       onChange={handleChange}
@@ -201,7 +201,7 @@ const ContactForm: React.FC<ContactFormProps> = ({ title, content, id }) => {
                 <Box>
                   <TextField.Root>
                     <TextField.Input
-                      placeholder={t("Your Subject", { ns: 'translations' })}
+                      placeholder={t("ContactFormContent.yourSubject")}
                       value={values.subject || ""}
                       name="subject"
                       onChange={handleChange}
@@ -222,7 +222,7 @@ const ContactForm: React.FC<ContactFormProps> = ({ title, content, id }) => {
                 </Box>
                 <Box>
                   <TextArea
-                    placeholder={t("Your Message", { ns: 'translations' })}
+                    placeholder={t("ContactFormContent.yourMessage")}
                     value={values.message || ""}
                     name="message"
                     onChange={handleChange}
@@ -247,7 +247,7 @@ const ContactForm: React.FC<ContactFormProps> = ({ title, content, id }) => {
                 }}>
                   <Flex gap="3" justify="end">
                     <Button type="submit" size="3" disabled={isSubmitting}>
-                      {isSubmitting ? t("Sending...", { ns: 'translations' }) : t("Send Message", { ns: 'translations' })}
+                      {isSubmitting ? t("ContactFormContent.sending") : t("ContactFormContent.send")}
                     </Button>
                     <Button 
                       type="button" 
@@ -257,7 +257,7 @@ const ContactForm: React.FC<ContactFormProps> = ({ title, content, id }) => {
                       onClick={handleCancel}
                       disabled={isSubmitting}
                     >
-                      {t("Cancel", { ns: 'translations' })}
+                      {t("ContactFormContent.cancel")}
                     </Button>
                   </Flex>
                 </Box>

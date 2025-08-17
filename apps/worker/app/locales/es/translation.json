@@ -174,7 +174,14 @@
   },
   "ContactFormContent": {
     "title": "Contáctanos",
-    "text": "Por favor, complete todos los campos y luego haga clic en Enviar mensaje."
+    "text": "Por favor, complete todos los campos y luego haga clic en Enviar mensaje.",
+    "yourName": "Tu nombre",
+    "yourEmail": "Tu correo electrónico",
+    "yourSubject": "Tu asunto",
+    "yourMessage": "Tu mensaje",
+    "send": "Enviar",
+    "cancel": "Cancelar",
+    "sending": "Enviando..."
   },
   "ServicesContent": {
     "title": "¡Eso es todo!",
@@ -895,5 +902,24 @@
   "fileInput": {
     "chooseFile": "Seleccionar Archivo",
     "noFileChosen": "Ningún archivo seleccionado"
+  },
+  "TenantApplicationContent": {
+    "title": "Solicitud de Inquilino",
+    "content": "Por favor, complete este formulario para solicitar acceso como inquilino. Revisaremos su solicitud y nos pondremos en contacto con usted pronto.",
+    "yourName": "Tu nombre",
+    "yourEmail": "Tu correo electrónico",
+    "organizationName": "Nombre de la Organización",
+    "intendedUse": "Uso Previsto",
+    "additionalDetails": "Detalles Adicionales",
+    "submitApplication": "Enviar Solicitud",
+    "submitting": "Enviando...",
+    "cancel": "Cancelar",
+    "applicationSubmittedSuccessfully": "Solicitud enviada con éxito",
+    "failedToSubmitApplication": "Error al enviar la solicitud. Por favor, inténtalo de nuevo.",
+    "pleaseEnterYourName": "Por favor, introduce tu nombre",
+    "pleaseEnterValidEmailAddress": "Por favor, introduce una dirección de correo electrónico válida",
+    "pleaseEnterOrganizationName": "Por favor, introduce el nombre de tu organización",
+    "pleaseDescribeIntendedUse": "Por favor, describe tu uso previsto",
+    "pleaseProvideAdditionalDetails": "Por favor, proporciona detalles adicionales"
   }
 }
