@@ -36,8 +36,7 @@ export default async function DashboardPage() {
   const accessManagementLinks = [
     { href: '/dashboard/logs', label: 'System Logs', roles: ['admin', 'tenant'] },
     { href: '/dashboard/roles', label: 'Roles & Permissions', roles: ['admin'] },
-    { href: '/dashboard/subscribers', label: 'Subscribers', roles: ['admin', 'tenant'] },
-            { href: '/dashboard/test-users', label: 'Test Users', roles: ['admin'] }
+    { href: '/dashboard/test-users', label: 'Test Users', roles: ['admin'] }
   ].sort((a, b) => a.label.localeCompare(b.label));
 
   const mediatedAccessManagementLinks = [
