@@ -29,6 +29,7 @@ export async function GET(request: NextRequest) {
     const offset = parseInt(searchParams.get('offset') || '0');
     const sortField = searchParams.get('sortField') || 'timestamp';
     const sortOrder = (searchParams.get('sortOrder') || 'desc') as 'asc' | 'desc';
+    const showArchived = searchParams.get('showArchived') === 'true';
 
     // Check if user is system admin
     const isAdmin = await isSystemAdmin(session.user.email, db);
@@ -42,20 +43,37 @@ export async function GET(request: NextRequest) {
     }
 
     const systemLogs = new SystemLogs(db);
-    const { logs, totalCount } = await systemLogs.queryLogs({
-        logType,
-        activityType: activityType || undefined,
-        startDate: startDate || undefined,
-        endDate: endDate || undefined,
-        tenantId: tenantId || undefined,
-        search: search || undefined,
-        ipAddress: ipAddress || undefined,
-        userEmail: userEmail || undefined,
-        limit,
-        offset,
-        sortField,
-        sortOrder
-    });
+    
+    // Use appropriate method based on whether we want archived or active logs
+    const { logs, totalCount } = showArchived 
+        ? await systemLogs.getArchivedLogs({
+            logType,
+            activityType: activityType || undefined,
+            startDate: startDate || undefined,
+            endDate: endDate || undefined,
+            tenantId: tenantId || undefined,
+            search: search || undefined,
+            ipAddress: ipAddress || undefined,
+            userEmail: userEmail || undefined,
+            limit,
+            offset,
+            sortField,
+            sortOrder
+        })
+        : await systemLogs.queryLogs({
+            logType,
+            activityType: activityType || undefined,
+            startDate: startDate || undefined,
+            endDate: endDate || undefined,
+            tenantId: tenantId || undefined,
+            search: search || undefined,
+            ipAddress: ipAddress || undefined,
+            userEmail: userEmail || undefined,
+            limit,
+            offset,
+            sortField,
+            sortOrder
+        });
 
     return Response.json({ logs, totalCount });
 } 
