@@ -51,15 +51,12 @@ export async function validateCredentials(email: string, password: string): Prom
   }
 
   try {
-    console.log('Attempting to validate credentials for:', email);
     
     const { results } = await db.prepare(
       "SELECT * FROM Credentials WHERE Email = ?"
     )
       .bind(email)
       .all();
-
-    console.log('Query results:', results);
 
     if (results.length === 0) {
       return {
@@ -74,8 +71,6 @@ export async function validateCredentials(email: string, password: string): Prom
       role: results[0].Role as UserRole,
     };
 
-    console.log('User found:', { email: user.email, role: user.role });
-
     if (!user.password) {
       return {
         success: false,
@@ -84,7 +79,6 @@ export async function validateCredentials(email: string, password: string): Prom
     }
 
     const passwordMatches = await comparePassword(password, user.password as string);
-    console.log('Password match result:', passwordMatches);
 
     if (!passwordMatches) {
       return {
