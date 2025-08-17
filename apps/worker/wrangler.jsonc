@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "main": ".open-next/worker.js",
+  "main": "worker.js",
   "name": "logosophe",
   "compatibility_date": "2024-12-30",
   "compatibility_flags": [
@@ -57,7 +57,7 @@
   ],
   "triggers": {
     "crons": [
-      "0 2 * * *"
+      "0 15 * * *"
     ]
   }
 } 
