@@ -1,6 +1,7 @@
 import { Container, Box, Heading, Text } from '@radix-ui/themes';
 import { checkAccess } from '@/lib/access-control';
 import { LogsTable } from './LogsTable';
+import { LogRetentionManager } from './LogRetentionManager';
 
 
 export default async function LogsPage() {
@@ -17,6 +18,7 @@ export default async function LogsPage() {
         <Container>
             <Box py="6">
                 <Heading mb="4">System Logs</Heading>
+                <LogRetentionManager />
                 <LogsTable />
             </Box>
         </Container>

@@ -77,6 +77,7 @@ export function LogsTable() {
     const [pageSize, setPageSize] = useState(20);
     const [startDate, setStartDate] = useState(searchParams.get('startDate') || '');
     const [endDate, setEndDate] = useState(searchParams.get('endDate') || '');
+    const [showArchived, setShowArchived] = useState(false);
     const [columnFilters, setColumnFilters] = useState<Record<string, string[]>>({
         logType: [],
         provider: [],
@@ -160,6 +161,11 @@ export function LogsTable() {
                     }
                 });
 
+                // Add archived status
+                if (showArchived) {
+                    params.set('showArchived', 'true');
+                }
+
                 const response = await fetch(`/api/logs?${params.toString()}`);
                 if (!response.ok) {
                     throw new Error('Failed to fetch logs');
@@ -176,7 +182,7 @@ export function LogsTable() {
         }
 
         fetchLogs();
-    }, [searchParams, page, pageSize, sortField, sortOrder, offset, startDate, endDate, columnFilters]);
+    }, [searchParams, page, pageSize, sortField, sortOrder, offset, startDate, endDate, columnFilters, showArchived]);
 
     const handleSort = (field: SortField) => {
         if (field === sortField) {
@@ -389,6 +395,18 @@ export function LogsTable() {
                                 <Select.Item value="all">Show all</Select.Item>
                             </Select.Content>
                         </Select.Root>
+                        
+                        <Button
+                            variant={showArchived ? "solid" : "soft"}
+                            color={showArchived ? "orange" : "gray"}
+                            onClick={() => {
+                                setShowArchived(!showArchived);
+                                setPage(1); // Reset to first page when switching
+                            }}
+                            size="2"
+                        >
+                            {showArchived ? 'Archived Logs' : 'Active Logs'}
+                        </Button>
                     </Flex>
                     <Flex gap="2">
                         <Button

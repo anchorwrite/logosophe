@@ -54,5 +54,10 @@
     {
       "service": "logosophe-tail"
     }
-  ]
+  ],
+  "triggers": {
+    "crons": [
+      "0 2 * * *"
+    ]
+  }
 } 
