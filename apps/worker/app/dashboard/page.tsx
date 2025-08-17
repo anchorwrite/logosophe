@@ -31,16 +31,7 @@ export default async function DashboardPage() {
 
   ].sort((a, b) => a.label.localeCompare(b.label));
 
-  const databaseManagementLinks = [
-    { href: '/dashboard/category', label: 'Categories', roles: ['admin'] },
-    { href: '/dashboard/creator', label: 'Creators', roles: ['admin'] },
-    { href: '/dashboard/customer', label: 'Customers', roles: ['admin'] },
-    { href: '/dashboard/helper', label: 'Helpers', roles: ['admin'] },
-    { href: '/dashboard/order', label: 'Orders', roles: ['admin'] },
-    { href: '/dashboard/orderdetail', label: 'Order Details', roles: ['admin'] },
-    { href: '/dashboard/region', label: 'Regions', roles: ['admin'] },
-    { href: '/dashboard/work', label: 'Works', roles: ['admin'] },
-  ].sort((a, b) => a.label.localeCompare(b.label));
+
 
   const accessManagementLinks = [
     { href: '/dashboard/logs', label: 'System Logs', roles: ['admin', 'tenant'] },
@@ -75,7 +66,6 @@ export default async function DashboardPage() {
     links.filter(link => link.roles.includes(access.role as 'admin' | 'tenant'));
 
   const filteredContentManagementLinks = filterLinks(contentManagementLinks);
-  const filteredDatabaseManagementLinks = filterLinks(databaseManagementLinks);
   const filteredAccessManagementLinks = filterLinks(accessManagementLinks);
   const filteredMediatedAccessManagementLinks = filterLinks(mediatedAccessManagementLinks);
   const filteredCollaborationLinks = filterLinks(collaborationLinks);
@@ -126,34 +116,7 @@ export default async function DashboardPage() {
             </Card>
           )}
 
-          {filteredDatabaseManagementLinks.length > 0 && (
-            <Card size="3" style={{ width: '100%', maxWidth: '64rem' }}>
-              <Box p="4" style={{ textAlign: 'center' }}>
-                <Heading size="5">Database Management</Heading>
-              </Box>
-              <Box p="4">
-                <Grid columns="3" gap="4">
-                  {filteredDatabaseManagementLinks.map((link) => (
-                    <Link 
-                      key={link.href}
-                      href={link.href}
-                      style={{
-                        color: 'var(--blue-11)',
-                        textDecoration: 'underline',
-                        fontSize: '1.125rem',
-                        padding: '0.5rem',
-                        borderRadius: '0.375rem',
-                        transition: 'background-color 0.2s',
-                      }}
-                      className="hover:bg-gray-3"
-                    >
-                      {link.label}
-                    </Link>
-                  ))}
-                </Grid>
-              </Box>
-            </Card>
-          )}
+
 
           {filteredAccessManagementLinks.length > 0 && (
             <Card size="3" style={{ width: '100%', maxWidth: '64rem' }}>
