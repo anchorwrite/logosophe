@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Button, TextField, Text, Checkbox } from "@radix-ui/themes";
+import { Button, TextField, Text, Checkbox, Box, Flex } from "@radix-ui/themes";
 import { useToast } from "@/components/Toast";
 import { ChevronDown } from "lucide-react";
 import { useRouter } from 'next/navigation';
@@ -25,7 +25,7 @@ interface Tenant {
 }
 
 interface TenantsResponse {
-  tenants: Tenant[];
+  results?: Tenant[];
 }
 
 interface ApiResponse {
@@ -57,12 +57,12 @@ async function fetchTenants(): Promise<Tenant[]> {
     throw new Error('Failed to fetch tenants');
   }
   const data = await response.json() as TenantsResponse;
-  return data.tenants || [];
+  return data.results || [];
 }
 
 async function addSubscriber(data: SubscriberFormData) {
   const now = new Date();
-  const response = await fetch('/api/subscriber-add', {
+  const response = await fetch('/api/dashboard/subscriber-add', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -100,7 +100,7 @@ export function SubscriberAddForm() {
   const [formData, setFormData] = useState<SubscriberFormData>({
     Email: '',
     Name: '',
-    Provider: 'email',
+    Provider: 'Test',
     Active: true,
     Banned: false,
     Post: false,
@@ -109,7 +109,6 @@ export function SubscriberAddForm() {
     TenantIds: []
   });
   const [isOpen, setIsOpen] = useState(false);
-  const [selectedTenants, setSelectedTenants] = useState<string[]>([]);
 
   useEffect(() => {
     fetchTenants().then(setTenants).catch(error => {
@@ -122,38 +121,6 @@ export function SubscriberAddForm() {
     });
   }, [showToast]);
 
-  useEffect(() => {
-    // Add click handler to show/hide overlay
-    const handleClick = (e: MouseEvent) => {
-      const select = document.getElementById('tenant-select');
-      const overlay = document.getElementById('tenant-select-overlay');
-      const trigger = e.target as HTMLElement;
-      
-      if (select && !select.contains(trigger) && !trigger.closest('[data-trigger]')) {
-        select.classList.add('hidden');
-        if (overlay) {
-          overlay.classList.add('hidden');
-        }
-      }
-    };
-
-    document.addEventListener('click', handleClick);
-    return () => document.removeEventListener('click', handleClick);
-  }, []);
-
-  // Update the click handler for the trigger
-  const handleTriggerClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    const select = document.getElementById('tenant-select');
-    const overlay = document.getElementById('tenant-select-overlay');
-    if (select) {
-      select.classList.toggle('hidden');
-      if (overlay) {
-        overlay.classList.toggle('hidden');
-      }
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -165,7 +132,7 @@ export function SubscriberAddForm() {
         content: 'Subscriber added successfully',
         type: 'success'
       });
-      router.push('/dashboard/subscribers');
+      router.push('/dashboard');
     } catch (error) {
       console.error('Error adding subscriber:', error);
       showToast({
@@ -179,11 +146,10 @@ export function SubscriberAddForm() {
   };
 
   const handleTenantSelect = (tenantId: string) => {
-    const newSelectedTenants = selectedTenants.includes(tenantId)
-      ? selectedTenants.filter(id => id !== tenantId)
-      : [...selectedTenants, tenantId];
+    const newSelectedTenants = formData.TenantIds.includes(tenantId)
+      ? formData.TenantIds.filter(id => id !== tenantId)
+      : [...formData.TenantIds, tenantId];
     
-    setSelectedTenants(newSelectedTenants);
     setFormData(prev => ({ ...prev, TenantIds: newSelectedTenants }));
   };
 
@@ -227,7 +193,7 @@ export function SubscriberAddForm() {
           <option value="resend">Resend</option>
           <option value="google">Google</option>
           <option value="apple">Apple</option>
-          <option value="test-credentials">Test</option>
+          <option value="Test">Test</option>
         </select>
       </div>
 
@@ -239,8 +205,8 @@ export function SubscriberAddForm() {
             className="flex items-center justify-between w-full px-3 py-2 text-sm border rounded-md cursor-pointer hover:bg-gray-50"
           >
             <Text size="2" color="gray">
-              {selectedTenants.length > 0
-                ? `${selectedTenants.length} tenant${selectedTenants.length === 1 ? '' : 's'} selected`
+              {formData.TenantIds.length > 0
+                ? `${formData.TenantIds.length} tenant${formData.TenantIds.length === 1 ? '' : 's'} selected`
                 : 'Select tenants'}
             </Text>
             <ChevronDown className="w-4 h-4 text-gray-500" />
@@ -257,13 +223,28 @@ export function SubscriberAddForm() {
                     <div
                       key={tenant.Id}
                       className="flex items-center px-3 py-2 text-sm hover:bg-gray-50 cursor-pointer"
-                      onClick={() => handleTenantSelect(tenant.Id)}
                     >
                       <Checkbox
-                        checked={selectedTenants.includes(tenant.Id)}
-                        onCheckedChange={() => {}}
+                        checked={formData.TenantIds.includes(tenant.Id)}
+                        onCheckedChange={() => handleTenantSelect(tenant.Id)}
                       />
-                      <Text size="2" className="ml-2">{tenant.Name}</Text>
+                      <Text 
+                        size="2" 
+                        className="ml-2 flex-1 cursor-pointer"
+                        onClick={() => handleTenantSelect(tenant.Id)}
+                      >
+                        {tenant.Name}
+                      </Text>
+                      {tenant.Description && (
+                        <Text 
+                          size="1" 
+                          color="gray" 
+                          className="ml-2 cursor-pointer"
+                          onClick={() => handleTenantSelect(tenant.Id)}
+                        >
+                          {tenant.Description}
+                        </Text>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -271,6 +252,33 @@ export function SubscriberAddForm() {
             </>
           )}
         </div>
+        
+        {/* Show selected tenants summary */}
+        {formData.TenantIds.length > 0 && (
+          <div className="mt-2 p-2 bg-gray-50 rounded-md">
+            <Text size="1" weight="bold" className="mb-1">Selected Tenants:</Text>
+            <div className="flex flex-wrap gap-1">
+              {formData.TenantIds.map(tenantId => {
+                const tenant = tenants.find(t => t.Id === tenantId);
+                return tenant ? (
+                  <span 
+                    key={tenantId}
+                    className="inline-flex items-center px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full"
+                  >
+                    {tenant.Name}
+                    <button
+                      type="button"
+                      onClick={() => handleTenantSelect(tenantId)}
+                      className="ml-1 text-blue-600 hover:text-blue-800"
+                    >
+                      ×
+                    </button>
+                  </span>
+                ) : null;
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="space-y-4">
