@@ -174,7 +174,14 @@
   },
   "ContactFormContent": {
     "title": "Kontaktiere uns",
-    "text": "Bitte fülle alle Felder aus und klicke dann auf Nachricht senden."
+    "text": "Bitte fülle alle Felder aus und klicke dann auf Nachricht senden.",
+    "yourName": "Dein Name",
+    "yourEmail": "Deine E-Mail",
+    "yourSubject": "Dein Betreff",
+    "yourMessage": "Deine Nachricht",
+    "send": "Senden",
+    "cancel": "Abbrechen",
+    "sending": "Wird gesendet..."
   },
   "ServicesContent": {
     "title": "Das ist alles!",
@@ -895,5 +902,24 @@
   "fileInput": {
     "chooseFile": "Datei auswählen",
     "noFileChosen": "Keine Datei ausgewählt"
+  },
+  "TenantApplicationContent": {
+    "title": "Mieteranwendung",
+    "content": "Bitte fülle dieses Formular aus, um dich für den Mieterzugang zu bewerben. Wir werden deine Bewerbung prüfen und uns bald bei dir melden.",
+    "yourName": "Dein Name",
+    "yourEmail": "Deine E-Mail",
+    "organizationName": "Organisationsname",
+    "intendedUse": "Beabsichtigte Nutzung",
+    "additionalDetails": "Zusätzliche Details",
+    "submitApplication": "Bewerbung einreichen",
+    "submitting": "Wird eingereicht...",
+    "cancel": "Abbrechen",
+    "applicationSubmittedSuccessfully": "Bewerbung erfolgreich eingereicht",
+    "failedToSubmitApplication": "Bewerbung konnte nicht eingereicht werden. Bitte versuche es erneut.",
+    "pleaseEnterYourName": "Bitte gib deinen Namen ein",
+    "pleaseEnterValidEmailAddress": "Bitte gib eine gültige E-Mail-Adresse ein",
+    "pleaseEnterOrganizationName": "Bitte gib deinen Organisationsnamen ein",
+    "pleaseDescribeIntendedUse": "Bitte beschreibe deine beabsichtigte Nutzung",
+    "pleaseProvideAdditionalDetails": "Bitte gib zusätzliche Details an"
   }
 } 

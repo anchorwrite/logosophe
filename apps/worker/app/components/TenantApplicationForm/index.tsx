@@ -45,14 +45,14 @@ const TenantApplicationForm: React.FC<TenantApplicationFormProps> = ({ title, co
       message: "",
     },
     {
-      name: { required: true, message: t("Please enter your name", { ns: 'translations' }) },
+      name: { required: true, message: t("TenantApplicationContent.pleaseEnterYourName") },
       email: {
         required: true,
         pattern: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-        message: t("Please enter a valid email address", { ns: 'translations' }) },
-      organization: { required: true, message: t("Please enter your organization name", { ns: 'translations' }) },
-      purpose: { required: true, message: t("Please describe your intended use", { ns: 'translations' }) },
-      message: { required: true, message: t("Please provide additional details", { ns: 'translations' }) },
+        message: t("TenantApplicationContent.pleaseEnterValidEmailAddress") },
+      organization: { required: true, message: t("TenantApplicationContent.pleaseEnterOrganizationName") },
+      purpose: { required: true, message: t("TenantApplicationContent.pleaseDescribeIntendedUse") },
+      message: { required: true, message: t("TenantApplicationContent.pleaseProvideAdditionalDetails") },
     }
   );
 
@@ -79,7 +79,7 @@ const TenantApplicationForm: React.FC<TenantApplicationFormProps> = ({ title, co
       setSuccess(true);
       showToast({
         title: 'Success',
-        content: t("Application submitted successfully", { ns: 'translations' }),
+        content: t("TenantApplicationContent.applicationSubmittedSuccessfully"),
         type: 'success'
       });
       setTimeout(() => {
@@ -89,7 +89,7 @@ const TenantApplicationForm: React.FC<TenantApplicationFormProps> = ({ title, co
       console.error('Error submitting application:', error);
       showToast({
         title: 'Error',
-        content: t("Failed to submit application. Please try again.", { ns: 'translations' }),
+        content: t("TenantApplicationContent.failedToSubmitApplication"),
         type: 'error'
       });
     } finally {
@@ -152,7 +152,7 @@ const TenantApplicationForm: React.FC<TenantApplicationFormProps> = ({ title, co
                 <Box>
                   <TextField.Root>
                     <TextField.Input
-                      placeholder={t("Your Name", { ns: 'translations' })}
+                      placeholder={t("TenantApplicationContent.yourName")}
                       value={values.name || ""}
                       name="name"
                       onChange={handleChange}
@@ -174,7 +174,7 @@ const TenantApplicationForm: React.FC<TenantApplicationFormProps> = ({ title, co
                 <Box>
                   <TextField.Root>
                     <TextField.Input
-                      placeholder={t("Your Email", { ns: 'translations' })}
+                      placeholder={t("TenantApplicationContent.yourEmail")}
                       value={values.email || ""}
                       name="email"
                       onChange={handleChange}
@@ -196,7 +196,7 @@ const TenantApplicationForm: React.FC<TenantApplicationFormProps> = ({ title, co
                 <Box>
                   <TextField.Root>
                     <TextField.Input
-                      placeholder={t("Organization Name", { ns: 'translations' })}
+                      placeholder={t("TenantApplicationContent.organizationName")}
                       value={values.organization || ""}
                       name="organization"
                       onChange={handleChange}
@@ -218,7 +218,7 @@ const TenantApplicationForm: React.FC<TenantApplicationFormProps> = ({ title, co
                 <Box>
                   <TextField.Root>
                     <TextField.Input
-                      placeholder={t("Intended Use", { ns: 'translations' })}
+                      placeholder={t("TenantApplicationContent.intendedUse")}
                       value={values.purpose || ""}
                       name="purpose"
                       onChange={handleChange}
@@ -239,7 +239,7 @@ const TenantApplicationForm: React.FC<TenantApplicationFormProps> = ({ title, co
                 </Box>
                 <Box>
                   <TextArea
-                    placeholder={t("Additional Details", { ns: 'translations' })}
+                    placeholder={t("TenantApplicationContent.additionalDetails")}
                     value={values.message || ""}
                     name="message"
                     onChange={handleChange}
@@ -264,7 +264,7 @@ const TenantApplicationForm: React.FC<TenantApplicationFormProps> = ({ title, co
                 }}>
                   <Flex gap="3" justify="end">
                     <Button type="submit" size="3" disabled={isSubmitting}>
-                      {isSubmitting ? t("Submitting...", { ns: 'translations' }) : t("Submit Application", { ns: 'translations' })}
+                      {isSubmitting ? t("TenantApplicationContent.submitting") : t("TenantApplicationContent.submitApplication")}
                     </Button>
                     <Button 
                       type="button" 
@@ -273,7 +273,7 @@ const TenantApplicationForm: React.FC<TenantApplicationFormProps> = ({ title, co
                       color="gray" 
                       onClick={handleCancel}
                     >
-                      {t("Cancel", { ns: 'translations' })}
+                      {t("TenantApplicationContent.cancel")}
                     </Button>
                   </Flex>
                 </Box>
