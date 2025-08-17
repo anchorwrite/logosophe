@@ -237,6 +237,66 @@ export function LogRetentionManager() {
                 </Box>
             </Card>
 
+            {/* Retention Policy Management */}
+            <Card>
+                <Box p="4">
+                    <Flex align="center" gap="2" mb="3">
+                        <GearIcon />
+                        <Heading size="3">Retention Policy Management</Heading>
+                    </Flex>
+                    
+                    <Flex gap="4" wrap="wrap" mb="4">
+                        <Box>
+                            <Text size="2" weight="bold" mb="2">Retention Period (days)</Text>
+                            <TextField.Root size="2" style={{ width: '150px' }}>
+                                <TextField.Input
+                                    type="number"
+                                    min="1"
+                                    max="3650"
+                                    value={settings.log_retention_days}
+                                    onChange={(e) => setSettings(prev => prev ? { ...prev, log_retention_days: e.target.value } : null)}
+                                />
+                            </TextField.Root>
+                        </Box>
+                        
+                        <Box>
+                            <Text size="2" weight="bold" mb="2">Archive Enabled</Text>
+                            <Select.Root 
+                                value={settings.log_archive_enabled} 
+                                onValueChange={(value) => setSettings(prev => prev ? { ...prev, log_archive_enabled: value } : null)}
+                            >
+                                <Select.Trigger style={{ width: '150px', display: 'block' }} />
+                                <Select.Content>
+                                    <Select.Item value="true">Enabled</Select.Item>
+                                    <Select.Item value="false">Disabled</Select.Item>
+                                </Select.Content>
+                            </Select.Root>
+                        </Box>
+                        
+                        <Box>
+                            <Text size="2" weight="bold" mb="2">Hard Delete Delay (days)</Text>
+                            <TextField.Root size="2" style={{ width: '150px' }}>
+                                <TextField.Input
+                                    type="number"
+                                    min="1"
+                                    max="365"
+                                    value={settings.log_hard_delete_delay}
+                                    onChange={(e) => setSettings(prev => prev ? { ...prev, log_hard_delete_delay: e.target.value } : null)}
+                                />
+                            </TextField.Root>
+                        </Box>
+                    </Flex>
+                    
+                    <Button 
+                        onClick={updateSettings} 
+                        disabled={isUpdating}
+                        size="2"
+                    >
+                        {isUpdating ? 'Updating...' : 'Update Settings'}
+                    </Button>
+                </Box>
+            </Card>
+
             {/* Archive Management */}
             <Card>
                 <Box p="4">
