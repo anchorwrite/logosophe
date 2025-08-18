@@ -41,7 +41,7 @@ export default async function UserBlocksPage() {
 
   // Log access
   await systemLogs.createLog({
-    logType: 'ACTIVITY',
+    logType: 'activity',
     timestamp: new Date().toISOString(),
     userEmail: session.user.email,
     activityType: 'ACCESS_USER_BLOCKS'

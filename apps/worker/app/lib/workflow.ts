@@ -279,7 +279,7 @@ export async function logWorkflowActivity(
   const systemLogs = new SystemLogs(db);
   
   await systemLogs.createLog({
-    logType: 'ACTIVITY',
+    logType: 'activity',
     timestamp: new Date().toISOString(),
     userEmail,
     activityType,

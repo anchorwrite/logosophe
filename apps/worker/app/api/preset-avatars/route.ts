@@ -67,7 +67,7 @@ export async function POST(request: Request) {
     // Log the upload
     const systemLogs = new SystemLogs(db);
     await systemLogs.createLog({
-      logType: 'MAIN_ACCESS',
+      logType: 'main_access',
       timestamp: new Date().toISOString(),
       userEmail: session.user.email,
       accessType: 'upload_preset_avatar',

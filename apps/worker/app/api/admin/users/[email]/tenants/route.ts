@@ -177,7 +177,7 @@ export async function PUT(
     // Log the activity
     const systemLogs = new SystemLogs(db);
     await systemLogs.createLog({
-      logType: 'ACTIVITY',
+      logType: 'activity',
       timestamp: new Date().toISOString(),
       userEmail: session.user.email || '',
       activityType: 'UPDATE_TENANT_ASSIGNMENTS',

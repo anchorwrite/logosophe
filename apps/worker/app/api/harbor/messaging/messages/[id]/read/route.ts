@@ -74,7 +74,7 @@ export async function POST(
 
     // Log the read action
     await systemLogs.createLog({
-      logType: 'ACTIVITY',
+      logType: 'activity',
       timestamp: readAt,
       userEmail: access.email,
       activityType: 'MESSAGE_READ',

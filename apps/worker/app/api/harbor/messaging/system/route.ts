@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
     if (!isAdmin) {
       // Log unauthorized access attempt
       await systemLogs.createLog({
-        logType: 'ACTIVITY',
+        logType: 'activity',
         timestamp: new Date().toISOString(),
         userEmail: access.email,
         activityType: 'UNAUTHORIZED_SYSTEM_ACCESS',
@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
 
     // Log successful access
     await systemLogs.createLog({
-      logType: 'ACTIVITY',
+      logType: 'activity',
       timestamp: new Date().toISOString(),
       userEmail: access.email,
       activityType: 'ACCESS_SYSTEM_CONTROLS'

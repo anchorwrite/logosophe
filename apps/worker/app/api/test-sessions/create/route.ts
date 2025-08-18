@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
 
     // Log the session creation
     await systemLogs.createLog({
-      logType: 'TEST_SESSION',
+      logType: 'test_session',
       timestamp: new Date().toISOString(),
       userEmail: session.user.email,
       activityType: 'CREATE_TEST_SESSION',

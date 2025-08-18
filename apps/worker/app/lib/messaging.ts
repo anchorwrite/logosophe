@@ -337,7 +337,7 @@ export async function logMessagingActivity(
   const systemLogs = new SystemLogs(db);
   
   await systemLogs.createLog({
-    logType: 'MESSAGING',
+    logType: 'messaging',
     timestamp: new Date().toISOString(),
     userEmail,
     tenantId,

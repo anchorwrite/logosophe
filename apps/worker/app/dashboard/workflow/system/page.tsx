@@ -25,7 +25,7 @@ export default async function WorkflowSystemPage() {
   if (!isAdmin) {
     // Log unauthorized access attempt
     await systemLogs.createLog({
-      logType: 'ACTIVITY',
+      logType: 'activity',
       timestamp: new Date().toISOString(),
       userEmail: session.user.email,
       activityType: 'UNAUTHORIZED_WORKFLOW_ACCESS',
@@ -37,7 +37,7 @@ export default async function WorkflowSystemPage() {
 
   // Log successful access
   await systemLogs.createLog({
-    logType: 'ACTIVITY',
+    logType: 'activity',
     timestamp: new Date().toISOString(),
     userEmail: session.user.email,
     activityType: 'ACCESS_WORKFLOW_SYSTEM'

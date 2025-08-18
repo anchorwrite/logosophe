@@ -57,7 +57,7 @@ export async function PUT(request: Request) {
     // Log the update
     const systemLogs = new SystemLogs(db);
     await systemLogs.createLog({
-      logType: 'MAIN_ACCESS',
+      logType: 'main_access',
       timestamp: new Date().toISOString(),
       userEmail: session.user.email,
       accessType: 'update_avatar',

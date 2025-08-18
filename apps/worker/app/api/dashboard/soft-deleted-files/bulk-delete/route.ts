@@ -96,7 +96,7 @@ export async function POST(request: NextRequest) {
       try {
         // Log the permanent deletion
         await systemLogs.createLog({
-          logType: 'MEDIA_PERMANENT_DELETE',
+          logType: 'media_permanent_delete',
           timestamp: new Date().toISOString(),
           userEmail: access.email,
           tenantId: file.TenantId as string,

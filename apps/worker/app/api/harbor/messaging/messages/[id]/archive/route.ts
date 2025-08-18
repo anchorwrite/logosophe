@@ -101,7 +101,7 @@ export async function POST(
 
     // Log the archive action
     await systemLogs.createLog({
-      logType: 'ACTIVITY',
+      logType: 'activity',
       timestamp: new Date().toISOString(),
       userEmail: access.email,
       activityType: 'MESSAGE_ARCHIVED',

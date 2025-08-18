@@ -35,7 +35,7 @@ export default async function CreateBlockPage() {
 
   // Log access
   await systemLogs.createLog({
-    logType: 'ACTIVITY',
+    logType: 'activity',
     timestamp: new Date().toISOString(),
     userEmail: session.user.email,
     activityType: 'ACCESS_CREATE_BLOCK'

@@ -35,7 +35,7 @@ export default async function WorkflowDetailsPage({
   if (!isAdmin && accessibleTenants.length === 0) {
     // Log unauthorized access attempt
     await systemLogs.createLog({
-      logType: 'ACTIVITY',
+      logType: 'activity',
       timestamp: new Date().toISOString(),
       userEmail: session.user.email,
       activityType: 'UNAUTHORIZED_WORKFLOW_ACCESS',
@@ -78,7 +78,7 @@ export default async function WorkflowDetailsPage({
 
   // Log successful access
   await systemLogs.createLog({
-    logType: 'ACTIVITY',
+    logType: 'activity',
     timestamp: new Date().toISOString(),
     userEmail: session.user.email,
     activityType: 'ACCESS_WORKFLOW_DETAILS',

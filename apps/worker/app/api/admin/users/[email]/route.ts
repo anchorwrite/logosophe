@@ -67,7 +67,7 @@ export async function PUT(
     // Log the activity
     const systemLogs = new SystemLogs(db);
     await systemLogs.createLog({
-      logType: 'ACTIVITY',
+      logType: 'activity',
       timestamp: new Date().toISOString(),
       userEmail: session.user.email || '',
       activityType: 'UPDATE_ADMIN_USER',
@@ -152,7 +152,7 @@ export async function DELETE(
     // Log the activity
     const systemLogs = new SystemLogs(db);
     await systemLogs.createLog({
-      logType: 'ACTIVITY',
+      logType: 'activity',
       timestamp: new Date().toISOString(),
       userEmail: session.user.email || '',
       activityType: 'DELETE_ADMIN_USER',

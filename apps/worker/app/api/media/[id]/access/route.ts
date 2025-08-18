@@ -104,7 +104,7 @@ export async function PUT(
         // Log the access change using SystemLogs
         const systemLogs = new SystemLogs(db);
         await systemLogs.createLog({
-          logType: 'MEDIA_ACCESS',
+          logType: 'media_access',
           timestamp: new Date().toISOString(),
           userEmail: 'system_admin',
           tenantId,

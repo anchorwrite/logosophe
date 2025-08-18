@@ -77,7 +77,7 @@ export async function DELETE(
 
     // Log the session termination
     await systemLogs.createLog({
-      logType: 'TEST_SESSION',
+      logType: 'test_session',
       timestamp: new Date().toISOString(),
       userEmail: session.user.email,
       activityType: 'TERMINATE_TEST_SESSION',

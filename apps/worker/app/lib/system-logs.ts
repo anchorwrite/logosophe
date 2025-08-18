@@ -227,7 +227,7 @@ export class SystemLogs {
         metadata?: Record<string, any>;
     }): Promise<number> {
         return this.createLog({
-            logType: 'ACTIVITY',
+            logType: 'activity',
             timestamp: new Date().toISOString(),
             userId: data.userId,
             userEmail: data.email,
@@ -252,7 +252,7 @@ export class SystemLogs {
         metadata?: Record<string, any>;
     }): Promise<number> {
         return this.createLog({
-            logType: 'AUTH',
+            logType: 'auth',
             timestamp: new Date().toISOString(),
             userId: data.userId,
             userEmail: data.email,
@@ -275,7 +275,7 @@ export class SystemLogs {
         userAgent?: string;
     }): Promise<number> {
         return this.createLog({
-            logType: 'MEDIA_SHARE',
+            logType: 'media_share',
             timestamp: new Date().toISOString(),
             userEmail: data.userEmail,
             tenantId: data.tenantId,
@@ -299,7 +299,7 @@ export class SystemLogs {
         metadata?: Record<string, any>;
     }): Promise<number> {
         return this.createLog({
-            logType: 'MEDIA_ACCESS',
+            logType: 'media_access',
             timestamp: new Date().toISOString(),
             userEmail: data.userEmail,
             tenantId: data.tenantId,
@@ -324,7 +324,7 @@ export class SystemLogs {
         metadata?: Record<string, any>;
     }): Promise<number> {
         return this.createLog({
-            logType: 'ACTIVITY',
+            logType: 'activity',
             timestamp: new Date().toISOString(),
             userEmail: data.userEmail,
             tenantId: data.tenantId,
@@ -349,7 +349,7 @@ export class SystemLogs {
         metadata?: Record<string, any>;
     }): Promise<number> {
         return this.createLog({
-            logType: 'ACTIVITY',
+            logType: 'activity',
             timestamp: new Date().toISOString(),
             userEmail: data.userEmail,
             tenantId: data.tenantId,
@@ -374,7 +374,7 @@ export class SystemLogs {
         metadata?: Record<string, any>;
     }): Promise<number> {
         return this.createLog({
-            logType: 'MESSAGING',
+            logType: 'messaging',
             timestamp: new Date().toISOString(),
             userEmail: data.userEmail,
             tenantId: data.tenantId,

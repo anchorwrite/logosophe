@@ -75,7 +75,7 @@ export async function POST(
     // Log the restoration
     const systemLogs = new SystemLogs(db);
     await systemLogs.createLog({
-      logType: 'MEDIA_RESTORE',
+      logType: 'media_restore',
       timestamp: new Date().toISOString(),
       userEmail: access.email,
       tenantId: file.TenantId as string,

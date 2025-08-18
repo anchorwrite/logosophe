@@ -75,7 +75,7 @@ export async function DELETE(
     // Log the permanent deletion
     const systemLogs = new SystemLogs(db);
     await systemLogs.createLog({
-      logType: 'MEDIA_PERMANENT_DELETE',
+      logType: 'media_permanent_delete',
       timestamp: new Date().toISOString(),
       userEmail: access.email,
       tenantId: file.TenantId as string,
