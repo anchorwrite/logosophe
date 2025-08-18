@@ -5,6 +5,7 @@ import { checkAccess } from '@/lib/access-control';
 import { isSystemAdmin, isTenantAdminFor, hasPermission } from '@/lib/access';
 import { SystemLogs } from '@/lib/system-logs';
 import { nanoid } from 'nanoid';
+import { createMediaMetadata, MediaPublishMetadata } from '@/lib/media-metadata';
 
 
 export async function POST(
@@ -133,7 +134,13 @@ export async function POST(
       `).bind(id, now, access.email).run();
     }
 
-    // Log the publishing action
+    // Log the publishing action with enhanced metadata
+    const publishMetadata = createMediaMetadata<MediaPublishMetadata>({
+      publishedContentId,
+      publishingSettings,
+      addedToContentTenant: !contentTenantAccess
+    }, 'publish', id);
+
     await systemLogs.createLog({
       logType: 'activity',
       timestamp: now,
@@ -141,12 +148,7 @@ export async function POST(
       activityType: 'CONTENT_PUBLISHED',
       targetId: id,
       targetName: mediaFile.FileName,
-      metadata: { 
-        publishedContentId,
-        publishingSettings,
-        mediaId: id,
-        addedToContentTenant: !contentTenantAccess
-      }
+      metadata: publishMetadata
     });
 
     return NextResponse.json({
@@ -230,19 +232,21 @@ export async function DELETE(
       DELETE FROM MediaAccess WHERE MediaId = ? AND TenantId = 'content'
     `).bind(id).run();
 
-    // Log the unpublishing action
+    // Log the unpublishing action with enhanced metadata
+    const unpublishMetadata = createMediaMetadata<MediaPublishMetadata>({
+      publishedContentId: publishedContent.Id,
+      removedFromContentTenant: true
+    }, 'unpublish', id);
+
     await systemLogs.createLog({
       logType: 'activity',
       timestamp: new Date().toISOString(),
+      userAgent: request.headers.get('user-agent') || undefined,
       userEmail: access.email,
       activityType: 'CONTENT_UNPUBLISHED',
       targetId: id,
       targetName: publishedContent.FileName,
-      metadata: { 
-        publishedContentId: publishedContent.Id,
-        mediaId: id,
-        removedFromContentTenant: true
-      }
+      metadata: unpublishMetadata
     });
 
     return NextResponse.json({

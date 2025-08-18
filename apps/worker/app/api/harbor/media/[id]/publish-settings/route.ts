@@ -4,6 +4,7 @@ import { auth } from '@/auth';
 import { checkAccess } from '@/lib/access-control';
 import { isSystemAdmin, isTenantAdminFor, hasPermission } from '@/lib/access';
 import { SystemLogs } from '@/lib/system-logs';
+import { createMediaMetadata, MediaProtectionMetadata } from '@/lib/media-metadata';
 
 
 export async function PUT(
@@ -86,7 +87,12 @@ export async function PUT(
       id
     ).run();
 
-    // Log the protection settings update
+    // Log the protection settings update with enhanced metadata
+    const protectionMetadata = createMediaMetadata<MediaProtectionMetadata>({
+      publishingSettings: body.publishingSettings,
+      publishedContentId: publishedContent.Id
+    }, 'update_protection_settings', id);
+
     await systemLogs.createLog({
       logType: 'activity',
       timestamp: now,
@@ -94,11 +100,7 @@ export async function PUT(
       activityType: 'PROTECTION_SETTINGS_UPDATED',
       targetId: id,
       targetName: publishedContent.FileName,
-      metadata: { 
-        publishedContentId: publishedContent.Id,
-        publishingSettings: body.publishingSettings,
-        mediaId: id
-      }
+      metadata: protectionMetadata
     });
 
     return NextResponse.json({

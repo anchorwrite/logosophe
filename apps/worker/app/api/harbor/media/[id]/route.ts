@@ -3,6 +3,7 @@ import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { auth } from '@/auth';
 import { checkAccess } from '@/lib/access-control';
 import { SystemLogs } from '@/lib/system-logs';
+import { createMediaMetadata, MediaDeleteMetadata } from '@/lib/media-metadata';
 
 
 export async function DELETE(
@@ -65,7 +66,15 @@ export async function DELETE(
         WHERE MediaId = ? AND TenantId = ?
       `).bind(id, tenantId || 'default').run();
 
-      // Log the tenant removal
+      // Log the tenant removal with enhanced metadata
+      const removeMetadata = createMediaMetadata<MediaDeleteMetadata>({
+        fileName: mediaFile.FileName as string,
+        r2Key: mediaFile.R2Key as string,
+        harborDelete: true,
+        lastTenant: false,
+        otherTenants: otherTenants.results.map((t: any) => t.TenantId)
+      }, 'remove_tenant', id);
+
       await systemLogs.logMediaAccess({
         userEmail: access.email,
         tenantId: tenantId || 'default',
@@ -74,11 +83,7 @@ export async function DELETE(
         targetName: mediaFile.FileName as string,
         ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,
         userAgent: request.headers.get('user-agent') || undefined,
-        metadata: {
-          removedFromTenant: true,
-          otherTenants: otherTenants.results.map((t: any) => t.TenantId),
-          harborDelete: true
-        }
+        metadata: removeMetadata
       });
 
       return Response.json({ 
@@ -101,7 +106,16 @@ export async function DELETE(
         DELETE FROM MediaShareLinks WHERE MediaId = ?
       `).bind(id).run();
 
-      // Log the soft deletion
+      // Log the soft deletion with enhanced metadata
+      const softDeleteMetadata = createMediaMetadata<MediaDeleteMetadata>({
+        fileName: mediaFile.FileName as string,
+        r2Key: mediaFile.R2Key as string,
+        canBeRestored: true,
+        harborDelete: true,
+        lastTenant: true,
+        otherTenants: []
+      }, 'soft_delete', id);
+
       await systemLogs.logMediaAccess({
         userEmail: access.email,
         accessType: 'soft_delete',
@@ -109,13 +123,7 @@ export async function DELETE(
         targetName: mediaFile.FileName as string,
         ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,
         userAgent: request.headers.get('user-agent') || undefined,
-        metadata: {
-          softDeleted: true,
-          r2Key: mediaFile.R2Key as string,
-          canBeRestored: true,
-          harborDelete: true,
-          lastTenant: true
-        }
+        metadata: softDeleteMetadata
       });
 
       return Response.json({ 

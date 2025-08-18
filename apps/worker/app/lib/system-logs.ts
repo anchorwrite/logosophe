@@ -609,4 +609,32 @@ export class SystemLogs {
             };
         }
     }
+
+    /**
+     * Log avatar-related operations
+     */
+    async logAvatarOperation(data: {
+        userEmail: string;
+        tenantId?: string;
+        accessType: string;
+        targetId: string;
+        targetName: string;
+        ipAddress?: string;
+        userAgent?: string;
+        metadata?: Record<string, any>;
+    }): Promise<number> {
+        return this.createLog({
+            logType: 'avatar_access',
+            timestamp: new Date().toISOString(),
+            userEmail: data.userEmail,
+            tenantId: data.tenantId,
+            accessType: data.accessType,
+            targetId: data.targetId,
+            targetName: data.targetName,
+            ipAddress: data.ipAddress,
+            userAgent: data.userAgent,
+            metadata: data.metadata,
+            isDeleted: false
+        });
+    }
 } 

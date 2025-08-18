@@ -2,6 +2,8 @@ import { NextRequest } from 'next/server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { auth } from '@/auth';
 import { checkAccess } from '@/lib/access-control';
+import { SystemLogs } from '@/lib/system-logs';
+import { createMediaMetadata, MediaAccessMetadata } from '@/lib/media-metadata';
 
 
 export async function GET(
@@ -36,6 +38,22 @@ export async function GET(
       SELECT TenantId FROM MediaAccess 
       WHERE MediaId = ?
     `).bind(id).all();
+
+    // Log the access settings view with enhanced metadata
+    const systemLogs = new SystemLogs(db);
+    const viewMetadata = createMediaMetadata<MediaAccessMetadata>({
+      currentTenants: accessResult.results?.map((r: any) => r.TenantId) || []
+    }, 'view_access_settings', id);
+
+    await systemLogs.logMediaAccess({
+      userEmail: access.email,
+      accessType: 'view_access_settings',
+      targetId: id,
+      targetName: `Media file ${id}`,
+      ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,
+      userAgent: request.headers.get('user-agent') || undefined,
+      metadata: viewMetadata
+    });
 
     return Response.json(accessResult.results);
   } catch (error) {
@@ -88,6 +106,23 @@ export async function PUT(
         `).bind(id, tenantId, 'tenant', 'view', access.email).run();
       }
     }
+
+    // Log the access settings update with enhanced metadata
+    const systemLogs = new SystemLogs(db);
+    const updateMetadata = createMediaMetadata<MediaAccessMetadata>({
+      newTenants: tenants || [],
+      previousTenants: [] // Could be enhanced to track previous state
+    }, 'update_access_settings', id);
+
+    await systemLogs.logMediaAccess({
+      userEmail: access.email,
+      accessType: 'update_access_settings',
+      targetId: id,
+      targetName: `Media file ${id}`,
+      ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,
+      userAgent: request.headers.get('user-agent') || undefined,
+      metadata: updateMetadata
+    });
 
     return Response.json({ success: true });
   } catch (error) {

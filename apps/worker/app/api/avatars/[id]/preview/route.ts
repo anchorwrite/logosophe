@@ -70,7 +70,7 @@ export async function GET(
     // const systemLogs = new SystemLogs(db);
     // const ipAddress = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip');
     // await systemLogs.createLog({
-    //   logType: 'main_access',
+    //   logType: 'avatar_access',
     //   timestamp: new Date().toISOString(),
     //   userEmail: session.user.email || undefined,
     //   accessType: 'view_avatar',

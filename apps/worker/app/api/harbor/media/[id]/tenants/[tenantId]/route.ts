@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { checkAccess } from '@/lib/access-control';
 import { SystemLogs } from '@/lib/system-logs';
+import { createMediaMetadata, MediaDeleteMetadata } from '@/lib/media-metadata';
 
 
 type Params = Promise<{ id: string; tenantId: string }>
@@ -63,8 +64,15 @@ export async function DELETE(
       return new Response('No media access record found', { status: 404 });
     }
 
-    // Log the removal using SystemLogs
+    // Log the removal using SystemLogs with enhanced metadata
     const systemLogs = new SystemLogs(db);
+    const removeMetadata = createMediaMetadata<MediaDeleteMetadata>({
+      fileName: mediaFile.FileName,
+      harborDelete: true,
+      lastTenant: false,
+      otherTenants: []
+    }, 'remove_tenant', mediaId);
+
     await systemLogs.logMediaAccess({
       userEmail: access.email,
       tenantId,
@@ -72,7 +80,8 @@ export async function DELETE(
       targetId: mediaId,
       targetName: mediaFile.FileName,
       ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,
-      userAgent: request.headers.get('user-agent') || undefined
+      userAgent: request.headers.get('user-agent') || undefined,
+      metadata: removeMetadata
     });
 
     return new Response(null, { status: 204 });
