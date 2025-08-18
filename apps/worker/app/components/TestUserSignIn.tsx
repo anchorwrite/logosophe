@@ -82,7 +82,8 @@ export default function TestUserSignIn() {
           content: 'Sign in failed. Please check your email address.'
         });
       } else {
-        router.push('/harbor');
+        const currentLang = window.location.pathname.split('/')[1] || 'en';
+        router.push(`/${currentLang}/harbor`);
       }
     } catch (error) {
       showToast({
@@ -218,7 +219,8 @@ export default function TestUserSignIn() {
             content: 'Sign in failed. Please try again.'
           });
         } else {
-          router.push('/harbor');
+          const currentLang = window.location.pathname.split('/')[1] || 'en';
+          router.push(`/${currentLang}/harbor`);
         }
       } catch (error) {
         showToast({

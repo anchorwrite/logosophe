@@ -4,9 +4,10 @@ import React from "react";
 import { SvgIcon } from "@/common/SvgIcon";
 import { Button } from "@radix-ui/themes";
 import { PreferencesButton } from "@/components/PreferencesButton";
+import type { Locale } from '@/types/i18n';
 
 
-async function AppBar() {
+async function AppBar({ lang }: { lang: Locale }) {
   const session = await auth();
 
   return (
@@ -18,7 +19,7 @@ async function AppBar() {
         {session?.user ? (
           <>
             <Button variant="ghost" asChild>
-              <Link href="/harbor">
+              <Link href={`/${lang}/harbor`}>
                 Harbor
               </Link>
             </Button>

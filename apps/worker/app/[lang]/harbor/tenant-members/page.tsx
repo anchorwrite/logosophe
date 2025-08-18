@@ -6,10 +6,13 @@ import { Card, Box, Heading, Flex, Button } from "@radix-ui/themes";
 import TenantMembers from "@/components/TenantMembers";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
+import type { Locale } from '@/types/i18n';
 
+type Params = Promise<{ lang: Locale }>;
 
-export default async function TenantMembersPage() {
+export default async function TenantMembersPage({ params }: { params: Params }) {
   const session = await auth();
+  const { lang } = await params;
   
   if (!session?.user?.email) {
     redirect('/signin');
@@ -36,7 +39,7 @@ export default async function TenantMembersPage() {
     <Flex direction="column" align="center" gap="4">
       <Box p="4" style={{ width: '100%', maxWidth: '64rem' }}>
         <Flex justify="between" align="center" mb="4">
-          <Link href="/harbor">
+          <Link href={`/${lang}/harbor`}>
             <Button variant="ghost">
               <ArrowLeft className="mr-2" />
               Back to Harbor

@@ -55,7 +55,8 @@ const ContentBlock = ({
     } else if (item.title.includes("Tenant")) {
       router.push('/tenant-application');
     } else if (item.title.includes("Subscriber")) {
-      router.push('/harbor');
+      const currentLang = window.location.pathname.split('/')[1] || 'en';
+      router.push(`/${currentLang}/harbor`);
     } else {
       scrollTo("about");
     }
