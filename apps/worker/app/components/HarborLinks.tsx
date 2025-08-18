@@ -5,29 +5,29 @@ import Link from 'next/link';
 import { Users, MessageSquare, Workflow } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
-export default function HarborLinks() {
+export default function HarborLinks({ lang }: { lang: string }) {
   const { t } = useTranslation('translations');
   
   const myLinks = [
-    { href: '/harbor/media', label: t('harbor.mediaLibrary'), roles: ['subscriber'] },
-    { href: '/harbor/media/upload', label: t('harbor.uploadMedia'), roles: ['subscriber'] },
-    { href: '/harbor/content', label: t('harbor.contentDashboard'), roles: ['publisher'] }
+    { href: `/${lang}/harbor/media`, label: t('harbor.mediaLibrary'), roles: ['subscriber'] },
+    { href: `/${lang}/harbor/media/upload`, label: t('harbor.uploadMedia'), roles: ['subscriber'] },
+    { href: `/${lang}/harbor/content`, label: t('harbor.contentDashboard'), roles: ['publisher'] }
   ];
 
   const myCrewLinks = [
     {
       name: t('harbor.tenantMembers'),
-      href: '/harbor/tenant-members',
+      href: `/${lang}/harbor/tenant-members`,
       icon: Users
     },
     {
       name: t('harbor.messaging'),
-      href: '/harbor/messaging',
+      href: `/${lang}/harbor/messaging`,
       icon: MessageSquare
     },
     {
       name: t('harbor.workflow'),
-      href: '/harbor/workflow',
+      href: `/${lang}/harbor/workflow`,
       icon: Workflow
     }
   ];

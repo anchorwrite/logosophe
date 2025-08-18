@@ -30,12 +30,12 @@ export default function SubscriberOptOut({ email }: SubscriberOptOutProps) {
 
       if (!response.ok) {
         const message = await response.text();
-        throw new Error(message || t('unsubscribeError'));
+        throw new Error(message || t('harbor.unsubscribeError', { defaultValue: t('unsubscribeError') }));
       }
 
       showToast({
         title: t('common.success'),
-        content: t('unsubscribeSuccess'),
+        content: t('harbor.unsubscribeSuccess', { defaultValue: t('unsubscribeSuccess') }),
         type: 'success'
       });
       window.location.reload();
@@ -43,7 +43,7 @@ export default function SubscriberOptOut({ email }: SubscriberOptOutProps) {
       console.error('Unsubscription error:', error);
       showToast({
         title: t('common.error'),
-        content: error instanceof Error ? error.message : t('unsubscribeError'),
+        content: error instanceof Error ? error.message : t('harbor.unsubscribeError', { defaultValue: t('unsubscribeError') }),
         type: 'error'
       });
     } finally {
@@ -58,7 +58,9 @@ export default function SubscriberOptOut({ email }: SubscriberOptOutProps) {
       variant="soft"
       size="2"
     >
-      {isLoading ? t('unsubscribing') : t('unsubscribe')}
+      {isLoading 
+        ? t('harbor.unsubscribing', { defaultValue: t('unsubscribing') })
+        : t('harbor.unsubscribe', { defaultValue: t('unsubscribe') })}
     </Button>
   );
 } 

@@ -113,7 +113,8 @@ export function HarborMediaUpload() {
 
       const data = await response.json();
       showToast('success', t('harbor.fileUploadedSuccessfully'));
-      router.push('/harbor/media');
+      const currentLang = window.location.pathname.split('/')[1] || 'en';
+      router.push(`/${currentLang}/harbor/media`);
       router.refresh();
     } catch (error) {
       console.error('Error uploading file:', error);
@@ -234,7 +235,10 @@ export function HarborMediaUpload() {
           </Button>
           <Button
             variant="soft"
-            onClick={() => router.push('/harbor/media')}
+            onClick={() => {
+              const currentLang = window.location.pathname.split('/')[1] || 'en';
+              router.push(`/${currentLang}/harbor/media`);
+            }}
             disabled={isUploading}
           >
             {t('harbor.media.cancel')}

@@ -84,7 +84,7 @@ export default function HarborPage({ params }: { params: Params }) {
           <AuthenticationMessage email={session.user.email as string} />
           <Text size="5" align="center" color="gray">{t('harbor.subscriberMessage')}</Text>
         </Flex>
-        <HarborLinks />
+        <HarborLinks lang={lang} />
       </Box>
     </Flex>
   );

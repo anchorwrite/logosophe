@@ -69,10 +69,11 @@ const Header: React.FC = () => {
     },
     {
       key: "dashboard",
-      label: session?.user ? "Harbor" : t("Sign In"),
+      label: session?.user ? t("harbor.nav.harbor") : t("Sign In"),
       onClick: () => {
         if (session?.user) {
-          router.push("/harbor");
+          const currentLang = window.location.pathname.split('/')[1] || 'en';
+          router.push(`/${currentLang}/harbor`);
         } else {
           router.push("/dashboard");
         }

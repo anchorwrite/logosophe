@@ -22,7 +22,7 @@ interface UserToBlock {
   TenantId: string;
 }
 
-export function HarborBlocksClient() {
+export function HarborBlocksClient({ lang }: { lang: string }) {
   const { t } = useTranslation('translations');
   const router = useRouter();
   const [blockedUsers, setBlockedUsers] = useState<BlockedUser[]>([]);
@@ -172,7 +172,7 @@ export function HarborBlocksClient() {
         <Flex gap="2">
           <Button 
             variant="soft" 
-            onClick={() => router.push('/en/harbor/messaging')}
+            onClick={() => router.push(`/${lang}/harbor/messaging`)}
           >
             Back to Messaging
           </Button>
