@@ -31,7 +31,7 @@ export async function PUT(
 
     if (!canManageProtection && !isAdmin && !isTenantAdmin) {
       await systemLogs.createLog({
-        logType: 'ACTIVITY',
+        logType: 'activity',
         timestamp: new Date().toISOString(),
         userEmail: access.email,
         activityType: 'UNAUTHORIZED_PROTECTION_SETTINGS_ATTEMPT',
@@ -88,7 +88,7 @@ export async function PUT(
 
     // Log the protection settings update
     await systemLogs.createLog({
-      logType: 'ACTIVITY',
+      logType: 'activity',
       timestamp: now,
       userEmail: access.email,
       activityType: 'PROTECTION_SETTINGS_UPDATED',

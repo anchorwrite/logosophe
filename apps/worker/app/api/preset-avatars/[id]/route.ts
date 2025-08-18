@@ -49,7 +49,7 @@ export async function PATCH(
     // Log the status change
     const systemLogs = new SystemLogs(db);
     await systemLogs.createLog({
-      logType: 'MAIN_ACCESS',
+      logType: 'main_access',
       timestamp: new Date().toISOString(),
       userEmail: session.user.email,
       accessType: 'update_preset_avatar_status',
@@ -120,7 +120,7 @@ export async function DELETE(
     // Log the deletion
     const systemLogs = new SystemLogs(db);
     await systemLogs.createLog({
-      logType: 'MAIN_ACCESS',
+      logType: 'main_access',
       timestamp: new Date().toISOString(),
       userEmail: session.user.email,
       accessType: 'delete_preset_avatar',

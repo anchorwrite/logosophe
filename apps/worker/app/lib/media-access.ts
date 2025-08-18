@@ -96,7 +96,7 @@ export async function logMediaAccess(mediaId: number, action: MediaAction, reque
 
   const systemLogs = new SystemLogs(db);
   await systemLogs.createLog({
-    logType: 'MEDIA_ACCESS',
+    logType: 'media_access',
     timestamp: new Date().toISOString(),
     userEmail: session.user.email,
     tenantId: media.TenantId,

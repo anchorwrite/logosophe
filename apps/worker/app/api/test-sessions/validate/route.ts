@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
     if (!sessionResult) {
       // Log failed validation attempt
       await systemLogs.createLog({
-        logType: 'TEST_SESSION',
+        logType: 'test_session',
         timestamp: new Date().toISOString(),
         activityType: 'INVALID_TOKEN_ATTEMPT',
         targetId: token,
@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
 
     // Log successful token validation
     await systemLogs.createLog({
-      logType: 'TEST_SESSION',
+      logType: 'test_session',
       timestamp: new Date().toISOString(),
       userEmail: sessionResult.TestUserEmail,
       activityType: 'VALIDATE_TEST_SESSION_TOKEN',

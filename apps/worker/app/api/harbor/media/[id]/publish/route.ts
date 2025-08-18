@@ -45,7 +45,7 @@ export async function POST(
 
     if (!canPublish && !isAdmin && !isTenantAdmin) {
       await systemLogs.createLog({
-        logType: 'ACTIVITY',
+        logType: 'activity',
         timestamp: new Date().toISOString(),
         userEmail: access.email,
         activityType: 'UNAUTHORIZED_PUBLISH_ATTEMPT',
@@ -135,7 +135,7 @@ export async function POST(
 
     // Log the publishing action
     await systemLogs.createLog({
-      logType: 'ACTIVITY',
+      logType: 'activity',
       timestamp: now,
       userEmail: access.email,
       activityType: 'CONTENT_PUBLISHED',
@@ -186,7 +186,7 @@ export async function DELETE(
 
     if (!canUnpublish && !isAdmin && !isTenantAdmin) {
       await systemLogs.createLog({
-        logType: 'ACTIVITY',
+        logType: 'activity',
         timestamp: new Date().toISOString(),
         userEmail: access.email,
         activityType: 'UNAUTHORIZED_UNPUBLISH_ATTEMPT',
@@ -232,7 +232,7 @@ export async function DELETE(
 
     // Log the unpublishing action
     await systemLogs.createLog({
-      logType: 'ACTIVITY',
+      logType: 'activity',
       timestamp: new Date().toISOString(),
       userEmail: access.email,
       activityType: 'CONTENT_UNPUBLISHED',

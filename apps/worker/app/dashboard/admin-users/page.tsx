@@ -30,7 +30,7 @@ export default async function AdminUsersPage() {
   if (!isAdmin) {
     // Log unauthorized access attempt
     await systemLogs.createLog({
-      logType: 'ACTIVITY',
+      logType: 'activity',
       timestamp: new Date().toISOString(),
       userEmail: session.user.email,
       activityType: 'UNAUTHORIZED_ADMIN_ACCESS',
@@ -42,7 +42,7 @@ export default async function AdminUsersPage() {
 
   // Log successful access
   await systemLogs.createLog({
-    logType: 'ACTIVITY',
+    logType: 'activity',
     timestamp: new Date().toISOString(),
     userEmail: session.user.email,
     activityType: 'ACCESS_ADMIN_USERS'

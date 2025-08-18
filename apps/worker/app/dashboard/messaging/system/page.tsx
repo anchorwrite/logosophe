@@ -34,7 +34,7 @@ export default async function SystemControlsPage() {
   if (!isAdmin) {
     // Log unauthorized access attempt
     await systemLogs.createLog({
-      logType: 'ACTIVITY',
+      logType: 'activity',
       timestamp: new Date().toISOString(),
       userEmail: session.user.email,
       activityType: 'UNAUTHORIZED_SYSTEM_ACCESS',
@@ -46,7 +46,7 @@ export default async function SystemControlsPage() {
 
   // Log successful access
   await systemLogs.createLog({
-    logType: 'ACTIVITY',
+    logType: 'activity',
     timestamp: new Date().toISOString(),
     userEmail: session.user.email,
     activityType: 'ACCESS_SYSTEM_CONTROLS'

@@ -100,7 +100,7 @@ export async function POST(request: Request) {
     // Log the activity
     const systemLogs = new SystemLogs(db);
     await systemLogs.createLog({
-      logType: 'ACTIVITY',
+      logType: 'activity',
       timestamp: new Date().toISOString(),
       userEmail: session.user.email || '',
       activityType: 'CREATE_ADMIN_USER',

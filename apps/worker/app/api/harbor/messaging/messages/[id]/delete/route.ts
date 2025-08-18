@@ -78,7 +78,7 @@ export async function POST(
 
     // Log the deletion
     await systemLogs.createLog({
-      logType: 'ACTIVITY',
+      logType: 'activity',
       timestamp: new Date().toISOString(),
       userEmail: access.email,
       activityType: 'MESSAGE_DELETED',

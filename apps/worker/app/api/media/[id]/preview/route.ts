@@ -373,7 +373,7 @@ export async function GET(
           const userAgent = request.headers.get('user-agent') ?? undefined;
           const session = await auth();
           await systemLogs.createLog({
-            logType: 'MEDIA_ACCESS',
+            logType: 'media_access',
             timestamp: new Date().toISOString(),
             userId: shareToken ? undefined : session?.user?.id,
             userEmail: shareToken ? 'shared_access' : access.email!,
@@ -407,7 +407,7 @@ export async function GET(
         const userAgent = request.headers.get('user-agent') ?? undefined;
         const session = await auth();
         await systemLogs.createLog({
-          logType: 'MEDIA_ACCESS',
+          logType: 'media_access',
           timestamp: new Date().toISOString(),
           userId: shareToken ? undefined : session?.user?.id,
           userEmail: shareToken ? 'shared_access' : access.email!,
