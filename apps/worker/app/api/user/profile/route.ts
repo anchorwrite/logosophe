@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { auth } from '@/auth';
-import { SystemLogs } from '@/lib/system-logs';
+import { logActivityEvent, extractRequestContext } from '@/lib/logging-utils';
 
 
 interface ProfileUpdate {
@@ -27,10 +27,7 @@ export async function PUT(request: Request) {
       return new Response('Name and email are required', { status: 400 });
     }
 
-    console.log('Profile update request data:', {
-      name: data.name,
-      email: data.email
-    });
+
 
     // Get current user data for logging
     const currentUser = await db.prepare(`
@@ -43,7 +40,7 @@ export async function PUT(request: Request) {
       return new Response('User not found', { status: 404 });
     }
 
-    console.log('Current user data:', currentUser);
+
 
     // Update user's profile information
     const result = await db.prepare(`
@@ -54,23 +51,21 @@ export async function PUT(request: Request) {
       RETURNING name, email, image
     `).bind(data.name, data.email, session.user.id).run();
 
-    console.log('Update result:', result);
+
 
     if (!result.success) {
       throw new Error('Failed to update profile');
     }
 
-    // Log the update
-    const systemLogs = new SystemLogs(db);
-    await systemLogs.createLog({
-      logType: 'main_access',
-      timestamp: new Date().toISOString(),
+    // Log the update using standardized logging
+    const { ipAddress, userAgent } = extractRequestContext(request);
+    await logActivityEvent(db, {
       userEmail: session.user.email,
-      accessType: 'update_profile',
+      activityType: 'update_profile',
       targetId: session.user.id,
       targetName: data.name,
-      ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,
-      userAgent: request.headers.get('user-agent') || undefined,
+      ipAddress,
+      userAgent,
       metadata: {
         oldEmail: currentUser.email,
         newEmail: data.email,

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { auth } from '@/auth';
-import { SystemLogs } from '@/lib/system-logs';
+import { logAvatarEvent, extractRequestContext } from '@/lib/logging-utils';
 
 
 // POST /api/avatars - Upload custom avatar
@@ -57,17 +57,15 @@ export async function POST(request: Request) {
 
     const avatarId = result.meta.last_row_id;
 
-    // Log the upload
-    const systemLogs = new SystemLogs(db);
-    await systemLogs.createLog({
-      logType: 'main_access',
-      timestamp: new Date().toISOString(),
+    // Log the upload using standardized logging
+    const { ipAddress, userAgent } = extractRequestContext(request);
+    await logAvatarEvent(db, {
       userEmail: session.user.email,
       accessType: 'upload_custom_avatar',
       targetId: avatarId.toString(),
       targetName: file.name,
-      ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,
-      userAgent: request.headers.get('user-agent') || undefined,
+      ipAddress,
+      userAgent,
       metadata: {
         isPreset: false,
         fileSize: file.size,

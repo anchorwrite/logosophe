@@ -4,6 +4,7 @@ import { auth } from '@/auth';
 import { checkAccess } from '@/lib/access-control';
 import { isSystemAdmin } from '@/lib/access';
 import { SystemLogs } from '@/lib/system-logs';
+import { createMediaMetadata, MediaUploadMetadata } from '@/lib/media-metadata';
 
 
 export async function GET(request: NextRequest) {
@@ -162,7 +163,7 @@ export async function POST(request: NextRequest) {
     const contentType = file.type;
     const fileSize = file.size;
     const language = formData.get('language') as string || 'en';
-    let mediaType = 'document';
+    let mediaType: 'audio' | 'video' | 'image' | 'document' = 'document';
     if (contentType.startsWith('image/')) {
       mediaType = 'image';
     } else if (contentType.startsWith('video/')) {
@@ -252,8 +253,19 @@ export async function POST(request: NextRequest) {
       )
     );
 
-    // Log the upload using SystemLogs
+    // Log the upload using SystemLogs with comprehensive metadata
     const systemLogs = new SystemLogs(db);
+    const uploadMetadata = createMediaMetadata<MediaUploadMetadata>({
+      fileName: file.name,
+      fileSize,
+      contentType,
+      mediaType,
+      selectedTenants,
+      isAdmin,
+      r2Key,
+      language
+    }, 'upload', mediaId.toString());
+
     await systemLogs.logMediaAccess({
       userEmail: isAdmin ? 'system_admin' : access.email,
       tenantId: selectedTenants[0],
@@ -261,7 +273,8 @@ export async function POST(request: NextRequest) {
       targetId: mediaId.toString(),
       targetName: file.name,
       ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,
-      userAgent: request.headers.get('user-agent') || undefined
+      userAgent: request.headers.get('user-agent') || undefined,
+      metadata: uploadMetadata
     });
 
     return Response.json({ 

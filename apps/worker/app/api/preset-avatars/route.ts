@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { auth } from '@/auth';
 import { isSystemAdmin } from '@/lib/access';
-import { SystemLogs } from '@/lib/system-logs';
+import { logAvatarEvent, extractRequestContext } from '@/lib/logging-utils';
 
 
 // POST /api/avatars/presets - Admin only endpoint for uploading preset avatars (system-wide)
@@ -64,17 +64,15 @@ export async function POST(request: Request) {
 
     const avatarId = result.meta.last_row_id;
 
-    // Log the upload
-    const systemLogs = new SystemLogs(db);
-    await systemLogs.createLog({
-      logType: 'main_access',
-      timestamp: new Date().toISOString(),
+    // Log the upload using standardized logging
+    const { ipAddress, userAgent } = extractRequestContext(request);
+    await logAvatarEvent(db, {
       userEmail: session.user.email,
       accessType: 'upload_preset_avatar',
       targetId: avatarId.toString(),
       targetName: file.name,
-      ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,
-      userAgent: request.headers.get('user-agent') || undefined,
+      ipAddress,
+      userAgent,
       metadata: {
         isPreset: true,
         fileSize: file.size,

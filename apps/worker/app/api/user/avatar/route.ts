@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { auth } from '@/auth';
-import { SystemLogs } from '@/lib/system-logs';
+import { logAvatarEvent, extractRequestContext } from '@/lib/logging-utils';
 
 
 interface AvatarUpdate {
@@ -54,17 +54,15 @@ export async function PUT(request: Request) {
       WHERE id = ?
     `).bind(imageUrl, session.user.id).run();
 
-    // Log the update
-    const systemLogs = new SystemLogs(db);
-    await systemLogs.createLog({
-      logType: 'main_access',
-      timestamp: new Date().toISOString(),
+    // Log the update using standardized logging
+    const { ipAddress, userAgent } = extractRequestContext(request);
+    await logAvatarEvent(db, {
       userEmail: session.user.email,
       accessType: 'update_avatar',
       targetId: session.user.id,
       targetName: avatar.R2Key as string,
-      ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,
-      userAgent: request.headers.get('user-agent') || undefined,
+      ipAddress,
+      userAgent,
       metadata: {
         avatarId: data.avatarId,
         userId: session.user.id,

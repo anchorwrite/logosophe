@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { auth } from '@/auth';
 import { isSystemAdmin } from '@/lib/access';
-import { SystemLogs } from '@/lib/system-logs';
+import { logAvatarEvent, extractRequestContext } from '@/lib/logging-utils';
 
 
 type Params = Promise<{ id: string }>
@@ -45,17 +45,15 @@ export async function DELETE(
     `).bind(id).run();
 
     if (result.success) {
-      // Log the deletion
-      const systemLogs = new SystemLogs(db);
-      await systemLogs.createLog({
-        logType: 'main_access',
-        timestamp: new Date().toISOString(),
+      // Log the deletion using standardized logging
+      const { ipAddress, userAgent } = extractRequestContext(request);
+      await logAvatarEvent(db, {
         userEmail: session.user.email,
         accessType: 'delete_avatar',
         targetId: id,
         targetName: avatar.R2Key as string,
-        ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,
-        userAgent: request.headers.get('user-agent') || undefined,
+        ipAddress,
+        userAgent,
         metadata: {
           avatarId: id,
           isPreset: avatar.IsPreset,

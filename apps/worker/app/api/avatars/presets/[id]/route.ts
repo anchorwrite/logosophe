@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { auth } from '@/auth';
 import { isSystemAdmin } from '@/lib/access';
-import { SystemLogs } from '@/lib/system-logs';
+import { logAvatarEvent, extractRequestContext } from '@/lib/logging-utils';
 
 
 type Params = Promise<{ id: string }>
@@ -34,11 +34,11 @@ export async function PATCH(
     const data = await request.json() as PresetAvatarUpdate;
     const { isActive } = data;
 
-    console.log('PATCH request:', { id, isActive });
+
 
     // Verify the avatar exists and is a preset
     const avatar = await db.prepare(`
-      SELECT Id, IsPreset, IsActive
+      SELECT Id, IsPreset, IsActive, R2Key
       FROM UserAvatars 
       WHERE Id = ? AND IsPreset = 1
     `).bind(id).first();
@@ -47,7 +47,7 @@ export async function PATCH(
       return new Response('Avatar not found', { status: 404 });
     }
 
-    console.log('Current avatar state:', avatar);
+
 
     // Update the avatar status
     const result = await db.prepare(`
@@ -59,20 +59,18 @@ export async function PATCH(
       WHERE IsPreset = 1
     `).bind(id, isActive ? 1 : 0).run();
 
-    console.log('Update result:', result);
+
 
     if (result.success) {
-      // Log the update
-      const systemLogs = new SystemLogs(db);
-      await systemLogs.createLog({
-        logType: 'main_access',
-        timestamp: new Date().toISOString(),
+      // Log the update using standardized logging
+      const { ipAddress, userAgent } = extractRequestContext(request);
+      await logAvatarEvent(db, {
         userEmail: session.user.email,
         accessType: 'update_preset_avatar',
         targetId: id,
         targetName: avatar.R2Key as string,
-        ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,
-        userAgent: request.headers.get('user-agent') || undefined,
+        ipAddress,
+        userAgent,
         metadata: {
           avatarId: id,
           isActive,

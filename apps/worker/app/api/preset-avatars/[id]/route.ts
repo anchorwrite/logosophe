@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { auth } from '@/auth';
 import { isSystemAdmin } from '@/lib/access';
-import { SystemLogs } from '@/lib/system-logs';
+import { logAvatarEvent, extractRequestContext } from '@/lib/logging-utils';
 
 
 interface UpdateAvatarRequest {
@@ -46,17 +46,15 @@ export async function PATCH(
       return new Response('Avatar not found', { status: 404 });
     }
 
-    // Log the status change
-    const systemLogs = new SystemLogs(db);
-    await systemLogs.createLog({
-      logType: 'main_access',
-      timestamp: new Date().toISOString(),
+    // Log the status change using standardized logging
+    const { ipAddress, userAgent } = extractRequestContext(request);
+    await logAvatarEvent(db, {
       userEmail: session.user.email,
       accessType: 'update_preset_avatar_status',
       targetId: id,
       targetName: `Preset Avatar ${id}`,
-      ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,
-      userAgent: request.headers.get('user-agent') || undefined,
+      ipAddress,
+      userAgent,
       metadata: {
         isActive: body.isActive,
         tenantId: 'default'
@@ -117,17 +115,15 @@ export async function DELETE(
       return new Response('Avatar not found', { status: 404 });
     }
 
-    // Log the deletion
-    const systemLogs = new SystemLogs(db);
-    await systemLogs.createLog({
-      logType: 'main_access',
-      timestamp: new Date().toISOString(),
+    // Log the deletion using standardized logging
+    const { ipAddress, userAgent } = extractRequestContext(request);
+    await logAvatarEvent(db, {
       userEmail: session.user.email,
       accessType: 'delete_preset_avatar',
       targetId: id,
       targetName: `Preset Avatar ${id}`,
-      ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,
-      userAgent: request.headers.get('user-agent') || undefined,
+      ipAddress,
+      userAgent,
       metadata: {
         r2Key: avatar.R2Key,
         tenantId: 'default'
