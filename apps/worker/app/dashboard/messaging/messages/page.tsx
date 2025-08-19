@@ -48,7 +48,7 @@ export default async function MessagesPage() {
     logType: 'activity',
     timestamp: new Date().toISOString(),
     userEmail: session.user.email,
-    activityType: 'ACCESS_MESSAGE_MANAGEMENT'
+    activityType: 'access_message_management'
   });
 
   // Fetch messages based on user's access level

@@ -41,7 +41,7 @@ export default async function MessagingInterfacePage() {
     logType: 'activity',
     timestamp: new Date().toISOString(),
     userEmail: session.user.email,
-    activityType: 'ACCESS_MESSAGING_INTERFACE'
+    activityType: 'access_messaging_interface'
   });
 
   // Get user's recent messages

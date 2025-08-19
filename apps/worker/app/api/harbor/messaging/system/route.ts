@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
         logType: 'activity',
         timestamp: new Date().toISOString(),
         userEmail: access.email,
-        activityType: 'UNAUTHORIZED_SYSTEM_ACCESS',
+        activityType: 'unauthorized_system_access',
         metadata: { attemptedAccess: 'messaging-system' }
       });
       
@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
       logType: 'activity',
       timestamp: new Date().toISOString(),
       userEmail: access.email,
-      activityType: 'ACCESS_SYSTEM_CONTROLS'
+              activityType: 'access_system_controls',
     });
 
     const { searchParams } = new URL(request.url);
@@ -140,7 +140,7 @@ export async function POST(request: NextRequest) {
     // Log the setting change
     await systemLogs.logMessagingOperation({
       userEmail: access.email,
-      activityType: 'SYSTEM_SETTING_CHANGED',
+              activityType: 'system_setting_changed',
       targetId: dbSetting,
       targetName: setting,
       ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,

@@ -110,7 +110,7 @@ export default async function SubscriberMessagingPage({ params }: { params: Prom
     logType: 'activity',
     timestamp: new Date().toISOString(),
     userEmail: session.user.email,
-    activityType: 'ACCESS_SUBSCRIBER_MESSAGING',
+    activityType: 'access_subscriber_messaging',
     tenantId: userTenantId
   });
 

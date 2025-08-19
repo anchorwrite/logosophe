@@ -84,7 +84,7 @@ export async function PUT(
       // Log acceptance
       await systemLogs.logUserOperation({
         userEmail: access.email,
-        activityType: 'WORKFLOW_INVITE_ACCEPT',
+        activityType: 'workflow_invite_accept',
         targetId: invitation.WorkflowId,
         targetName: `workflow_${invitation.WorkflowId}`,
         tenantId: invitation.TenantId,
@@ -113,7 +113,7 @@ export async function PUT(
       // Log rejection
       await systemLogs.logUserOperation({
         userEmail: access.email,
-        activityType: 'WORKFLOW_INVITE_REJECT',
+        activityType: 'workflow_invite_reject',
         targetId: invitation.WorkflowId,
         targetName: `workflow_${invitation.WorkflowId}`,
         tenantId: invitation.TenantId,
@@ -194,7 +194,7 @@ export async function DELETE(
     // Log deletion
     await systemLogs.logUserOperation({
       userEmail: access.email,
-      activityType: 'WORKFLOW_INVITE_DELETE',
+              activityType: 'workflow_invite_delete',
       targetId: invitationData.WorkflowId,
       targetName: `workflow_${invitationData.WorkflowId}`,
       tenantId: invitationData.TenantId,

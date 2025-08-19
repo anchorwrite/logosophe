@@ -105,7 +105,7 @@ export async function PUT(
     const systemLogs = new SystemLogs(env.DB);
     await systemLogs.logTenantOperation({
       userEmail: session.user.email,
-      activityType: 'UPDATE_TENANT',
+              activityType: 'update_tenant',
       targetId: id,
       targetName: name,
       ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,
@@ -191,7 +191,7 @@ export async function DELETE(
     const systemLogs = new SystemLogs(env.DB);
     await systemLogs.logTenantOperation({
       userEmail: session.user.email,
-      activityType: 'DELETE_TENANT',
+              activityType: 'delete_tenant',
       targetId: id,
       targetName: tenant.Name,
       ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,

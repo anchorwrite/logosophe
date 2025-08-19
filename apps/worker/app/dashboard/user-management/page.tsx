@@ -40,7 +40,7 @@ export default async function UserManagementPage() {
       userId: session.user.id || session.user.email,
       email: session.user.email,
       provider: 'credentials',
-      activityType: 'UNAUTHORIZED_USER_MANAGEMENT_ACCESS',
+      activityType: 'unauthorized_user_management_access',
       ipAddress: 'unknown',
       userAgent: 'unknown',
       metadata: { attemptedAccess: 'user-management' }
@@ -54,7 +54,7 @@ export default async function UserManagementPage() {
     userId: session.user.id || session.user.email,
     email: session.user.email,
     provider: 'credentials',
-    activityType: 'ACCESS_USER_MANAGEMENT',
+    activityType: 'access_user_management',
     ipAddress: 'unknown',
     userAgent: 'unknown'
   });

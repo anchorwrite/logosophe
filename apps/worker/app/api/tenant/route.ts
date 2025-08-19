@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
     const systemLogs = new SystemLogs(env.DB);
     await systemLogs.logTenantOperation({
       userEmail: session.user.email,
-      activityType: 'CREATE_TENANT',
+              activityType: 'create_tenant',
       targetId: id,
       targetName: name,
       ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,

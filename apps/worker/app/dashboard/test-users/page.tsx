@@ -29,7 +29,7 @@ export default async function TestUsersPage() {
       logType: 'activity',
       timestamp: new Date().toISOString(),
       userEmail: session.user.email,
-      activityType: 'UNAUTHORIZED_TEST_USERS_ACCESS',
+      activityType: 'unauthorized_test_users_access',
       metadata: { attemptedAccess: 'test-users' }
     });
     
@@ -41,7 +41,7 @@ export default async function TestUsersPage() {
     logType: 'activity',
     timestamp: new Date().toISOString(),
     userEmail: session.user.email,
-    activityType: 'ACCESS_TEST_USERS'
+    activityType: 'access_test_users'
   });
   return (
     <ToastProvider>

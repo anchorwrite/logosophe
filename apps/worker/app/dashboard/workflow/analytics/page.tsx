@@ -32,7 +32,7 @@ export default async function WorkflowAnalyticsPage() {
       logType: 'activity',
       timestamp: new Date().toISOString(),
       userEmail: session.user.email,
-      activityType: 'UNAUTHORIZED_WORKFLOW_ACCESS',
+      activityType: 'unauthorized_workflow_access',
       metadata: { attemptedAccess: 'workflow-analytics' }
     });
     
@@ -74,7 +74,7 @@ export default async function WorkflowAnalyticsPage() {
     logType: 'activity',
     timestamp: new Date().toISOString(),
     userEmail: session.user.email,
-    activityType: 'ACCESS_WORKFLOW_ANALYTICS'
+    activityType: 'access_workflow_analytics'
   });
 
   return (

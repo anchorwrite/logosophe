@@ -80,7 +80,7 @@ export async function DELETE(
       logType: 'test_session',
       timestamp: new Date().toISOString(),
       userEmail: session.user.email,
-      activityType: 'TERMINATE_TEST_SESSION',
+              activityType: 'terminate_test_session',
       targetId: sessionResult.SessionToken,
       targetName: sessionResult.TestUserEmail,
       ipAddress,

@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
       logType: 'test_session',
       timestamp: new Date().toISOString(),
       userEmail: session.user.email,
-      activityType: 'CREATE_TEST_SESSION',
+              activityType: 'create_test_session',
       targetId: sessionToken,
       targetName: testUserEmail,
       ipAddress,

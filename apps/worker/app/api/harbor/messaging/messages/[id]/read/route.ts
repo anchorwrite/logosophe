@@ -77,7 +77,7 @@ export async function POST(
       logType: 'activity',
       timestamp: readAt,
       userEmail: access.email,
-      activityType: 'MESSAGE_READ',
+              activityType: 'message_read',
       metadata: {
         messageId,
         readAt

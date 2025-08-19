@@ -70,7 +70,7 @@ export async function PUT(
       logType: 'activity',
       timestamp: new Date().toISOString(),
       userEmail: session.user.email || '',
-      activityType: 'UPDATE_ADMIN_USER',
+              activityType: 'update_admin_user',
       metadata: { targetEmail: email, newRole: body.role }
     });
 
@@ -155,7 +155,7 @@ export async function DELETE(
       logType: 'activity',
       timestamp: new Date().toISOString(),
       userEmail: session.user.email || '',
-      activityType: 'DELETE_ADMIN_USER',
+              activityType: 'delete_admin_user',
       metadata: { targetEmail: email }
     });
 

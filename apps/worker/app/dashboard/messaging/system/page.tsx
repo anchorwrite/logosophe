@@ -37,7 +37,7 @@ export default async function SystemControlsPage() {
       logType: 'activity',
       timestamp: new Date().toISOString(),
       userEmail: session.user.email,
-      activityType: 'UNAUTHORIZED_SYSTEM_ACCESS',
+      activityType: 'unauthorized_system_access',
       metadata: { attemptedAccess: 'messaging-system' }
     });
     
@@ -49,7 +49,7 @@ export default async function SystemControlsPage() {
     logType: 'activity',
     timestamp: new Date().toISOString(),
     userEmail: session.user.email,
-    activityType: 'ACCESS_SYSTEM_CONTROLS'
+    activityType: 'access_system_controls'
   });
 
   // Get system settings

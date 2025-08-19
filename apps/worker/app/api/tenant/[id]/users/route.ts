@@ -141,7 +141,7 @@ export async function POST(
       // Log first-time tenant user addition
       await systemLogs.logUserOperation({
         userEmail: session.user.email,
-        activityType: 'TENANT_ADD_USER',
+        activityType: 'tenant_add_user',
         targetId: Email,
         targetName: Email,
         tenantId: id,
@@ -212,7 +212,7 @@ export async function POST(
     // Log role addition
     await systemLogs.logUserOperation({
       userEmail: session.user.email,
-      activityType: 'ADD_ROLE',
+              activityType: 'add_role',
       targetId: Email,
       targetName: `${Email}_${roleName.toLowerCase().replace(/\s+/g, '_')}`,
       tenantId: id,
