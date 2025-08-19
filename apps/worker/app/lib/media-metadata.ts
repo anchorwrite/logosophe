@@ -49,6 +49,8 @@ export interface MediaAccessMetadata extends BaseMediaMetadata {
   currentTenants?: string[];
   newTenants?: string[];
   previousTenants?: string[];
+  /** Language setting */
+  language?: string;
 }
 
 export interface MediaShareMetadata extends BaseMediaMetadata {
@@ -76,6 +78,8 @@ export interface MediaPublishMetadata extends BaseMediaMetadata {
   /** Tenant context */
   addedToContentTenant?: boolean;
   removedFromContentTenant?: boolean;
+  /** Language setting */
+  language?: string;
 }
 
 export interface MediaProtectionMetadata extends BaseMediaMetadata {
@@ -89,6 +93,8 @@ export interface MediaProtectionMetadata extends BaseMediaMetadata {
   };
   /** Publishing context */
   publishedContentId: string;
+  /** Language setting */
+  language?: string;
 }
 
 export interface MediaDeleteMetadata extends BaseMediaMetadata {
@@ -100,6 +106,8 @@ export interface MediaDeleteMetadata extends BaseMediaMetadata {
   harborDelete?: boolean;
   lastTenant?: boolean;
   otherTenants?: string[];
+  /** Language setting */
+  language?: string;
 }
 
 export interface MediaRestoreMetadata extends BaseMediaMetadata {
@@ -109,6 +117,8 @@ export interface MediaRestoreMetadata extends BaseMediaMetadata {
   r2Key: string;
   restoredFromDeletedAt?: string;
   restoredBy: string;
+  /** Language setting */
+  language?: string;
 }
 
 export interface MediaPermanentDeleteMetadata extends BaseMediaMetadata {
@@ -118,6 +128,8 @@ export interface MediaPermanentDeleteMetadata extends BaseMediaMetadata {
   r2Key: string;
   wasSoftDeleted: boolean;
   softDeletedAt?: string;
+  /** Language setting */
+  language?: string;
 }
 
 export interface MediaLinkMetadata extends BaseMediaMetadata {
@@ -168,12 +180,14 @@ export function extractMediaFileProperties(mediaFile: {
   ContentType: string;
   MediaType: 'audio' | 'video' | 'image' | 'document';
   R2Key?: string;
+  Language?: string;
 }) {
   return {
     fileName: mediaFile.FileName,
     fileSize: mediaFile.FileSize,
     contentType: mediaFile.ContentType,
     mediaType: mediaFile.MediaType,
-    r2Key: mediaFile.R2Key
+    r2Key: mediaFile.R2Key,
+    language: mediaFile.Language
   };
 }
