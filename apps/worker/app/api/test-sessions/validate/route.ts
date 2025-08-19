@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
       await systemLogs.createLog({
         logType: 'test_session',
         timestamp: new Date().toISOString(),
-        activityType: 'INVALID_TOKEN_ATTEMPT',
+        activityType: 'invalid_token_attempt',
         targetId: token,
         targetName: 'invalid-token',
         ipAddress,
@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
       logType: 'test_session',
       timestamp: new Date().toISOString(),
       userEmail: sessionResult.TestUserEmail,
-      activityType: 'VALIDATE_TEST_SESSION_TOKEN',
+              activityType: 'validate_test_session_token',
       targetId: token,
       targetName: sessionResult.TestUserEmail,
       ipAddress,

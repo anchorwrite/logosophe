@@ -104,7 +104,7 @@ export async function POST(
       logType: 'activity',
       timestamp: new Date().toISOString(),
       userEmail: access.email,
-      activityType: 'MESSAGE_ARCHIVED',
+              activityType: 'message_archived',
       metadata: {
         messageId,
         isSender: accessResult.SenderEmail === access.email

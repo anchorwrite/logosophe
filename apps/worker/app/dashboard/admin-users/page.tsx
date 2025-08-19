@@ -33,7 +33,7 @@ export default async function AdminUsersPage() {
       logType: 'activity',
       timestamp: new Date().toISOString(),
       userEmail: session.user.email,
-      activityType: 'UNAUTHORIZED_ADMIN_ACCESS',
+      activityType: 'unauthorized_admin_access',
       metadata: { attemptedAccess: 'admin-users' }
     });
     
@@ -45,7 +45,7 @@ export default async function AdminUsersPage() {
     logType: 'activity',
     timestamp: new Date().toISOString(),
     userEmail: session.user.email,
-    activityType: 'ACCESS_ADMIN_USERS'
+    activityType: 'access_admin_users'
   });
 
   // Fetch initial users

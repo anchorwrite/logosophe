@@ -29,7 +29,7 @@ export default async function MessagingAdminPage() {
       logType: 'activity',
       timestamp: new Date().toISOString(),
       userEmail: session.user.email,
-      activityType: 'UNAUTHORIZED_MESSAGING_ACCESS',
+      activityType: 'unauthorized_messaging_access',
       metadata: { attemptedAccess: 'messaging-admin' }
     });
     
@@ -41,7 +41,7 @@ export default async function MessagingAdminPage() {
     logType: 'activity',
     timestamp: new Date().toISOString(),
     userEmail: session.user.email,
-    activityType: 'ACCESS_MESSAGING_ADMIN'
+    activityType: 'access_messaging_admin'
   });
 
   return (

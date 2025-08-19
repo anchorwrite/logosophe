@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
     const systemLogs = new SystemLogs(db);
     await systemLogs.logTenantOperation({
       userEmail: userEmail,
-      activityType: 'WORKFLOW_SETTINGS_RESET',
+              activityType: 'workflow_settings_reset',
       targetId: 'workflow_settings',
       targetName: 'Workflow Settings',
       ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,

@@ -103,7 +103,7 @@ export async function POST(request: Request) {
       logType: 'activity',
       timestamp: new Date().toISOString(),
       userEmail: session.user.email || '',
-      activityType: 'CREATE_ADMIN_USER',
+              activityType: 'create_admin_user',
       metadata: { 
         targetEmail: body.email, 
         role: body.role,

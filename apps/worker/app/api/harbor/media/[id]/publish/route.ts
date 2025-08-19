@@ -49,7 +49,7 @@ export async function POST(
         logType: 'activity',
         timestamp: new Date().toISOString(),
         userEmail: access.email,
-        activityType: 'UNAUTHORIZED_PUBLISH_ATTEMPT',
+        activityType: 'unauthorized_publish_attempt',
         targetId: id,
         targetName: `Media file ${id}`,
         metadata: { action: 'publish', mediaId: id, tenantId: fileTenantId }
@@ -145,7 +145,7 @@ export async function POST(
       logType: 'activity',
       timestamp: now,
       userEmail: access.email,
-      activityType: 'CONTENT_PUBLISHED',
+              activityType: 'content_published',
       targetId: id,
       targetName: mediaFile.FileName,
       metadata: publishMetadata
@@ -191,7 +191,7 @@ export async function DELETE(
         logType: 'activity',
         timestamp: new Date().toISOString(),
         userEmail: access.email,
-        activityType: 'UNAUTHORIZED_UNPUBLISH_ATTEMPT',
+        activityType: 'unauthorized_unpublish_attempt',
         targetId: id,
         targetName: `Media file ${id}`,
         metadata: { action: 'unpublish', mediaId: id }
@@ -243,7 +243,7 @@ export async function DELETE(
       timestamp: new Date().toISOString(),
       userAgent: request.headers.get('user-agent') || undefined,
       userEmail: access.email,
-      activityType: 'CONTENT_UNPUBLISHED',
+              activityType: 'content_unpublished',
       targetId: id,
       targetName: publishedContent.FileName,
       metadata: unpublishMetadata

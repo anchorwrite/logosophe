@@ -57,7 +57,7 @@ export async function POST() {
             userId: session.user.email,
             email: session.user.email,
             provider: 'credentials',
-            activityType: 'MANUAL_LOG_ARCHIVE',
+            activityType: 'manual_log_archive',
             metadata: {
                 retentionDays,
                 archiveResult,

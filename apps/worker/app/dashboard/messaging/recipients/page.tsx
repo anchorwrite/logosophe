@@ -49,7 +49,7 @@ export default async function RecipientsPage() {
     logType: 'activity',
     timestamp: new Date().toISOString(),
     userEmail: session.user.email,
-    activityType: 'ACCESS_RECIPIENTS'
+    activityType: 'access_recipients'
   });
 
   // Build query based on user's access level

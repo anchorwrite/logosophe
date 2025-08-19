@@ -38,7 +38,7 @@ export default async function CreateBlockPage() {
     logType: 'activity',
     timestamp: new Date().toISOString(),
     userEmail: session.user.email,
-    activityType: 'ACCESS_CREATE_BLOCK'
+    activityType: 'access_create_block'
   });
 
   // Get tenant users for the accessible tenants

@@ -98,7 +98,7 @@ export async function POST(
     // Log the invitation
     await systemLogs.logUserOperation({
       userEmail: access.email,
-      activityType: 'WORKFLOW_INVITE',
+              activityType: 'workflow_invite',
       targetId: inviteeEmail,
       targetName: `workflow_invitation_${workflowId}`,
       tenantId: workflowData.TenantId,

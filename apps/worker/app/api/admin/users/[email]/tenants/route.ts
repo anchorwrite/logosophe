@@ -180,7 +180,7 @@ export async function PUT(
       logType: 'activity',
       timestamp: new Date().toISOString(),
       userEmail: session.user.email || '',
-      activityType: 'UPDATE_TENANT_ASSIGNMENTS',
+              activityType: 'update_tenant_assignments',
       metadata: { 
         targetEmail: email, 
         addedTenants: tenantsToAdd,

@@ -73,7 +73,7 @@ export async function POST(
     // Log resend
     await systemLogs.logUserOperation({
       userEmail: access.email,
-      activityType: 'WORKFLOW_INVITE_RESEND',
+              activityType: 'workflow_invite_resend',
       targetId: invitationData.WorkflowId,
       targetName: `workflow_${invitationData.WorkflowId}`,
       tenantId: invitationData.TenantId,

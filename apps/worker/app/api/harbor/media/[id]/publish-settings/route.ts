@@ -35,7 +35,7 @@ export async function PUT(
         logType: 'activity',
         timestamp: new Date().toISOString(),
         userEmail: access.email,
-        activityType: 'UNAUTHORIZED_PROTECTION_SETTINGS_ATTEMPT',
+        activityType: 'unauthorized_protection_settings_attempt',
         targetId: id,
         targetName: `Media file ${id}`,
         metadata: { action: 'update_protection_settings', mediaId: id }
@@ -97,7 +97,7 @@ export async function PUT(
       logType: 'activity',
       timestamp: now,
       userEmail: access.email,
-      activityType: 'PROTECTION_SETTINGS_UPDATED',
+              activityType: 'protection_settings_updated',
       targetId: id,
       targetName: publishedContent.FileName,
       metadata: protectionMetadata

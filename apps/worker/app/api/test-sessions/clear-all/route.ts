@@ -77,7 +77,7 @@ export async function DELETE(request: NextRequest) {
       logType: 'test_session',
       timestamp: new Date().toISOString(),
       userEmail: session.user.email,
-      activityType: 'CLEAR_ALL_TEST_SESSIONS',
+              activityType: 'clear_all_test_sessions',
       targetId: 'bulk-operation',
       targetName: `${activeSessionsResult.results.length} sessions`,
       ipAddress,

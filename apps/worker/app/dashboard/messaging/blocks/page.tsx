@@ -44,7 +44,7 @@ export default async function UserBlocksPage() {
     logType: 'activity',
     timestamp: new Date().toISOString(),
     userEmail: session.user.email,
-    activityType: 'ACCESS_USER_BLOCKS'
+    activityType: 'access_user_blocks'
   });
 
   // Fetch blocks based on user's access level

@@ -81,7 +81,7 @@ export async function POST(
       logType: 'activity',
       timestamp: new Date().toISOString(),
       userEmail: access.email,
-      activityType: 'MESSAGE_DELETED',
+              activityType: 'message_deleted',
       metadata: {
         messageId,
         isSender: accessResult.SenderEmail === access.email

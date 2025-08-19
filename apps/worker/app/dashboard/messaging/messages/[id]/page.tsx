@@ -70,7 +70,7 @@ export default async function MessageDetailPage({ params }: { params: Promise<{ 
     logType: 'activity',
     timestamp: new Date().toISOString(),
     userEmail: session.user.email,
-    activityType: 'ACCESS_MESSAGE_DETAIL'
+    activityType: 'access_message_detail'
   });
 
   // Fetch message details
