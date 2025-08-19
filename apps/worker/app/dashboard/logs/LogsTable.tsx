@@ -475,6 +475,9 @@ export function LogsTable() {
                                     <Table.ColumnHeaderCell style={{ minWidth: '150px' }}>
                                         <div style={{ height: '1px' }} />
                                     </Table.ColumnHeaderCell>
+                                    <Table.ColumnHeaderCell style={{ minWidth: '150px' }}>
+                                        <div style={{ height: '1px' }} />
+                                    </Table.ColumnHeaderCell>
                                 </Table.Row>
                             </Table.Header>
                         </Table.Root>
@@ -571,12 +574,15 @@ export function LogsTable() {
                                         />
                                     </Flex>
                                 </Table.ColumnHeaderCell>
+                                <Table.ColumnHeaderCell>
+                                    <Text size="2" weight="bold">Metadata</Text>
+                                </Table.ColumnHeaderCell>
                             </Table.Row>
                         </Table.Header>
                         <Table.Body>
                             {logs.length === 0 ? (
                                 <Table.Row>
-                                    <Table.Cell colSpan={9}>
+                                    <Table.Cell colSpan={10}>
                                         <Text align="center">No logs found</Text>
                                     </Table.Cell>
                                 </Table.Row>
@@ -604,6 +610,30 @@ export function LogsTable() {
                                         <Table.Cell>{log.accessType}</Table.Cell>
                                         <Table.Cell>{log.targetName}</Table.Cell>
                                         <Table.Cell>{log.ipAddress}</Table.Cell>
+                                        <Table.Cell>
+                                            {log.metadata ? (
+                                                <details>
+                                                    <summary style={{ cursor: 'pointer', fontSize: '12px', color: 'var(--gray-11)' }}>
+                                                        View Metadata
+                                                    </summary>
+                                                    <pre style={{ 
+                                                        fontSize: '11px', 
+                                                        backgroundColor: 'var(--gray-3)', 
+                                                        padding: '8px', 
+                                                        borderRadius: '4px',
+                                                        marginTop: '4px',
+                                                        whiteSpace: 'pre-wrap',
+                                                        wordBreak: 'break-word',
+                                                        maxWidth: '300px',
+                                                        overflow: 'auto'
+                                                    }}>
+                                                        {JSON.stringify(log.metadata, null, 2)}
+                                                    </pre>
+                                                </details>
+                                            ) : (
+                                                <Text size="1" color="gray">No metadata</Text>
+                                            )}
+                                        </Table.Cell>
                                     </Table.Row>
                                 ))
                             )}
