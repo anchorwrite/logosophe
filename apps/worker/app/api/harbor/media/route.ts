@@ -3,8 +3,7 @@ import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { auth } from '@/auth';
 import { checkAccess } from '@/lib/access-control';
 import { isSystemAdmin } from '@/lib/access';
-import { SystemLogs } from '@/lib/system-logs';
-import { createMediaMetadata, MediaUploadMetadata } from '@/lib/media-metadata';
+import { NormalizedLogging, extractRequestContext, createNormalizedMetadata } from '@/lib/normalized-logging';
 
 
 export async function GET(request: NextRequest) {
@@ -253,9 +252,11 @@ export async function POST(request: NextRequest) {
       )
     );
 
-    // Log the upload using SystemLogs with comprehensive metadata
-    const systemLogs = new SystemLogs(db);
-    const uploadMetadata = createMediaMetadata<MediaUploadMetadata>({
+    // Log the upload using normalized logging with proper column structure
+    const normalizedLogging = new NormalizedLogging(db);
+    const requestContext = extractRequestContext(request);
+    
+    const uploadMetadata = createNormalizedMetadata({
       fileName: file.name,
       fileSize,
       contentType,
@@ -263,17 +264,20 @@ export async function POST(request: NextRequest) {
       selectedTenants,
       isAdmin,
       r2Key,
-      language
-    }, 'upload', mediaId.toString());
+      language,
+      uploadMethod: 'harbor_interface'
+    }, language);
 
-    await systemLogs.logMediaAccess({
-      userEmail: isAdmin ? 'system_admin' : access.email,
+    await normalizedLogging.logMediaOperations({
+      userEmail: access.email,
+      provider: 'credentials',
       tenantId: selectedTenants[0],
-      accessType: 'upload',
+      activityType: 'upload_file',
+      accessType: 'write',
       targetId: mediaId.toString(),
       targetName: file.name,
-      ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,
-      userAgent: request.headers.get('user-agent') || undefined,
+      ipAddress: requestContext.ipAddress,
+      userAgent: requestContext.userAgent,
       metadata: uploadMetadata
     });
 

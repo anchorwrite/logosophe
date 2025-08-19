@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { checkAccess } from '@/lib/access-control';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { isSystemAdmin } from '@/lib/access';
+import { NormalizedLogging, extractRequestContext, createNormalizedMetadata } from '@/lib/normalized-logging';
 
 export async function POST(request: NextRequest) {
   try {
@@ -125,6 +126,32 @@ export async function POST(request: NextRequest) {
       INSERT INTO WorkflowMessages (WorkflowId, SenderEmail, Content, MessageType, MediaFileId, CreatedAt)
       VALUES (?, ?, ?, 'upload', ?, datetime('now'))
     `).bind(workflowId, initiatorEmail, `Initiated ${workflowType} workflow`, mediaFileId).run();
+
+    // Log the workflow creation using normalized logging
+    const normalizedLogging = new NormalizedLogging(db);
+    const requestContext = extractRequestContext(request);
+    
+    const workflowMetadata = createNormalizedMetadata({
+      workflowType,
+      initiatorEmail,
+      mediaFileId,
+      participants: allParticipants,
+      tenantId,
+      operationType: 'workflow_initiation'
+    });
+
+    await normalizedLogging.logWorkflowOperations({
+      userEmail: access.email,
+      provider: 'credentials',
+      tenantId,
+      activityType: 'create_workflow',
+      accessType: 'write',
+      targetId: workflowId.toString(),
+      targetName: workflowTitle,
+      ipAddress: requestContext.ipAddress,
+      userAgent: requestContext.userAgent,
+      metadata: workflowMetadata
+    });
 
     // Get the WorkflowDurableObject and notify it about the new workflow
     const workflowIdObj = env.WORKFLOW_DO.idFromName(workflowId.toString());

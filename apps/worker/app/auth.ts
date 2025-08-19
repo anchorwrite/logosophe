@@ -9,7 +9,7 @@ import Google from "next-auth/providers/google";
 import Apple from "next-auth/providers/apple";
 import { TestProvider } from '@/lib/test-provider';
 import { v4 as uuid } from "uuid";
-import { SystemLogs } from "@/lib/system-logs";
+import { NormalizedLogging, createNormalizedMetadata } from "@/lib/normalized-logging";
 import { headers } from "next/headers";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 
@@ -407,19 +407,27 @@ export const { handlers, auth, signIn, signOut } = NextAuth(async () => {
         
         const dbUser = await adapter.getUserByEmail?.(user.email);
         
-        // Log the signin using SystemLogs
-        const systemLogs = new SystemLogs(db);
+        // Log the signin using normalized logging
+        const normalizedLogging = new NormalizedLogging(db);
         const headersList = await headers();
-        await systemLogs.logAuth({
+        
+        const authMetadata = createNormalizedMetadata({
+          sessionStartTime: new Date().toISOString(),
+          provider: account?.provider || 'credentials',
+          operationType: 'user_signin'
+        });
+
+        await normalizedLogging.logAuthentication({
+          userEmail: user.email,
           userId: (dbUser?.id || user.id) as string,
-          email: user.email,
           provider: account?.provider || 'credentials',
           activityType: 'signin',
+          accessType: 'auth',
+          targetId: user.email,
+          targetName: `${user.email} (${account?.provider || 'credentials'})`,
           ipAddress: headersList.get('x-forwarded-for') || headersList.get('x-real-ip') || 'unknown',
           userAgent: headersList.get('user-agent') || 'unknown',
-          metadata: {
-            sessionStartTime: new Date().toISOString()
-          }
+          metadata: authMetadata
         });
         const adminUser = await db.prepare(
           'SELECT 1 FROM Credentials WHERE Email = ?'
