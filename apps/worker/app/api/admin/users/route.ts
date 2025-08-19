@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { isSystemAdmin } from '@/lib/access';
-import { SystemLogs } from '@/lib/system-logs';
+import { NormalizedLogging, extractRequestContext, createNormalizedMetadata } from '@/lib/normalized-logging';
 import { D1Database } from '@cloudflare/workers-types';
 import type { Session } from 'next-auth';
 
@@ -97,18 +97,27 @@ export async function POST(request: Request) {
       }
     }
 
-    // Log the activity
-    const systemLogs = new SystemLogs(db);
-    await systemLogs.createLog({
-      logType: 'activity',
-      timestamp: new Date().toISOString(),
+    // Log the activity using normalized logging
+    const normalizedLogging = new NormalizedLogging(db);
+    const requestContext = extractRequestContext(request);
+    
+    const userMetadata = createNormalizedMetadata({
+      targetEmail: body.email,
+      role: body.role,
+      tenantIds: body.tenantIds || [],
+      operationType: 'create_admin_user'
+    });
+
+    await normalizedLogging.logUserManagement({
       userEmail: session.user.email || '',
-              activityType: 'create_admin_user',
-      metadata: { 
-        targetEmail: body.email, 
-        role: body.role,
-        tenantIds: body.tenantIds || []
-      }
+      provider: 'credentials',
+      activityType: 'create_admin_user',
+      accessType: 'admin',
+      targetId: body.email,
+      targetName: `${body.email} (${body.role})`,
+      ipAddress: requestContext.ipAddress,
+      userAgent: requestContext.userAgent,
+      metadata: userMetadata
     });
 
     return NextResponse.json(result);
