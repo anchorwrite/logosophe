@@ -8,7 +8,7 @@ import {
   isMessagingEnabled 
 } from '@/lib/messaging';
 import { NormalizedLogging, extractRequestContext } from '@/lib/normalized-logging';
-import { CreateMessageRequest, SendMessageResponse, GetMessagesRequest, GetMessagesResponse } from '@/types/messaging';
+import { CreateDashboardMessageRequest, SendMessageResponse, GetMessagesRequest, GetMessagesResponse } from '@/types/messaging';
 
 
 // POST /api/messages - Send a message
@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
 
     const { env } = await getCloudflareContext({async: true});
     const db = env.DB;
-    const body = await request.json() as CreateMessageRequest;
+    const body = await request.json() as CreateDashboardMessageRequest;
     const { subject, body: messageBody, recipients, tenantId, messageType = 'direct', priority = 'normal', attachments = [] } = body;
     const replyToMessageId = (body as any).replyToMessageId;
 

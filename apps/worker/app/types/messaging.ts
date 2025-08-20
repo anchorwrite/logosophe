@@ -64,6 +64,19 @@ export interface MessageWithRecipients extends Message {
 export interface CreateMessageRequest {
   subject: string;
   body: string; // Note: database uses 'Body' not 'Content'
+  tenants: string[]; // Array of tenant IDs for role-based messaging
+  roles?: string[]; // Array of role IDs for role-based messaging
+  individualRecipients?: string[]; // Array of individual email addresses
+  messageType: 'direct' | 'broadcast' | 'announcement' | 'role_based';
+  priority?: string;
+  attachments?: CreateAttachmentRequest[];
+  links?: CreateLinkRequest[];
+}
+
+// Legacy interface for dashboard messaging (separate from Harbor)
+export interface CreateDashboardMessageRequest {
+  subject: string;
+  body: string;
   recipients: string[];
   tenantId: string;
   messageType: 'direct' | 'broadcast' | 'announcement';
@@ -84,6 +97,9 @@ export interface CreateAttachmentRequest {
 
 export interface CreateLinkRequest {
   url: string;
+  title?: string;
+  thumbnailUrl?: string;
+  domain?: string;
 }
 
 export interface RecallMessageRequest {

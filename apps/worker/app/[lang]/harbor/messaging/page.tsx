@@ -213,12 +213,14 @@ export default async function SubscriberMessagingPage({ params }: { params: Prom
       tu.Email,
       s.Name,
       tu.TenantId,
+      t.Name as TenantName,
       tu.RoleId,
       FALSE as IsOnline,
       CASE WHEN ub.BlockedEmail IS NOT NULL THEN 1 ELSE 0 END as IsBlocked,
       ub.BlockerEmail
     FROM TenantUsers tu
     LEFT JOIN Subscribers s ON tu.Email = s.Email AND s.Active = TRUE
+    LEFT JOIN Tenants t ON tu.TenantId = t.Id
     LEFT JOIN UserRoles ur ON tu.Email = ur.Email AND tu.TenantId = ur.TenantId
     LEFT JOIN UserBlocks ub ON tu.Email = ub.BlockedEmail AND tu.TenantId = ub.TenantId AND ub.IsActive = TRUE
     WHERE tu.TenantId = ?
