@@ -4,11 +4,14 @@ import { auth } from '@/auth';
 import { isSystemAdmin, isTenantAdminFor, hasPermission } from '@/lib/access';
 import { isUserBlocked, isUserBlockedInTenant } from '@/lib/messaging';
 import { CreateMessageRequest, CreateAttachmentRequest, CreateLinkRequest } from '@/types/messaging';
+import { NormalizedLogging, extractRequestContext } from '@/lib/normalized-logging';
 
 export async function POST(request: NextRequest) {
   try {
     const context = await getCloudflareContext({ async: true });
     const db = context.env.DB;
+    const normalizedLogging = new NormalizedLogging(db);
+    const { ipAddress, userAgent } = extractRequestContext(request);
     
     // Check authentication
     const session = await auth();
@@ -22,13 +25,34 @@ export async function POST(request: NextRequest) {
     const userEmail = session.user.email;
     const body: CreateMessageRequest = await request.json();
     
-    const { subject, body: messageBody, recipients, tenantId, messageType = 'direct', priority = 'normal', attachments = [], links = [] } = body;
+    const { 
+      subject, 
+      body: messageBody, 
+      tenants, 
+      roles, 
+      individualRecipients,
+      messageType = 'role_based', 
+      priority = 'normal', 
+      attachments = [], 
+      links = [] 
+    } = body;
     
     // Validate required fields
-    if (!subject || !recipients || recipients.length === 0 || !tenantId) {
+    if (!subject || !tenants || tenants.length === 0) {
       return new Response(JSON.stringify({ 
         success: false, 
-        error: 'Missing required fields: subject, recipients, tenantId' 
+        error: 'Missing required fields: subject, tenants' 
+      }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Validate recipient selection
+    if ((!roles || roles.length === 0) && (!individualRecipients || individualRecipients.length === 0)) {
+      return new Response(JSON.stringify({ 
+        success: false, 
+        error: 'At least one role or individual recipient must be selected' 
       }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' }
@@ -46,98 +70,155 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Check if user has access to this tenant
+    // Check if user has access to all selected tenants
     let hasAccess = false;
     
     // System admins have access to all tenants
     if (await isSystemAdmin(userEmail, db)) {
       hasAccess = true;
     } else {
-      // Check if user is a tenant admin for this tenant
-      if (await isTenantAdminFor(userEmail, tenantId)) {
-        hasAccess = true;
-      } else {
-        // Check if user is a member of this tenant
-        const userTenant = await db.prepare(`
-          SELECT 1 FROM TenantUsers 
-          WHERE TenantId = ? AND Email = ?
-        `).bind(tenantId, userEmail).first();
-        
-        if (userTenant) {
+      // Check if user is a tenant admin for any of the selected tenants
+      for (const tenantId of tenants) {
+        if (await isTenantAdminFor(userEmail, tenantId)) {
           hasAccess = true;
-        } else {
-          // Check if user has subscriber role in UserRoles table for this tenant
-          const userRole = await db.prepare(`
-            SELECT 1 FROM UserRoles 
-            WHERE TenantId = ? AND Email = ? AND RoleId = 'subscriber'
+          break;
+        }
+      }
+      
+      if (!hasAccess) {
+        // Check if user is a member of all selected tenants
+        for (const tenantId of tenants) {
+          const userTenant = await db.prepare(`
+            SELECT 1 FROM TenantUsers 
+            WHERE TenantId = ? AND Email = ?
           `).bind(tenantId, userEmail).first();
           
-          hasAccess = !!userRole;
+          if (!userTenant) {
+            // Check if user has subscriber role in UserRoles table for this tenant
+            const userRole = await db.prepare(`
+              SELECT 1 FROM UserRoles 
+              WHERE TenantId = ? AND Email = ? AND RoleId = 'subscriber'
+            `).bind(tenantId, userEmail).first();
+            
+            if (!userRole) {
+              return new Response(JSON.stringify({ 
+                success: false, 
+                error: `Forbidden: User does not have access to tenant ${tenantId}` 
+              }), {
+                status: 403,
+                headers: { 'Content-Type': 'application/json' }
+              });
+            }
+          }
         }
+        hasAccess = true;
       }
     }
 
     if (!hasAccess) {
       return new Response(JSON.stringify({ 
         success: false, 
-        error: 'Forbidden: User does not have access to this tenant' 
+        error: 'Forbidden: User does not have access to selected tenants' 
       }), {
         status: 403,
         headers: { 'Content-Type': 'application/json' }
       });
     }
 
-    // Check if sender is blocked by anyone in this tenant (using updated blocking logic)
-    const senderBlocked = await isUserBlockedInTenant(userEmail, tenantId);
-    
-    if (senderBlocked) {
-      return new Response(JSON.stringify({ 
-        success: false, 
-        error: 'You are blocked from sending messages in this tenant' 
-      }), {
-        status: 403,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
-
-    // Validate message type permissions
-    if (messageType === 'broadcast' || messageType === 'announcement') {
-      // Only tenant admins can send broadcast/announcement messages
-      const isTenantAdmin = await isTenantAdminFor(userEmail, tenantId);
-      if (!isTenantAdmin) {
+    // Check if sender is blocked by anyone in any of the selected tenants
+    for (const tenantId of tenants) {
+      const senderBlocked = await isUserBlockedInTenant(userEmail, tenantId);
+      if (senderBlocked) {
         return new Response(JSON.stringify({ 
           success: false, 
-          error: 'Only tenant admins can send broadcast or announcement messages' 
+          error: `You are blocked from sending messages in tenant ${tenantId}` 
         }), {
           status: 403,
           headers: { 'Content-Type': 'application/json' },
         });
       }
     }
-    // For 'direct' messages, no additional permission check needed since user already passed tenant access validation
 
-    // Validate recipients exist in the tenant
-    const recipientValidation = await db.prepare(`
-      SELECT Email FROM TenantUsers 
-      WHERE TenantId = ? AND Email IN (${recipients.map(() => '?').join(',')})
-    `).bind(tenantId, ...recipients).all();
+    // Expand role targets to individual recipients
+    let allRecipients = new Set<string>();
+    
+    // Add role-based recipients
+    if (roles && roles.length > 0) {
+      const roleRecipients = await db.prepare(`
+        SELECT Email FROM TenantUsers 
+        WHERE TenantId IN (${tenants.map(() => '?').join(',')})
+        AND RoleId IN (${roles.map(() => '?').join(',')})
+        AND RoleId != 'user'
+        AND Email != ?
+      `).bind(...tenants, ...roles, userEmail).all();
+      
+      roleRecipients.results.forEach((r: any) => allRecipients.add(r.Email as string));
+    }
+    
+    // Add individual recipients
+    if (individualRecipients && individualRecipients.length > 0) {
+      individualRecipients.forEach((email: string) => allRecipients.add(email));
+    }
+    
+    // Convert to array and validate
+    const finalRecipients = Array.from(allRecipients);
+    
+    if (finalRecipients.length === 0) {
+      return new Response(JSON.stringify({ 
+        success: false, 
+        error: 'No valid recipients found for the selected roles and individual recipients' 
+      }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
 
-    // Also check UserRoles table for subscribers
-    const subscriberValidation = await db.prepare(`
-      SELECT Email FROM UserRoles 
-      WHERE TenantId = ? AND Email IN (${recipients.map(() => '?').join(',')}) AND RoleId = 'subscriber'
-    `).bind(tenantId, ...recipients).all();
+    // Validate that all individual recipients exist and are accessible
+    if (individualRecipients && individualRecipients.length > 0) {
+      const recipientValidation = await db.prepare(`
+        SELECT Email FROM TenantUsers 
+        WHERE TenantId IN (${tenants.map(() => '?').join(',')})
+        AND Email IN (${individualRecipients.map(() => '?').join(',')})
+        AND RoleId != 'user'
+      `).bind(...tenants, ...individualRecipients).all();
 
-    // Check if any recipients are system admins (who have global access)
-    const adminValidation = await db.prepare(`
-      SELECT Email FROM Credentials 
-      WHERE Email IN (${recipients.map(() => '?').join(',')}) AND Role IN ('admin', 'tenant')
-    `).bind(...recipients).all();
+      // Also check UserRoles table for subscribers
+      const subscriberValidation = await db.prepare(`
+        SELECT Email FROM UserRoles 
+        WHERE TenantId IN (${tenants.map(() => '?').join(',')})
+        AND Email IN (${individualRecipients.map(() => '?').join(',')}) 
+        AND RoleId = 'subscriber'
+      `).bind(...tenants, ...individualRecipients).all();
 
-    // Check for blocked recipients (using updated blocking logic that respects system-wide blocks)
+      // Check if any recipients are system admins (who have global access)
+      const adminValidation = await db.prepare(`
+        SELECT Email FROM Credentials 
+        WHERE Email IN (${individualRecipients.map(() => '?').join(',')}) 
+        AND Role IN ('admin', 'tenant')
+      `).bind(...individualRecipients).all();
+
+      const tenantUsers = recipientValidation.results.map((r: any) => r.Email) as string[];
+      const subscribers = subscriberValidation.results.map((r: any) => r.Email) as string[];
+      const systemAdmins = adminValidation.results.map((r: any) => r.Email) as string[];
+      const validIndividualRecipients = [...new Set([...tenantUsers, ...subscribers, ...systemAdmins])];
+      
+      const invalidIndividualRecipients = individualRecipients.filter((email: string) => !validIndividualRecipients.includes(email));
+      
+      if (invalidIndividualRecipients.length > 0) {
+        return new Response(JSON.stringify({ 
+          success: false, 
+          error: `Invalid individual recipients: ${invalidIndividualRecipients.join(', ')}` 
+        }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+    }
+
+    // Check for blocked recipients
     const blockedRecipients: string[] = [];
-    for (const recipient of recipients) {
-      if (await isUserBlocked(userEmail, recipient, tenantId)) {
+    for (const recipient of finalRecipients) {
+      if (await isUserBlocked(userEmail, recipient, tenants[0])) { // Use first tenant for blocking check
         blockedRecipients.push(recipient);
       }
     }
@@ -152,23 +233,8 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Combine all results (tenant users, subscribers, and system admins)
-    const tenantUsers = recipientValidation.results.map(r => r.Email) as string[];
-    const subscribers = subscriberValidation.results.map(r => r.Email) as string[];
-    const systemAdmins = adminValidation.results.map(r => r.Email) as string[];
-    const validRecipients = [...new Set([...tenantUsers, ...subscribers, ...systemAdmins])];
-    
-    const invalidRecipients = recipients.filter(email => !validRecipients.includes(email));
-
-    if (invalidRecipients.length > 0) {
-      return new Response(JSON.stringify({ 
-        success: false, 
-        error: `Invalid recipients: ${invalidRecipients.join(', ')}` 
-      }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' }
-      });
-    }
+    // Use the first tenant as the primary tenant for the message
+    const primaryTenantId = tenants[0];
 
     // Start transaction
     const transaction = await db.batch([
@@ -176,7 +242,7 @@ export async function POST(request: NextRequest) {
       db.prepare(`
         INSERT INTO Messages (Subject, Body, SenderEmail, TenantId, MessageType, Priority, HasAttachments, AttachmentCount)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-      `).bind(subject, messageBody, userEmail, tenantId, messageType, priority, attachments.length > 0, attachments.length),
+      `).bind(subject, messageBody, userEmail, primaryTenantId, messageType, priority, attachments.length > 0, attachments.length),
       
       // Get the inserted message ID
       db.prepare('SELECT last_insert_rowid() as messageId')
@@ -185,7 +251,7 @@ export async function POST(request: NextRequest) {
     const messageId = (transaction[1].results[0] as { messageId: number }).messageId;
 
     // Insert recipients
-    const recipientInserts = validRecipients.map(email => 
+    const recipientInserts = finalRecipients.map(email => 
       db.prepare(`
         INSERT INTO MessageRecipients (MessageId, RecipientEmail)
         VALUES (?, ?)
@@ -198,9 +264,11 @@ export async function POST(request: NextRequest) {
       if (attachment.mediaId) {
         // Get media file info for both media_library and upload types
         const mediaFile = await db.prepare(`
-          SELECT FileName, FileSize, ContentType FROM MediaFiles WHERE Id = ?
-        `).bind(attachment.mediaId).first();
-        
+          SELECT Id, FileName, FileSize, ContentType, R2Key
+          FROM MediaFiles 
+          WHERE Id = ? AND IsDeleted = FALSE
+        `).bind(attachment.mediaId).first() as any;
+
         if (mediaFile) {
           attachmentInserts.push(
             db.prepare(`
@@ -213,63 +281,51 @@ export async function POST(request: NextRequest) {
     }
 
     // Insert links if any
-    console.log('Processing links:', links);
     const linkInserts = [];
     for (const link of links) {
-      try {
-        console.log('Processing link:', link);
-        const url = new URL(link.url);
-        const domain = url.hostname;
-        console.log('Extracted domain:', domain);
-        
+      if (link.url) {
         linkInserts.push(
           db.prepare(`
-            INSERT INTO MessageLinks (MessageId, Url, Domain)
-            VALUES (?, ?, ?)
-          `).bind(messageId, link.url, domain)
+            INSERT INTO MessageLinks (MessageId, Url, Title, ThumbnailUrl, Domain)
+            VALUES (?, ?, ?, ?, ?)
+          `).bind(messageId, link.url, link.title || '', link.thumbnailUrl || '', link.domain || '')
         );
-        console.log('Link insert prepared for:', link.url);
-      } catch (error) {
-        // Invalid URL, skip this link
-        console.error('Error processing link:', link, error);
-        console.warn(`Invalid URL in message: ${link.url}`);
       }
     }
-    
-    console.log('Total link inserts prepared:', linkInserts.length);
 
     // Execute all inserts
     const allInserts = [...recipientInserts, ...attachmentInserts, ...linkInserts];
-    console.log('Executing batch insert with:', {
-      recipientInserts: recipientInserts.length,
-      attachmentInserts: attachmentInserts.length,
-      linkInserts: linkInserts.length,
-      total: allInserts.length
-    });
-    
     if (allInserts.length > 0) {
       await db.batch(allInserts);
-      console.log('Batch insert completed successfully');
-    } else {
-      console.log('No inserts to execute');
     }
 
-    // SSE events are now handled by the polling-based endpoint
-    // No need to broadcast - clients will receive updates automatically
-    console.log('Message sent successfully - SSE updates handled by polling endpoint');
+    // Log the message creation
+    await normalizedLogging.logMessagingOperations({
+      userEmail: userEmail,
+      tenantId: primaryTenantId,
+      activityType: 'send_role_based_message',
+      accessType: 'write',
+      targetId: messageId.toString(),
+      targetName: `Role-based message: ${subject}`,
+      ipAddress,
+      userAgent,
+      metadata: {
+        messageType: 'role_based',
+        targetTenants: tenants,
+        targetRoles: roles || [],
+        individualRecipients: individualRecipients || [],
+        totalRecipients: finalRecipients.length,
+        hasAttachments: attachments.length > 0,
+        hasLinks: links.length > 0,
+        priority: priority
+      }
+    });
 
     return new Response(JSON.stringify({
       success: true,
-      data: {
-        messageId,
-        subject,
-        body: messageBody,
-        recipientEmails: validRecipients,
-        tenantId,
-        hasAttachments: attachments.length > 0,
-        attachmentCount: attachments.length,
-        linksCount: links.length
-      }
+      messageId: messageId,
+      recipients: finalRecipients,
+      message: 'Message sent successfully'
     }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' }
@@ -277,9 +333,9 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Error sending message:', error);
-    return new Response(JSON.stringify({ 
-      success: false, 
-      error: 'Internal server error' 
+    return new Response(JSON.stringify({
+      success: false,
+      error: 'Internal server error'
     }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' }

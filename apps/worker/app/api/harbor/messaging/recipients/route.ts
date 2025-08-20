@@ -12,6 +12,10 @@ export async function GET(request: NextRequest) {
     const { env } = await getCloudflareContext({async: true});
     const db = env.DB;
 
+    // Get query parameters for tenant filtering
+    const { searchParams } = new URL(request.url);
+    const selectedTenants = searchParams.get('tenants')?.split(',').filter(Boolean) || [];
+
     // Get user's tenant
     const userTenantQuery = `
       SELECT tu.TenantId
@@ -33,31 +37,57 @@ export async function GET(request: NextRequest) {
 
     const userTenantId = userTenantResult.TenantId;
 
-    // Get available users to block (excluding already blocked users and the current user)
+    // If no specific tenants selected, use user's tenant
+    const targetTenants = selectedTenants.length > 0 ? selectedTenants : [userTenantId];
+
+    // Get available roles and recipients for selected tenants
+    // Exclude users with only "user" role (they're not subscribers)
     const recipientsQuery = `
       SELECT 
         tu.Email,
         s.Name,
         tu.TenantId,
         tu.RoleId,
+        t.Name as TenantName,
         FALSE as IsOnline,
         CASE WHEN ub.BlockedEmail IS NOT NULL THEN 1 ELSE 0 END as IsBlocked
       FROM TenantUsers tu
       LEFT JOIN Subscribers s ON tu.Email = s.Email AND s.Active = TRUE
-      LEFT JOIN UserRoles ur ON tu.Email = ur.Email AND tu.TenantId = ur.TenantId
-      LEFT JOIN UserBlocks ub ON tu.Email = ub.BlockedEmail AND tu.TenantId = ub.TenantId AND ub.IsActive = TRUE
-      WHERE tu.TenantId = ?
+      LEFT JOIN Tenants t ON tu.TenantId = t.Id
+      LEFT JOIN UserBlocks ub ON tu.Email = ub.BlockedEmail AND tu.TenantId = ub.BlockerTenantId AND ub.IsActive = TRUE
+      WHERE tu.TenantId IN (${targetTenants.map(() => '?').join(',')})
       AND s.Active = TRUE AND s.Banned = FALSE
       AND tu.Email != ?
-      AND ur.RoleId = 'subscriber'
-      ORDER BY s.Name, tu.Email
+      AND tu.RoleId != 'user'  -- Exclude users with only "user" role
+      ORDER BY tu.TenantId, tu.RoleId, s.Name, tu.Email
     `;
 
     const recipientsResult = await db.prepare(recipientsQuery)
-      .bind(userTenantId, session.user.email)
+      .bind(...targetTenants, session.user.email)
       .all() as any;
 
     const recipients = recipientsResult.results || [];
+
+    // Get role summary for selected tenants
+    const rolesQuery = `
+      SELECT 
+        tu.RoleId,
+        COUNT(DISTINCT tu.Email) as UserCount
+      FROM TenantUsers tu
+      LEFT JOIN Subscribers s ON tu.Email = s.Email AND s.Active = TRUE
+      WHERE tu.TenantId IN (${targetTenants.map(() => '?').join(',')})
+      AND s.Active = TRUE AND s.Banned = FALSE
+      AND tu.Email != ?
+      AND tu.RoleId != 'user'
+      GROUP BY tu.RoleId
+      ORDER BY tu.RoleId
+    `;
+
+    const rolesResult = await db.prepare(rolesQuery)
+      .bind(...targetTenants, session.user.email)
+      .all() as any;
+
+    const roles = rolesResult.results || [];
 
     return NextResponse.json({ 
       success: true, 
@@ -65,8 +95,15 @@ export async function GET(request: NextRequest) {
         Email: recipient.Email,
         Name: recipient.Name,
         TenantId: recipient.TenantId,
+        TenantName: recipient.TenantName,
+        RoleId: recipient.RoleId,
         IsBlocked: recipient.IsBlocked
-      }))
+      })),
+      roles: roles.map((role: any) => ({
+        RoleId: role.RoleId,
+        UserCount: role.UserCount
+      })),
+      selectedTenants: targetTenants
     });
 
   } catch (error) {

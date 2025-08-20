@@ -69,13 +69,14 @@ export default function TestAttachmentsPage() {
         <Card size="3">
           <Heading size="4" mb="3">Unified Message Composer</Heading>
           <UnifiedMessageComposer
-            tenantId="test-tenant"
+            userTenants={[{ TenantId: 'test-tenant', TenantName: 'Test Tenant', UserRoles: ['subscriber'] }]}
             userEmail="test@example.com"
             recipients={[
-              { Email: 'user1@example.com', Name: 'User 1', TenantId: 'test-tenant', RoleId: 'subscriber', IsOnline: false, IsBlocked: false },
-              { Email: 'user2@example.com', Name: 'User 2', TenantId: 'test-tenant', RoleId: 'subscriber', IsOnline: false, IsBlocked: false },
-              { Email: 'user3@example.com', Name: 'User 3', TenantId: 'test-tenant', RoleId: 'subscriber', IsOnline: false, IsBlocked: false }
+              { Email: 'user1@example.com', Name: 'User 1', TenantId: 'test-tenant', TenantName: 'Test Tenant', RoleId: 'subscriber', IsOnline: false, IsBlocked: false },
+              { Email: 'user2@example.com', Name: 'User 2', TenantId: 'test-tenant', TenantName: 'Test Tenant', RoleId: 'subscriber', IsOnline: false, IsBlocked: false },
+              { Email: 'user3@example.com', Name: 'User 3', TenantId: 'test-tenant', TenantName: 'Test Tenant', RoleId: 'subscriber', IsOnline: false, IsBlocked: false }
             ]}
+            roles={[{ RoleId: 'subscriber', UserCount: 3 }]}
             onSend={handleComposerSend}
             onCancel={() => console.log('Composer cancelled')}
             maxRecipients={5}

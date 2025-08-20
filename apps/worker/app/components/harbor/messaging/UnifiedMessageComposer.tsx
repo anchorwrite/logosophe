@@ -5,12 +5,27 @@ import { Box, Button, Flex, Heading, Text, TextField, TextArea, Badge } from '@r
 import { useTranslation } from 'react-i18next';
 import { FileAttachmentManager } from './FileAttachmentManager';
 import { MessageLinkSharing } from './MessageLinkSharing';
+// import { TenantSelector } from './TenantSelector';
+// import { RoleSelector } from './RoleSelector';
+// import { IndividualRecipientSelector } from './IndividualRecipientSelector';
 import { CreateAttachmentRequest } from '@/types/messaging';
+
+interface UserTenant {
+  TenantId: string;
+  TenantName: string;
+  UserRoles: string[];
+}
+
+interface Role {
+  RoleId: string;
+  UserCount: number;
+}
 
 interface Recipient {
   Email: string;
   Name: string;
   TenantId: string;
+  TenantName: string;
   RoleId: string;
   IsOnline: boolean;
   IsBlocked: boolean;
@@ -18,16 +33,18 @@ interface Recipient {
 }
 
 interface UnifiedMessageComposerProps {
-  tenantId: string;
+  userTenants: UserTenant[];
   userEmail: string;
   recipients: Recipient[];
+  roles: Role[];
   onSend: (message: {
     subject: string;
     body: string;
-    recipients: string[];
+    tenants: string[];
+    roles: string[];
+    individualRecipients: string[];
     attachments: CreateAttachmentRequest[];
     links: Array<{ url: string; title: string; domain: string }>;
-    tenantId: string;
   }) => void;
   onCancel?: () => void;
   isSending?: boolean;
@@ -36,49 +53,50 @@ interface UnifiedMessageComposerProps {
 }
 
 export const UnifiedMessageComposer: React.FC<UnifiedMessageComposerProps> = ({
-  tenantId,
+  userTenants,
   userEmail,
   recipients,
+  roles,
   onSend,
   onCancel,
   isSending = false,
-  maxRecipients = 10,
+  maxRecipients = 50, // Increased for role-based messaging
   lang
 }) => {
   const { t } = useTranslation('translations');
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
-  const [selectedRecipients, setSelectedRecipients] = useState<string[]>([]);
+  const [selectedTenants, setSelectedTenants] = useState<string[]>([]);
+  const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
+  const [selectedIndividualRecipients, setSelectedIndividualRecipients] = useState<string[]>([]);
   const [selectedAttachments, setSelectedAttachments] = useState<CreateAttachmentRequest[]>([]);
   const [selectedLinks, setSelectedLinks] = useState<Array<{ url: string; title: string; domain: string }>>([]);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (recipients.length > 0) {
-      // Only select the first non-blocked recipient
-      const firstNonBlocked = recipients.find(r => !r.IsBlocked);
-      if (firstNonBlocked) {
-        setSelectedRecipients([firstNonBlocked.Email]);
-      } else {
-        setSelectedRecipients([]);
-      }
-    }
-  }, [recipients]);
-
-  const handleRecipientToggle = useCallback((email: string) => {
-    // Don't allow toggling blocked users
-    const recipient = recipients.find(r => r.Email === email);
-    if (recipient && recipient.IsBlocked) {
-      return;
+  // Calculate total recipients
+  const totalRecipients = React.useMemo(() => {
+    let count = 0;
+    
+    // Count role-based recipients
+    if (selectedRoles.length > 0 && selectedTenants.length > 0) {
+      count += recipients.filter(r => 
+        selectedTenants.includes(r.TenantId) && 
+        selectedRoles.includes(r.RoleId)
+      ).length;
     }
     
-    setSelectedRecipients(prev => 
-      prev.includes(email) 
-        ? prev.filter(r => r !== email)
-        : [...prev, email]
-    );
-    setError(null);
-  }, [recipients]);
+    // Add individual recipients
+    count += selectedIndividualRecipients.length;
+    
+    return count;
+  }, [selectedTenants, selectedRoles, selectedIndividualRecipients, recipients]);
+
+  // Auto-select user's first tenant if available
+  useEffect(() => {
+    if (userTenants.length > 0 && selectedTenants.length === 0) {
+      setSelectedTenants([userTenants[0].TenantId]);
+    }
+  }, [userTenants, selectedTenants]);
 
   const handleSend = useCallback(() => {
     if (!subject.trim()) {
@@ -91,39 +109,34 @@ export const UnifiedMessageComposer: React.FC<UnifiedMessageComposerProps> = ({
       return;
     }
 
-    if (selectedRecipients.length === 0) {
+    if (selectedTenants.length === 0) {
+      setError(t('messaging.tenantRequired'));
+      return;
+    }
+
+    if (selectedRoles.length === 0 && selectedIndividualRecipients.length === 0) {
       setError(t('messaging.recipientRequired'));
       return;
     }
 
-    if (selectedRecipients.length > maxRecipients) {
+    if (totalRecipients > maxRecipients) {
       setError(t('messaging.maxRecipientsExceeded').replace('{max}', maxRecipients.toString()));
       return;
     }
 
-    // Safety check: filter out any blocked users from selectedRecipients
-    const validRecipients = selectedRecipients.filter(email => {
-      const recipient = recipients.find(r => r.Email === email);
-      return recipient && !recipient.IsBlocked;
-    });
-
-    if (validRecipients.length === 0) {
-      setError(t('messaging.noValidRecipients'));
-      return;
-    }
-
-    setError(null);
+    // Prepare message data with tenant and role information
     const messageData = {
-      subject: subject.trim(),
-      body: body.trim(),
-      recipients: validRecipients,
+      subject,
+      body,
+      tenants: selectedTenants,
+      roles: selectedRoles,
+      individualRecipients: selectedIndividualRecipients,
       attachments: selectedAttachments,
-      links: selectedLinks,
-      tenantId: tenantId
+      links: selectedLinks
     };
-    
+
     onSend(messageData);
-  }, [subject, body, selectedRecipients, selectedAttachments, maxRecipients, tenantId, selectedLinks, recipients]);
+  }, [subject, body, selectedTenants, selectedRoles, selectedIndividualRecipients, selectedAttachments, selectedLinks, totalRecipients, maxRecipients, onSend, t]);
 
   const handleCancel = useCallback(() => {
     if (onCancel) {
@@ -131,171 +144,106 @@ export const UnifiedMessageComposer: React.FC<UnifiedMessageComposerProps> = ({
     }
   }, [onCancel]);
 
-  const canSend = subject.trim() && 
-    (body.trim() || selectedAttachments.length > 0 || selectedLinks.length > 0) && 
-    selectedRecipients.length > 0 && 
-    selectedRecipients.length <= maxRecipients;
-
   return (
-    <Box className="unified-message-composer">
-      <Flex direction="column" gap="4">
-        <Heading size="4">{t('messaging.composeMessage')}</Heading>
-        
-        {error && (
-          <Box p="3" style={{ 
-            backgroundColor: 'var(--red-2)', 
-            border: '1px solid var(--red-6)', 
-            borderRadius: 'var(--radius-3)',
-            color: 'var(--red-11)'
-          }}>
-            <Text size="2">{error}</Text>
-          </Box>
-        )}
+    <Box style={{ padding: '1.5rem', border: '1px solid var(--gray-6)', borderRadius: 'var(--radius-3)' }}>
+      <Heading size="4" style={{ marginBottom: '1.5rem' }}>
+        {t('messaging.composeMessage')}
+      </Heading>
 
-        {/* Subject */}
-        <Box>
-          <Text size="2" weight="bold" mb="2">Subject</Text>
-          <TextField.Root>
-            <TextField.Input
-              value={subject}
-              onChange={(e) => setSubject(e.target.value)}
-              placeholder="Enter message subject..."
-              size="3"
-            />
-          </TextField.Root>
-        </Box>
+      {/* Tenant Selection */}
+      <Box style={{ marginBottom: '2rem' }}>
+        <Heading size="3" style={{ marginBottom: '1rem' }}>
+          Select Tenants (Simplified)
+        </Heading>
+        <Text>Role-based messaging components will be added here.</Text>
+      </Box>
 
-        {/* Recipients */}
-        <Box>
-          <Text size="2" weight="bold" mb="2">
-            {t('messaging.recipients')} ({selectedRecipients.length}/{maxRecipients})
+      {/* Recipient Summary */}
+      {totalRecipients > 0 && (
+        <Box style={{ 
+          marginBottom: '1.5rem', 
+          padding: '1rem', 
+          backgroundColor: 'var(--gray-2)', 
+          borderRadius: 'var(--radius-2)' 
+        }}>
+          <Text weight="bold" size="3">
+            {t('messaging.totalRecipients')}: {totalRecipients} {t('messaging.users')}
           </Text>
-          
-          <Box style={{ 
-            maxHeight: '200px', 
-            overflowY: 'auto',
-            border: '1px solid var(--gray-6)',
-            borderRadius: 'var(--radius-3)',
-            padding: '0.5rem'
-          }}>
-            {recipients.map((recipient) => (
-              <Flex key={recipient.Email} align="center" gap="2" p="2" style={{
-                backgroundColor: selectedRecipients.includes(recipient.Email) ? 'var(--blue-2)' : 'transparent',
-                borderRadius: 'var(--radius-2)',
-                cursor: recipient.IsBlocked ? 'not-allowed' : 'pointer',
-                opacity: recipient.IsBlocked ? 0.6 : 1
-              }}>
-                <input
-                  type="checkbox"
-                  checked={selectedRecipients.includes(recipient.Email)}
-                  onChange={(e) => {
-                    e.stopPropagation();
-                    if (!recipient.IsBlocked) {
-                      handleRecipientToggle(recipient.Email);
-                    }
-                  }}
-                  disabled={recipient.IsBlocked}
-                  style={{ 
-                    margin: 0,
-                    cursor: recipient.IsBlocked ? 'not-allowed' : 'pointer',
-                    pointerEvents: recipient.IsBlocked ? 'none' : 'auto'
-                  }}
-                />
-                <Flex align="center" gap="2" style={{ flex: 1 }}>
-                  <Text 
-                    size="2" 
-                    style={{ 
-                      cursor: recipient.IsBlocked ? 'not-allowed' : 'pointer',
-                      color: recipient.IsBlocked ? 'var(--gray-9)' : 'inherit'
-                    }}
-                    onClick={() => {
-                      if (!recipient.IsBlocked) {
-                        handleRecipientToggle(recipient.Email);
-                      }
-                    }}
-                  >
-                    {recipient.Name || recipient.Email}
-                  </Text>
-                  <Text size="1" color="gray">
-                    {recipient.Email}
-                  </Text>
-                  <Badge size="1" variant="soft">{recipient.TenantId}</Badge>
-                  {recipient.IsBlocked ? (
-                    <Badge size="1" color="red" variant="solid">
-                      {recipient.BlockerEmail === userEmail ? 'USER BLOCKED' : 'ADMIN BLOCKED'}
-                    </Badge>
-                  ) : recipient.IsOnline ? (
-                    <Badge size="1" color="green">Online</Badge>
-                  ) : null}
-                </Flex>
-              </Flex>
-            ))}
-          </Box>
+          <Text size="2" color="gray" style={{ display: 'block', marginTop: '0.25rem' }}>
+            {t('messaging.acrossTenants')} {selectedTenants.length} {t('messaging.tenant')}(s)
+          </Text>
         </Box>
+      )}
 
-        {/* Message Body */}
-        <Box>
-          <Text size="2" weight="bold" mb="2">{t('messaging.message')}</Text>
-          <Box style={{ minHeight: '120px' }}>
-            <TextArea
-              name="messageBody"
-              placeholder={t('messaging.typeYourMessage')}
-              value={body}
-              onChange={(e: React.ChangeEvent<HTMLInputElement> | React.ChangeEvent<HTMLTextAreaElement>) => setBody(e.target.value)}
-              rows={4}
-            />
-          </Box>
-        </Box>
-
-        {/* Attachments */}
-        <Box>
-          <Text size="2" weight="bold" mb="2">{t('messaging.attachments')}</Text>
-          <FileAttachmentManager
-            tenantId={tenantId}
-            userEmail={userEmail}
-            onAttachmentsChange={setSelectedAttachments}
-            maxFiles={5}
-            maxFileSize={25 * 1024 * 1024} // 25MB
-            allowedTypes={[
-              'image/*',
-              'application/pdf',
-              'text/*',
-              'application/msword',
-              'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-              'application/vnd.ms-excel',
-              'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-            ]}
-            lang={lang}
+      {/* Message Composition Fields */}
+      <Box style={{ marginBottom: '1.5rem' }}>
+        <Text weight="bold" style={{ marginBottom: '0.5rem', display: 'block' }}>
+          {t('messaging.subject')} *
+        </Text>
+        <TextField.Root style={{ width: '100%' }}>
+          <TextField.Input
+            value={subject}
+            onChange={(e) => setSubject(e.target.value)}
+            placeholder={t('messaging.subjectPlaceholder')}
           />
-        </Box>
+        </TextField.Root>
+      </Box>
 
-        {/* Links */}
-        <Box>
-          <MessageLinkSharing
-            links={selectedLinks}
-            onLinksChange={setSelectedLinks}
-            maxLinks={5}
-            disabled={isSending}
-            lang={lang}
-          />
-        </Box>
+      <Box style={{ marginBottom: '1.5rem' }}>
+        <Text weight="bold" style={{ marginBottom: '0.5rem', display: 'block' }}>
+          {t('messaging.message')} *
+        </Text>
+        <TextArea
+          value={body}
+          onChange={(e) => setBody(e.target.value)}
+          placeholder={t('messaging.messagePlaceholder')}
+          style={{ width: '100%', minHeight: '120px' }}
+        />
+      </Box>
 
-        {/* Action Buttons */}
-        <Flex gap="3" justify="end">
-          <Button 
-            variant="soft" 
-            onClick={handleCancel}
-            disabled={isSending}
-          >
-            {t('common.cancel')}
-          </Button>
-          <Button 
-            onClick={handleSend}
-            disabled={!canSend || isSending}
-          >
-            {isSending ? t('messaging.sending') : t('messaging.send')}
-          </Button>
-        </Flex>
+      {/* File Attachments */}
+      <Box style={{ marginBottom: '1.5rem' }}>
+        <FileAttachmentManager
+          tenantId={selectedTenants[0] || ''}
+          userEmail={userEmail}
+          onAttachmentsChange={setSelectedAttachments}
+          lang={lang}
+        />
+      </Box>
+
+      {/* Link Sharing */}
+      <Box style={{ marginBottom: '1.5rem' }}>
+        <MessageLinkSharing
+          links={selectedLinks}
+          onLinksChange={setSelectedLinks}
+          lang={lang}
+        />
+      </Box>
+
+      {/* Error Display */}
+      {error && (
+        <Box style={{ 
+          marginBottom: '1rem', 
+          padding: '0.75rem', 
+          backgroundColor: 'var(--red-2)', 
+          color: 'var(--red-11)',
+          borderRadius: 'var(--radius-2)'
+        }}>
+          <Text>{error}</Text>
+        </Box>
+      )}
+
+      {/* Action Buttons */}
+      <Flex gap="2" justify="end">
+        <Button variant="soft" onClick={handleCancel}>
+          {t('messaging.cancel')}
+        </Button>
+        <Button 
+          onClick={handleSend} 
+          disabled={isSending || totalRecipients === 0}
+        >
+          {isSending ? t('messaging.sending') : t('messaging.sendMessage')}
+        </Button>
       </Flex>
     </Box>
   );

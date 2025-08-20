@@ -40,6 +40,7 @@ interface Recipient {
   Email: string;
   Name: string;
   TenantId: string;
+  TenantName: string;
   RoleId: string;
   IsOnline: boolean;
   IsBlocked: boolean;
@@ -738,17 +739,24 @@ export function SubscriberMessagingInterface({
         {isComposing && userTenantId && (
           <Card size="3">
             <UnifiedMessageComposer
-              tenantId={userTenantId}
+              userTenants={[{ TenantId: userTenantId, TenantName: userTenantName, UserRoles: ['subscriber'] }]}
               userEmail={userEmail}
               recipients={recipients}
+              roles={recipients.reduce((acc, recipient) => {
+                if (!acc.find(r => r.RoleId === recipient.RoleId)) {
+                  acc.push({ RoleId: recipient.RoleId, UserCount: recipients.filter(r => r.RoleId === recipient.RoleId).length });
+                }
+                return acc;
+              }, [] as { RoleId: string; UserCount: number }[])}
               onSend={async (messageData) => {
                 try {
                   const requestBody = {
                     subject: messageData.subject,
                     body: messageData.body,
-                    recipients: messageData.recipients,
-                    messageType: 'direct',
-                    tenantId: messageData.tenantId,
+                    tenants: messageData.tenants,
+                    roles: messageData.roles,
+                    individualRecipients: messageData.individualRecipients,
+                    messageType: 'role_based',
                     attachments: messageData.attachments,
                     links: messageData.links
                   };
@@ -766,27 +774,27 @@ export function SubscriberMessagingInterface({
                     throw new Error(errorData.error || t('messaging.sendError'));
                   }
 
-                  const result = await response.json() as { success: boolean; data: { messageId: number } };
+                  const result = await response.json() as { success: boolean; messageId: number; recipients: string[] };
                   
                   console.log('Message data being sent:', messageData);
                   console.log('Attachments in messageData:', messageData.attachments);
                   
                   // Add the new message to the list
                   const newMessage: RecentMessage = {
-                    Id: result.data.messageId,
+                    Id: result.messageId,
                     Subject: messageData.subject,
                     Body: messageData.body,
                     SenderEmail: userEmail,
                     SenderName: userName,
                     CreatedAt: new Date().toISOString(),
                     IsRead: false,
-                    MessageType: 'direct',
-                    RecipientCount: messageData.recipients.length,
+                    MessageType: 'role_based',
+                    RecipientCount: result.recipients.length,
                     HasAttachments: messageData.attachments.length > 0,
                     AttachmentCount: messageData.attachments.length,
                     attachments: messageData.attachments.map(att => ({
                       Id: att.mediaId || 0,
-                      MessageId: result.data.messageId,
+                      MessageId: result.messageId,
                       AttachmentType: att.attachmentType,
                       FileName: att.fileName || att.file?.name || 'Unknown file',
                       FileSize: att.fileSize || att.file?.size || 0,
@@ -806,7 +814,7 @@ export function SubscriberMessagingInterface({
 
                   setMessages(prev => {
                     // Check if message already exists to prevent duplicates
-                    const messageExists = prev.some(msg => msg.Id === result.data.messageId);
+                    const messageExists = prev.some(msg => msg.Id === result.messageId);
                     if (messageExists) {
                       console.log('Message already exists, not adding duplicate');
                       return prev;
