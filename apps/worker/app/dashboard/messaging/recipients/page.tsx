@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { isSystemAdmin } from '@/lib/access';
 import { getUserMessagingTenants } from '@/lib/messaging';
-import { SystemLogs } from '@/lib/system-logs';
+import { NormalizedLogging, extractRequestContext } from '@/lib/normalized-logging';
 import { RecipientsClient } from './RecipientsClient';
 import type { D1Result } from '@cloudflare/workers-types';
 
@@ -34,7 +34,7 @@ export default async function RecipientsPage() {
 
   const { env } = await getCloudflareContext({async: true});
   const db = env.DB;
-  const systemLogs = new SystemLogs(db);
+  const normalizedLogging = new NormalizedLogging(db);
 
   // Check if user has admin access
   const isAdmin = await isSystemAdmin(session.user.email, db);
@@ -45,11 +45,16 @@ export default async function RecipientsPage() {
   }
 
   // Log access
-  await systemLogs.createLog({
-    logType: 'activity',
-    timestamp: new Date().toISOString(),
+  await normalizedLogging.logMessagingOperations({
     userEmail: session.user.email,
-    activityType: 'access_recipients'
+    tenantId: 'system',
+    activityType: 'access_recipients',
+    accessType: 'admin',
+    targetId: 'messaging-recipients-page',
+    targetName: 'Messaging Recipients Page',
+    ipAddress: undefined,
+    userAgent: undefined,
+    metadata: { accessGranted: true }
   });
 
   // Build query based on user's access level

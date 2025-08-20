@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { isSystemAdmin } from '@/lib/access';
 import { getUserWorkflowTenants } from '@/lib/workflow';
-import { SystemLogs } from '@/lib/system-logs';
+import { NormalizedLogging, extractRequestContext } from '@/lib/normalized-logging';
 import { Container, Heading, Text, Box, Flex, Button } from '@radix-ui/themes';
 import Link from 'next/link';
 import { WorkflowHistoryTabs } from '@/components/WorkflowHistoryTabs';
@@ -18,7 +18,7 @@ export default async function WorkflowHistoryPage() {
 
   const { env } = await getCloudflareContext({async: true});
   const db = env.DB;
-  const systemLogs = new SystemLogs(db);
+  const normalizedLogging = new NormalizedLogging(db);
 
   // Check if user has admin access
   const isAdmin = await isSystemAdmin(session.user.email, db);
@@ -28,11 +28,15 @@ export default async function WorkflowHistoryPage() {
   
   if (!isAdmin && accessibleTenants.length === 0) {
     // Log unauthorized access attempt
-    await systemLogs.createLog({
-      logType: 'activity',
-      timestamp: new Date().toISOString(),
+    await normalizedLogging.logSystemOperations({
       userEmail: session.user.email,
+      tenantId: 'system',
       activityType: 'unauthorized_workflow_access',
+      accessType: 'admin',
+      targetId: 'workflow-history',
+      targetName: 'Workflow History Page',
+      ipAddress: undefined,
+      userAgent: undefined,
       metadata: { attemptedAccess: 'workflow-history' }
     });
     
@@ -49,11 +53,16 @@ export default async function WorkflowHistoryPage() {
   }
 
   // Log successful access
-  await systemLogs.createLog({
-    logType: 'activity',
-    timestamp: new Date().toISOString(),
+  await normalizedLogging.logSystemOperations({
     userEmail: session.user.email,
-    activityType: 'access_workflow_history'
+    tenantId: 'system',
+    activityType: 'access_workflow_history',
+    accessType: 'admin',
+    targetId: 'workflow-history',
+    targetName: 'Workflow History Page',
+    ipAddress: undefined,
+    userAgent: undefined,
+    metadata: { accessGranted: true }
   });
 
   return (

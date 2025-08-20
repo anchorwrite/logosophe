@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { isSystemAdmin, isTenantAdminFor } from '@/lib/access';
 import { getUserMessagingTenants } from '@/lib/messaging';
-import { SystemLogs } from '@/lib/system-logs';
+import { NormalizedLogging, extractRequestContext } from '@/lib/normalized-logging';
 import { Container, Heading, Text, Flex, Card, Button, Box, Table, Badge } from '@radix-ui/themes';
 import Link from 'next/link';
 import type { D1Result } from '@cloudflare/workers-types';
@@ -33,7 +33,7 @@ export default async function MessagesPage() {
 
   const { env } = await getCloudflareContext({async: true});
   const db = env.DB;
-  const systemLogs = new SystemLogs(db);
+  const normalizedLogging = new NormalizedLogging(db);
 
   // Check if user has admin access
   const isAdmin = await isSystemAdmin(session.user.email, db);
@@ -44,11 +44,16 @@ export default async function MessagesPage() {
   }
 
   // Log access
-  await systemLogs.createLog({
-    logType: 'activity',
-    timestamp: new Date().toISOString(),
+  await normalizedLogging.logMessagingOperations({
     userEmail: session.user.email,
-    activityType: 'access_message_management'
+    tenantId: 'system',
+    activityType: 'access_message_management',
+    accessType: 'admin',
+    targetId: 'messaging-messages-page',
+    targetName: 'Messaging Messages Page',
+    ipAddress: undefined,
+    userAgent: undefined,
+    metadata: { accessGranted: true }
   });
 
   // Fetch messages based on user's access level

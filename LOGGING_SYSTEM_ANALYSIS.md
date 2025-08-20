@@ -32,6 +32,243 @@ The system is now ready for production use with comprehensive analytics capabili
 
 **The Logosophe logging system is now fully standardized and analytics-ready!** 🎉
 
+---
+
+## 🚀 **LOGGING IMPLEMENTATION GUIDE FOR FUTURE ASSISTANTS**
+
+This section provides comprehensive guidance for implementing logging in the Logosophe system. **READ THIS BEFORE IMPLEMENTING ANY LOGGING.**
+
+### **🎯 CRITICAL: Use NormalizedLogging for All User Actions**
+
+**The system has been completely migrated from `SystemLogs` to `NormalizedLogging`. DO NOT use `SystemLogs` directly for user actions.**
+
+#### **Import Pattern**
+```typescript
+import { NormalizedLogging, extractRequestContext } from '@/lib/normalized-logging';
+```
+
+#### **Basic Usage Pattern**
+```typescript
+// 1. Initialize
+const normalizedLogging = new NormalizedLogging(db);
+
+// 2. Extract request context
+const { ipAddress, userAgent } = extractRequestContext(request);
+
+// 3. Log the operation
+await normalizedLogging.logMediaOperations({
+  userEmail: access.email,
+  tenantId: tenantId || 'system',
+  activityType: 'upload_file',
+  accessType: 'write',
+  targetId: mediaId.toString(),
+  targetName: fileName,
+  ipAddress,
+  userAgent,
+  metadata: { fileSize, contentType, language: 'en' }
+});
+```
+
+### **📋 Available Logging Methods**
+
+| Method | Purpose | LogType | Use Case |
+|--------|---------|---------|----------|
+| `logMediaOperations()` | Media file operations | `media_operations` | Upload, download, view, delete, share |
+| `logWorkflowOperations()` | Workflow management | `workflow_operations` | Create, update, delete, invite |
+| `logMessagingOperations()` | Messaging system | `messaging_operations` | Send, archive, read, delete |
+| `logUserManagement()` | User operations | `user_management` | Role assignment, profile updates |
+| `logAuthentication()` | Auth events | `authentication` | Sign in, sign out, password changes |
+| `logTestOperations()` | Test sessions | `test_operations` | Test creation, validation |
+| `logSystemOperations()` | System operations | `system_operations` | Settings, configuration, errors |
+
+### **🔧 Required Parameters**
+
+All logging methods require these parameters:
+- **`userEmail`**: User's email address
+- **`tenantId`**: Tenant context ('system' for admin operations)
+- **`activityType`**: Specific action (e.g., 'upload_file', 'assign_role')
+- **`accessType`**: Operation type ('read', 'write', 'delete', 'admin', 'auth')
+- **`targetId`**: ID of the target resource
+- **`targetName`**: Human-readable description
+- **`ipAddress`**: From `extractRequestContext(request)`
+- **`userAgent`**: From `extractRequestContext(request)`
+- **`metadata`**: Additional structured context (optional)
+
+### **🎨 Access Type Values**
+
+- **`read`**: View operations, access settings, content viewing
+- **`write`**: Create, update, modify operations
+- **`delete`**: Remove, delete, permanent deletion operations
+- **`admin`**: Administrative operations, system settings
+- **`auth`**: Authentication-related operations
+
+### **📊 Metadata Best Practices**
+
+```typescript
+metadata: {
+  fileSize: file.FileSize,
+  contentType: file.ContentType,
+  language: 'en',              // User's preferred language
+  userRole: 'author',          // User's role in this context
+  tenantName: 'acme-corp',     // Tenant information
+  action: 'upload_file',       // Operation description
+  success: true,               // Operation result
+  errorMessage: error?.message // If operation failed
+}
+```
+
+### **🌐 Tenant ID Guidelines**
+
+- **`'system'`**: For admin operations that affect the entire system
+- **`tenantId`**: For operations within a specific tenant
+- **`'default'`**: For operations in the default tenant (use sparingly)
+
+### **📝 Activity Type Naming Convention**
+
+- Use lowercase with underscores: `upload_file`, `assign_role`, `create_workflow`
+- Be descriptive: `update_protection_settings` not just `update_settings`
+- Include context: `tenant_add_user` not just `add_user`
+
+### **❌ Common Mistakes to Avoid**
+
+#### **Don't Use SystemLogs for User Actions**
+```typescript
+// WRONG - Don't do this
+import { SystemLogs } from '@/lib/system-logs';
+const systemLogs = new SystemLogs(db);
+await systemLogs.createLog({...});
+```
+
+#### **Don't Manually Extract IP/User-Agent**
+```typescript
+// WRONG - Don't do this
+ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip'),
+userAgent: request.headers.get('user-agent')
+```
+
+### **✅ Correct Implementation Examples**
+
+#### **Media Operations**
+```typescript
+// File upload
+await normalizedLogging.logMediaOperations({
+  userEmail: access.email,
+  tenantId: tenantId,
+  activityType: 'upload_file',
+  accessType: 'write',
+  targetId: mediaId.toString(),
+  targetName: fileName,
+  ipAddress,
+  userAgent,
+  metadata: { fileSize, contentType, language: 'en' }
+});
+
+// File download
+await normalizedLogging.logMediaOperations({
+  userEmail: access.email,
+  tenantId: tenantId,
+  activityType: 'download_file',
+  accessType: 'read',
+  targetId: mediaId.toString(),
+  targetName: fileName,
+  ipAddress,
+  userAgent,
+  metadata: { downloadMethod: 'direct_link' }
+});
+```
+
+#### **User Management**
+```typescript
+// Role assignment
+await normalizedLogging.logUserManagement({
+  userEmail: adminEmail,
+  tenantId: 'system',
+  activityType: 'assign_role',
+  accessType: 'admin',
+  targetId: userEmail,
+  targetName: `User ${userEmail}`,
+  ipAddress,
+  userAgent,
+  metadata: { role: roleName, tenant: tenantId }
+});
+```
+
+#### **Workflow Operations**
+```typescript
+// Workflow creation
+await normalizedLogging.logWorkflowOperations({
+  userEmail: access.email,
+  tenantId: tenantId,
+  activityType: 'create_workflow',
+  accessType: 'write',
+  targetId: workflowId,
+  targetName: workflowName,
+  ipAddress,
+  userAgent,
+  metadata: { participants: participantCount, mediaFiles: mediaFileCount }
+});
+```
+
+### **🔍 When to Use SystemLogs (Database Management Only)**
+
+```typescript
+// ONLY for these database operations:
+import { SystemLogs } from '@/lib/system-logs';
+
+const systemLogs = new SystemLogs(db);
+
+// Database retrieval
+await systemLogs.getArchivedLogs({...});
+await systemLogs.getLogStats();
+await systemLogs.queryLogs({...});
+
+// Database cleanup
+await systemLogs.archiveExpiredLogs(retentionDays);
+await systemLogs.hardDeleteArchivedLogs(hardDeleteDelay);
+```
+
+### **🧪 Testing Your Logging**
+
+1. **Check Build**: Ensure `yarn build` succeeds
+2. **Verify Logs**: Check that logs appear in the SystemLogs table
+3. **Test Analytics**: Verify logs appear in analytics dashboards
+4. **Check Types**: Ensure TypeScript compilation succeeds
+
+### **📚 Need Help?**
+
+- Check existing examples in the codebase
+- Refer to `apps/worker/app/lib/normalized-logging.ts` for method signatures
+- Use the logging utilities in `apps/worker/app/lib/logging-utils.ts`
+- Ensure all required parameters are provided
+
+### **🎯 Quick Reference**
+
+```typescript
+// Standard logging pattern for any user action
+import { NormalizedLogging, extractRequestContext } from '@/lib/normalized-logging';
+
+export async function POST(request: NextRequest) {
+  const normalizedLogging = new NormalizedLogging(db);
+  const { ipAddress, userAgent } = extractRequestContext(request);
+  
+  // ... your operation logic ...
+  
+  await normalizedLogging.logMediaOperations({
+    userEmail: access.email,
+    tenantId: tenantId,
+    activityType: 'your_action_name',
+    accessType: 'write', // or 'read', 'delete', 'admin', 'auth'
+    targetId: resourceId.toString(),
+    targetName: resourceName,
+    ipAddress,
+    userAgent,
+    metadata: { /* relevant context */ }
+  });
+}
+```
+
+**Remember: Always use `NormalizedLogging` for user actions, never `SystemLogs` directly!**
+
 ## Current System Overview
 
 ### Database Schema

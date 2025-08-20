@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { isSystemAdmin } from '@/lib/access';
 import { getUserMessagingTenants, getSystemSettings } from '@/lib/messaging';
-import { SystemLogs } from '@/lib/system-logs';
+import { NormalizedLogging, extractRequestContext } from '@/lib/normalized-logging';
 import { MessagingInterface } from './MessagingInterface';
 import type { D1Result } from '@cloudflare/workers-types';
 import type { RecentMessage, UserStats, Recipient, SystemSettings } from './types';
@@ -20,7 +20,7 @@ export default async function MessagingInterfacePage() {
 
   const { env } = await getCloudflareContext({async: true});
   const db = env.DB;
-  const systemLogs = new SystemLogs(db);
+  const normalizedLogging = new NormalizedLogging(db);
 
   // Check if messaging is enabled
   const settings = await getSystemSettings();
@@ -37,11 +37,16 @@ export default async function MessagingInterfacePage() {
   }
 
   // Log access
-  await systemLogs.createLog({
-    logType: 'activity',
-    timestamp: new Date().toISOString(),
+  await normalizedLogging.logMessagingOperations({
     userEmail: session.user.email,
-    activityType: 'access_messaging_interface'
+    tenantId: 'system',
+    activityType: 'access_messaging_interface',
+    accessType: 'admin',
+    targetId: 'messaging-interface-page',
+    targetName: 'Messaging Interface Page',
+    ipAddress: undefined,
+    userAgent: undefined,
+    metadata: { accessGranted: true }
   });
 
   // Get user's recent messages

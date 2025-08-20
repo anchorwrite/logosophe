@@ -2,7 +2,7 @@ import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { isSystemAdmin } from '@/lib/access';
-import { SystemLogs } from '@/lib/system-logs';
+import { NormalizedLogging, extractRequestContext } from '@/lib/normalized-logging';
 import TestUserSignIn from '@/components/TestUserSignIn';
 import ActiveSessionsDashboard from '@/components/ActiveSessionsDashboard';
 import { Box, Card, Flex, Grid, Heading, Text } from '@radix-ui/themes';
@@ -18,18 +18,22 @@ export default async function TestUsersPage() {
 
   const { env } = await getCloudflareContext({async: true});
   const db = env.DB;
-  const systemLogs = new SystemLogs(db);
+  const normalizedLogging = new NormalizedLogging(db);
 
   // Check if user is system admin
   const isAdmin = await isSystemAdmin(session.user.email, db);
   
   if (!isAdmin) {
     // Log unauthorized access attempt
-    await systemLogs.createLog({
-      logType: 'activity',
-      timestamp: new Date().toISOString(),
+    await normalizedLogging.logSystemOperations({
       userEmail: session.user.email,
+      tenantId: 'system',
       activityType: 'unauthorized_test_users_access',
+      accessType: 'admin',
+      targetId: 'test-users',
+      targetName: 'Test Users Page',
+      ipAddress: undefined,
+      userAgent: undefined,
       metadata: { attemptedAccess: 'test-users' }
     });
     
@@ -37,11 +41,16 @@ export default async function TestUsersPage() {
   }
 
   // Log successful access
-  await systemLogs.createLog({
-    logType: 'activity',
-    timestamp: new Date().toISOString(),
+  await normalizedLogging.logTestOperations({
     userEmail: session.user.email,
-    activityType: 'access_test_users'
+    tenantId: 'system',
+    activityType: 'access_test_users',
+    accessType: 'admin',
+    targetId: 'test-users-page',
+    targetName: 'Test Users Page',
+    ipAddress: undefined,
+    userAgent: undefined,
+    metadata: { accessGranted: true }
   });
   return (
     <ToastProvider>
