@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { checkAccess } from '@/lib/access-control';
 import { isSystemAdmin } from '@/lib/access';
-import { SystemLogs } from '@/lib/system-logs';
+import { NormalizedLogging, extractRequestContext } from '@/lib/normalized-logging';
 
 
 export async function POST(
@@ -73,15 +73,17 @@ export async function POST(
     `).bind(fileId).run();
 
     // Log the restoration
-    const systemLogs = new SystemLogs(db);
-    await systemLogs.createLog({
-      logType: 'media_restore',
-      timestamp: new Date().toISOString(),
+    const normalizedLogging = new NormalizedLogging(db);
+    const { ipAddress, userAgent } = extractRequestContext(request);
+    await normalizedLogging.logMediaOperations({
       userEmail: access.email,
       tenantId: file.TenantId as string,
-      accessType: 'restore',
-      targetId: fileId,
+      activityType: 'restore_file',
+      accessType: 'write',
+      targetId: fileId.toString(),
       targetName: file.FileName as string,
+      ipAddress,
+      userAgent,
       metadata: {
         fileSize: file.FileSize as number,
         contentType: file.ContentType as string,

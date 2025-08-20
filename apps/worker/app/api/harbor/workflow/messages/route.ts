@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { checkAccess } from '@/lib/access-control';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { isSystemAdmin } from '@/lib/access';
-import { SystemLogs } from '@/lib/system-logs';
+import { NormalizedLogging, extractRequestContext } from '@/lib/normalized-logging';
 
 export async function POST(request: NextRequest) {
   try {
@@ -210,15 +210,17 @@ export async function POST(request: NextRequest) {
 
     // Log the message sending
     try {
-      const systemLogs = new SystemLogs(db);
-      await systemLogs.logMessagingOperation({
+      const normalizedLogging = new NormalizedLogging(db);
+      const { ipAddress, userAgent } = extractRequestContext(request);
+      await normalizedLogging.logMessagingOperations({
         userEmail: access.email,
         tenantId: tenantId,
         activityType: 'workflow_message_sent',
+        accessType: 'write',
         targetId: workflowId,
         targetName: `Message in workflow ${workflowId}`,
-        ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('cf-connecting-ip') || 'unknown',
-        userAgent: request.headers.get('user-agent') || 'unknown',
+        ipAddress,
+        userAgent,
         metadata: {
           messageType: requestData.messageType || 'response',
           hasMediaFiles: requestData.mediaFileIds ? requestData.mediaFileIds.length > 0 : false,

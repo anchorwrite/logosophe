@@ -3,7 +3,7 @@ import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { auth } from '@/auth';
 import { checkAccess } from '@/lib/access-control';
 import { isSystemAdmin, isTenantAdminFor, hasPermission } from '@/lib/access';
-import { SystemLogs } from '@/lib/system-logs';
+import { NormalizedLogging, extractRequestContext } from '@/lib/normalized-logging';
 import { nanoid } from 'nanoid';
 import { createMediaMetadata, MediaPublishMetadata } from '@/lib/media-metadata';
 
@@ -24,7 +24,7 @@ export async function POST(
 
     const { env } = await getCloudflareContext({async: true});
     const db = env.DB;
-    const systemLogs = new SystemLogs(db);
+    const normalizedLogging = new NormalizedLogging(db);
 
     // Check if media file exists and get its tenant
     const mediaFile = await db.prepare(`
@@ -45,13 +45,16 @@ export async function POST(
     const isTenantAdmin = await isTenantAdminFor(access.email, fileTenantId);
 
     if (!canPublish && !isAdmin && !isTenantAdmin) {
-      await systemLogs.createLog({
-        logType: 'activity',
-        timestamp: new Date().toISOString(),
+      const { ipAddress, userAgent } = extractRequestContext(request);
+      await normalizedLogging.logMediaOperations({
         userEmail: access.email,
+        tenantId: fileTenantId,
         activityType: 'unauthorized_publish_attempt',
-        targetId: id,
+        accessType: 'admin',
+        targetId: id.toString(),
         targetName: `Media file ${id}`,
+        ipAddress,
+        userAgent,
         metadata: { action: 'publish', mediaId: id, tenantId: fileTenantId }
       });
 
@@ -141,13 +144,16 @@ export async function POST(
       addedToContentTenant: !contentTenantAccess
     }, 'publish', id);
 
-    await systemLogs.createLog({
-      logType: 'activity',
-      timestamp: now,
+    const { ipAddress, userAgent } = extractRequestContext(request);
+    await normalizedLogging.logMediaOperations({
       userEmail: access.email,
-              activityType: 'content_published',
-      targetId: id,
+      tenantId: fileTenantId,
+      activityType: 'content_published',
+      accessType: 'write',
+      targetId: id.toString(),
       targetName: mediaFile.FileName,
+      ipAddress,
+      userAgent,
       metadata: publishMetadata
     });
 
@@ -179,7 +185,7 @@ export async function DELETE(
 
     const { env } = await getCloudflareContext({async: true});
     const db = env.DB;
-    const systemLogs = new SystemLogs(db);
+    const normalizedLogging = new NormalizedLogging(db);
 
     // Check if user has unpublishing permission
     const canUnpublish = await hasPermission(access.email, 'content', 'content', 'unpublish');
@@ -187,13 +193,16 @@ export async function DELETE(
     const isTenantAdmin = await isTenantAdminFor(access.email, 'content');
 
     if (!canUnpublish && !isAdmin && !isTenantAdmin) {
-      await systemLogs.createLog({
-        logType: 'activity',
-        timestamp: new Date().toISOString(),
+      const { ipAddress, userAgent } = extractRequestContext(request);
+      await normalizedLogging.logMediaOperations({
         userEmail: access.email,
+        tenantId: 'content',
         activityType: 'unauthorized_unpublish_attempt',
-        targetId: id,
+        accessType: 'admin',
+        targetId: id.toString(),
         targetName: `Media file ${id}`,
+        ipAddress,
+        userAgent,
         metadata: { action: 'unpublish', mediaId: id }
       });
 
@@ -238,14 +247,16 @@ export async function DELETE(
       removedFromContentTenant: true
     }, 'unpublish', id);
 
-    await systemLogs.createLog({
-      logType: 'activity',
-      timestamp: new Date().toISOString(),
-      userAgent: request.headers.get('user-agent') || undefined,
+    const { ipAddress, userAgent } = extractRequestContext(request);
+    await normalizedLogging.logMediaOperations({
       userEmail: access.email,
-              activityType: 'content_unpublished',
-      targetId: id,
+      tenantId: 'content',
+      activityType: 'content_unpublished',
+      accessType: 'delete',
+      targetId: id.toString(),
       targetName: publishedContent.FileName,
+      ipAddress,
+      userAgent,
       metadata: unpublishMetadata
     });
 

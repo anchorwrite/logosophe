@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { isSystemAdmin, isTenantAdminFor } from '@/lib/access';
 import { getUserMessagingTenants } from '@/lib/messaging';
-import { SystemLogs } from '@/lib/system-logs';
+import { NormalizedLogging } from '@/lib/normalized-logging';
 import { Container, Heading, Text, Flex, Card, Button, Box } from '@radix-ui/themes';
 import Link from 'next/link';
 
@@ -17,7 +17,7 @@ export default async function MessagingAdminPage() {
 
   const { env } = await getCloudflareContext({async: true});
   const db = env.DB;
-  const systemLogs = new SystemLogs(db);
+  const normalizedLogging = new NormalizedLogging(db);
 
   // Check if user has admin access
   const isAdmin = await isSystemAdmin(session.user.email, db);
@@ -25,11 +25,13 @@ export default async function MessagingAdminPage() {
   
   if (!isAdmin && accessibleTenants.length === 0) {
     // Log unauthorized access attempt
-    await systemLogs.createLog({
-      logType: 'activity',
-      timestamp: new Date().toISOString(),
+    await normalizedLogging.logMessagingOperations({
       userEmail: session.user.email,
+      tenantId: 'unknown',
       activityType: 'unauthorized_messaging_access',
+      accessType: 'admin',
+      targetId: session.user.email,
+      targetName: 'Messaging Admin Access',
       metadata: { attemptedAccess: 'messaging-admin' }
     });
     
@@ -37,11 +39,13 @@ export default async function MessagingAdminPage() {
   }
 
   // Log successful access
-  await systemLogs.createLog({
-    logType: 'activity',
-    timestamp: new Date().toISOString(),
+  await normalizedLogging.logMessagingOperations({
     userEmail: session.user.email,
-    activityType: 'access_messaging_admin'
+    tenantId: 'system',
+    activityType: 'access_messaging_admin',
+    accessType: 'admin',
+    targetId: session.user.email,
+    targetName: 'Messaging Admin Access'
   });
 
   return (

@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { checkAccess } from '@/lib/access-control';
 import { isSystemAdmin } from '@/lib/access';
-import { SystemLogs } from '@/lib/system-logs';
+import { NormalizedLogging, extractRequestContext } from '@/lib/normalized-logging';
 
 
 export async function DELETE(
@@ -73,15 +73,17 @@ export async function DELETE(
     }
 
     // Log the permanent deletion
-    const systemLogs = new SystemLogs(db);
-    await systemLogs.createLog({
-      logType: 'media_permanent_delete',
-      timestamp: new Date().toISOString(),
+    const normalizedLogging = new NormalizedLogging(db);
+    const { ipAddress, userAgent } = extractRequestContext(request);
+    await normalizedLogging.logMediaOperations({
       userEmail: access.email,
       tenantId: file.TenantId as string,
-      accessType: 'permanent_delete',
-      targetId: fileId,
+      activityType: 'permanent_delete_file',
+      accessType: 'delete',
+      targetId: fileId.toString(),
       targetName: file.FileName as string,
+      ipAddress,
+      userAgent,
       metadata: {
         fileSize: file.FileSize as number,
         contentType: file.ContentType as string,

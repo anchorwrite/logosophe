@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { checkAccess } from '@/lib/access-control';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
-import { SystemLogs } from '@/lib/system-logs';
+import { NormalizedLogging, extractRequestContext } from '@/lib/normalized-logging';
 
 export async function POST(
   request: NextRequest,
@@ -22,7 +22,7 @@ export async function POST(
     // Get database context
     const { env } = await getCloudflareContext({async: true});
     const db = env.DB;
-    const systemLogs = new SystemLogs(db);
+    const normalizedLogging = new NormalizedLogging(db);
 
     // Get invitation details
     const invitationQuery = `
@@ -71,14 +71,16 @@ export async function POST(
     `).bind(newExpiresAt.toISOString(), updatedAt, invitationId).run();
 
     // Log resend
-    await systemLogs.logUserOperation({
+    const { ipAddress, userAgent } = extractRequestContext(request);
+    await normalizedLogging.logWorkflowOperations({
       userEmail: access.email,
-              activityType: 'workflow_invite_resend',
+      tenantId: invitationData.TenantId,
+      activityType: 'workflow_invite_resend',
+      accessType: 'write',
       targetId: invitationData.WorkflowId,
       targetName: `workflow_${invitationData.WorkflowId}`,
-      tenantId: invitationData.TenantId,
-      ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,
-      userAgent: request.headers.get('user-agent') || undefined,
+      ipAddress,
+      userAgent,
       metadata: { 
         invitationId,
         inviteeEmail: invitationData.InviteeEmail,

@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { auth } from '@/auth';
 import { checkAccess } from '@/lib/access-control';
-import { SystemLogs } from '@/lib/system-logs';
+import { NormalizedLogging, extractRequestContext } from '@/lib/normalized-logging';
 import { createMediaMetadata, MediaAccessMetadata } from '@/lib/media-metadata';
 
 
@@ -40,18 +40,21 @@ export async function GET(
     `).bind(id).all();
 
     // Log the access settings view with enhanced metadata
-    const systemLogs = new SystemLogs(db);
+    const normalizedLogging = new NormalizedLogging(db);
+    const { ipAddress, userAgent } = extractRequestContext(request);
     const viewMetadata = createMediaMetadata<MediaAccessMetadata>({
       currentTenants: accessResult.results?.map((r: any) => r.TenantId) || []
     }, 'view_access_settings', id);
 
-    await systemLogs.logMediaAccess({
+    await normalizedLogging.logMediaOperations({
       userEmail: access.email,
-      accessType: 'view_access_settings',
-      targetId: id,
+      tenantId: 'harbor',
+      activityType: 'view_access_settings',
+      accessType: 'read',
+      targetId: id.toString(),
       targetName: `Media file ${id}`,
-      ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,
-      userAgent: request.headers.get('user-agent') || undefined,
+      ipAddress,
+      userAgent,
       metadata: viewMetadata
     });
 
@@ -108,19 +111,22 @@ export async function PUT(
     }
 
     // Log the access settings update with enhanced metadata
-    const systemLogs = new SystemLogs(db);
+    const normalizedLogging = new NormalizedLogging(db);
+    const { ipAddress, userAgent } = extractRequestContext(request);
     const updateMetadata = createMediaMetadata<MediaAccessMetadata>({
       newTenants: tenants || [],
       previousTenants: [] // Could be enhanced to track previous state
     }, 'update_access_settings', id);
 
-    await systemLogs.logMediaAccess({
+    await normalizedLogging.logMediaOperations({
       userEmail: access.email,
-      accessType: 'update_access_settings',
-      targetId: id,
+      tenantId: 'harbor',
+      activityType: 'update_access_settings',
+      accessType: 'write',
+      targetId: id.toString(),
       targetName: `Media file ${id}`,
-      ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,
-      userAgent: request.headers.get('user-agent') || undefined,
+      ipAddress,
+      userAgent,
       metadata: updateMetadata
     });
 

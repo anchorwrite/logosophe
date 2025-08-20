@@ -3,7 +3,7 @@ import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { auth } from '@/auth';
 import { checkAccess } from '@/lib/access-control';
 import { isSystemAdmin } from '@/lib/access';
-import { SystemLogs } from '@/lib/system-logs';
+import { NormalizedLogging, extractRequestContext } from '@/lib/normalized-logging';
 
 
 interface MediaFile {
@@ -325,16 +325,18 @@ export async function POST(request: NextRequest) {
       )
     );
 
-    // Log the upload using SystemLogs
-    const systemLogs = new SystemLogs(db);
-    await systemLogs.logMediaAccess({
+    // Log the upload using NormalizedLogging
+    const normalizedLogging = new NormalizedLogging(db);
+    const { ipAddress, userAgent } = extractRequestContext(request);
+    await normalizedLogging.logMediaOperations({
       userEmail: isAdmin ? 'system_admin' : access.email,
       tenantId: selectedTenants[0],
-      accessType: 'upload',
+      activityType: 'upload_file',
+      accessType: 'write',
       targetId: mediaId.toString(),
       targetName: file.name,
-      ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,
-      userAgent: request.headers.get('user-agent') || undefined
+      ipAddress,
+      userAgent
     });
 
     return Response.json({ 
@@ -424,16 +426,18 @@ export async function DELETE(request: NextRequest) {
       // Continue even if R2 delete fails
     }
 
-    // Log the deletion using SystemLogs
-    const systemLogs = new SystemLogs(db);
-    await systemLogs.logMediaAccess({
+    // Log the deletion using NormalizedLogging
+    const normalizedLogging = new NormalizedLogging(db);
+    const { ipAddress, userAgent } = extractRequestContext(request);
+    await normalizedLogging.logMediaOperations({
       userEmail: isAdmin ? 'system_admin' : access.email,
       tenantId: userAccess?.TenantId,
+      activityType: 'delete_file',
       accessType: 'delete',
       targetId: mediaId,
       targetName: mediaFile.FileName,
-      ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,
-      userAgent: request.headers.get('user-agent') || undefined,
+      ipAddress,
+      userAgent,
       metadata: {
         fileDeleted: true
       }

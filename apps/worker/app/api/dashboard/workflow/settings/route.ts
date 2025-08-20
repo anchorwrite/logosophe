@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { checkAccess } from '@/lib/access-control';
 import { isSystemAdmin } from '@/lib/access';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
-import { SystemLogs } from '@/lib/system-logs';
+import { NormalizedLogging, extractRequestContext } from '@/lib/normalized-logging';
 
 
 export async function GET(request: NextRequest) {
@@ -169,14 +169,17 @@ export async function POST(request: NextRequest) {
     }
 
     // Log the settings change
-    const systemLogs = new SystemLogs(db);
-    await systemLogs.logTenantOperation({
+    const normalizedLogging = new NormalizedLogging(db);
+    const { ipAddress, userAgent } = extractRequestContext(request);
+    await normalizedLogging.logWorkflowOperations({
       userEmail: userEmail,
-              activityType: 'workflow_settings_updated',
+      tenantId: 'system',
+      activityType: 'workflow_settings_updated',
+      accessType: 'admin',
       targetId: 'workflow_settings',
       targetName: 'Workflow Settings',
-      ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,
-      userAgent: request.headers.get('user-agent') || undefined,
+      ipAddress,
+      userAgent,
       metadata: { settings: Object.keys(settings) }
     });
 

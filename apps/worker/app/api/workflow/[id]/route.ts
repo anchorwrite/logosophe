@@ -3,7 +3,7 @@ import { checkAccess } from '@/lib/access-control';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { auth } from '@/auth';
 import { isSystemAdmin } from '@/lib/access';
-import { SystemLogs } from '@/lib/system-logs';
+import { NormalizedLogging, extractRequestContext } from '@/lib/normalized-logging';
 import { getWorkflowHistoryLogger } from '@/lib/workflow-history';
 
 export async function GET(
@@ -297,15 +297,17 @@ export async function PUT(
           .run();
 
         // Log to system logs
-        const systemLogs = new SystemLogs(db);
-        await systemLogs.logUserOperation({
+        const normalizedLogging = new NormalizedLogging(db);
+        const { ipAddress, userAgent } = extractRequestContext(request);
+        await normalizedLogging.logWorkflowOperations({
           userEmail: access.email,
           tenantId: workflowData.TenantId,
           activityType: 'workflow_permanently_deleted',
+          accessType: 'delete',
           targetId: id,
           targetName: workflowData.Title,
-          ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('cf-connecting-ip') || 'unknown',
-          userAgent: request.headers.get('user-agent') || 'unknown',
+          ipAddress,
+          userAgent,
           metadata: {
             action: 'hard_delete',
             originalStatus: workflowData.Status
@@ -343,15 +345,17 @@ export async function PUT(
 
       // Log the workflow update
       try {
-        const systemLogs = new SystemLogs(db);
-        await systemLogs.logUserOperation({
+        const normalizedLogging = new NormalizedLogging(db);
+        const { ipAddress, userAgent } = extractRequestContext(request);
+        await normalizedLogging.logWorkflowOperations({
           userEmail: access.email,
           tenantId: workflowData.TenantId,
           activityType: 'workflow_updated',
+          accessType: 'write',
           targetId: id,
           targetName: workflowData.Title,
-          ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('cf-connecting-ip') || 'unknown',
-          userAgent: request.headers.get('user-agent') || 'unknown',
+          ipAddress,
+          userAgent,
           metadata: {
             action: body.action || 'update',
             status: body.status,

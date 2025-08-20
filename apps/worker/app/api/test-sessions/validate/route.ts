@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
-import { SystemLogs } from '@/lib/system-logs';
+import { NormalizedLogging, extractRequestContext } from '@/lib/normalized-logging';
 import { headers } from 'next/headers';
 
 
@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
   try {
     const { env } = await getCloudflareContext({async: true});
     const db = env.DB;
-    const systemLogs = new SystemLogs(db);
+    const normalizedLogging = new NormalizedLogging(db);
 
     const body = await request.json() as ValidateTokenRequest;
     const { token } = body;
@@ -35,14 +35,16 @@ export async function POST(request: NextRequest) {
 
     if (!sessionResult) {
       // Log failed validation attempt
-      await systemLogs.createLog({
-        logType: 'test_session',
-        timestamp: new Date().toISOString(),
+      const { ipAddress: extractedIp, userAgent: extractedUa } = extractRequestContext(request);
+      await normalizedLogging.logTestOperations({
+        userEmail: 'unknown',
+        tenantId: 'system',
         activityType: 'invalid_token_attempt',
+        accessType: 'auth',
         targetId: token,
         targetName: 'invalid-token',
-        ipAddress,
-        userAgent,
+        ipAddress: extractedIp,
+        userAgent: extractedUa,
         metadata: {
           token,
           reason: 'token-not-found-or-inactive'
@@ -60,15 +62,16 @@ export async function POST(request: NextRequest) {
     `).bind(new Date().toISOString(), sessionResult.Id).run();
 
     // Log successful token validation
-    await systemLogs.createLog({
-      logType: 'test_session',
-      timestamp: new Date().toISOString(),
+    const { ipAddress: extractedIp, userAgent: extractedUa } = extractRequestContext(request);
+    await normalizedLogging.logTestOperations({
       userEmail: sessionResult.TestUserEmail,
-              activityType: 'validate_test_session_token',
+      tenantId: 'system',
+      activityType: 'validate_test_session_token',
+      accessType: 'auth',
       targetId: token,
       targetName: sessionResult.TestUserEmail,
-      ipAddress,
-      userAgent,
+      ipAddress: extractedIp,
+      userAgent: extractedUa,
       metadata: {
         sessionId: sessionResult.Id,
         testUserEmail: sessionResult.TestUserEmail,

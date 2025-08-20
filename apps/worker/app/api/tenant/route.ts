@@ -5,7 +5,7 @@ import { auth } from '@/auth';
 import { v4 as uuidv4 } from 'uuid';
 import { getRequestContext as getRequestContextLib } from '@/lib/request-context';
 import { isSystemAdmin } from '@/lib/access';
-import { SystemLogs } from '@/lib/system-logs';
+import { NormalizedLogging, extractRequestContext } from '@/lib/normalized-logging';
 
 
 interface TenantCreateRequest {
@@ -97,15 +97,18 @@ export async function POST(request: NextRequest) {
       throw new Error('Failed to create tenant');
     }
 
-    // Log the activity using SystemLogs
-    const systemLogs = new SystemLogs(env.DB);
-    await systemLogs.logTenantOperation({
+    // Log the activity using NormalizedLogging
+    const normalizedLogging = new NormalizedLogging(env.DB);
+    const { ipAddress, userAgent } = extractRequestContext(request);
+    await normalizedLogging.logUserManagement({
       userEmail: session.user.email,
-              activityType: 'create_tenant',
+      tenantId: 'system',
+      activityType: 'create_tenant',
+      accessType: 'admin',
       targetId: id,
       targetName: name,
-      ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,
-      userAgent: request.headers.get('user-agent') || undefined,
+      ipAddress,
+      userAgent,
       metadata: {
         email: session.user.email,
         tenantId: id,

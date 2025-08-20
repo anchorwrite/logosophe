@@ -1,6 +1,6 @@
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { auth } from '@/auth';
-import { SystemLogs } from './system-logs';
+import { NormalizedLogging } from './normalized-logging';
 
 export type MediaType = 'audio' | 'video' | 'image' | 'document';
 export type MediaAction = 'view' | 'download';
@@ -94,13 +94,12 @@ export async function logMediaAccess(mediaId: number, action: MediaAction, reque
 
   if (!media) return;
 
-  const systemLogs = new SystemLogs(db);
-  await systemLogs.createLog({
-    logType: 'media_access',
-    timestamp: new Date().toISOString(),
+  const normalizedLogging = new NormalizedLogging(db);
+  await normalizedLogging.logMediaOperations({
     userEmail: session.user.email,
     tenantId: media.TenantId,
-    accessType: action,
+    activityType: `${action}_file`,
+    accessType: action === 'view' ? 'read' : 'download',
     targetId: mediaId.toString(),
     targetName: media.FileName,
     ipAddress: request?.headers.get('x-forwarded-for')?.toString() || request?.headers.get('x-real-ip')?.toString() || undefined,

@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
 import { checkAccess } from '@/lib/access-control';
 import { getRequestContext } from '@/lib/request-context';
-import { SystemLogs } from '@/lib/system-logs';
+import { NormalizedLogging, extractRequestContext } from '@/lib/normalized-logging';
 import { NextResponse } from 'next/server';
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { auth } from '@/auth';
@@ -33,7 +33,7 @@ export async function GET(
 
     const { env } = await getCloudflareContext({async: true});
     const db = env.DB;
-    const systemLogs = new SystemLogs(db);
+    const normalizedLogging = new NormalizedLogging(db);
     const { id: mediaId } = await params;
     const body = await request.json() as LogRequest;
 
@@ -51,15 +51,17 @@ export async function GET(
       return new Response('Media not found or access denied', { status: 404 });
     }
 
-    // Log the action using the new SystemLogs class
-    await systemLogs.logMediaShare({
+    // Log the action using NormalizedLogging
+    const { ipAddress, userAgent } = extractRequestContext(request);
+    await normalizedLogging.logMediaOperations({
       userEmail: access.email,
       tenantId: body.tenantId,
-      accessType: body.accessType,
+      activityType: 'log_media_action',
+      accessType: body.accessType as any, // Cast to any since this is a custom access type
       targetId: mediaId,
       targetName: body.fileName,
-      ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,
-      userAgent: request.headers.get('user-agent') || undefined
+      ipAddress,
+      userAgent
     });
 
     return new Response('Logged successfully', { status: 200 });

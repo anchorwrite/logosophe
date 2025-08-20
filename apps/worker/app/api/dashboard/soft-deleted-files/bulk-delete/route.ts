@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { checkAccess } from '@/lib/access-control';
 import { isSystemAdmin } from '@/lib/access';
-import { SystemLogs } from '@/lib/system-logs';
+import { NormalizedLogging, extractRequestContext } from '@/lib/normalized-logging';
 
 
 interface BulkDeleteRequest {
@@ -86,7 +86,8 @@ export async function POST(request: NextRequest) {
       return new Response('No accessible files found for deletion', { status: 404 });
     }
 
-    const systemLogs = new SystemLogs(db);
+    const normalizedLogging = new NormalizedLogging(db);
+    const { ipAddress, userAgent } = extractRequestContext(request);
     const errors: Array<{ fileId: number; error: string }> = [];
     let deletedCount = 0;
     let totalStorageFreed = 0;
@@ -95,14 +96,15 @@ export async function POST(request: NextRequest) {
     for (const file of files) {
       try {
         // Log the permanent deletion
-        await systemLogs.createLog({
-          logType: 'media_permanent_delete',
-          timestamp: new Date().toISOString(),
+        await normalizedLogging.logMediaOperations({
           userEmail: access.email,
           tenantId: file.TenantId as string,
-          accessType: 'bulk_permanent_delete',
-          targetId: file.Id as string,
+          activityType: 'bulk_permanent_delete_file',
+          accessType: 'delete',
+          targetId: (file.Id as number).toString(),
           targetName: file.FileName as string,
+          ipAddress,
+          userAgent,
           metadata: {
             fileSize: file.FileSize as number,
             contentType: file.ContentType as string,
