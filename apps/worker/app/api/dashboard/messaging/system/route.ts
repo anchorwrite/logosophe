@@ -5,9 +5,9 @@ import { isSystemAdmin } from '@/lib/access';
 import { 
   getSystemSettings, 
   updateSystemSetting, 
-  logMessagingActivity,
   isMessagingEnabled 
 } from '@/lib/messaging';
+import { NormalizedLogging, extractRequestContext } from '@/lib/normalized-logging';
 import type { SystemControlRequest, GetSystemStatusResponse } from '@/types/messaging';
 
 
@@ -124,14 +124,19 @@ export async function PUT(request: NextRequest) {
     await updateSystemSetting(settingKey, settingValue, session.user.email);
 
     // Log the system change
-    await logMessagingActivity(
-      'UPDATE_SYSTEM_SETTING',
-      session.user.email,
-      '',
-      settingKey,
-      `Updated ${settingKey} to ${settingValue}`,
-      { action, value }
-    );
+    const { ipAddress, userAgent } = extractRequestContext(request);
+    const normalizedLogging = new NormalizedLogging(db);
+    await normalizedLogging.logMessagingOperations({
+      userEmail: session.user.email,
+      tenantId: 'system',
+      activityType: 'UPDATE_SYSTEM_SETTING',
+      accessType: 'write',
+      targetId: settingKey,
+      targetName: `Updated ${settingKey} to ${settingValue}`,
+      ipAddress,
+      userAgent,
+      metadata: { action, value }
+    });
 
     return NextResponse.json({ success: true });
 
@@ -174,13 +179,18 @@ export async function POST(request: NextRequest) {
           AND IsDeleted = FALSE
         `).bind(expirySeconds).run();
 
-        await logMessagingActivity(
-          'CLEANUP_EXPIRED_MESSAGES',
-          session.user.email,
-          '',
-          deletedMessages.meta.changes?.toString() || '0',
-          `Cleaned up ${deletedMessages.meta.changes || 0} expired messages`
-        );
+        const { ipAddress: ip1, userAgent: ua1 } = extractRequestContext(request);
+        const normalizedLogging1 = new NormalizedLogging(db);
+        await normalizedLogging1.logMessagingOperations({
+          userEmail: session.user.email,
+          tenantId: 'system',
+          activityType: 'CLEANUP_EXPIRED_MESSAGES',
+          accessType: 'write',
+          targetId: deletedMessages.meta.changes?.toString() || '0',
+          targetName: `Cleaned up ${deletedMessages.meta.changes || 0} expired messages`,
+          ipAddress: ip1,
+          userAgent: ua1
+        });
         break;
 
       case 'cleanup_rate_limits':
@@ -190,13 +200,18 @@ export async function POST(request: NextRequest) {
           WHERE ResetAt < datetime('now')
         `).run();
 
-        await logMessagingActivity(
-          'CLEANUP_RATE_LIMITS',
-          session.user.email,
-          '',
-          deletedRateLimits.meta.changes?.toString() || '0',
-          `Cleaned up ${deletedRateLimits.meta.changes || 0} expired rate limit entries`
-        );
+        const { ipAddress: ip2, userAgent: ua2 } = extractRequestContext(request);
+        const normalizedLogging2 = new NormalizedLogging(db);
+        await normalizedLogging2.logMessagingOperations({
+          userEmail: session.user.email,
+          tenantId: 'system',
+          activityType: 'CLEANUP_RATE_LIMITS',
+          accessType: 'write',
+          targetId: deletedRateLimits.meta.changes?.toString() || '0',
+          targetName: `Cleaned up ${deletedRateLimits.meta.changes || 0} expired rate limit entries`,
+          ipAddress: ip2,
+          userAgent: ua2
+        });
         break;
 
       default:

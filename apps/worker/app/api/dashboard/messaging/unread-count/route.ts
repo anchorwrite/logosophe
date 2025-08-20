@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { isSystemAdmin } from '@/lib/access';
-import { logMessagingActivity } from '@/lib/messaging';
+import { NormalizedLogging, extractRequestContext } from '@/lib/normalized-logging';
 
 export async function GET(request: NextRequest) {
   try {
@@ -169,13 +169,18 @@ export async function GET(request: NextRequest) {
       .first() as any;
 
     // Log the activity
-    await logMessagingActivity(
-      'FETCH_UNREAD_COUNT_DASHBOARD',
-      session.user.email,
-      accessibleTenants.length === 1 ? accessibleTenants[0].Id : 'multiple',
-      'system',
-      `Fetched unread count: ${unreadCount} messages`
-    );
+    const { ipAddress, userAgent } = extractRequestContext(request);
+    const normalizedLogging = new NormalizedLogging(db);
+    await normalizedLogging.logMessagingOperations({
+      userEmail: session.user.email,
+      tenantId: accessibleTenants.length === 1 ? accessibleTenants[0].Id : 'multiple',
+      activityType: 'FETCH_UNREAD_COUNT_DASHBOARD',
+      accessType: 'read',
+      targetId: 'system',
+      targetName: `Fetched unread count: ${unreadCount} messages`,
+      ipAddress,
+      userAgent
+    });
 
     return NextResponse.json({ 
       unreadCount,

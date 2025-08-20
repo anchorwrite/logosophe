@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
+import { NormalizedLogging, extractRequestContext } from '@/lib/normalized-logging';
 
 
 interface PublishedContent {
@@ -23,6 +24,7 @@ interface PublishedContent {
   PublishedAt: string;
   PublishingSettings: string;
   AccessToken?: string;
+  TenantId?: string;
 }
 
 interface MediaFile {
@@ -51,12 +53,14 @@ export async function GET(
     const db = env.DB;
     const { token } = await params;
 
-    // Get the published content by token
+    // Get the published content by token with tenant information
     const publishedContent = await db.prepare(`
-      SELECT pc.*, f.Name as FormName, g.Name as GenreName
+      SELECT pc.*, f.Name as FormName, g.Name as GenreName, ma.TenantId
       FROM PublishedContent pc
       LEFT JOIN Form f ON pc.FormId = f.Id
       LEFT JOIN Genre g ON pc.GenreId = g.Id
+      LEFT JOIN MediaFiles m ON pc.MediaId = m.Id
+      LEFT JOIN MediaAccess ma ON m.Id = ma.MediaId
       WHERE pc.AccessToken = ?
     `).bind(token).first<PublishedContent>();
 
@@ -97,11 +101,30 @@ export async function GET(
 
     // Log the view for analytics
     try {
-      const userAgent = request.headers.get('user-agent') || '';
-      const ipAddress = request.headers.get('cf-connecting-ip') || 
-                       request.headers.get('x-forwarded-for') || 
-                       'unknown';
+      const { ipAddress, userAgent } = extractRequestContext(request);
+      const normalizedLogging = new NormalizedLogging(db);
       
+      // Log to NormalizedLogging for user engagement tracking
+      await normalizedLogging.logMediaOperations({
+        userEmail: 'anonymous', // Content views are typically anonymous
+                  tenantId: publishedContent.TenantId || 'unknown',
+        activityType: 'view_content',
+        accessType: 'read',
+        targetId: publishedContent.Id.toString(),
+        targetName: publishedContent.FileName,
+        ipAddress,
+        userAgent,
+        metadata: { 
+          contentType: publishedContent.ContentType,
+          fileSize: publishedContent.FileSize,
+          mediaType: publishedContent.MediaType,
+          accessToken: token,
+          formName: publishedContent.FormName,
+          genreName: publishedContent.GenreName
+        }
+      });
+      
+      // Also log to ContentUsage table for backward compatibility
       await db.prepare(`
         INSERT INTO ContentUsage (ContentId, UserEmail, UsageType, IpAddress, UserAgent)
         VALUES (?, ?, 'view', ?, ?)

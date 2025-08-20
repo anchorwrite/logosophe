@@ -1,6 +1,13 @@
 import { NextRequest } from 'next/server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
+import { NormalizedLogging, extractRequestContext } from '@/lib/normalized-logging';
 
+
+interface PublishedContent {
+  Id: string;
+  MediaId: string;
+  TenantId: string;
+}
 
 export async function GET(
   request: NextRequest,
@@ -10,15 +17,16 @@ export async function GET(
   try {
     const { env } = await getCloudflareContext({async: true});
     const db = env.DB;
-    const { token } = await params;
 
-    // Get the published content by token
+    // Get the published content by token with tenant information
     const publishedContent = await db.prepare(`
-      SELECT pc.*, m.FileName, m.ContentType, m.R2Key
+      SELECT pc.*, m.FileName, m.ContentType, m.R2Key, m.FileSize, ma.TenantId
       FROM PublishedContent pc
       INNER JOIN MediaFiles m ON pc.MediaId = m.Id
+      LEFT JOIN MediaAccess ma ON m.Id = ma.MediaId
       WHERE pc.AccessToken = ?
-    `).bind(token).first();
+      LIMIT 1
+    `).bind(token).first() as PublishedContent;
 
     if (!publishedContent) {
       return new Response('Content not found or invalid token', { 
@@ -46,11 +54,28 @@ export async function GET(
     
     if (!noLog) {
       try {
-        const userAgent = request.headers.get('user-agent') || '';
-        const ipAddress = request.headers.get('cf-connecting-ip') || 
-                         request.headers.get('x-forwarded-for') || 
-                         'unknown';
+        const { ipAddress, userAgent } = extractRequestContext(request);
+        const normalizedLogging = new NormalizedLogging(db);
         
+        // Log to NormalizedLogging for user engagement tracking
+        await normalizedLogging.logMediaOperations({
+          userEmail: 'anonymous', // Content downloads are typically anonymous
+          tenantId: publishedContent.TenantId || 'unknown',
+          activityType: 'download_content',
+          accessType: 'read',
+          targetId: publishedContent.Id.toString(),
+          targetName: mediaFile.FileName,
+          ipAddress,
+          userAgent,
+          metadata: { 
+            contentType: mediaFile.ContentType,
+            fileSize: mediaFile.FileSize,
+            accessToken: token,
+            noLog: false
+          }
+        });
+        
+        // Also log to ContentUsage table for backward compatibility
         await db.prepare(`
           INSERT INTO ContentUsage (ContentId, UserEmail, UsageType, IpAddress, UserAgent)
           VALUES (?, ?, 'download', ?, ?)

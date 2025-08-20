@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { isSystemAdmin, isTenantAdminFor } from '@/lib/access';
-import { logMessagingActivity } from '@/lib/messaging';
+import { NormalizedLogging, extractRequestContext } from '@/lib/normalized-logging';
 import type { BlockUserRequest, UnblockUserRequest, GetUserBlocksResponse } from '@/types/messaging';
 
 
@@ -128,14 +128,19 @@ export async function POST(request: NextRequest) {
     `).bind(session.user.email, blockedEmail, tenantId, reason || null).run();
 
     // Log the block
-    await logMessagingActivity(
-      'BLOCK_USER',
-      session.user.email,
+    const { ipAddress, userAgent } = extractRequestContext(request);
+    const normalizedLogging = new NormalizedLogging(db);
+    await normalizedLogging.logMessagingOperations({
+      userEmail: session.user.email,
       tenantId,
-      blockedEmail,
-      `Blocked ${blockedEmail}`,
-      { reason }
-    );
+      activityType: 'BLOCK_USER',
+      accessType: 'write',
+      targetId: blockedEmail,
+      targetName: `Blocked ${blockedEmail}`,
+      ipAddress,
+      userAgent,
+      metadata: { reason }
+    });
 
     return NextResponse.json({ success: true });
 
@@ -187,13 +192,18 @@ export async function DELETE(request: NextRequest) {
     `).bind(session.user.email, blockedEmail, tenantId).run();
 
     // Log the unblock
-    await logMessagingActivity(
-      'UNBLOCK_USER',
-      session.user.email,
+    const { ipAddress, userAgent } = extractRequestContext(request);
+    const normalizedLogging = new NormalizedLogging(db);
+    await normalizedLogging.logMessagingOperations({
+      userEmail: session.user.email,
       tenantId,
-      blockedEmail,
-      `Unblocked ${blockedEmail}`
-    );
+      activityType: 'UNBLOCK_USER',
+      accessType: 'write',
+      targetId: blockedEmail,
+      targetName: `Unblocked ${blockedEmail}`,
+      ipAddress,
+      userAgent
+    });
 
     return NextResponse.json({ success: true });
 

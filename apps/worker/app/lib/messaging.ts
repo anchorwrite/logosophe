@@ -1,6 +1,6 @@
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { isSystemAdmin, isTenantAdminFor, hasPermission, type ResourceType } from './access';
-import { NormalizedLogging } from './normalized-logging';
+import { NormalizedLogging, extractRequestContext } from './normalized-logging';
 import type { RateLimitInfo, SystemSetting } from '@/types/messaging';
 
 /**
@@ -321,31 +321,7 @@ export async function updateSystemSetting(key: string, value: string, updatedBy:
   `).bind(value, updatedBy, key).run();
 }
 
-/**
- * Log messaging activity
- */
-export async function logMessagingActivity(
-  activityType: string,
-  userEmail: string,
-  tenantId: string,
-  targetId: string,
-  targetName: string,
-  metadata?: Record<string, any>
-): Promise<void> {
-  const { env } = await getCloudflareContext({async: true});
-  const db = env.DB;
-  const normalizedLogging = new NormalizedLogging(db);
-  
-  await normalizedLogging.logMessagingOperations({
-    userEmail,
-    tenantId,
-    activityType,
-    accessType: 'write',
-    targetId,
-    targetName,
-    metadata
-  });
-}
+
 
 /**
  * Get user's accessible tenants for messaging
