@@ -4,7 +4,7 @@ import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { isSystemAdmin } from '@/lib/access';
 import { checkAccess } from '@/lib/access-control';
 import { getSystemSettings } from '@/lib/messaging';
-import { SystemLogs } from '@/lib/system-logs';
+import { NormalizedLogging, extractRequestContext } from '@/lib/normalized-logging';
 import { SystemControlsClient } from './SystemControlsClient';
 
 
@@ -26,18 +26,22 @@ export default async function SystemControlsPage() {
 
   const { env } = await getCloudflareContext({async: true});
   const db = env.DB;
-  const systemLogs = new SystemLogs(db);
+  const normalizedLogging = new NormalizedLogging(db);
 
   // Check if user is system admin
   const isAdmin = await isSystemAdmin(session.user.email, db);
   
   if (!isAdmin) {
     // Log unauthorized access attempt
-    await systemLogs.createLog({
-      logType: 'activity',
-      timestamp: new Date().toISOString(),
+    await normalizedLogging.logSystemOperations({
       userEmail: session.user.email,
+      tenantId: 'system',
       activityType: 'unauthorized_system_access',
+      accessType: 'admin',
+      targetId: 'messaging-system',
+      targetName: 'Messaging System Page',
+      ipAddress: undefined,
+      userAgent: undefined,
       metadata: { attemptedAccess: 'messaging-system' }
     });
     
@@ -45,11 +49,16 @@ export default async function SystemControlsPage() {
   }
 
   // Log successful access
-  await systemLogs.createLog({
-    logType: 'activity',
-    timestamp: new Date().toISOString(),
+  await normalizedLogging.logMessagingOperations({
     userEmail: session.user.email,
-    activityType: 'access_system_controls'
+    tenantId: 'system',
+    activityType: 'access_system_controls',
+    accessType: 'admin',
+    targetId: 'messaging-system-page',
+    targetName: 'Messaging System Controls',
+    ipAddress: undefined,
+    userAgent: undefined,
+    metadata: { accessGranted: true }
   });
 
   // Get system settings

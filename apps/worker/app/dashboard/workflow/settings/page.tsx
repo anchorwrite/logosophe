@@ -2,7 +2,7 @@ import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { isSystemAdmin } from '@/lib/access';
-import { SystemLogs } from '@/lib/system-logs';
+import { NormalizedLogging, extractRequestContext } from '@/lib/normalized-logging';
 import { Container, Heading, Text, Box, Flex, Button } from '@radix-ui/themes';
 import Link from 'next/link';
 import { DashboardWorkflowSettings } from '@/components/DashboardWorkflowSettings';
@@ -17,18 +17,22 @@ export default async function WorkflowSettingsPage() {
 
   const { env } = await getCloudflareContext({async: true});
   const db = env.DB;
-  const systemLogs = new SystemLogs(db);
+  const normalizedLogging = new NormalizedLogging(db);
 
   // Check if user has admin access
   const isAdmin = await isSystemAdmin(session.user.email, db);
   
   if (!isAdmin) {
     // Log unauthorized access attempt
-    await systemLogs.createLog({
-      logType: 'activity',
-      timestamp: new Date().toISOString(),
+    await normalizedLogging.logSystemOperations({
       userEmail: session.user.email,
+      tenantId: 'system',
       activityType: 'unauthorized_workflow_access',
+      accessType: 'admin',
+      targetId: 'workflow-settings',
+      targetName: 'Workflow Settings Page',
+      ipAddress: undefined,
+      userAgent: undefined,
       metadata: { attemptedAccess: 'workflow-settings' }
     });
     
@@ -36,11 +40,16 @@ export default async function WorkflowSettingsPage() {
   }
 
   // Log successful access
-  await systemLogs.createLog({
-    logType: 'activity',
-    timestamp: new Date().toISOString(),
+  await normalizedLogging.logSystemOperations({
     userEmail: session.user.email,
-    activityType: 'access_workflow_settings'
+    tenantId: 'system',
+    activityType: 'access_workflow_settings',
+    accessType: 'admin',
+    targetId: 'workflow-settings',
+    targetName: 'Workflow Settings Page',
+    ipAddress: undefined,
+    userAgent: undefined,
+    metadata: { accessGranted: true }
   });
 
   return (

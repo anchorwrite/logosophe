@@ -340,58 +340,245 @@
 
 ## Logging Requirements
 
-  logging_requirements:
-    unified_logging:
-      table: SystemLogs
-      log_types:
-        - ACTIVITY: System activity logs
-        - AUTH: Authentication events
-        - MEDIA_ACCESS: Media file access
-        - MEDIA_SHARE: Media sharing events
-      required_fields:
-        - LogType: Type of log entry
-        - Timestamp: When the event occurred
-        - UserEmail: Email of the user (or 'system_admin' for admin actions)
-        - TenantId: Associated tenant (if applicable)
-        - ActivityType: For activity logs
-        - AccessType: For media access logs
-        - TargetId: ID of the target resource
-        - TargetName: Name/description of the target
-        - IpAddress: Request IP address
-        - UserAgent: Request user agent
-        - Metadata: JSON string for additional context
-      rules:
-        - Never delete log entries (use IsDeleted flag instead)
-        - Always include user context when available
-        - Log all authentication events
-        - Log all media access attempts
-        - Log all system activities
-        - Include request context (IP, user agent) when available
-        - Use appropriate log type for each event
-        - Store additional context in Metadata field as JSON
-        - Use UUID v4 for generating unique IDs
-        - Log both successful and failed operations
-        - Preserve logs even if related entities are deleted
+### 🎯 **IMPORTANT: Use NormalizedLogging for All User Actions**
 
-    media_logging:
-      events:
-        - upload: When a file is uploaded
-        - view: When a file is viewed
-        - download: When a file is downloaded
-        - delete: When a file is deleted
-        - replace: When a file is replaced by a new version
-        - share: When a file is added to a tenant
-        - unshare: When a file is removed from a tenant
-        - link: When a link to a file is created
-        - unlink: When a link to a file is deleted
-      required_fields:
-        - userEmail: Who performed the action
-        - tenantId: Which tenant the file belongs to (null for system admins)
-        - accessType: Type of access (upload/view/download/delete/replace/share/unshare/link/unlink)
-        - targetId: ID of the media file
-        - targetName: Name of the media file
-        - ipAddress: Request IP address (optional)
-        - userAgent: Request user agent (optional)
+**The Logosophe system has been completely migrated to use `NormalizedLogging` for all user action logging. DO NOT use `SystemLogs` directly for user actions.**
+
+#### **Logging Architecture**
+- **User Action Logging**: Use `NormalizedLogging` class for all user interactions
+- **Database Management**: `SystemLogs` is retained ONLY for essential database operations
+- **Import Pattern**: `import { NormalizedLogging, extractRequestContext } from '@/lib/normalized-logging'`
+
+#### **NormalizedLogging Usage Pattern**
+```typescript
+// 1. Import the required classes
+import { NormalizedLogging, extractRequestContext } from '@/lib/normalized-logging';
+
+// 2. Initialize in your route handler
+const normalizedLogging = new NormalizedLogging(db);
+
+// 3. Extract request context for IP and User-Agent
+const { ipAddress, userAgent } = extractRequestContext(request);
+
+// 4. Use appropriate logging method based on operation type
+await normalizedLogging.logMediaOperations({
+  userEmail: access.email,
+  tenantId: tenantId || 'system',
+  activityType: 'upload_file',
+  accessType: 'write',
+  targetId: mediaId.toString(),
+  targetName: fileName,
+  ipAddress,
+  userAgent,
+  metadata: { fileSize, contentType, language: 'en' }
+});
+```
+
+#### **Available Logging Methods**
+| Method | Purpose | LogType | Use Case |
+|--------|---------|---------|----------|
+| `logMediaOperations()` | Media file operations | `media_operations` | Upload, download, view, delete, share |
+| `logWorkflowOperations()` | Workflow management | `workflow_operations` | Create, update, delete, invite |
+| `logMessagingOperations()` | Messaging system | `messaging_operations` | Send, archive, read, delete |
+| `logUserManagement()` | User operations | `user_management` | Role assignment, profile updates |
+| `logAuthentication()` | Auth events | `authentication` | Sign in, sign out, password changes |
+| `logTestOperations()` | Test sessions | `test_operations` | Test creation, validation |
+| `logSystemOperations()` | System operations | `system_operations` | Settings, configuration, errors |
+
+#### **Required Parameters for All Logging Methods**
+```typescript
+interface NormalizedLogData {
+  userEmail: string;           // User's email address
+  tenantId: string;            // Tenant context ('system' for admin operations)
+  activityType: string;        // Specific action (e.g., 'upload_file', 'assign_role')
+  accessType: NormalizedAccessType; // Operation type ('read', 'write', 'delete', 'admin', 'auth')
+  targetId: string;            // ID of the target resource
+  targetName: string;          // Human-readable description
+  ipAddress?: string;          // From extractRequestContext(request)
+  userAgent?: string;          // From extractRequestContext(request)
+  metadata?: Record<string, any>; // Additional structured context
+}
+```
+
+#### **Access Type Values**
+- **`read`**: View operations, access settings, content viewing
+- **`write`**: Create, update, modify operations
+- **`delete`**: Remove, delete, permanent deletion operations
+- **`admin`**: Administrative operations, system settings
+- **`auth`**: Authentication-related operations
+
+#### **Metadata Best Practices**
+```typescript
+// Include relevant context for analytics
+metadata: {
+  fileSize: file.FileSize,
+  contentType: file.ContentType,
+  language: 'en',              // User's preferred language
+  userRole: 'author',          // User's role in this context
+  tenantName: 'acme-corp',     // Tenant information
+  action: 'upload_file',       // Operation description
+  success: true,               // Operation result
+  errorMessage: error?.message // If operation failed
+}
+```
+
+#### **Request Context Extraction**
+```typescript
+// Always use this for consistent IP and User-Agent extraction
+const { ipAddress, userAgent } = extractRequestContext(request);
+
+// This handles multiple IP headers automatically:
+// - x-forwarded-for (Cloudflare)
+// - cf-connecting-ip (Cloudflare)
+// - x-real-ip (Reverse proxy)
+```
+
+#### **Tenant ID Guidelines**
+- **`'system'`**: For admin operations that affect the entire system
+- **`tenantId`**: For operations within a specific tenant
+- **`'default'`**: For operations in the default tenant (use sparingly)
+
+#### **Activity Type Naming Convention**
+- Use lowercase with underscores: `upload_file`, `assign_role`, `create_workflow`
+- Be descriptive: `update_protection_settings` not just `update_settings`
+- Include context: `tenant_add_user` not just `add_user`
+
+#### **Error Handling**
+```typescript
+try {
+  await normalizedLogging.logMediaOperations({...});
+} catch (error) {
+  // Logging failure should not break the main operation
+  console.error('Failed to log operation:', error);
+  // Continue with the main operation
+}
+```
+
+#### **When to Use SystemLogs (Database Management Only)**
+```typescript
+// ONLY for these database operations:
+import { SystemLogs } from '@/lib/system-logs';
+
+const systemLogs = new SystemLogs(db);
+
+// Database retrieval
+await systemLogs.getArchivedLogs({...});
+await systemLogs.getLogStats();
+await systemLogs.queryLogs({...});
+
+// Database cleanup
+await systemLogs.archiveExpiredLogs(retentionDays);
+await systemLogs.hardDeleteArchivedLogs(hardDeleteDelay);
+```
+
+#### **Migration Status**
+- ✅ **100% Complete**: All user action logging migrated to `NormalizedLogging`
+- ✅ **Build Success**: All TypeScript compilation errors resolved
+- ✅ **Analytics Ready**: Rich, consistent data structure for advanced analytics
+- ✅ **Type Safety**: Full TypeScript support with proper interfaces
+
+#### **Examples by Operation Type**
+
+##### **Media Operations**
+```typescript
+// File upload
+await normalizedLogging.logMediaOperations({
+  userEmail: access.email,
+  tenantId: tenantId,
+  activityType: 'upload_file',
+  accessType: 'write',
+  targetId: mediaId.toString(),
+  targetName: fileName,
+  ipAddress,
+  userAgent,
+  metadata: { fileSize, contentType, language: 'en' }
+});
+
+// File download
+await normalizedLogging.logMediaOperations({
+  userEmail: access.email,
+  tenantId: tenantId,
+  activityType: 'download_file',
+  accessType: 'read',
+  targetId: mediaId.toString(),
+  targetName: fileName,
+  ipAddress,
+  userAgent,
+  metadata: { downloadMethod: 'direct_link' }
+});
+```
+
+##### **User Management**
+```typescript
+// Role assignment
+await normalizedLogging.logUserManagement({
+  userEmail: adminEmail,
+  tenantId: 'system',
+  activityType: 'assign_role',
+  accessType: 'admin',
+  targetId: userEmail,
+  targetName: `User ${userEmail}`,
+  ipAddress,
+  userAgent,
+  metadata: { role: roleName, tenant: tenantId }
+});
+```
+
+##### **Workflow Operations**
+```typescript
+// Workflow creation
+await normalizedLogging.logWorkflowOperations({
+  userEmail: access.email,
+  tenantId: tenantId,
+  activityType: 'create_workflow',
+  accessType: 'write',
+  targetId: workflowId,
+  targetName: workflowName,
+  ipAddress,
+  userAgent,
+  metadata: { participants: participantCount, mediaFiles: mediaFileCount }
+});
+```
+
+#### **Common Mistakes to Avoid**
+❌ **Don't use SystemLogs for user actions**
+```typescript
+// WRONG - Don't do this
+const systemLogs = new SystemLogs(db);
+await systemLogs.createLog({...});
+```
+
+✅ **Do use NormalizedLogging for user actions**
+```typescript
+// CORRECT - Do this
+const normalizedLogging = new NormalizedLogging(db);
+await normalizedLogging.logMediaOperations({...});
+```
+
+❌ **Don't manually extract IP/User-Agent**
+```typescript
+// WRONG - Don't do this
+ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip'),
+userAgent: request.headers.get('user-agent')
+```
+
+✅ **Do use extractRequestContext**
+```typescript
+// CORRECT - Do this
+const { ipAddress, userAgent } = extractRequestContext(request);
+```
+
+#### **Testing Your Logging**
+1. **Check Build**: Ensure `yarn build` succeeds
+2. **Verify Logs**: Check that logs appear in the SystemLogs table
+3. **Test Analytics**: Verify logs appear in analytics dashboards
+4. **Check Types**: Ensure TypeScript compilation succeeds
+
+#### **Need Help?**
+- Check existing examples in the codebase
+- Refer to `apps/worker/app/lib/normalized-logging.ts` for method signatures
+- Use the logging utilities in `apps/worker/app/lib/logging-utils.ts`
+- Ensure all required parameters are provided
 
 ## Database Tables
 - MediaShareLinks:

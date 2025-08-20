@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { isSystemAdmin } from '@/lib/access';
 import { getUserMessagingTenants } from '@/lib/messaging';
-import { SystemLogs } from '@/lib/system-logs';
+import { NormalizedLogging, extractRequestContext } from '@/lib/normalized-logging';
 import { Container, Heading, Text, Flex, Card, Button, Box, Badge, Separator } from '@radix-ui/themes';
 import Link from 'next/link';
 import type { D1Result } from '@cloudflare/workers-types';
@@ -49,7 +49,7 @@ export default async function MessageDetailPage({ params }: { params: Promise<{ 
 
   const { env } = await getCloudflareContext({async: true});
   const db = env.DB;
-  const systemLogs = new SystemLogs(db);
+  const normalizedLogging = new NormalizedLogging(db);
 
   const { id } = await params;
   const messageId = parseInt(id);
@@ -66,11 +66,16 @@ export default async function MessageDetailPage({ params }: { params: Promise<{ 
   }
 
   // Log access
-  await systemLogs.createLog({
-    logType: 'activity',
-    timestamp: new Date().toISOString(),
+  await normalizedLogging.logMessagingOperations({
     userEmail: session.user.email,
-    activityType: 'access_message_detail'
+    tenantId: 'system',
+    activityType: 'access_message_detail',
+    accessType: 'read',
+    targetId: id,
+    targetName: `Message ${id}`,
+    ipAddress: undefined,
+    userAgent: undefined,
+    metadata: { messageId: id }
   });
 
   // Fetch message details

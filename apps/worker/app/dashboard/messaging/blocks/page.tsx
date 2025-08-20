@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { isSystemAdmin, isTenantAdminFor } from '@/lib/access';
 import { getUserMessagingTenants } from '@/lib/messaging';
-import { SystemLogs } from '@/lib/system-logs';
+import { NormalizedLogging, extractRequestContext } from '@/lib/normalized-logging';
 import { BlocksClient } from './BlocksClient';
 import type { D1Result } from '@cloudflare/workers-types';
 
@@ -29,7 +29,7 @@ export default async function UserBlocksPage() {
 
   const { env } = await getCloudflareContext({async: true});
   const db = env.DB;
-  const systemLogs = new SystemLogs(db);
+  const normalizedLogging = new NormalizedLogging(db);
 
   // Check if user has admin access
   const isAdmin = await isSystemAdmin(session.user.email, db);
@@ -40,11 +40,16 @@ export default async function UserBlocksPage() {
   }
 
   // Log access
-  await systemLogs.createLog({
-    logType: 'activity',
-    timestamp: new Date().toISOString(),
+  await normalizedLogging.logMessagingOperations({
     userEmail: session.user.email,
-    activityType: 'access_user_blocks'
+    tenantId: 'system',
+    activityType: 'access_user_blocks',
+    accessType: 'admin',
+    targetId: 'user-blocks-page',
+    targetName: 'User Blocks Page',
+    ipAddress: undefined,
+    userAgent: undefined,
+    metadata: { accessGranted: true }
   });
 
   // Fetch blocks based on user's access level

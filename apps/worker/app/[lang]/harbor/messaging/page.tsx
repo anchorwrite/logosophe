@@ -2,7 +2,7 @@ import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { getSystemSettings } from '@/lib/messaging';
-import { SystemLogs } from '@/lib/system-logs';
+import { NormalizedLogging, extractRequestContext } from '@/lib/normalized-logging';
 import { SubscriberMessagingInterface } from './SubscriberMessagingInterface';
 import type { D1Result } from '@cloudflare/workers-types';
 
@@ -46,7 +46,7 @@ export default async function SubscriberMessagingPage({ params }: { params: Prom
 
   const { env } = await getCloudflareContext({async: true});
   const db = env.DB;
-  const systemLogs = new SystemLogs(db);
+  const normalizedLogging = new NormalizedLogging(db);
 
   // Check if messaging is enabled
   const settings = await getSystemSettings();
@@ -106,12 +106,16 @@ export default async function SubscriberMessagingPage({ params }: { params: Prom
   console.log('Messaging page - Final userTenantName:', userTenantName);
 
   // Log access
-  await systemLogs.createLog({
-    logType: 'activity',
-    timestamp: new Date().toISOString(),
+  await normalizedLogging.logMessagingOperations({
     userEmail: session.user.email,
+    tenantId: userTenantId,
     activityType: 'access_subscriber_messaging',
-    tenantId: userTenantId
+    accessType: 'read',
+    targetId: 'harbor-messaging-page',
+    targetName: 'Harbor Messaging Page',
+    ipAddress: undefined,
+    userAgent: undefined,
+    metadata: { tenantId: userTenantId, tenantName: userTenantName }
   });
 
   // Get recent messages for the user within their tenant
