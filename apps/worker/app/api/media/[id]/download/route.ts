@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { checkAccess } from '@/lib/access-control';
 import { isSystemAdmin } from '@/lib/access';
-import { SystemLogs } from '@/lib/system-logs';
+import { NormalizedLogging, extractRequestContext } from '@/lib/normalized-logging';
 
 
 type Params = Promise<{ id: string }>
@@ -47,16 +47,18 @@ export async function GET(
       return new Response('Media file not found or access denied', { status: 404 });
     }
 
-    // Log the download using SystemLogs
-    const systemLogs = new SystemLogs(db);
-    await systemLogs.logMediaAccess({
+    // Log the download using NormalizedLogging
+    const normalizedLogging = new NormalizedLogging(db);
+    const { ipAddress, userAgent } = extractRequestContext(request);
+    await normalizedLogging.logMediaOperations({
       userEmail: access.email,
       tenantId: media.TenantId,
+      activityType: 'download_file',
       accessType: 'download',
       targetId: id,
       targetName: media.FileName,
-      ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,
-      userAgent: request.headers.get('user-agent') || undefined
+      ipAddress,
+      userAgent
     });
 
     // Get the file from R2

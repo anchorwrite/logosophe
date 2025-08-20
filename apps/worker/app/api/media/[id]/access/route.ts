@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { checkAccess } from '@/lib/access-control';
 import { isSystemAdmin } from '@/lib/access';
-import { SystemLogs } from '@/lib/system-logs';
+import { NormalizedLogging, extractRequestContext } from '@/lib/normalized-logging';
 
 
 type Params = Promise<{ id: string }>
@@ -101,18 +101,18 @@ export async function PUT(
           VALUES (?, ?, 'admin', 'view', ?)
         `).bind(mediaId, tenantId, access.email).run();
 
-        // Log the access change using SystemLogs
-        const systemLogs = new SystemLogs(db);
-        await systemLogs.createLog({
-          logType: 'media_access',
-          timestamp: new Date().toISOString(),
+        // Log the access change using NormalizedLogging
+        const normalizedLogging = new NormalizedLogging(db);
+        const { ipAddress, userAgent } = extractRequestContext(request);
+        await normalizedLogging.logMediaOperations({
           userEmail: 'system_admin',
           tenantId,
-          accessType: 'share',
+          activityType: 'grant_tenant_access',
+          accessType: 'write',
           targetId: mediaId,
           targetName: mediaFile.FileName,
-          ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,
-          userAgent: request.headers.get('user-agent') || undefined
+          ipAddress,
+          userAgent
         });
       }
 
@@ -161,17 +161,19 @@ export async function PUT(
     const newTenants = new Set(filteredTenants);
 
     // Log deletions for tenants that are being removed
-    const systemLogs = new SystemLogs(db);
+    const normalizedLogging = new NormalizedLogging(db);
+    const { ipAddress, userAgent } = extractRequestContext(request);
     for (const tenantId of currentTenants) {
       if (!newTenants.has(tenantId)) {
-        await systemLogs.logMediaAccess({
+        await normalizedLogging.logMediaOperations({
           userEmail: access.email,
           tenantId,
+          activityType: 'remove_tenant_access',
           accessType: 'delete',
           targetId: mediaId,
           targetName: mediaFile.FileName,
-          ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,
-          userAgent: request.headers.get('user-agent') || undefined
+          ipAddress,
+          userAgent
         });
       }
     }
@@ -196,14 +198,15 @@ export async function PUT(
 
       // Log the access change - only log if this is a new tenant
       if (!currentTenants.has(tenantId)) {
-        await systemLogs.logMediaAccess({
+        await normalizedLogging.logMediaOperations({
           userEmail: access.email,
           tenantId,
-          accessType: 'share',
+          activityType: 'grant_tenant_access',
+          accessType: 'write',
           targetId: mediaId,
           targetName: mediaFile.FileName,
-          ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,
-          userAgent: request.headers.get('user-agent') || undefined
+          ipAddress,
+          userAgent
         });
       }
     }

@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { checkAccess } from '@/lib/access-control';
 import { isSystemAdmin } from '@/lib/access';
-import { SystemLogs } from '@/lib/system-logs';
+import { NormalizedLogging, extractRequestContext } from '@/lib/normalized-logging';
 import { auth } from '@/auth';
 
 
@@ -131,15 +131,17 @@ export async function GET(
         `).bind(shareToken).run();
 
         // Log shared access
-        const systemLogs = new SystemLogs(db);
-        await systemLogs.logMediaAccess({
+        const normalizedLogging = new NormalizedLogging(db);
+        const { ipAddress, userAgent } = extractRequestContext(request);
+        await normalizedLogging.logMediaOperations({
           userEmail: 'shared_access',
           tenantId: media.TenantId,
+          activityType: 'view_shared_file',
           accessType: 'view',
           targetId: mediaId.toString(),
           targetName: media.FileName,
-          ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,
-          userAgent: request.headers.get('user-agent') || undefined,
+          ipAddress,
+          userAgent,
           metadata: {
             shareToken,
             contentType: media.ContentType,
@@ -287,8 +289,8 @@ export async function GET(
         });
       }
 
-      // Initialize systemLogs
-      const systemLogs = new SystemLogs(db);
+      // Initialize normalizedLogging
+      const normalizedLogging = new NormalizedLogging(db);
 
       // Get the file from R2
       const object = await env.MEDIA_BUCKET.get(media.R2Key);
@@ -369,22 +371,19 @@ export async function GET(
 
         // Only log if this is the first chunk (start = 0)
         if (start === 0) {
-          const ipAddress = request.headers.get('x-forwarded-for') ?? request.headers.get('x-real-ip') ?? undefined;
-          const userAgent = request.headers.get('user-agent') ?? undefined;
+          const { ipAddress, userAgent } = extractRequestContext(request);
           const session = await auth();
-          await systemLogs.createLog({
-            logType: 'media_access',
-            timestamp: new Date().toISOString(),
-            userId: shareToken ? undefined : session?.user?.id,
+          await normalizedLogging.logMediaOperations({
             userEmail: shareToken ? 'shared_access' : access.email!,
+            userId: shareToken ? undefined : session?.user?.id,
+            provider: (isAdmin || isTenantAdmin) ? 'credentials' : 'tenant',
             tenantId: media.TenantId,
+            activityType: isDownload ? 'download_video_chunk' : 'view_video_chunk',
             accessType: isDownload ? 'download' : 'view',
             targetId: mediaId.toString(),
             targetName: media.FileName,
             ipAddress,
             userAgent,
-            activityType: 'media',
-            provider: (isAdmin || isTenantAdmin) ? 'credentials' : 'tenant',
             metadata: {
               ...(shareToken ? { shareToken } : { isAdmin }),
               contentType: media.ContentType,
@@ -403,22 +402,19 @@ export async function GET(
 
       // For non-video files or non-range requests, log only if there's no range header
       if (!range) {
-        const ipAddress = request.headers.get('x-forwarded-for') ?? request.headers.get('x-real-ip') ?? undefined;
-        const userAgent = request.headers.get('user-agent') ?? undefined;
+        const { ipAddress, userAgent } = extractRequestContext(request);
         const session = await auth();
-        await systemLogs.createLog({
-          logType: 'media_access',
-          timestamp: new Date().toISOString(),
-          userId: shareToken ? undefined : session?.user?.id,
+        await normalizedLogging.logMediaOperations({
           userEmail: shareToken ? 'shared_access' : access.email!,
+          userId: shareToken ? undefined : session?.user?.id,
+          provider: (isAdmin || isTenantAdmin) ? 'credentials' : 'tenant',
           tenantId: media.TenantId,
+          activityType: isDownload ? 'download_file' : 'view_file',
           accessType: isDownload ? 'download' : 'view',
           targetId: mediaId.toString(),
           targetName: media.FileName,
           ipAddress,
           userAgent,
-          activityType: 'media',
-          provider: (isAdmin || isTenantAdmin) ? 'credentials' : 'tenant',
           metadata: {
             ...(shareToken ? { shareToken } : { isAdmin }),
             contentType: media.ContentType,

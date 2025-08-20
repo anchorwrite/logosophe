@@ -3,7 +3,7 @@ import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { checkAccess } from '@/lib/access-control';
 import { isSystemAdmin } from '@/lib/access';
 import { config } from '@/lib/config';
-import { SystemLogs } from '@/lib/system-logs';
+import { NormalizedLogging, extractRequestContext } from '@/lib/normalized-logging';
 import { encrypt } from '@/lib/encryption';
 
 
@@ -132,17 +132,19 @@ export async function POST(
         hasPassword: !!body.password
       });
 
-      // Log the share link creation using SystemLogs
-      const systemLogs = new SystemLogs(db);
-      await systemLogs.logMediaAccess({
-        userEmail: isAdmin ? 'system_admin' : access.email,
-        tenantId: tenantId || undefined,
-        accessType: 'link',
-        targetId: mediaId,
-        targetName: media.FileName,
-        ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,
-        userAgent: request.headers.get('user-agent') || undefined
-      });
+      // Log the share link creation using NormalizedLogging
+      const normalizedLogging = new NormalizedLogging(db);
+      const { ipAddress, userAgent } = extractRequestContext(request);
+              await normalizedLogging.logMediaOperations({
+          userEmail: isAdmin ? 'system_admin' : access.email,
+          tenantId: tenantId || undefined,
+          activityType: 'create_share_link',
+          accessType: 'write',
+          targetId: mediaId,
+          targetName: media.FileName,
+          ipAddress,
+          userAgent
+        });
 
       // Return the share URL
       const baseUrl = process.env.NODE_ENV === 'development' ? config.r2.publicUrl : request.nextUrl.origin;
