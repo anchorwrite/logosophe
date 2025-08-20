@@ -539,9 +539,13 @@ export class SystemLogs {
         };
     }
 
-    async hardDeleteArchivedLogs(olderThanDays: number): Promise<{ deleted: number; errors: number }> {
+    async hardDeleteArchivedLogs(retentionDays: number, hardDeleteDelay: number): Promise<{ deleted: number; errors: number }> {
+        // Calculate total age: retention period + hard delete delay
+        // e.g., if retention is 90 days and hard delete delay is 7 days,
+        // we only hard delete logs that are 97+ days old
+        const totalAgeDays = retentionDays + hardDeleteDelay;
         const cutoffDate = new Date();
-        cutoffDate.setDate(cutoffDate.getDate() - olderThanDays);
+        cutoffDate.setDate(cutoffDate.getDate() - totalAgeDays);
         const cutoffTimestamp = cutoffDate.toISOString();
 
         try {

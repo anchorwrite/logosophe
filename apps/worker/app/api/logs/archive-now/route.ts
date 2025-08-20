@@ -52,7 +52,7 @@ export async function POST() {
         `).first();
         
         const hardDeleteDelay = hardDeleteDelaySetting ? parseInt((hardDeleteDelaySetting as any).Value) : 7;
-        const hardDeleteResult = await systemLogs.hardDeleteArchivedLogs(hardDeleteDelay);
+        const hardDeleteResult = await systemLogs.hardDeleteArchivedLogs(retentionDays, hardDeleteDelay);
         
         // Log this manual operation
         await normalizedLogging.logSystemOperations({

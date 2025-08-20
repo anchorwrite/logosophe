@@ -21,15 +21,20 @@ export async function POST() {
     try {
         const systemLogs = new SystemLogs(db);
         
-        // Get the hard delete delay setting
+        // Get both retention and hard delete delay settings
+        const retentionSetting = await db.prepare(`
+            SELECT Value FROM SystemSettings WHERE Key = 'log_retention_days'
+        `).first();
+        
         const delaySetting = await db.prepare(`
             SELECT Value FROM SystemSettings WHERE Key = 'log_hard_delete_delay'
         `).first();
         
+        const retentionDays = retentionSetting ? parseInt((retentionSetting as any).Value) : 90; // Default to 90 days
         const hardDeleteDelay = delaySetting ? parseInt((delaySetting as any).Value) : 7; // Default to 7 days
         
-        // Hard delete archived logs that are older than the delay period
-        const result = await systemLogs.hardDeleteArchivedLogs(hardDeleteDelay);
+        // Hard delete archived logs that are older than retention + hard delete delay
+        const result = await systemLogs.hardDeleteArchivedLogs(retentionDays, hardDeleteDelay);
         
         return NextResponse.json(result);
     } catch (error) {
