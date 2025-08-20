@@ -1,6 +1,6 @@
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { isSystemAdmin, isTenantAdminFor, hasPermission, type ResourceType } from './access';
-import { SystemLogs } from './system-logs';
+import { NormalizedLogging } from './normalized-logging';
 
 /**
  * Check if workflow system is enabled
@@ -276,13 +276,13 @@ export async function logWorkflowActivity(
 ): Promise<void> {
   const { env } = await getCloudflareContext({async: true});
   const db = env.DB;
-  const systemLogs = new SystemLogs(db);
+  const normalizedLogging = new NormalizedLogging(db);
   
-  await systemLogs.createLog({
-    logType: 'activity',
-    timestamp: new Date().toISOString(),
+  await normalizedLogging.logWorkflowOperations({
     userEmail,
+    tenantId,
     activityType,
+    accessType: 'write',
     targetId: workflowId,
     targetName: 'workflow',
     metadata: {

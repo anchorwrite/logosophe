@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { checkAccess } from '@/lib/access-control';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { isSystemAdmin } from '@/lib/access';
-import { SystemLogs } from '@/lib/system-logs';
+import { NormalizedLogging, extractRequestContext } from '@/lib/normalized-logging';
 import { getWorkflowHistoryLogger } from '@/lib/workflow-history';
 
 export async function POST(request: NextRequest) {
@@ -175,15 +175,17 @@ export async function POST(request: NextRequest) {
 
     // Log the workflow creation
     try {
-      const systemLogs = new SystemLogs(db);
-      await systemLogs.logUserOperation({
+      const normalizedLogging = new NormalizedLogging(db);
+      const { ipAddress, userAgent } = extractRequestContext(request);
+      await normalizedLogging.logWorkflowOperations({
         userEmail: access.email,
         tenantId: tenantId,
         activityType: 'workflow_created',
+        accessType: 'write',
         targetId: workflowId,
         targetName: title,
-        ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('cf-connecting-ip') || 'unknown',
-        userAgent: request.headers.get('user-agent') || 'unknown',
+        ipAddress,
+        userAgent,
         metadata: {
           participants: participants.length,
           mediaFiles: mediaFileIds.length,

@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { auth } from '@/auth';
 import { checkAccess } from '@/lib/access-control';
-import { SystemLogs } from '@/lib/system-logs';
+import { NormalizedLogging, extractRequestContext } from '@/lib/normalized-logging';
 import { createMediaMetadata, MediaDeleteMetadata } from '@/lib/media-metadata';
 
 
@@ -57,7 +57,7 @@ export async function DELETE(
       WHERE ma.MediaId = ? AND ma.TenantId != ?
     `).bind(id, tenantId || 'default').all();
 
-    const systemLogs = new SystemLogs(db);
+    const normalizedLogging = new NormalizedLogging(db);
 
     if (otherTenants.results.length > 0) {
       // File exists in other tenants - only remove from current tenant
@@ -75,14 +75,16 @@ export async function DELETE(
         otherTenants: otherTenants.results.map((t: any) => t.TenantId)
       }, 'remove_tenant', id);
 
-      await systemLogs.logMediaAccess({
+      const { ipAddress, userAgent } = extractRequestContext(request);
+      await normalizedLogging.logMediaOperations({
         userEmail: access.email,
         tenantId: tenantId || 'default',
-        accessType: 'remove_tenant',
+        activityType: 'remove_tenant_access',
+        accessType: 'delete',
         targetId: id,
         targetName: mediaFile.FileName as string,
-        ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,
-        userAgent: request.headers.get('user-agent') || undefined,
+        ipAddress,
+        userAgent,
         metadata: removeMetadata
       });
 
@@ -116,13 +118,15 @@ export async function DELETE(
         otherTenants: []
       }, 'soft_delete', id);
 
-      await systemLogs.logMediaAccess({
+      const { ipAddress, userAgent } = extractRequestContext(request);
+      await normalizedLogging.logMediaOperations({
         userEmail: access.email,
-        accessType: 'soft_delete',
+        activityType: 'soft_delete_file',
+        accessType: 'delete',
         targetId: id,
         targetName: mediaFile.FileName as string,
-        ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,
-        userAgent: request.headers.get('user-agent') || undefined,
+        ipAddress,
+        userAgent,
         metadata: softDeleteMetadata
       });
 

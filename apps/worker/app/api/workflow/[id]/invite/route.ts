@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { checkAccess } from '@/lib/access-control';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { isSystemAdmin } from '@/lib/access';
-import { SystemLogs } from '@/lib/system-logs';
+import { NormalizedLogging, extractRequestContext } from '@/lib/normalized-logging';
 import { randomUUID } from 'crypto';
 
 export async function POST(
@@ -36,7 +36,7 @@ export async function POST(
     // Get database context
     const { env } = await getCloudflareContext({async: true});
     const db = env.DB;
-    const systemLogs = new SystemLogs(db);
+    const normalizedLogging = new NormalizedLogging(db);
 
     // Check if user is system admin
     const isAdmin = await isSystemAdmin(access.email, db);
@@ -96,14 +96,16 @@ export async function POST(
     ).run();
 
     // Log the invitation
-    await systemLogs.logUserOperation({
+    const { ipAddress, userAgent } = extractRequestContext(request);
+    await normalizedLogging.logWorkflowOperations({
       userEmail: access.email,
-              activityType: 'workflow_invite',
+      activityType: 'workflow_invite',
+      accessType: 'write',
       targetId: inviteeEmail,
       targetName: `workflow_invitation_${workflowId}`,
       tenantId: workflowData.TenantId,
-      ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,
-      userAgent: request.headers.get('user-agent') || undefined,
+      ipAddress,
+      userAgent,
       metadata: { 
         workflowId, 
         role, 

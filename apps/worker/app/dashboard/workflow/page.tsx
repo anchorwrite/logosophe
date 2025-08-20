@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { isSystemAdmin, isTenantAdminFor } from '@/lib/access';
 import { getUserWorkflowTenants } from '@/lib/workflow';
-import { SystemLogs } from '@/lib/system-logs';
+import { NormalizedLogging } from '@/lib/normalized-logging';
 import { Container, Heading, Text, Flex, Card, Button, Box } from '@radix-ui/themes';
 import Link from 'next/link';
 import { DashboardWorkflowStats } from '@/components/DashboardWorkflowStats';
@@ -18,7 +18,7 @@ export default async function WorkflowPage() {
 
   const { env } = await getCloudflareContext({async: true});
   const db = env.DB;
-  const systemLogs = new SystemLogs(db);
+  const normalizedLogging = new NormalizedLogging(db);
 
   // Check if user has admin access
   const isAdmin = await isSystemAdmin(session.user.email, db);
@@ -28,11 +28,13 @@ export default async function WorkflowPage() {
   
   if (!isAdmin && accessibleTenants.length === 0) {
     // Log unauthorized access attempt
-    await systemLogs.createLog({
-      logType: 'activity',
-      timestamp: new Date().toISOString(),
+    await normalizedLogging.logWorkflowOperations({
       userEmail: session.user.email,
+      tenantId: 'unknown',
       activityType: 'unauthorized_workflow_access',
+      accessType: 'admin',
+      targetId: session.user.email,
+      targetName: 'Workflow Admin Access',
       metadata: { attemptedAccess: 'workflow-admin' }
     });
     
@@ -45,11 +47,13 @@ export default async function WorkflowPage() {
   `).bind(session.user.email).first();
 
   // Log successful access
-  await systemLogs.createLog({
-    logType: 'activity',
-    timestamp: new Date().toISOString(),
+  await normalizedLogging.logWorkflowOperations({
     userEmail: session.user.email,
-    activityType: 'access_workflow_admin'
+    tenantId: 'system',
+    activityType: 'access_workflow_admin',
+    accessType: 'admin',
+    targetId: session.user.email,
+    targetName: 'Workflow Admin Access'
   });
 
   return (

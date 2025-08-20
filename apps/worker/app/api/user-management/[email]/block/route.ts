@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { isSystemAdmin } from '@/lib/access';
-import { SystemLogs } from '@/lib/system-logs';
+import { NormalizedLogging, extractRequestContext } from '@/lib/normalized-logging';
 
 
 export async function POST(
@@ -18,7 +18,7 @@ export async function POST(
 
     const { env } = await getCloudflareContext({async: true});
     const db = env.DB;
-    const systemLogs = new SystemLogs(db);
+    const normalizedLogging = new NormalizedLogging(db);
 
     // Check if user is system admin or tenant admin
     const isAdmin = await isSystemAdmin(session.user.email, db);
@@ -47,14 +47,20 @@ export async function POST(
     ).bind(email).run();
 
     // Log the action
-    await systemLogs.logActivity({
-      userId: session.user.id || session.user.email,
-      email: session.user.email,
-      provider: 'credentials',
+    const { ipAddress, userAgent } = extractRequestContext(request);
+    await normalizedLogging.logUserManagement({
+      userEmail: session.user.email,
+      tenantId: 'system',
       activityType: 'user_blocked',
+      accessType: 'admin',
       targetId: email,
-      ipAddress: request.headers.get('x-forwarded-for') || 'unknown',
-      userAgent: request.headers.get('user-agent') || 'unknown'
+      targetName: `User ${email}`,
+      ipAddress,
+      userAgent,
+      metadata: {
+        userId: session.user.id || session.user.email,
+        provider: 'credentials'
+      }
     });
 
     return NextResponse.json({ 

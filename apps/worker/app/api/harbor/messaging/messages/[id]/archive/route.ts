@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { checkAccess } from '@/lib/access-control';
-import { SystemLogs } from '@/lib/system-logs';
+import { NormalizedLogging, extractRequestContext } from '@/lib/normalized-logging';
 
 
 export async function POST(
@@ -23,7 +23,7 @@ export async function POST(
 
     const { env } = await getCloudflareContext({async: true});
     const db = env.DB;
-    const systemLogs = new SystemLogs(db);
+    const normalizedLogging = new NormalizedLogging(db);
     const { id } = await params;
     const messageId = parseInt(id);
 
@@ -100,11 +100,16 @@ export async function POST(
     }
 
     // Log the archive action
-    await systemLogs.createLog({
-      logType: 'activity',
-      timestamp: new Date().toISOString(),
+    const { ipAddress, userAgent } = extractRequestContext(request);
+    await normalizedLogging.logMessagingOperations({
       userEmail: access.email,
-              activityType: 'message_archived',
+      tenantId: 'unknown',
+      activityType: 'message_archived',
+      accessType: 'write',
+      targetId: messageId.toString(),
+      targetName: `Message ${messageId}`,
+      ipAddress,
+      userAgent,
       metadata: {
         messageId,
         isSender: accessResult.SenderEmail === access.email

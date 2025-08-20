@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { checkAccess } from '@/lib/access-control';
-import { SystemLogs } from '@/lib/system-logs';
+import { NormalizedLogging, extractRequestContext } from '@/lib/normalized-logging';
 
 
 export async function POST(
@@ -31,7 +31,7 @@ export async function POST(
 
     const { env } = await getCloudflareContext({async: true});
     const db = env.DB;
-    const systemLogs = new SystemLogs(db);
+    const normalizedLogging = new NormalizedLogging(db);
 
     // Check if user is a recipient of this message
     const checkRecipientQuery = `
@@ -73,11 +73,16 @@ export async function POST(
       .run();
 
     // Log the read action
-    await systemLogs.createLog({
-      logType: 'activity',
-      timestamp: readAt,
+    const { ipAddress, userAgent } = extractRequestContext(request);
+    await normalizedLogging.logMessagingOperations({
       userEmail: access.email,
-              activityType: 'message_read',
+      tenantId: 'unknown',
+      activityType: 'message_read',
+      accessType: 'read',
+      targetId: messageId.toString(),
+      targetName: `Message ${messageId}`,
+      ipAddress,
+      userAgent,
       metadata: {
         messageId,
         readAt

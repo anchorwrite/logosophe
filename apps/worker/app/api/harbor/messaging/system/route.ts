@@ -3,7 +3,7 @@ import { checkAccess } from '@/lib/access-control';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { isSystemAdmin } from '@/lib/access';
 import { getSystemSettings } from '@/lib/messaging';
-import { SystemLogs } from '@/lib/system-logs';
+import { NormalizedLogging, extractRequestContext } from '@/lib/normalized-logging';
 
 
 export async function GET(request: NextRequest) {
@@ -18,18 +18,23 @@ export async function GET(request: NextRequest) {
 
     const { env } = await getCloudflareContext({async: true});
     const db = env.DB;
-    const systemLogs = new SystemLogs(db);
+    const normalizedLogging = new NormalizedLogging(db);
 
     // Check if user is system admin
     const isAdmin = await isSystemAdmin(access.email, db);
     
     if (!isAdmin) {
       // Log unauthorized access attempt
-      await systemLogs.createLog({
-        logType: 'activity',
-        timestamp: new Date().toISOString(),
+      const { ipAddress, userAgent } = extractRequestContext(request);
+      await normalizedLogging.logMessagingOperations({
         userEmail: access.email,
+        tenantId: 'system',
         activityType: 'unauthorized_system_access',
+        accessType: 'admin',
+        targetId: access.email,
+        targetName: 'Messaging System Access',
+        ipAddress,
+        userAgent,
         metadata: { attemptedAccess: 'messaging-system' }
       });
       
@@ -37,11 +42,16 @@ export async function GET(request: NextRequest) {
     }
 
     // Log successful access
-    await systemLogs.createLog({
-      logType: 'activity',
-      timestamp: new Date().toISOString(),
+    const { ipAddress: ipAddr, userAgent: ua } = extractRequestContext(request);
+    await normalizedLogging.logMessagingOperations({
       userEmail: access.email,
-              activityType: 'access_system_controls',
+      tenantId: 'system',
+      activityType: 'access_system_controls',
+      accessType: 'admin',
+      targetId: access.email,
+      targetName: 'Messaging System Controls',
+      ipAddress: ipAddr,
+      userAgent: ua
     });
 
     const { searchParams } = new URL(request.url);
@@ -102,7 +112,7 @@ export async function POST(request: NextRequest) {
 
     const { env } = await getCloudflareContext({async: true});
     const db = env.DB;
-    const systemLogs = new SystemLogs(db);
+    const normalizedLogging = new NormalizedLogging(db);
 
     // Check if user is system admin
     const isAdmin = await isSystemAdmin(access.email, db);
@@ -138,13 +148,16 @@ export async function POST(request: NextRequest) {
     `).bind(dbSetting, value.toString(), access.email).run();
 
     // Log the setting change
-    await systemLogs.logMessagingOperation({
+    const { ipAddress, userAgent } = extractRequestContext(request);
+    await normalizedLogging.logMessagingOperations({
       userEmail: access.email,
-              activityType: 'system_setting_changed',
+      tenantId: 'system',
+      activityType: 'system_setting_changed',
+      accessType: 'admin',
       targetId: dbSetting,
       targetName: setting,
-      ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,
-      userAgent: request.headers.get('user-agent') || undefined,
+      ipAddress,
+      userAgent,
       metadata: { setting: dbSetting, value: value.toString() }
     });
 

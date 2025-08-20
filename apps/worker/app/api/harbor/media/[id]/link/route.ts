@@ -5,7 +5,7 @@ import { checkAccess } from '@/lib/access-control';
 import { nanoid } from 'nanoid';
 import { isSystemAdmin } from '@/lib/access';
 import { encrypt } from '@/lib/encryption';
-import { SystemLogs } from '@/lib/system-logs';
+import { NormalizedLogging, extractRequestContext } from '@/lib/normalized-logging';
 import { createMediaMetadata, MediaShareMetadata } from '@/lib/media-metadata';
 
 
@@ -108,7 +108,7 @@ export async function POST(
     ).run();
 
     // Log the share link creation with enhanced metadata
-    const systemLogs = new SystemLogs(db);
+    const normalizedLogging = new NormalizedLogging(db);
     const shareMetadata = createMediaMetadata<MediaShareMetadata>({
       shareToken,
       expiresAt: expiresAt || undefined,
@@ -118,14 +118,16 @@ export async function POST(
       tenantId: tenantId ? String(tenantId) : undefined
     }, 'create_share_link', id);
 
-    await systemLogs.logMediaAccess({
+    const { ipAddress, userAgent } = extractRequestContext(request);
+    await normalizedLogging.logMediaOperations({
       userEmail: access.email,
       tenantId: tenantId ? String(tenantId) : undefined,
-      accessType: 'create_share_link',
+      activityType: 'create_share_link',
+      accessType: 'write',
       targetId: id,
       targetName: `Media file ${id}`,
-      ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,
-      userAgent: request.headers.get('user-agent') || undefined,
+      ipAddress,
+      userAgent,
       metadata: shareMetadata
     });
 

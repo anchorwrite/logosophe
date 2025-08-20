@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { auth } from '@/auth';
 import { checkAccess } from '@/lib/access-control';
-import { SystemLogs } from '@/lib/system-logs';
+import { NormalizedLogging, extractRequestContext } from '@/lib/normalized-logging';
 
 
 type Params = Promise<{ id: string }>
@@ -67,23 +67,23 @@ export async function GET(
     }
 
     // Log the access
-    // const systemLogs = new SystemLogs(db);
-    // const ipAddress = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip');
-    // await systemLogs.createLog({
-    //   logType: 'avatar_access',
-    //   timestamp: new Date().toISOString(),
-    //   userEmail: session.user.email || undefined,
-    //   accessType: 'view_avatar',
-    //   targetId: id,
-    //   targetName: avatar.R2Key as string,
-    //   ipAddress: ipAddress || undefined,
-    //   userAgent: request.headers.get('user-agent') || undefined,
-    //   metadata: {
-    //     avatarId: id,
-    //     userId: session.user.id,
-    //     r2Key: avatar.R2Key
-    //   }
-    // });
+    const normalizedLogging = new NormalizedLogging(db);
+    const { ipAddress, userAgent } = extractRequestContext(request);
+    await normalizedLogging.logMediaOperations({
+      userEmail: session.user.email || 'unknown',
+      tenantId: 'unknown',
+      activityType: 'view_avatar',
+      accessType: 'read',
+      targetId: id,
+      targetName: avatar.R2Key as string,
+      ipAddress,
+      userAgent,
+      metadata: {
+        avatarId: id,
+        userId: session.user.id,
+        r2Key: avatar.R2Key
+      }
+    });
 
     // Create a new ReadableStream from the R2 object's body
     const stream = object.body;

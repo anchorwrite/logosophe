@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { NormalizedLogging, extractRequestContext } from '@/lib/normalized-logging';
 import { SystemLogs } from '@/lib/system-logs';
 import { getDB } from '@/lib/request-context';
 import { isSystemAdmin } from '@/lib/access';
@@ -19,6 +20,7 @@ export async function POST() {
     }
 
     try {
+        const normalizedLogging = new NormalizedLogging(db);
         const systemLogs = new SystemLogs(db);
         
         // Get the retention settings
@@ -53,11 +55,13 @@ export async function POST() {
         const hardDeleteResult = await systemLogs.hardDeleteArchivedLogs(hardDeleteDelay);
         
         // Log this manual operation
-        await systemLogs.logActivity({
-            userId: session.user.email,
-            email: session.user.email,
-            provider: 'credentials',
+        await normalizedLogging.logSystemOperations({
+            userEmail: session.user.email,
+            tenantId: 'system',
             activityType: 'manual_log_archive',
+            accessType: 'admin',
+            targetId: 'log-archive',
+            targetName: 'Manual Log Archive',
             metadata: {
                 retentionDays,
                 archiveResult,

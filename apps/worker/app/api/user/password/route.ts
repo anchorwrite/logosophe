@@ -3,7 +3,7 @@ import { auth } from '@/auth';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { D1Database } from '@cloudflare/workers-types';
 import bcrypt from 'bcryptjs';
-import { SystemLogs } from '@/lib/system-logs';
+import { NormalizedLogging, extractRequestContext } from '@/lib/normalized-logging';
 import { isSystemAdmin } from '@/lib/access';
 
 
@@ -72,16 +72,17 @@ export async function PUT(request: Request) {
     `).bind(hashedPassword, session.user.email).run();
 
     // Log the activity with all required fields
-    const systemLogs = new SystemLogs(db);
-    await systemLogs.createLog({
-                  logType: 'authentication',
-      timestamp: new Date().toISOString(),
+    const normalizedLogging = new NormalizedLogging(db);
+    const { ipAddress, userAgent } = extractRequestContext(request);
+    await normalizedLogging.logAuthentication({
       userEmail: session.user.email,
-      accessType: 'CHANGE_PASSWORD',
+      tenantId: 'system',
+      activityType: 'change_password',
+      accessType: 'write',
       targetId: session.user.email,
       targetName: 'User Password',
-      ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,
-      userAgent: request.headers.get('user-agent') || undefined,
+      ipAddress,
+      userAgent,
       metadata: { 
         email: session.user.email,
         role: user.Role

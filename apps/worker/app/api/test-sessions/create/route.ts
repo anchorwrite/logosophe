@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { isSystemAdmin } from '@/lib/access';
-import { SystemLogs } from '@/lib/system-logs';
+import { NormalizedLogging, extractRequestContext } from '@/lib/normalized-logging';
 import { headers } from 'next/headers';
 
 
@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
 
     const { env } = await getCloudflareContext({async: true});
     const db = env.DB;
-    const systemLogs = new SystemLogs(db);
+    const normalizedLogging = new NormalizedLogging(db);
 
     // Check if user is system admin
     const isAdmin = await isSystemAdmin(session.user.email, db);
@@ -78,15 +78,16 @@ export async function POST(request: NextRequest) {
     }
 
     // Log the session creation
-    await systemLogs.createLog({
-      logType: 'test_session',
-      timestamp: new Date().toISOString(),
+    const { ipAddress: extractedIp, userAgent: extractedUa } = extractRequestContext(request);
+    await normalizedLogging.logTestOperations({
       userEmail: session.user.email,
-              activityType: 'create_test_session',
+      tenantId: 'system',
+      activityType: 'create_test_session',
+      accessType: 'write',
       targetId: sessionToken,
       targetName: testUserEmail,
-      ipAddress,
-      userAgent,
+      ipAddress: extractedIp,
+      userAgent: extractedUa,
       metadata: {
         testUserEmail,
         sessionToken,

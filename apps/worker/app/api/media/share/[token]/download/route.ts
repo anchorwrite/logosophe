@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
-import { SystemLogs } from '@/lib/system-logs';
+import { NormalizedLogging, extractRequestContext } from '@/lib/normalized-logging';
 
 
 interface ShareLink {
@@ -97,16 +97,18 @@ export async function GET(
       'UPDATE MediaShareLinks SET AccessCount = AccessCount + 1 WHERE Id = ?'
     ).bind(shareLink.Id).run();
 
-    // Log the access using SystemLogs
-    const systemLogs = new SystemLogs(db);
-    await systemLogs.logMediaAccess({
+    // Log the access using NormalizedLogging
+    const normalizedLogging = new NormalizedLogging(db);
+    const { ipAddress, userAgent } = extractRequestContext(request);
+    await normalizedLogging.logMediaOperations({
       userEmail: 'shared_access',
       tenantId: shareLink.TenantId,
+      activityType: 'download_shared_file',
       accessType: 'download',
       targetId: media.Id,
       targetName: media.FileName,
-      ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,
-      userAgent: request.headers.get('user-agent') || undefined,
+      ipAddress,
+      userAgent,
       metadata: {
         shareToken: token,
         contentType: media.ContentType,

@@ -3,7 +3,7 @@ import { checkAccess } from '@/lib/access-control';
 import { isSystemAdmin } from '@/lib/access';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { getWorkflowHistoryLogger } from '@/lib/workflow-history';
-import { SystemLogs } from '@/lib/system-logs';
+import { NormalizedLogging, extractRequestContext } from '@/lib/normalized-logging';
 
 export async function POST(request: NextRequest) {
   try {
@@ -86,15 +86,17 @@ export async function POST(request: NextRequest) {
         results.successful.push(workflowId);
 
         // Log to system logs
-        const systemLogs = new SystemLogs(db);
-        await systemLogs.logUserOperation({
+        const normalizedLogging = new NormalizedLogging(db);
+        const { ipAddress, userAgent } = extractRequestContext(request);
+        await normalizedLogging.logWorkflowOperations({
           userEmail: access.email,
           tenantId: workflowData.TenantId as string,
           activityType: 'workflow_permanently_deleted',
+          accessType: 'delete',
           targetId: workflowId,
           targetName: workflowData.Title as string,
-          ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('cf-connecting-ip') || 'unknown',
-          userAgent: request.headers.get('user-agent') || 'unknown',
+          ipAddress,
+          userAgent,
           metadata: {
             action: 'bulk_hard_delete',
             originalStatus: workflowData.Status as string,

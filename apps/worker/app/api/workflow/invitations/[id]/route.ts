@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { checkAccess } from '@/lib/access-control';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
-import { SystemLogs } from '@/lib/system-logs';
+import { NormalizedLogging, extractRequestContext } from '@/lib/normalized-logging';
 
 export async function PUT(
   request: NextRequest,
@@ -32,7 +32,7 @@ export async function PUT(
     // Get database context
     const { env } = await getCloudflareContext({async: true});
     const db = env.DB;
-    const systemLogs = new SystemLogs(db);
+    const normalizedLogging = new NormalizedLogging(db);
 
     // Get invitation details
     const invitationQuery = `
@@ -82,14 +82,16 @@ export async function PUT(
       `).bind(updatedAt, invitationId).run();
 
       // Log acceptance
-      await systemLogs.logUserOperation({
+      const { ipAddress, userAgent } = extractRequestContext(request);
+      await normalizedLogging.logWorkflowOperations({
         userEmail: access.email,
         activityType: 'workflow_invite_accept',
+        accessType: 'write',
         targetId: invitation.WorkflowId,
         targetName: `workflow_${invitation.WorkflowId}`,
         tenantId: invitation.TenantId,
-        ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,
-        userAgent: request.headers.get('user-agent') || undefined,
+        ipAddress,
+        userAgent,
         metadata: { 
           invitationId,
           role: invitation.Role,
@@ -111,14 +113,16 @@ export async function PUT(
       `).bind(updatedAt, invitationId).run();
 
       // Log rejection
-      await systemLogs.logUserOperation({
+      const { ipAddress, userAgent } = extractRequestContext(request);
+      await normalizedLogging.logWorkflowOperations({
         userEmail: access.email,
         activityType: 'workflow_invite_reject',
+        accessType: 'write',
         targetId: invitation.WorkflowId,
         targetName: `workflow_${invitation.WorkflowId}`,
         tenantId: invitation.TenantId,
-        ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,
-        userAgent: request.headers.get('user-agent') || undefined,
+        ipAddress,
+        userAgent,
         metadata: { 
           invitationId,
           role: invitation.Role,
@@ -158,7 +162,7 @@ export async function DELETE(
     // Get database context
     const { env } = await getCloudflareContext({async: true});
     const db = env.DB;
-    const systemLogs = new SystemLogs(db);
+    const normalizedLogging = new NormalizedLogging(db);
 
     // Get invitation details
     const invitationQuery = `
@@ -192,14 +196,16 @@ export async function DELETE(
     `).bind(invitationId).run();
 
     // Log deletion
-    await systemLogs.logUserOperation({
+    const { ipAddress, userAgent } = extractRequestContext(request);
+    await normalizedLogging.logWorkflowOperations({
       userEmail: access.email,
-              activityType: 'workflow_invite_delete',
+      activityType: 'workflow_invite_delete',
+      accessType: 'delete',
       targetId: invitationData.WorkflowId,
       targetName: `workflow_${invitationData.WorkflowId}`,
       tenantId: invitationData.TenantId,
-      ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,
-      userAgent: request.headers.get('user-agent') || undefined,
+      ipAddress,
+      userAgent,
       metadata: { 
         invitationId,
         inviteeEmail: invitationData.InviteeEmail,
