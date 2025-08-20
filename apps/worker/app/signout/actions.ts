@@ -1,7 +1,7 @@
 'use server'
 
 import { signOut, auth } from '@/auth'
-import { SystemLogs } from '@/lib/system-logs'
+import { NormalizedLogging } from '@/lib/normalized-logging'
 import { headers } from 'next/headers'
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 
@@ -70,13 +70,17 @@ export async function handleSignOut(redirectTo?: string) {
           const endTime = new Date();
           const sessionDuration = Math.round((endTime.getTime() - sessionStartTime.getTime()) / 1000); // Duration in seconds
 
-          // Log the signout action using SystemLogs
-          const systemLogs = new SystemLogs(db);
-          const logData = {
+          // Log the signout action using NormalizedLogging
+          const normalizedLogging = new NormalizedLogging(db);
+          
+          await normalizedLogging.logAuthentication({
+            userEmail: userEmail,
             userId: session.user.id,
-            email: userEmail,
             provider,
-            activityType: 'signout' as const,
+            activityType: 'signout',
+            accessType: 'auth',
+            targetId: userEmail,
+            targetName: `${userEmail} (${provider})`,
             ipAddress: headersList.get('x-forwarded-for') || headersList.get('x-real-ip') || 'unknown',
             userAgent: headersList.get('user-agent') || 'unknown',
             metadata: {
@@ -84,9 +88,7 @@ export async function handleSignOut(redirectTo?: string) {
               sessionStartTime: sessionStartTime.toISOString(),
               sessionEndTime: endTime.toISOString()
             }
-          };
-          
-          await systemLogs.logAuth(logData);
+          });
         }
       } catch (error) {
         // If logging fails, just log the error but don't fail the sign-out

@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { isSystemAdmin } from '@/lib/access';
 import { checkAccess } from '@/lib/access-control';
-import { SystemLogs } from '@/lib/system-logs';
+import { NormalizedLogging } from '@/lib/normalized-logging';
 import UserManagement from '@/components/UserManagement';
 import { Box, Container } from '@radix-ui/themes';
 
@@ -26,7 +26,7 @@ export default async function UserManagementPage() {
 
   const { env } = await getCloudflareContext({async: true});
   const db = env.DB;
-  const systemLogs = new SystemLogs(db);
+  const normalizedLogging = new NormalizedLogging(db);
 
   // Check if user is system admin or tenant admin
   const isAdmin = await isSystemAdmin(session.user.email, db);
@@ -36,11 +36,14 @@ export default async function UserManagementPage() {
   
   if (!isAdmin && !isTenantAdmin) {
     // Log unauthorized access attempt
-    await systemLogs.logAuth({
+    await normalizedLogging.logAuthentication({
+      userEmail: session.user.email,
       userId: session.user.id || session.user.email,
-      email: session.user.email,
       provider: 'credentials',
       activityType: 'unauthorized_user_management_access',
+      accessType: 'auth',
+      targetId: session.user.email,
+      targetName: `Unauthorized User Management Access (${session.user.email})`,
       ipAddress: 'unknown',
       userAgent: 'unknown',
       metadata: { attemptedAccess: 'user-management' }
@@ -50,11 +53,14 @@ export default async function UserManagementPage() {
   }
 
   // Log successful access
-  await systemLogs.logAuth({
+  await normalizedLogging.logAuthentication({
+    userEmail: session.user.email,
     userId: session.user.id || session.user.email,
-    email: session.user.email,
     provider: 'credentials',
     activityType: 'access_user_management',
+    accessType: 'auth',
+    targetId: session.user.email,
+    targetName: `User Management Access (${session.user.email})`,
     ipAddress: 'unknown',
     userAgent: 'unknown'
   });

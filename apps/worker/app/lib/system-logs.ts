@@ -252,7 +252,7 @@ export class SystemLogs {
         metadata?: Record<string, any>;
     }): Promise<number> {
         return this.createLog({
-            logType: 'auth',
+            logType: 'authentication',
             timestamp: new Date().toISOString(),
             userId: data.userId,
             userEmail: data.email,

@@ -73,37 +73,16 @@ export async function POST() {
             ...csvRows.map(row => row.map(field => `"${field}"`).join(','))
         ].join('\n');
 
-        // Convert to Uint8Array for compression
-        const encoder = new TextEncoder();
-        const csvBytes = encoder.encode(csvContent);
-
-        // Simple compression using gzip (Cloudflare Workers support)
-        // Note: This is a basic implementation. For production, you might want to use a proper gzip library
-        const compressed = await compressData(csvBytes);
-
-        // Return compressed CSV with appropriate headers
-        return new Response(compressed as BodyInit, {
+        // Return uncompressed CSV with appropriate headers
+        return new Response(csvContent, {
             headers: {
                 'Content-Type': 'text/csv',
-                'Content-Disposition': `attachment; filename="archived-logs-${new Date().toISOString().split('T')[0]}.csv.gz"`,
-                'Content-Encoding': 'gzip',
-                'Content-Length': compressed.length.toString()
+                'Content-Disposition': `attachment; filename="archived-logs-${new Date().toISOString().split('T')[0]}.csv"`,
+                'Content-Length': csvContent.length.toString()
             }
         });
     } catch (error) {
         console.error('Error exporting archived logs:', error);
         return new Response('Internal Server Error', { status: 500 });
     }
-}
-
-// Basic compression function (simplified for demo)
-// In production, you'd want to use a proper gzip library
-async function compressData(data: Uint8Array): Promise<Uint8Array> {
-    // For now, return the data as-is since proper gzip compression requires additional libraries
-    // In a real implementation, you'd use something like:
-    // return await gzip(data);
-    
-    // This is a placeholder - you'll need to implement proper compression
-    // or use a library that's compatible with Cloudflare Workers
-    return data;
 }

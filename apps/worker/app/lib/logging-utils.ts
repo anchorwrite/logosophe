@@ -139,7 +139,7 @@ export async function logAuthEvent(
     }
 ): Promise<number | null> {
     return logApiOperation(db, {
-        logType: 'auth',
+        logType: 'authentication',
         userEmail: event.userEmail,
         activityType: event.activityType,
         targetId: event.targetId || 'auth',
