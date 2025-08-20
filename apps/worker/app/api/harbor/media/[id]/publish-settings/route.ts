@@ -3,7 +3,7 @@ import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { auth } from '@/auth';
 import { checkAccess } from '@/lib/access-control';
 import { isSystemAdmin, isTenantAdminFor, hasPermission } from '@/lib/access';
-import { SystemLogs } from '@/lib/system-logs';
+import { NormalizedLogging, extractRequestContext } from '@/lib/normalized-logging';
 import { createMediaMetadata, MediaProtectionMetadata } from '@/lib/media-metadata';
 
 
@@ -23,7 +23,7 @@ export async function PUT(
 
     const { env } = await getCloudflareContext({async: true});
     const db = env.DB;
-    const systemLogs = new SystemLogs(db);
+    const normalizedLogging = new NormalizedLogging(db);
 
     // Check if user has protection management permission
     const canManageProtection = await hasPermission(access.email, 'default', 'content', 'manage_protection');
@@ -31,13 +31,16 @@ export async function PUT(
     const isTenantAdmin = await isTenantAdminFor(access.email, 'default');
 
     if (!canManageProtection && !isAdmin && !isTenantAdmin) {
-      await systemLogs.createLog({
-        logType: 'activity',
-        timestamp: new Date().toISOString(),
+      const { ipAddress, userAgent } = extractRequestContext(request);
+      await normalizedLogging.logMediaOperations({
         userEmail: access.email,
+        tenantId: 'default',
         activityType: 'unauthorized_protection_settings_attempt',
+        accessType: 'admin',
         targetId: id,
         targetName: `Media file ${id}`,
+        ipAddress,
+        userAgent,
         metadata: { action: 'update_protection_settings', mediaId: id }
       });
 
@@ -93,13 +96,16 @@ export async function PUT(
       publishedContentId: publishedContent.Id
     }, 'update_protection_settings', id);
 
-    await systemLogs.createLog({
-      logType: 'activity',
-      timestamp: now,
+    const { ipAddress, userAgent } = extractRequestContext(request);
+    await normalizedLogging.logMediaOperations({
       userEmail: access.email,
-              activityType: 'protection_settings_updated',
+      tenantId: 'default',
+      activityType: 'protection_settings_updated',
+      accessType: 'write',
       targetId: id,
       targetName: publishedContent.FileName,
+      ipAddress,
+      userAgent,
       metadata: protectionMetadata
     });
 

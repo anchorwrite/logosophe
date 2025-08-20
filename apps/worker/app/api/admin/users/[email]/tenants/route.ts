@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { isSystemAdmin } from '@/lib/access';
-import { SystemLogs } from '@/lib/system-logs';
+import { NormalizedLogging, extractRequestContext } from '@/lib/normalized-logging';
 import { D1Database } from '@cloudflare/workers-types';
 import type { Session } from 'next-auth';
 
@@ -175,12 +175,17 @@ export async function PUT(
     }
 
     // Log the activity
-    const systemLogs = new SystemLogs(db);
-    await systemLogs.createLog({
-      logType: 'activity',
-      timestamp: new Date().toISOString(),
+    const normalizedLogging = new NormalizedLogging(db);
+    const { ipAddress, userAgent } = extractRequestContext(request);
+    await normalizedLogging.logUserManagement({
       userEmail: session.user.email || '',
-              activityType: 'update_tenant_assignments',
+      tenantId: 'system',
+      activityType: 'update_tenant_assignments',
+      accessType: 'admin',
+      targetId: email,
+      targetName: `Admin User ${email}`,
+      ipAddress,
+      userAgent,
       metadata: { 
         targetEmail: email, 
         addedTenants: tenantsToAdd,

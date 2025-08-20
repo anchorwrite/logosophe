@@ -4,7 +4,7 @@ import { auth } from '@/auth';
 import { isSystemAdmin, isTenantAdminFor } from '@/lib/access';
 import { getDB } from '@/lib/request-context';
 import { v4 as uuid } from 'uuid';
-import { SystemLogs } from '@/lib/system-logs';
+import { NormalizedLogging, extractRequestContext } from '@/lib/normalized-logging';
 
 
 interface TenantUserRequest {
@@ -80,7 +80,7 @@ export async function POST(
     }
 
     const db = await getDB();
-    const systemLogs = new SystemLogs(db);
+    const normalizedLogging = new NormalizedLogging(db);
 
     // Check if user is a system admin
     const isAdmin = await isSystemAdmin(session.user.email, db);
@@ -139,14 +139,16 @@ export async function POST(
       }
 
       // Log first-time tenant user addition
-      await systemLogs.logUserOperation({
+      const { ipAddress, userAgent } = extractRequestContext(request);
+      await normalizedLogging.logUserManagement({
         userEmail: session.user.email,
+        tenantId: id,
         activityType: 'tenant_add_user',
+        accessType: 'write',
         targetId: Email,
         targetName: Email,
-        tenantId: id,
-        ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,
-        userAgent: request.headers.get('user-agent') || undefined,
+        ipAddress,
+        userAgent,
         metadata: { action: 'add_user_to_tenant' }
       });
 
@@ -210,14 +212,16 @@ export async function POST(
     const roleName = (roleNameResult?.Name as string) || 'unknown';
 
     // Log role addition
-    await systemLogs.logUserOperation({
+    const { ipAddress, userAgent } = extractRequestContext(request);
+    await normalizedLogging.logUserManagement({
       userEmail: session.user.email,
-              activityType: 'add_role',
+      tenantId: id,
+      activityType: 'add_role',
+      accessType: 'write',
       targetId: Email,
       targetName: `${Email}_${roleName.toLowerCase().replace(/\s+/g, '_')}`,
-      tenantId: id,
-      ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,
-      userAgent: request.headers.get('user-agent') || undefined,
+      ipAddress,
+      userAgent,
       metadata: { role: roleName }
     });
 

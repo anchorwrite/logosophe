@@ -2,14 +2,14 @@
  * Standardized logging utilities for consistent error handling and logging patterns
  */
 
-import { SystemLogs } from './system-logs';
+import { NormalizedLogging } from './normalized-logging';
 
 /**
  * Wrapper function that safely executes logging operations
  * If logging fails, it logs the error to console but doesn't break the main operation
  */
 export async function safeLog(
-    logOperation: () => Promise<number>,
+    logOperation: () => Promise<number | null>,
     operationName: string,
     fallbackMetadata?: Record<string, any>
 ): Promise<number | null> {
@@ -24,15 +24,17 @@ export async function safeLog(
                 const { getCloudflareContext } = await import('@opennextjs/cloudflare');
                 const context = await getCloudflareContext({ async: true });
                 const db = context.env.DB;
-                const systemLogs = new SystemLogs(db);
+                const normalizedLogging = new NormalizedLogging(db);
                 
-                await systemLogs.createLog({
-                    logType: 'activity',
-                    timestamp: new Date().toISOString(),
+                await normalizedLogging.logSystemOperations({
                     userEmail: fallbackMetadata.userEmail || 'system',
+                    tenantId: 'system',
                     activityType: 'logging_failure',
+                    accessType: 'admin',
                     targetId: fallbackMetadata.targetId || 'unknown',
                     targetName: fallbackMetadata.targetName || 'unknown',
+                    ipAddress: undefined,
+                    userAgent: undefined,
                     metadata: {
                         originalOperation: operationName,
                         error: error instanceof Error ? error.message : String(error),
@@ -66,22 +68,19 @@ export async function logApiOperation(
         metadata?: Record<string, any>;
     }
 ): Promise<number | null> {
-    const systemLogs = new SystemLogs(db);
+    const normalizedLogging = new NormalizedLogging(db);
     
-    return safeLog(
-        () => systemLogs.createLog({
-            logType: operation.logType,
-            timestamp: new Date().toISOString(),
+    const result = await safeLog(
+        () => normalizedLogging.logSystemOperations({
             userEmail: operation.userEmail,
-            tenantId: operation.tenantId,
-            activityType: operation.activityType,
-            accessType: operation.accessType,
+            tenantId: operation.tenantId || 'system',
+            activityType: operation.activityType || 'api_operation',
+            accessType: (operation.accessType as any) || 'admin',
             targetId: operation.targetId,
             targetName: operation.targetName,
             ipAddress: operation.ipAddress,
             userAgent: operation.userAgent,
-            metadata: operation.metadata,
-            isDeleted: false
+            metadata: operation.metadata
         }),
         `${operation.logType}_${operation.activityType || operation.accessType || 'operation'}`,
         {
@@ -91,6 +90,8 @@ export async function logApiOperation(
             logType: operation.logType
         }
     );
+    
+    return result;
 }
 
 /**
