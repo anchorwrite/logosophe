@@ -5,7 +5,7 @@ import { auth } from '@/auth';
 import { isSystemAdmin } from '@/lib/access';
 import { getDB } from '@/lib/request-context';
 import { v4 as uuidv4 } from 'uuid';
-import { SystemLogs } from '@/lib/system-logs';
+import { NormalizedLogging, extractRequestContext } from '@/lib/normalized-logging';
 
 
 interface TenantUpdateRequest {
@@ -101,15 +101,18 @@ export async function PUT(
       WHERE Id = ?
     `).bind(name, description, id).run();
 
-    // Log the activity using SystemLogs
-    const systemLogs = new SystemLogs(env.DB);
-    await systemLogs.logTenantOperation({
+    // Log the activity using NormalizedLogging
+    const normalizedLogging = new NormalizedLogging(env.DB);
+    const { ipAddress, userAgent } = extractRequestContext(request);
+    await normalizedLogging.logUserManagement({
       userEmail: session.user.email,
-              activityType: 'update_tenant',
+      tenantId: 'system',
+      activityType: 'update_tenant',
+      accessType: 'admin',
       targetId: id,
       targetName: name,
-      ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,
-      userAgent: request.headers.get('user-agent') || undefined,
+      ipAddress,
+      userAgent,
       metadata: {
         email: session.user.email,
         tenantId: id,
@@ -187,15 +190,18 @@ export async function DELETE(
       DELETE FROM Tenants WHERE Id = ?
     `).bind(id).run();
 
-    // Log the activity using SystemLogs
-    const systemLogs = new SystemLogs(env.DB);
-    await systemLogs.logTenantOperation({
+    // Log the activity using NormalizedLogging
+    const normalizedLogging = new NormalizedLogging(env.DB);
+    const { ipAddress, userAgent } = extractRequestContext(request);
+    await normalizedLogging.logUserManagement({
       userEmail: session.user.email,
-              activityType: 'delete_tenant',
+      tenantId: 'system',
+      activityType: 'delete_tenant',
+      accessType: 'admin',
       targetId: id,
       targetName: tenant.Name,
-      ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,
-      userAgent: request.headers.get('user-agent') || undefined,
+      ipAddress,
+      userAgent,
       metadata: {
         email: session.user.email,
         tenantId: id,
