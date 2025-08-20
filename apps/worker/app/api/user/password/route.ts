@@ -74,7 +74,7 @@ export async function PUT(request: Request) {
     // Log the activity with all required fields
     const systemLogs = new SystemLogs(db);
     await systemLogs.createLog({
-      logType: 'auth',
+                  logType: 'authentication',
       timestamp: new Date().toISOString(),
       userEmail: session.user.email,
       accessType: 'CHANGE_PASSWORD',

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { isSystemAdmin, isTenantAdminFor } from '@/lib/access';
-import { SystemLogs } from '@/lib/system-logs';
+import { NormalizedLogging } from '@/lib/normalized-logging';
 
 
 interface UserInfo {
@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
 
     const { env } = await getCloudflareContext({async: true});
     const db = env.DB;
-    const systemLogs = new SystemLogs(db);
+    const normalizedLogging = new NormalizedLogging(db);
 
     // Check if user is system admin or tenant admin
     const isAdmin = await isSystemAdmin(session.user.email, db);
@@ -305,11 +305,14 @@ export async function GET(request: NextRequest) {
     });
 
     // Log the access
-    await systemLogs.logAuth({
+    await normalizedLogging.logAuthentication({
+      userEmail: session.user.email,
       userId: session.user.id || session.user.email,
-      email: session.user.email,
       provider: 'credentials',
       activityType: 'user_management_access',
+      accessType: 'auth',
+      targetId: session.user.email,
+      targetName: `User Management Access (${session.user.email})`,
       ipAddress: request.headers.get('x-forwarded-for') || 'unknown',
       userAgent: request.headers.get('user-agent') || 'unknown',
       metadata: {
