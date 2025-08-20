@@ -3,7 +3,7 @@ import { auth } from '@/auth';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { isSystemAdmin } from '@/lib/access';
 import { getUserMessagingTenants } from '@/lib/messaging';
-import { logMessagingActivity } from '@/lib/messaging';
+import { NormalizedLogging, extractRequestContext } from '@/lib/normalized-logging';
 import type { D1Result } from '@cloudflare/workers-types';
 
 interface SendMessageRequest {
@@ -130,13 +130,19 @@ export async function POST(request: NextRequest) {
     }
 
     // Log activity
-    await logMessagingActivity(
-      'SEND_MESSAGE_DASHBOARD',
-      session.user.email,
-      targetTenantId,
-      messageId.toString(),
-      `Sent ${messageType} message to ${recipients.length} recipients`
-    );
+    const { ipAddress, userAgent } = extractRequestContext(request);
+    const normalizedLogging = new NormalizedLogging(db);
+    await normalizedLogging.logMessagingOperations({
+      userEmail: session.user.email,
+      tenantId: targetTenantId,
+      activityType: 'SEND_MESSAGE_DASHBOARD',
+      accessType: 'write',
+      targetId: messageId.toString(),
+      targetName: `Sent ${messageType} message to ${recipients.length} recipients`,
+      ipAddress,
+      userAgent,
+      metadata: { messageType, priority, recipientCount: recipients.length }
+    });
 
     return NextResponse.json({
       success: true,

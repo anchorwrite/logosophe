@@ -5,9 +5,9 @@ import {
   checkRateLimit, 
   updateRateLimit, 
   canSendMessage, 
-  logMessagingActivity,
   isMessagingEnabled 
 } from '@/lib/messaging';
+import { NormalizedLogging, extractRequestContext } from '@/lib/normalized-logging';
 import { CreateMessageRequest, SendMessageResponse, GetMessagesRequest, GetMessagesResponse } from '@/types/messaging';
 
 
@@ -143,20 +143,25 @@ export async function POST(request: NextRequest) {
     await updateRateLimit(access.email);
 
     // Log the activity
-    await logMessagingActivity(
-      'SEND_MESSAGE',
-      access.email,
+    const { ipAddress, userAgent } = extractRequestContext(request);
+    const normalizedLogging = new NormalizedLogging(db);
+    await normalizedLogging.logMessagingOperations({
+      userEmail: access.email,
       tenantId,
-      messageId.toString(),
-      subject,
-      {
+      activityType: 'SEND_MESSAGE',
+      accessType: 'write',
+      targetId: messageId.toString(),
+      targetName: subject,
+      ipAddress,
+      userAgent,
+      metadata: {
         messageType,
         priority,
         recipientCount: validRecipients.length,
         attachmentCount: attachments.length,
         replyToMessageId
       }
-    );
+    });
 
     return NextResponse.json({
       success: true,

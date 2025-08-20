@@ -3,7 +3,7 @@ import { auth } from '@/auth';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { isSystemAdmin } from '@/lib/access';
 import { getUserMessagingTenants } from '@/lib/messaging';
-import { logMessagingActivity } from '@/lib/messaging';
+import { NormalizedLogging, extractRequestContext } from '@/lib/normalized-logging';
 import type { D1Result } from '@cloudflare/workers-types';
 
 type Params = Promise<{ id: string }>;
@@ -103,13 +103,18 @@ export async function GET(
     `).bind(message.SenderEmail).first() as { Name: string } | undefined;
 
     // Log access activity
-    await logMessagingActivity(
-      'VIEW_MESSAGE_DASHBOARD',
-      session.user.email,
-      message.TenantId as string,
-      messageId.toString(),
-      String(message.Subject)
-    );
+    const { ipAddress, userAgent } = extractRequestContext(request);
+    const normalizedLogging = new NormalizedLogging(db);
+    await normalizedLogging.logMessagingOperations({
+      userEmail: session.user.email,
+      tenantId: message.TenantId as string,
+      activityType: 'VIEW_MESSAGE_DASHBOARD',
+      accessType: 'read',
+      targetId: messageId.toString(),
+      targetName: String(message.Subject),
+      ipAddress,
+      userAgent
+    });
 
     return NextResponse.json({
       ...message,
@@ -169,13 +174,18 @@ export async function PUT(
       `).bind(messageId).run();
 
       // Log activity
-      await logMessagingActivity(
-        'MARK_READ_DASHBOARD',
-        session.user.email,
-        messageData?.TenantId || 'unknown',
-        messageId.toString(),
-        'Marked message as read for all recipients'
-      );
+      const { ipAddress, userAgent } = extractRequestContext(request);
+      const normalizedLogging = new NormalizedLogging(db);
+      await normalizedLogging.logMessagingOperations({
+        userEmail: session.user.email,
+        tenantId: messageData?.TenantId || 'unknown',
+        activityType: 'MARK_READ_DASHBOARD',
+        accessType: 'write',
+        targetId: messageId.toString(),
+        targetName: 'Marked message as read for all recipients',
+        ipAddress,
+        userAgent
+      });
 
       return NextResponse.json({ success: true, message: 'Message marked as read for all recipients' });
     }
@@ -189,13 +199,18 @@ export async function PUT(
       `).bind(messageId).run();
 
       // Log activity
-      await logMessagingActivity(
-        'RECALL_MESSAGE_DASHBOARD',
-        session.user.email,
-        messageData?.TenantId || 'unknown',
-        messageId.toString(),
-        'Message recalled by admin'
-      );
+      const { ipAddress, userAgent } = extractRequestContext(request);
+      const normalizedLogging = new NormalizedLogging(db);
+      await normalizedLogging.logMessagingOperations({
+        userEmail: session.user.email,
+        tenantId: messageData?.TenantId || 'unknown',
+        activityType: 'RECALL_MESSAGE_DASHBOARD',
+        accessType: 'write',
+        targetId: messageId.toString(),
+        targetName: 'Message recalled by admin',
+        ipAddress,
+        userAgent
+      });
 
       return NextResponse.json({ success: true, message: 'Message recalled successfully' });
     }
@@ -247,13 +262,18 @@ export async function DELETE(
     `).bind(messageId).first() as { TenantId: string } | undefined;
 
     // Log activity
-    await logMessagingActivity(
-      'DELETE_MESSAGE_DASHBOARD',
-      session.user.email,
-      messageData?.TenantId || 'unknown',
-      messageId.toString(),
-      'Message deleted by admin'
-    );
+    const { ipAddress, userAgent } = extractRequestContext(request);
+    const normalizedLogging = new NormalizedLogging(db);
+    await normalizedLogging.logMessagingOperations({
+      userEmail: session.user.email,
+      tenantId: messageData?.TenantId || 'unknown',
+      activityType: 'DELETE_MESSAGE_DASHBOARD',
+      accessType: 'write',
+      targetId: messageId.toString(),
+      targetName: 'Message deleted by admin',
+      ipAddress,
+      userAgent
+    });
 
     return NextResponse.json({ success: true, message: 'Message deleted successfully' });
 

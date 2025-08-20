@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { isSystemAdmin, isTenantAdminFor } from '@/lib/access';
-import { logMessagingActivity } from '@/lib/messaging';
+import { NormalizedLogging, extractRequestContext } from '@/lib/normalized-logging';
 
 // DELETE /api/messages/blocks/[id] - Delete a block by ID
 export async function DELETE(
@@ -57,13 +57,18 @@ export async function DELETE(
     `).bind(blockId).run();
 
     // Log the deletion
-    await logMessagingActivity(
-      'DELETE_BLOCK',
-      session.user.email,
-      block.TenantId,
-      block.BlockedEmail,
-      `Deleted block for ${block.BlockedEmail}`
-    );
+    const { ipAddress, userAgent } = extractRequestContext(request);
+    const normalizedLogging = new NormalizedLogging(db);
+    await normalizedLogging.logMessagingOperations({
+      userEmail: session.user.email,
+      tenantId: block.TenantId,
+      activityType: 'DELETE_BLOCK',
+      accessType: 'write',
+      targetId: block.BlockedEmail,
+      targetName: `Deleted block for ${block.BlockedEmail}`,
+      ipAddress,
+      userAgent
+    });
 
     return NextResponse.json({ success: true });
 
