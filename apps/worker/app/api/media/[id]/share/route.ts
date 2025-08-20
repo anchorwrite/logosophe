@@ -4,7 +4,7 @@ import { auth } from '@/auth';
 import { nanoid } from 'nanoid';
 import { checkAccess } from '@/lib/access-control';
 import { config } from '@/lib/config';
-import { SystemLogs } from '@/lib/system-logs';
+import { NormalizedLogging, extractRequestContext } from '@/lib/normalized-logging';
 
 
 interface ShareLinkRequest {
@@ -141,16 +141,18 @@ export async function POST(
     }
 
     // Log the share action
-    const systemLogs = new SystemLogs(db);
-    await systemLogs.logMediaShare({
-      userEmail: access.email,
-      tenantId: tenantId,
-      accessType: 'share',
-      targetId: mediaId.toString(),
-      targetName: media.FileName,
-      ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,
-      userAgent: request.headers.get('user-agent') || undefined
-    });
+    const normalizedLogging = new NormalizedLogging(db);
+    const { ipAddress, userAgent } = extractRequestContext(request);
+            await normalizedLogging.logMediaOperations({
+          userEmail: access.email,
+          tenantId: tenantId,
+          activityType: 'create_share_link',
+          accessType: 'write',
+          targetId: mediaId.toString(),
+          targetName: media.FileName,
+          ipAddress,
+          userAgent
+        });
 
     // Return the share URL
     const baseUrl = process.env.NODE_ENV === 'development' ? config.r2.publicUrl : request.nextUrl.origin;

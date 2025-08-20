@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { auth } from '@/auth';
 import { checkAccess } from '@/lib/access-control';
-import { SystemLogs } from '@/lib/system-logs';
+import { NormalizedLogging, extractRequestContext } from '@/lib/normalized-logging';
 import { isSystemAdmin } from '@/lib/access';
 
 
@@ -59,16 +59,18 @@ export async function GET(
       return new Response('Media file not found or access denied', { status: 404 });
     }
 
-    // Log the access using SystemLogs
-    const systemLogs = new SystemLogs(db);
-    await systemLogs.logMediaAccess({
+    // Log the access using NormalizedLogging
+    const normalizedLogging = new NormalizedLogging(db);
+    const { ipAddress, userAgent } = extractRequestContext(request);
+    await normalizedLogging.logMediaOperations({
       userEmail: access.email,
       tenantId: media.TenantId,
+      activityType: 'view_file',
       accessType: 'view',
       targetId: id,
       targetName: media.FileName,
-      ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,
-      userAgent: request.headers.get('user-agent') || undefined
+      ipAddress,
+      userAgent
     });
 
     return Response.json(media);
@@ -137,16 +139,18 @@ export async function DELETE(
       WHERE MediaId = ?
     `).bind(mediaId).run();
 
-    // Log the soft deletion using SystemLogs
-    const systemLogs = new SystemLogs(db);
-    await systemLogs.logMediaAccess({
+    // Log the soft deletion using NormalizedLogging
+    const normalizedLogging = new NormalizedLogging(db);
+    const { ipAddress, userAgent } = extractRequestContext(request);
+    await normalizedLogging.logMediaOperations({
       userEmail: access.email,
       tenantId: isAdmin ? 'system_admin' : access.email,
-      accessType: 'soft_delete',
+      activityType: 'delete_file',
+      accessType: 'delete',
       targetId: mediaId,
       targetName: mediaFile.FileName,
-      ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,
-      userAgent: request.headers.get('user-agent') || undefined,
+      ipAddress,
+      userAgent,
       metadata: {
         softDeleted: true,
         r2Key: mediaFile.R2Key,

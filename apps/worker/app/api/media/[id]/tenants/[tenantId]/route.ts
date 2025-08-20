@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { checkAccess } from '@/lib/access-control';
-import { SystemLogs } from '@/lib/system-logs';
+import { NormalizedLogging, extractRequestContext } from '@/lib/normalized-logging';
 
 
 type Params = Promise<{ id: string; tenantId: string }>
@@ -63,16 +63,18 @@ export async function DELETE(
       return new Response('No media access record found', { status: 404 });
     }
 
-    // Log the removal using SystemLogs
-    const systemLogs = new SystemLogs(db);
-    await systemLogs.logMediaAccess({
+    // Log the removal using NormalizedLogging
+    const normalizedLogging = new NormalizedLogging(db);
+    const { ipAddress, userAgent } = extractRequestContext(request);
+    await normalizedLogging.logMediaOperations({
       userEmail: access.email,
       tenantId,
-      accessType: 'remove_tenant',
+      activityType: 'remove_tenant_access',
+      accessType: 'delete',
       targetId: mediaId,
       targetName: mediaFile.FileName,
-      ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,
-      userAgent: request.headers.get('user-agent') || undefined
+      ipAddress,
+      userAgent
     });
 
     return new Response(null, { status: 204 });
@@ -147,17 +149,19 @@ export async function POST(
       originalMedia.R2Key
     ).run();
 
-    // Log the addition using SystemLogs
-    const systemLogs = new SystemLogs(db);
-    await systemLogs.logMediaAccess({
-      userEmail: access.email,
-      tenantId,
-      accessType: 'add_tenant',
-      targetId: mediaId,
-      targetName: originalMedia.FileName,
-      ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,
-      userAgent: request.headers.get('user-agent') || undefined
-    });
+    // Log the addition using NormalizedLogging
+    const normalizedLogging = new NormalizedLogging(db);
+    const { ipAddress, userAgent } = extractRequestContext(request);
+            await normalizedLogging.logMediaOperations({
+          userEmail: access.email,
+          tenantId,
+          activityType: 'add_tenant_access',
+          accessType: 'write',
+          targetId: mediaId,
+          targetName: originalMedia.FileName,
+          ipAddress,
+          userAgent
+        });
 
     return new Response(null, { status: 201 });
   } catch (error) {
