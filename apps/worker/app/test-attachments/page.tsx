@@ -76,7 +76,7 @@ export default function TestAttachmentsPage() {
               { Email: 'user2@example.com', Name: 'User 2', TenantId: 'test-tenant', TenantName: 'Test Tenant', RoleId: 'subscriber', IsOnline: false, IsBlocked: false },
               { Email: 'user3@example.com', Name: 'User 3', TenantId: 'test-tenant', TenantName: 'Test Tenant', RoleId: 'subscriber', IsOnline: false, IsBlocked: false }
             ]}
-            roles={[{ RoleId: 'subscriber', UserCount: 3 }]}
+            roles={[{ TenantId: 'test-tenant', RoleId: 'subscriber', UserCount: 3 }]}
             onSend={handleComposerSend}
             onCancel={() => console.log('Composer cancelled')}
             maxRecipients={5}

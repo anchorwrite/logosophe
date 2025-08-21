@@ -5,9 +5,9 @@ import { Box, Button, Flex, Heading, Text, TextField, TextArea, Badge } from '@r
 import { useTranslation } from 'react-i18next';
 import { FileAttachmentManager } from './FileAttachmentManager';
 import { MessageLinkSharing } from './MessageLinkSharing';
-// import { TenantSelector } from './TenantSelector';
-// import { RoleSelector } from './RoleSelector';
-// import { IndividualRecipientSelector } from './IndividualRecipientSelector';
+import { TenantSelector } from './TenantSelector';
+import { RoleSelector } from './RoleSelector';
+import { IndividualRecipientSelector } from './IndividualRecipientSelector';
 import { CreateAttachmentRequest } from '@/types/messaging';
 
 interface UserTenant {
@@ -17,6 +17,7 @@ interface UserTenant {
 }
 
 interface Role {
+  TenantId: string;
   RoleId: string;
   UserCount: number;
 }
@@ -100,27 +101,27 @@ export const UnifiedMessageComposer: React.FC<UnifiedMessageComposerProps> = ({
 
   const handleSend = useCallback(() => {
     if (!subject.trim()) {
-      setError(t('messaging.subjectRequired'));
+      setError('Subject is required');
       return;
     }
 
     if (!body.trim() && selectedAttachments.length === 0 && selectedLinks.length === 0) {
-      setError(t('messaging.messageBodyRequired'));
+      setError('Message body, attachments, or links are required');
       return;
     }
 
     if (selectedTenants.length === 0) {
-      setError(t('messaging.tenantRequired'));
+      setError('At least one tenant must be selected');
       return;
     }
 
     if (selectedRoles.length === 0 && selectedIndividualRecipients.length === 0) {
-      setError(t('messaging.recipientRequired'));
+      setError('At least one recipient is required');
       return;
     }
 
     if (totalRecipients > maxRecipients) {
-      setError(t('messaging.maxRecipientsExceeded').replace('{max}', maxRecipients.toString()));
+      setError(`Maximum ${maxRecipients} recipients allowed`);
       return;
     }
 
@@ -147,16 +148,40 @@ export const UnifiedMessageComposer: React.FC<UnifiedMessageComposerProps> = ({
   return (
     <Box style={{ padding: '1.5rem', border: '1px solid var(--gray-6)', borderRadius: 'var(--radius-3)' }}>
       <Heading size="4" style={{ marginBottom: '1.5rem' }}>
-        {t('messaging.composeMessage')}
+        Compose Message
       </Heading>
 
       {/* Tenant Selection */}
       <Box style={{ marginBottom: '2rem' }}>
-        <Heading size="3" style={{ marginBottom: '1rem' }}>
-          Select Tenants (Simplified)
-        </Heading>
-        <Text>Role-based messaging components will be added here.</Text>
+        <TenantSelector
+          userTenants={userTenants}
+          selectedTenants={selectedTenants}
+          onTenantChange={setSelectedTenants}
+        />
       </Box>
+
+      {/* Role Selection */}
+      {selectedTenants.length > 0 && (
+        <Box style={{ marginBottom: '2rem' }}>
+          <RoleSelector
+            roles={roles}
+            recipients={recipients}
+            selectedRoles={selectedRoles}
+            onRoleChange={setSelectedRoles}
+          />
+        </Box>
+      )}
+
+      {/* Individual Recipient Selection */}
+      {selectedTenants.length > 0 && (
+        <Box style={{ marginBottom: '2rem' }}>
+          <IndividualRecipientSelector
+            recipients={recipients.filter(r => selectedTenants.includes(r.TenantId))}
+            selectedRecipients={selectedIndividualRecipients}
+            onRecipientChange={setSelectedIndividualRecipients}
+          />
+        </Box>
+      )}
 
       {/* Recipient Summary */}
       {totalRecipients > 0 && (
@@ -167,10 +192,10 @@ export const UnifiedMessageComposer: React.FC<UnifiedMessageComposerProps> = ({
           borderRadius: 'var(--radius-2)' 
         }}>
           <Text weight="bold" size="3">
-            {t('messaging.totalRecipients')}: {totalRecipients} {t('messaging.users')}
+            Total Recipients: {totalRecipients} users
           </Text>
           <Text size="2" color="gray" style={{ display: 'block', marginTop: '0.25rem' }}>
-            {t('messaging.acrossTenants')} {selectedTenants.length} {t('messaging.tenant')}(s)
+            across {selectedTenants.length} tenant(s)
           </Text>
         </Box>
       )}
@@ -178,25 +203,25 @@ export const UnifiedMessageComposer: React.FC<UnifiedMessageComposerProps> = ({
       {/* Message Composition Fields */}
       <Box style={{ marginBottom: '1.5rem' }}>
         <Text weight="bold" style={{ marginBottom: '0.5rem', display: 'block' }}>
-          {t('messaging.subject')} *
+          Subject *
         </Text>
         <TextField.Root style={{ width: '100%' }}>
           <TextField.Input
             value={subject}
             onChange={(e) => setSubject(e.target.value)}
-            placeholder={t('messaging.subjectPlaceholder')}
+            placeholder="Enter message subject"
           />
         </TextField.Root>
       </Box>
 
       <Box style={{ marginBottom: '1.5rem' }}>
         <Text weight="bold" style={{ marginBottom: '0.5rem', display: 'block' }}>
-          {t('messaging.message')} *
+          Message *
         </Text>
         <TextArea
           value={body}
           onChange={(e) => setBody(e.target.value)}
-          placeholder={t('messaging.messagePlaceholder')}
+          placeholder="Enter your message"
           style={{ width: '100%', minHeight: '120px' }}
         />
       </Box>
@@ -236,13 +261,13 @@ export const UnifiedMessageComposer: React.FC<UnifiedMessageComposerProps> = ({
       {/* Action Buttons */}
       <Flex gap="2" justify="end">
         <Button variant="soft" onClick={handleCancel}>
-          {t('messaging.cancel')}
+          Cancel
         </Button>
         <Button 
           onClick={handleSend} 
           disabled={isSending || totalRecipients === 0}
         >
-          {isSending ? t('messaging.sending') : t('messaging.sendMessage')}
+          {isSending ? 'Sending...' : 'Send Message'}
         </Button>
       </Flex>
     </Box>

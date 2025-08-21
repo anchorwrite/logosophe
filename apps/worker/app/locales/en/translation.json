@@ -848,7 +848,25 @@
     "pleaseEnterUrl": "Please enter a URL",
     "maximumLinksAllowed": "Maximum {max} links allowed",
     "pleaseEnterValidUrl": "Please enter a valid URL",
-    "failedToProcessLink": "Failed to process link"
+    "failedToProcessLink": "Failed to process link",
+    "selectTenants": "Select Tenants",
+    "selectAllTenants": "Select All Tenants",
+    "selectRoles": "Select Roles",
+    "selectAllRoles": "Select All Roles",
+    "clearAllRoles": "Clear All Roles",
+    "selectIndividualRecipients": "Select Individual Recipients",
+    "selectAllRecipients": "Select All Recipients",
+    "clearAllRecipients": "Clear All Recipients",
+    "tenantRequired": "At least one tenant must be selected",
+    "totalRecipients": "Total Recipients",
+    "users": "users",
+    "acrossTenants": "across",
+    "tenant": "tenant",
+    "cancel": "Cancel",
+    "sendMessage": "Send Message",
+    "blocked": "Blocked",
+    "recipientRequired": "At least one recipient is required",
+    "maxRecipientsExceeded": "Maximum {max} recipients allowed"
   },
 
   "preferences": {

@@ -57,53 +57,52 @@ export default async function SubscriberMessagingPage({ params }: { params: Prom
     redirect(`/${lang}/harbor`);
   }
 
-  // Get user's tenant information
-  const userTenantQuery = `
+  // Get user's tenant information (all tenants)
+  const userTenantsQuery = `
     SELECT tu.TenantId, tu.RoleId, t.Name as TenantName
     FROM TenantUsers tu
     LEFT JOIN Tenants t ON tu.TenantId = t.Id
     WHERE tu.Email = ?
+    UNION ALL
+    SELECT ur.TenantId, ur.RoleId, t.Name as TenantName
+    FROM UserRoles ur
+    LEFT JOIN Tenants t ON ur.TenantId = t.Id
+    WHERE ur.Email = ? AND ur.RoleId = 'subscriber'
   `;
 
-  const userTenantResult = await db.prepare(userTenantQuery)
-    .bind(session.user.email)
-    .first() as any;
+  const userTenantsResult = await db.prepare(userTenantsQuery)
+    .bind(session.user.email, session.user.email)
+    .all() as any;
 
-  console.log('Messaging page - User tenant result from TenantUsers:', userTenantResult);
+  console.log('Messaging page - User tenants result:', userTenantsResult);
 
-  let userTenantId: string;
-  let userTenantName: string;
-
-  if (userTenantResult?.TenantId) {
-    // User found in TenantUsers table
-    userTenantId = userTenantResult.TenantId;
-    userTenantName = userTenantResult.TenantName || userTenantId;
-  } else {
-    // Check UserRoles table for subscriber role
-    const userRoleQuery = `
-      SELECT ur.TenantId, t.Name as TenantName
-      FROM UserRoles ur
-      LEFT JOIN Tenants t ON ur.TenantId = t.Id
-      WHERE ur.Email = ? AND ur.RoleId = 'subscriber'
-    `;
-    
-    const userRoleResult = await db.prepare(userRoleQuery)
-      .bind(session.user.email)
-      .first() as any;
-    
-    console.log('Messaging page - User tenant result from UserRoles:', userRoleResult);
-    
-    if (userRoleResult?.TenantId) {
-      userTenantId = userRoleResult.TenantId;
-      userTenantName = userRoleResult.TenantName || userTenantId;
-    } else {
-      console.log('Messaging page - No tenant found in either table, redirecting to harbor');
-      redirect(`/${lang}/harbor`);
-    }
+  if (!userTenantsResult?.results || userTenantsResult.results.length === 0) {
+    console.log('Messaging page - No tenant found in either table, redirecting to harbor');
+    redirect(`/${lang}/harbor`);
   }
 
-  console.log('Messaging page - Final userTenantId:', userTenantId);
-  console.log('Messaging page - Final userTenantName:', userTenantName);
+  // Remove duplicates and organize by tenant
+  const tenantMap = new Map();
+  userTenantsResult.results.forEach((tenant: any) => {
+    if (!tenantMap.has(tenant.TenantId)) {
+      tenantMap.set(tenant.TenantId, {
+        TenantId: tenant.TenantId,
+        TenantName: tenant.TenantName || tenant.TenantId,
+        UserRoles: []
+      });
+    }
+    tenantMap.get(tenant.TenantId).UserRoles.push(tenant.RoleId);
+  });
+
+  const userTenants = Array.from(tenantMap.values());
+  
+  // Use the first tenant as the primary tenant for backward compatibility
+  const userTenantId = userTenants[0].TenantId;
+  const userTenantName = userTenants[0].TenantName;
+
+  console.log('Messaging page - Final userTenants:', userTenants);
+  console.log('Messaging page - Primary userTenantId:', userTenantId);
+  console.log('Messaging page - Primary userTenantName:', userTenantName);
 
   // Log access
   await normalizedLogging.logMessagingOperations({
@@ -207,34 +206,70 @@ export default async function SubscriberMessagingPage({ params }: { params: Prom
     activeConversations: activeConversationsCount
   };
 
-  // Get available recipients within the same tenant
+  // Get available recipients across all user's tenants (all roles)
   const recipientsQuery = `
     SELECT 
-      tu.Email,
-      s.Name,
-      tu.TenantId,
+      tu.Email as Email,
+      s.Name as Name,
+      tu.TenantId as TenantId,
       t.Name as TenantName,
-      tu.RoleId,
+      tu.RoleId as RoleId,
       FALSE as IsOnline,
       CASE WHEN ub.BlockedEmail IS NOT NULL THEN 1 ELSE 0 END as IsBlocked,
       ub.BlockerEmail
     FROM TenantUsers tu
     LEFT JOIN Subscribers s ON tu.Email = s.Email AND s.Active = TRUE
     LEFT JOIN Tenants t ON tu.TenantId = t.Id
-    LEFT JOIN UserRoles ur ON tu.Email = ur.Email AND tu.TenantId = ur.TenantId
     LEFT JOIN UserBlocks ub ON tu.Email = ub.BlockedEmail AND tu.TenantId = ub.TenantId AND ub.IsActive = TRUE
-    WHERE tu.TenantId = ?
+    WHERE tu.TenantId IN (${userTenants.map(() => '?').join(',')})
     AND s.Active = TRUE AND s.Banned = FALSE
     AND tu.Email != ?
-    AND ur.RoleId = 'subscriber'
-    ORDER BY s.Name, tu.Email
+    
+    UNION ALL
+    
+    SELECT 
+      ur.Email as Email,
+      s.Name as Name,
+      ur.TenantId as TenantId,
+      t.Name as TenantName,
+      ur.RoleId as RoleId,
+      FALSE as IsOnline,
+      CASE WHEN ub.BlockedEmail IS NOT NULL THEN 1 ELSE 0 END as IsBlocked,
+      ub.BlockerEmail
+    FROM UserRoles ur
+    LEFT JOIN Subscribers s ON ur.Email = s.Email AND s.Active = TRUE
+    LEFT JOIN Tenants t ON ur.TenantId = t.Id
+    LEFT JOIN UserBlocks ub ON ur.Email = ub.BlockedEmail AND ur.TenantId = ur.TenantId AND ub.IsActive = TRUE
+    WHERE ur.TenantId IN (${userTenants.map(() => '?').join(',')})
+    AND s.Active = TRUE AND s.Banned = FALSE
+    AND ur.Email != ?
+    AND ur.RoleId != 'user'  -- Avoid duplicate 'user' roles from UserRoles table
+    
+    ORDER BY TenantId, Name, Email
   `;
 
   const recipientsResult = await db.prepare(recipientsQuery)
-    .bind(userTenantId, session.user.email)
+    .bind(...userTenants.map(t => t.TenantId), session.user.email, ...userTenants.map(t => t.TenantId), session.user.email)
     .all() as D1Result<any>;
   
   const recipients = recipientsResult.results || [];
+
+  // Generate roles from recipients data instead of separate query
+  const roles = recipients.reduce((acc, recipient) => {
+    const existingRole = acc.find((r: { TenantId: string; RoleId: string; UserCount: number }) => r.TenantId === recipient.TenantId && r.RoleId === recipient.RoleId);
+    if (existingRole) {
+      existingRole.UserCount++;
+    } else {
+      acc.push({
+        TenantId: recipient.TenantId,
+        RoleId: recipient.RoleId,
+        UserCount: 1
+      });
+    }
+    return acc;
+  }, [] as { TenantId: string; RoleId: string; UserCount: number }[]);
+  
+  console.log('Messaging page - Roles generated from recipients:', roles);
 
   // Calculate the actual available recipient count (excluding blocked users)
   const availableRecipientsCount = recipients.filter(r => !r.IsBlocked).length;
@@ -253,9 +288,11 @@ export default async function SubscriberMessagingPage({ params }: { params: Prom
       userName={session.user.name || session.user.email}
       userTenantId={userTenantId}
       userTenantName={userTenantName}
+      userTenants={userTenants}
       recentMessages={recentMessages}
       userStats={userStats}
       recipients={recipients}
+      roles={roles}
       systemSettings={systemSettings}
       lang={lang}
     />

@@ -60,9 +60,11 @@ interface SubscriberMessagingInterfaceProps {
   userName: string;
   userTenantId: string;
   userTenantName: string;
+  userTenants: { TenantId: string; TenantName: string; UserRoles: string[] }[];
   recentMessages: RecentMessage[];
   userStats: UserStats;
   recipients: Recipient[];
+  roles: { TenantId: string; RoleId: string; UserCount: number }[];
   systemSettings: SystemSettings;
   lang: string;
 }
@@ -72,9 +74,11 @@ export function SubscriberMessagingInterface({
   userName,
   userTenantId,
   userTenantName,
+  userTenants,
   recentMessages,
   userStats,
   recipients,
+  roles,
   systemSettings,
   lang
 }: SubscriberMessagingInterfaceProps) {
@@ -739,15 +743,10 @@ export function SubscriberMessagingInterface({
         {isComposing && userTenantId && (
           <Card size="3">
             <UnifiedMessageComposer
-              userTenants={[{ TenantId: userTenantId, TenantName: userTenantName, UserRoles: ['subscriber'] }]}
+              userTenants={userTenants}
               userEmail={userEmail}
               recipients={recipients}
-              roles={recipients.reduce((acc, recipient) => {
-                if (!acc.find(r => r.RoleId === recipient.RoleId)) {
-                  acc.push({ RoleId: recipient.RoleId, UserCount: recipients.filter(r => r.RoleId === recipient.RoleId).length });
-                }
-                return acc;
-              }, [] as { RoleId: string; UserCount: number }[])}
+              roles={roles}
               onSend={async (messageData) => {
                 try {
                   const requestBody = {
@@ -756,7 +755,7 @@ export function SubscriberMessagingInterface({
                     tenants: messageData.tenants,
                     roles: messageData.roles,
                     individualRecipients: messageData.individualRecipients,
-                    messageType: 'role_based',
+                    messageType: 'direct',
                     attachments: messageData.attachments,
                     links: messageData.links
                   };
@@ -788,7 +787,7 @@ export function SubscriberMessagingInterface({
                     SenderName: userName,
                     CreatedAt: new Date().toISOString(),
                     IsRead: false,
-                    MessageType: 'role_based',
+                    MessageType: 'direct',
                     RecipientCount: result.recipients.length,
                     HasAttachments: messageData.attachments.length > 0,
                     AttachmentCount: messageData.attachments.length,

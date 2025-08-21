@@ -50,7 +50,7 @@ export const TenantSelector: React.FC<TenantSelectorProps> = ({
   return (
     <Box>
       <Heading size="3" style={{ marginBottom: '1rem' }}>
-        {t('messaging.selectTenants')}
+        Select Tenants
       </Heading>
       
       {userTenants.map(tenant => (
@@ -72,10 +72,10 @@ export const TenantSelector: React.FC<TenantSelectorProps> = ({
       
       <Flex gap="2" style={{ marginTop: '1rem' }}>
         <Button variant="soft" onClick={handleSelectAll}>
-          {t('messaging.selectAllTenants')}
+          Select All Tenants
         </Button>
         <Button variant="soft" onClick={handleClearAll}>
-          {t('messaging.clearAll')}
+          Clear All
         </Button>
       </Flex>
     </Box>
