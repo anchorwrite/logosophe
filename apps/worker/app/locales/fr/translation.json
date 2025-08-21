@@ -578,6 +578,7 @@
     "delete": "Supprimer",
     "archive": "Archiver",
     "confirmDelete": "Êtes-vous sûr de vouloir supprimer ce message ? Cette action ne peut pas être annulée.",
+    "confirmDeleteMessage": "Êtes-vous sûr de vouloir supprimer ce message ? Cette action ne peut pas être annulée.",
     "deleteError": "Erreur lors de la suppression du message",
     "messageDeleted": "Message supprimé avec succès",
     "archiveError": "Erreur lors de l'archivage du message",

@@ -575,6 +575,7 @@
     "delete": "Verwijderen",
     "archive": "Archiveren",
     "confirmDelete": "Weet je zeker dat je dit bericht wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.",
+    "confirmDeleteMessage": "Weet je zeker dat je dit bericht wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.",
     "deleteError": "Fout bij verwijderen bericht",
     "messageDeleted": "Bericht succesvol verwijderd",
     "archiveError": "Fout bij archiveren bericht",

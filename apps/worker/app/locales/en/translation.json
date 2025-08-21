@@ -810,6 +810,7 @@
     "delete": "Delete",
     "archive": "Archive",
     "confirmDelete": "Are you sure you want to delete this message? This action cannot be undone.",
+    "confirmDeleteMessage": "Are you sure you want to delete this message? This action cannot be undone.",
     "deleteError": "Error deleting message",
     "messageDeleted": "Message deleted successfully",
     "archiveError": "Error archiving message",

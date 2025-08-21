@@ -347,11 +347,21 @@ export function MediaLibrary() {
     }
   };
 
+  const [removeFromTenantDialog, setRemoveFromTenantDialog] = useState<{ isOpen: boolean; file: MediaFile | null }>({
+    isOpen: false,
+    file: null
+  });
+
   const handleRemoveFromTenant = async (file: MediaFile) => {
-    if (!confirm(`Are you sure you want to remove this file from tenant ${file.TenantId}?`)) return;
+    setRemoveFromTenantDialog({ isOpen: true, file });
+  };
+
+  const confirmRemoveFromTenant = async () => {
+    if (!removeFromTenantDialog.file) return;
+    setRemoveFromTenantDialog({ isOpen: false, file: null });
 
     try {
-      const response = await fetch(`/api/media/${file.Id}/tenants/${file.TenantId}`, {
+      const response = await fetch(`/api/media/${removeFromTenantDialog.file.Id}/tenants/${removeFromTenantDialog.file.TenantId}`, {
         method: 'DELETE',
         credentials: 'include',
         headers: {
@@ -863,6 +873,34 @@ export function MediaLibrary() {
           onOpenChange={(open) => !open && setPreviewMedia(null)}
         />
       )}
+
+      {/* Remove from Tenant Confirmation Dialog */}
+      <Dialog.Root open={removeFromTenantDialog.isOpen} onOpenChange={(open) => setRemoveFromTenantDialog({ isOpen: open, file: removeFromTenantDialog.file })}>
+        <Dialog.Content style={{ maxWidth: 500 }}>
+          <Dialog.Title>
+            <Text weight="bold" color="orange">⚠️ Remove from Tenant</Text>
+          </Dialog.Title>
+          <Box my="4">
+            <Text size="3">
+              Are you sure you want to remove this file from tenant {removeFromTenantDialog.file?.TenantName}?
+            </Text>
+          </Box>
+          <Flex gap="3" justify="end">
+            <Dialog.Close>
+              <Button variant="soft">
+                Cancel
+              </Button>
+            </Dialog.Close>
+            <Button 
+              variant="solid" 
+              color="orange" 
+              onClick={confirmRemoveFromTenant}
+            >
+              Remove from Tenant
+            </Button>
+          </Flex>
+        </Dialog.Content>
+      </Dialog.Root>
 
       {/* The Toast component is now managed by useToast hook */}
     </Box>
