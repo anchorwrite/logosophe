@@ -11,6 +11,7 @@ interface Recipient {
   TenantName: string;
   RoleId: string;
   IsBlocked: boolean;
+  BlockerEmail?: string;
 }
 
 interface IndividualRecipientSelectorProps {
@@ -49,29 +50,36 @@ export const IndividualRecipientSelector: React.FC<IndividualRecipientSelectorPr
   };
 
   const handleSelectAllInTenant = (tenantId: string) => {
-    const tenantRecipients = recipients
-      .filter(r => r.TenantId === tenantId && !r.IsBlocked)
-      .map(r => r.Email);
+    const tenantRecipients = Object.keys(recipientsByTenant[tenantId] || {});
     const newSelected = [...new Set([...selectedRecipients, ...tenantRecipients])];
     onRecipientChange(newSelected);
   };
 
   const handleClearAllInTenant = (tenantId: string) => {
-    const tenantRecipients = recipients
-      .filter(r => r.TenantId === tenantId)
-      .map(r => r.Email);
+    const tenantRecipients = Object.keys(recipientsByTenant[tenantId] || {});
     const newSelected = selectedRecipients.filter(email => !tenantRecipients.includes(email));
     onRecipientChange(newSelected);
   };
 
-  // Group recipients by tenant
+  // Group recipients by tenant, then by email to consolidate roles
   const recipientsByTenant = recipients.reduce((acc, recipient) => {
     if (!acc[recipient.TenantId]) {
-      acc[recipient.TenantId] = [];
+      acc[recipient.TenantId] = {};
     }
-    acc[recipient.TenantId].push(recipient);
+    if (!acc[recipient.TenantId][recipient.Email]) {
+      acc[recipient.TenantId][recipient.Email] = {
+        Email: recipient.Email,
+        Name: recipient.Name,
+        TenantId: recipient.TenantId,
+        TenantName: recipient.TenantName,
+        Roles: [],
+        IsBlocked: recipient.IsBlocked,
+        BlockerEmail: recipient.BlockerEmail
+      };
+    }
+    acc[recipient.TenantId][recipient.Email].Roles.push(recipient.RoleId);
     return acc;
-  }, {} as Record<string, Recipient[]>);
+  }, {} as Record<string, Record<string, { Email: string; Name: string; TenantId: string; TenantName: string; Roles: string[]; IsBlocked: boolean; BlockerEmail?: string }>>);
 
   if (recipients.length === 0) {
     return (
@@ -84,15 +92,15 @@ export const IndividualRecipientSelector: React.FC<IndividualRecipientSelectorPr
   return (
     <Box>
       <Heading size="3" style={{ marginBottom: '1rem' }}>
-        {t('messaging.selectIndividualRecipients')} (Optional)
+        Select Individual Recipients (Optional)
       </Heading>
       
       <Flex gap="2" style={{ marginBottom: '1.5rem' }}>
         <Button variant="soft" onClick={handleSelectAll}>
-          {t('messaging.selectAllRecipients')}
+          Select All Recipients
         </Button>
         <Button variant="soft" onClick={handleClearAll}>
-          {t('messaging.clearAllRecipients')}
+          Clear All Recipients
         </Button>
       </Flex>
 
@@ -100,7 +108,7 @@ export const IndividualRecipientSelector: React.FC<IndividualRecipientSelectorPr
         <Box key={tenantId} style={{ marginBottom: '1.5rem' }}>
           <Flex align="center" justify="between" style={{ marginBottom: '0.5rem' }}>
             <Heading size="4">
-              {tenantRecipients[0]?.TenantName || tenantId}
+              {Object.values(tenantRecipients)[0]?.TenantName || tenantId}
             </Heading>
             <Flex gap="2">
               <Button 
@@ -108,19 +116,19 @@ export const IndividualRecipientSelector: React.FC<IndividualRecipientSelectorPr
                 size="1" 
                 onClick={() => handleSelectAllInTenant(tenantId)}
               >
-                {t('messaging.selectAll')}
+                Select All
               </Button>
               <Button 
                 variant="soft" 
                 size="1" 
                 onClick={() => handleClearAllInTenant(tenantId)}
               >
-                {t('messaging.clearAll')}
+                Clear All
               </Button>
             </Flex>
           </Flex>
           
-          {tenantRecipients.map((recipient) => (
+          {Object.values(tenantRecipients).map((recipient) => (
             <Flex key={recipient.Email} align="center" style={{ marginBottom: '0.5rem', marginLeft: '1rem' }}>
               <input
                 type="checkbox"
@@ -139,13 +147,17 @@ export const IndividualRecipientSelector: React.FC<IndividualRecipientSelectorPr
               >
                 <Flex align="center" gap="2">
                   <Text>
-                    {recipient.Name || recipient.Email} ({recipient.RoleId})
+                    {recipient.Name || recipient.Email} ({recipient.Roles.join(', ')})
                   </Text>
                   {recipient.IsBlocked && (
                     <Badge color="red" size="1">
-                      {t('messaging.blocked')}
+                      Blocked
                     </Badge>
                   )}
+                  {/* Debug: Show recipient data */}
+                  <Text size="1" color="gray" style={{ marginLeft: '0.5rem' }}>
+                    [Debug: Roles={JSON.stringify(recipient.Roles)}]
+                  </Text>
                 </Flex>
               </label>
             </Flex>

@@ -25,6 +25,9 @@ export async function POST(request: NextRequest) {
     const userEmail = session.user.email;
     const body: CreateMessageRequest = await request.json();
     
+    // Debug: Log the received request body
+    console.log('Received request body:', JSON.stringify(body, null, 2));
+    
     const { 
       subject, 
       body: messageBody, 
@@ -37,8 +40,23 @@ export async function POST(request: NextRequest) {
       links = [] 
     } = body;
     
+    // Debug: Log the extracted values
+    console.log('Extracted values:', {
+      subject,
+      messageBody,
+      messageBodyType: typeof messageBody,
+      messageBodyLength: messageBody?.length,
+      messageBodyTrimmed: messageBody?.trim(),
+      tenants,
+      roles,
+      individualRecipients,
+      attachments,
+      links
+    });
+    
     // Validate required fields
     if (!subject || !tenants || tenants.length === 0) {
+      console.log('Validation failed: Missing required fields');
       return new Response(JSON.stringify({ 
         success: false, 
         error: 'Missing required fields: subject, tenants' 
@@ -50,6 +68,7 @@ export async function POST(request: NextRequest) {
 
     // Validate recipient selection
     if ((!roles || roles.length === 0) && (!individualRecipients || individualRecipients.length === 0)) {
+      console.log('Validation failed: No recipients selected');
       return new Response(JSON.stringify({ 
         success: false, 
         error: 'At least one role or individual recipient must be selected' 
@@ -61,6 +80,10 @@ export async function POST(request: NextRequest) {
 
     // Message must have either body, attachments, or links
     if (!messageBody.trim() && attachments.length === 0 && links.length === 0) {
+      console.log('Validation failed: No message content');
+      console.log('messageBody.trim():', messageBody?.trim());
+      console.log('attachments.length:', attachments.length);
+      console.log('links.length:', links.length);
       return new Response(JSON.stringify({ 
         success: false, 
         error: 'Message must contain body text, attachments, or links' 
@@ -144,6 +167,7 @@ export async function POST(request: NextRequest) {
     
     // Add role-based recipients
     if (roles && roles.length > 0) {
+      // Check TenantUsers table for role-based recipients
       const roleRecipients = await db.prepare(`
         SELECT Email FROM TenantUsers 
         WHERE TenantId IN (${tenants.map(() => '?').join(',')})
@@ -153,6 +177,23 @@ export async function POST(request: NextRequest) {
       `).bind(...tenants, ...roles, userEmail).all();
       
       roleRecipients.results.forEach((r: any) => allRecipients.add(r.Email as string));
+      
+      // Also check UserRoles table for role-based recipients (e.g., subscribers with specific roles)
+      const userRoleRecipients = await db.prepare(`
+        SELECT Email FROM UserRoles 
+        WHERE TenantId IN (${tenants.map(() => '?').join(',')})
+        AND RoleId IN (${roles.map(() => '?').join(',')})
+        AND Email != ?
+      `).bind(...tenants, ...roles, userEmail).all();
+      
+      userRoleRecipients.results.forEach((r: any) => allRecipients.add(r.Email as string));
+      
+      // Debug: Log what we found
+      console.log('Role-based recipients found:', {
+        fromTenantUsers: roleRecipients.results.map((r: any) => r.Email),
+        fromUserRoles: userRoleRecipients.results.map((r: any) => r.Email),
+        totalUnique: allRecipients.size
+      });
     }
     
     // Add individual recipients
