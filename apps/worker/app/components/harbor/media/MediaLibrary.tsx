@@ -413,11 +413,21 @@ export function MediaLibrary() {
     }
   };
 
+  const [removeFromTenantDialog, setRemoveFromTenantDialog] = useState<{ isOpen: boolean; file: MediaFile | null }>({
+    isOpen: false,
+    file: null
+  });
+
   const handleRemoveFromTenant = async (file: MediaFile) => {
-    if (!confirm(`Are you sure you want to remove this file from tenant ${file.TenantId}?`)) return;
+    setRemoveFromTenantDialog({ isOpen: true, file });
+  };
+
+  const confirmRemoveFromTenant = async () => {
+    if (!removeFromTenantDialog.file) return;
+    setRemoveFromTenantDialog({ isOpen: false, file: null });
 
     try {
-      const response = await fetch(`/api/harbor/media/${file.Id}/tenants/${file.TenantId}`, {
+      const response = await fetch(`/api/harbor/media/${removeFromTenantDialog.file.Id}/tenants/${removeFromTenantDialog.file.TenantId}`, {
         method: 'DELETE',
         credentials: 'include',
         headers: {
@@ -477,12 +487,22 @@ export function MediaLibrary() {
     });
   };
 
+  const [unpublishDialog, setUnpublishDialog] = useState<{ isOpen: boolean; file: MediaFile | null }>({
+    isOpen: false,
+    file: null
+  });
+
   const handleUnpublish = async (file: MediaFile) => {
-    if (!confirm(t('harbor.media.unpublishConfirm'))) return;
+    setUnpublishDialog({ isOpen: true, file });
+  };
+
+  const confirmUnpublish = async () => {
+    if (!unpublishDialog.file) return;
+    setUnpublishDialog({ isOpen: false, file: null });
 
     try {
       setIsPublishing(true);
-      const response = await fetch(`/api/harbor/media/${file.Id}/publish`, {
+      const response = await fetch(`/api/harbor/media/${unpublishDialog.file.Id}/publish`, {
         method: 'DELETE',
         credentials: 'include',
         headers: {
@@ -517,7 +537,7 @@ export function MediaLibrary() {
       // Update published status
       // Update the file's published status in the local state
       setFiles(prev => prev.map(f => 
-        f.Id === file.Id ? { ...f, IsPublished: false } : f
+        f.Id === unpublishDialog.file!.Id ? { ...f, IsPublished: false } : f
       ));
       
       showToast({
@@ -1182,7 +1202,61 @@ export function MediaLibrary() {
         </Dialog.Content>
       </Dialog.Root>
 
+      {/* Remove from Tenant Confirmation Dialog */}
+      <Dialog.Root open={removeFromTenantDialog.isOpen} onOpenChange={(open) => setRemoveFromTenantDialog({ isOpen: open, file: removeFromTenantDialog.file })}>
+        <Dialog.Content style={{ maxWidth: 500 }}>
+          <Dialog.Title>
+            <Text weight="bold" color="orange">⚠️ Remove from Tenant</Text>
+          </Dialog.Title>
+          <Box my="4">
+            <Text size="3">
+              Are you sure you want to remove this file from tenant {removeFromTenantDialog.file?.TenantName}?
+            </Text>
+          </Box>
+          <Flex gap="3" justify="end">
+            <Dialog.Close>
+              <Button variant="soft">
+                Cancel
+              </Button>
+            </Dialog.Close>
+            <Button 
+              variant="solid" 
+              color="orange" 
+              onClick={confirmRemoveFromTenant}
+            >
+              Remove from Tenant
+            </Button>
+          </Flex>
+        </Dialog.Content>
+      </Dialog.Root>
 
+      {/* Unpublish Confirmation Dialog */}
+      <Dialog.Root open={unpublishDialog.isOpen} onOpenChange={(open) => setUnpublishDialog({ isOpen: open, file: unpublishDialog.file })}>
+        <Dialog.Content style={{ maxWidth: 500 }}>
+          <Dialog.Title>
+            <Text weight="bold" color="orange">⚠️ {t('harbor.media.unpublishConfirm')}</Text>
+          </Dialog.Title>
+          <Box my="4">
+            <Text size="3">
+              {t('harbor.media.unpublishConfirmMessage')}
+            </Text>
+          </Box>
+          <Flex gap="3" justify="end">
+            <Dialog.Close>
+              <Button variant="soft">
+                {t('common.cancel')}
+              </Button>
+            </Dialog.Close>
+            <Button 
+              variant="solid" 
+              color="orange" 
+              onClick={confirmUnpublish}
+            >
+              {t('harbor.media.unpublish')}
+            </Button>
+          </Flex>
+        </Dialog.Content>
+      </Dialog.Root>
 
     </Box>
   );

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { Box, Flex, Heading, Text, Button, Card, Badge, TextField, Select } from '@radix-ui/themes';
+import { Box, Flex, Heading, Text, Button, Card, Badge, TextField, Select, Dialog } from '@radix-ui/themes';
 import { useTranslation } from 'react-i18next';
 import { useRouter } from 'next/navigation';
 import { MessageThread } from './MessageThread';
@@ -556,13 +556,20 @@ export function SubscriberMessagingInterface({
     }
   };
 
-  const handleDeleteMessage = async (messageId: number) => {
-    if (!confirm(t('messaging.confirmDelete'))) {
-      return;
-    }
+  const [deleteDialog, setDeleteDialog] = useState<{ isOpen: boolean; messageId: number | null }>({
+    isOpen: false,
+    messageId: null
+  });
 
-    try {
-              const response = await fetch(`/api/harbor/messaging/messages/${messageId}/delete`, {
+  const handleDeleteMessage = async (messageId: number) => {
+    setDeleteDialog({ isOpen: true, messageId });
+  };
+
+  const confirmDeleteMessage = async () => {
+    if (!deleteDialog.messageId) return;
+
+          try {
+              const response = await fetch(`/api/harbor/messaging/messages/${deleteDialog.messageId}/delete`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -570,14 +577,15 @@ export function SubscriberMessagingInterface({
       });
 
       if (response.ok) {
-        setMessages(prev => prev.filter(msg => msg.Id !== messageId));
+        setMessages(prev => prev.filter(msg => msg.Id !== deleteDialog.messageId));
         setStats(prev => ({
           ...prev,
           totalMessages: Math.max(0, prev.totalMessages - 1),
-          sentMessages: prev.sentMessages - (messages.find(m => m.Id === messageId)?.SenderEmail === userEmail ? 1 : 0)
+          sentMessages: prev.sentMessages - (messages.find(m => m.Id === deleteDialog.messageId)?.SenderEmail === userEmail ? 1 : 0)
         }));
         setSuccess(t('messaging.messageDeleted'));
         setTimeout(() => setSuccess(null), 3000);
+        setDeleteDialog({ isOpen: false, messageId: null });
       } else {
         const errorData = await response.json() as { error?: string };
         setError(errorData.error || t('messaging.deleteError'));
@@ -585,6 +593,8 @@ export function SubscriberMessagingInterface({
     } catch (err) {
       console.error('Error deleting message:', err);
       setError(t('messaging.deleteError'));
+    } finally {
+      setDeleteDialog({ isOpen: false, messageId: null });
     }
   };
 
@@ -981,6 +991,33 @@ export function SubscriberMessagingInterface({
           />
         )}
 
+        {/* Delete Confirmation Dialog */}
+        <Dialog.Root open={deleteDialog.isOpen} onOpenChange={(open) => setDeleteDialog({ isOpen: open, messageId: deleteDialog.messageId })}>
+          <Dialog.Content style={{ maxWidth: 500 }}>
+            <Dialog.Title>
+              <Text weight="bold" color="red">⚠️ {t('messaging.confirmDelete')}</Text>
+            </Dialog.Title>
+            <Box my="4">
+              <Text size="3">
+                {t('messaging.confirmDeleteMessage')}
+              </Text>
+            </Box>
+            <Flex gap="3" justify="end">
+              <Dialog.Close>
+                <Button variant="soft">
+                  {t('common.cancel')}
+                </Button>
+              </Dialog.Close>
+              <Button 
+                variant="solid" 
+                color="red" 
+                onClick={confirmDeleteMessage}
+              >
+                {t('messaging.delete')}
+              </Button>
+            </Flex>
+          </Dialog.Content>
+        </Dialog.Root>
 
       </Flex>
     </Box>

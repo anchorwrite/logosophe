@@ -150,6 +150,8 @@ export function UnifiedMessageComposer({
     }
   };
 
+
+
   // Calculate total recipients for display
   const totalRecipients = selectedIndividualRecipients.length;
   const roleBasedRecipients = selectedRoles.length > 0 ? 'Role-based' : 0;
@@ -253,6 +255,7 @@ export function UnifiedMessageComposer({
               selectedRoles={selectedRoles}
               onRolesChange={setSelectedRoles}
               disabled={isSending}
+              selectedTenants={selectedTenants}
             />
 
             {/* Individual Recipient Selection */}

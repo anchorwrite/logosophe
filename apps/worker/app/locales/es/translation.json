@@ -576,6 +576,7 @@
     "delete": "Eliminar",
     "archive": "Archivar",
     "confirmDelete": "¿Estás seguro de que quieres eliminar este mensaje? Esta acción no se puede deshacer.",
+    "confirmDeleteMessage": "¿Estás seguro de que quieres eliminar este mensaje? Esta acción no se puede deshacer.",
     "deleteError": "Error al eliminar mensaje",
     "messageDeleted": "Mensaje eliminado con éxito",
     "archiveError": "Error al archivar mensaje",

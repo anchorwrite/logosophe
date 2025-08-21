@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Heading, Text, Flex, Card, Button, Box, Badge, Avatar, Separator } from '@radix-ui/themes';
+import { Heading, Text, Flex, Card, Button, Box, Badge, Avatar, Separator, Dialog } from '@radix-ui/themes';
+import { useToast } from '@/components/Toast';
 import type { RecentMessage, MessageRecipient } from './types';
 
 
@@ -19,6 +20,7 @@ export function MessageThread({
   onReply,
   onForward
 }: MessageThreadProps) {
+  const { showToast } = useToast();
   const [recipients, setRecipients] = useState<MessageRecipient[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isArchiving, setIsArchiving] = useState(false);
@@ -97,27 +99,46 @@ export function MessageThread({
       });
 
       if (response.ok) {
-        // Archive successful - could show a success message or update UI
+        // Archive successful - show success message
         console.log('Message archived successfully');
+        showToast({
+          type: 'success',
+          title: 'Success',
+          content: 'Message archived successfully'
+        });
         // Note: The parent component will need to refresh to show updated status
       } else {
         const errorData = await response.json() as { error?: string };
         console.error('Failed to archive message:', errorData.error);
+        showToast({
+          type: 'error',
+          title: 'Error',
+          content: errorData.error || 'Failed to archive message'
+        });
       }
     } catch (error) {
       console.error('Error archiving message:', error);
+      showToast({
+        type: 'error',
+        title: 'Error',
+        content: 'An error occurred while archiving the message'
+      });
     } finally {
       setIsArchiving(false);
     }
   };
 
+  const [deleteDialog, setDeleteDialog] = useState(false);
+
   const handleDelete = async () => {
     if (isDeleting) return;
     
-    // Confirm deletion
-    if (!confirm('Are you sure you want to delete this message? This action cannot be undone.')) {
-      return;
-    }
+    // Show delete confirmation dialog
+    setDeleteDialog(true);
+  };
+
+  const confirmDelete = async () => {
+    setDeleteDialog(false);
     
     setIsDeleting(true);
     try {
@@ -129,15 +150,30 @@ export function MessageThread({
       });
 
       if (response.ok) {
-        // Delete successful - could show a success message or update UI
+        // Delete successful - show success message
         console.log('Message deleted successfully');
+        showToast({
+          type: 'success',
+          title: 'Success',
+          content: 'Message deleted successfully'
+        });
         // Note: The parent component will need to refresh to show updated status
       } else {
         const errorData = await response.json() as { error?: string };
         console.error('Failed to delete message:', errorData.error);
+        showToast({
+          type: 'error',
+          title: 'Error',
+          content: errorData.error || 'Failed to delete message'
+        });
       }
     } catch (error) {
       console.error('Error deleting message:', error);
+      showToast({
+        type: 'error',
+        title: 'Error',
+        content: 'An error occurred while deleting the message'
+      });
     } finally {
       setIsDeleting(false);
     }
@@ -271,6 +307,34 @@ export function MessageThread({
           </Flex>
         </Flex>
       </Box>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog.Root open={deleteDialog} onOpenChange={setDeleteDialog}>
+        <Dialog.Content style={{ maxWidth: 500 }}>
+          <Dialog.Title>
+            <Text weight="bold" color="red">⚠️ Delete Message</Text>
+          </Dialog.Title>
+          <Box my="4">
+            <Text size="3">
+              Are you sure you want to delete this message? This action cannot be undone.
+            </Text>
+          </Box>
+          <Flex gap="3" justify="end">
+            <Dialog.Close>
+              <Button variant="soft">
+                Cancel
+              </Button>
+            </Dialog.Close>
+            <Button 
+              variant="solid" 
+              color="red" 
+              onClick={confirmDelete}
+            >
+              Delete
+            </Button>
+          </Flex>
+        </Dialog.Content>
+      </Dialog.Root>
     </Box>
   );
 } 

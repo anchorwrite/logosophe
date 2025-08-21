@@ -116,8 +116,8 @@ export async function POST(request: NextRequest) {
       // Build recipient list based on selections
       const recipientSet = new Set<string>();
 
-      // Add recipients from selected tenants
-      if (tenants && tenants.length > 0) {
+      // Add recipients from selected tenants (only if no roles are selected)
+      if (tenants && tenants.length > 0 && (!roles || roles.length === 0)) {
         const tenantRecipientsQuery = `
           SELECT DISTINCT Email FROM (
             SELECT tu.Email FROM TenantUsers tu
@@ -145,25 +145,55 @@ export async function POST(request: NextRequest) {
 
       // Add recipients from selected roles
       if (roles && roles.length > 0) {
-        const roleRecipientsQuery = `
-          SELECT DISTINCT Email FROM (
-            SELECT tu.Email FROM TenantUsers tu
-            LEFT JOIN Subscribers s ON tu.Email = s.Email
-            WHERE tu.RoleId IN (${roles.map(() => '?').join(',')})
-            AND s.Active = TRUE AND s.Banned = FALSE
-            AND tu.Email != ?
-            
-            UNION
-            
-            SELECT ur.Email FROM UserRoles ur
-            LEFT JOIN Subscribers s ON ur.Email = s.Email
-            WHERE ur.RoleId IN (${roles.map(() => '?').join(',')})
-            AND s.Active = TRUE AND s.Banned = FALSE
-            AND ur.Email != ?
-          )
-        `;
+        let roleRecipientsQuery: string;
+        let bindParams: any[];
+        
+        if (tenants && tenants.length > 0) {
+          // If tenants are also selected, scope roles to only those tenants
+          roleRecipientsQuery = `
+            SELECT DISTINCT Email FROM (
+              SELECT tu.Email FROM TenantUsers tu
+              LEFT JOIN Subscribers s ON tu.Email = s.Email
+              WHERE tu.RoleId IN (${roles.map(() => '?').join(',')})
+              AND tu.TenantId IN (${tenants.map(() => '?').join(',')})
+              AND s.Active = TRUE AND s.Banned = FALSE
+              AND tu.Email != ?
+              
+              UNION
+              
+              SELECT ur.Email FROM UserRoles ur
+              LEFT JOIN Subscribers s ON ur.Email = s.Email
+              WHERE ur.RoleId IN (${roles.map(() => '?').join(',')})
+              AND ur.TenantId IN (${tenants.map(() => '?').join(',')})
+              AND s.Active = TRUE AND s.Banned = FALSE
+              AND ur.Email != ?
+            )
+          `;
+          bindParams = [...roles, ...tenants, session.user.email, ...roles, ...tenants, session.user.email];
+        } else {
+          // If no tenants selected, roles apply to all accessible tenants
+          roleRecipientsQuery = `
+            SELECT DISTINCT Email FROM (
+              SELECT tu.Email FROM TenantUsers tu
+              LEFT JOIN Subscribers s ON tu.Email = s.Email
+              WHERE tu.RoleId IN (${roles.map(() => '?').join(',')})
+              AND s.Active = TRUE AND s.Banned = FALSE
+              AND tu.Email != ?
+              
+              UNION
+              
+              SELECT ur.Email FROM UserRoles ur
+              LEFT JOIN Subscribers s ON ur.Email = s.Email
+              WHERE ur.RoleId IN (${roles.map(() => '?').join(',')})
+              AND s.Active = TRUE AND s.Banned = FALSE
+              AND ur.Email != ?
+            )
+          `;
+          bindParams = [...roles, session.user.email, ...roles, session.user.email];
+        }
+        
         const roleRecipientsResult = await db.prepare(roleRecipientsQuery)
-          .bind(...roles, session.user.email, ...roles, session.user.email)
+          .bind(...bindParams)
           .all() as D1Result<{ Email: string }>;
         
         roleRecipientsResult.results.forEach(r => recipientSet.add(r.Email));
@@ -175,6 +205,15 @@ export async function POST(request: NextRequest) {
       }
 
       allRecipients = Array.from(recipientSet);
+
+      // Log recipient selection for debugging
+      console.log('Role-based messaging recipient selection:', {
+        selectedTenants: tenants || [],
+        selectedRoles: roles || [],
+        selectedIndividualRecipients: individualRecipients || [],
+        totalRecipients: allRecipients.length,
+        recipients: allRecipients
+      });
 
       // Validate that we have recipients
       if (allRecipients.length === 0) {

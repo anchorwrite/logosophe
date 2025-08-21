@@ -14,25 +14,35 @@ interface RoleSelectorProps {
   selectedRoles: string[];
   onRolesChange: (roles: string[]) => void;
   disabled?: boolean;
+  selectedTenants?: string[]; // Add this to scope role selection to selected tenants
 }
 
 export function RoleSelector({
   roles,
   selectedRoles,
   onRolesChange,
-  disabled = false
+  disabled = false,
+  selectedTenants = []
 }: RoleSelectorProps) {
+  // Filter roles to only show those from selected tenants, or all if no tenants selected
+  const filteredRoles = useMemo(() => {
+    if (selectedTenants.length === 0) {
+      return roles; // Show all roles if no tenants are selected
+    }
+    return roles.filter(role => selectedTenants.includes(role.TenantId));
+  }, [roles, selectedTenants]);
+
   // Group roles by tenant
   const rolesByTenant = useMemo(() => {
     const grouped: Record<string, Role[]> = {};
-    roles.forEach(role => {
+    filteredRoles.forEach(role => {
       if (!grouped[role.TenantId]) {
         grouped[role.TenantId] = [];
       }
       grouped[role.TenantId].push(role);
     });
     return grouped;
-  }, [roles]);
+  }, [filteredRoles]);
 
   const handleRoleToggle = (roleId: string) => {
     if (disabled) return;
@@ -62,7 +72,7 @@ export function RoleSelector({
 
   const handleSelectAll = () => {
     if (disabled) return;
-    const allRoleIds = roles.map(r => r.RoleId);
+    const allRoleIds = filteredRoles.map(r => r.RoleId);
     onRolesChange(allRoleIds);
   };
 
@@ -88,7 +98,7 @@ export function RoleSelector({
             size="1" 
             variant="soft" 
             onClick={handleSelectAll}
-            disabled={disabled || selectedRoles.length === roles.length}
+            disabled={disabled || selectedRoles.length === filteredRoles.length}
           >
             Select All Roles
           </Button>

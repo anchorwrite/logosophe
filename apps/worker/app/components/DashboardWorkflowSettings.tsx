@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Card, Box, Text, Heading, Flex, Button, TextField, Switch, Select, Tabs, Badge } from '@radix-ui/themes';
+import { Card, Box, Text, Heading, Flex, Button, TextField, Switch, Select, Tabs, Badge, Dialog } from '@radix-ui/themes';
 
 interface WorkflowSettings {
   maxWorkflowsPerTenant: number;
@@ -137,10 +137,14 @@ export function DashboardWorkflowSettings({
     }
   };
 
+  const [resetDialog, setResetDialog] = useState(false);
+
   const resetToDefaults = async () => {
-    if (!confirm('Are you sure you want to reset all settings to defaults? This action cannot be undone.')) {
-      return;
-    }
+    setResetDialog(true);
+  };
+
+  const confirmResetToDefaults = async () => {
+    setResetDialog(false);
 
     try {
       setSaving(true);
@@ -489,6 +493,34 @@ export function DashboardWorkflowSettings({
           </Tabs.Content>
         </Box>
       </Tabs.Root>
+
+      {/* Reset to Defaults Confirmation Dialog */}
+      <Dialog.Root open={resetDialog} onOpenChange={setResetDialog}>
+        <Dialog.Content style={{ maxWidth: 500 }}>
+          <Dialog.Title>
+            <Text weight="bold" color="red">⚠️ Reset to Defaults</Text>
+          </Dialog.Title>
+          <Box my="4">
+            <Text size="3">
+              Are you sure you want to reset all settings to defaults? This action cannot be undone.
+            </Text>
+          </Box>
+          <Flex gap="3" justify="end">
+            <Dialog.Close>
+              <Button variant="soft">
+                Cancel
+              </Button>
+            </Dialog.Close>
+            <Button 
+              variant="solid" 
+              color="red" 
+              onClick={confirmResetToDefaults}
+            >
+              Reset to Defaults
+            </Button>
+          </Flex>
+        </Dialog.Content>
+      </Dialog.Root>
     </Box>
   );
 } 
