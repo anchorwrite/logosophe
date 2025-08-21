@@ -854,7 +854,7 @@ export function SubscriberMessagingInterface({
               variant="soft" 
               onClick={() => router.push(`/${lang}/harbor/messaging/blocks`)}
             >
-              Blocked Users
+              {t('messaging.blockedUsers')}
             </Button>
           </Flex>
         )}

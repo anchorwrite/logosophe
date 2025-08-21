@@ -42,7 +42,7 @@ export const TenantSelector: React.FC<TenantSelectorProps> = ({
   if (userTenants.length === 0) {
     return (
       <Box>
-        <Text color="gray">No tenants available</Text>
+        <Text color="gray">{t('messaging.noRecipients')}</Text>
       </Box>
     );
   }
@@ -50,7 +50,7 @@ export const TenantSelector: React.FC<TenantSelectorProps> = ({
   return (
     <Box>
       <Heading size="3" style={{ marginBottom: '1rem' }}>
-        Select Tenants
+        {t('messaging.selectTenants')}
       </Heading>
       
       {userTenants.map(tenant => (
@@ -72,10 +72,10 @@ export const TenantSelector: React.FC<TenantSelectorProps> = ({
       
       <Flex gap="2" style={{ marginTop: '1rem' }}>
         <Button variant="soft" onClick={handleSelectAll}>
-          Select All Tenants
+          {t('messaging.selectAllTenants')}
         </Button>
         <Button variant="soft" onClick={handleClearAll}>
-          Clear All
+          {t('messaging.clearAll')}
         </Button>
       </Flex>
     </Box>
