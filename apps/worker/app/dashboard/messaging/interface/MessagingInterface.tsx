@@ -4,10 +4,9 @@ import { useState, useEffect } from 'react';
 import { Container, Heading, Text, Flex, Card, Button, Box, TextField, Badge, Avatar, Separator } from '@radix-ui/themes';
 import { MessageThread } from './MessageThread';
 import { MessageComposer } from './MessageComposer';
+import { UnifiedMessageComposer } from './UnifiedMessageComposer';
 import { useToast } from '@/components/Toast';
-import type { RecentMessage, UserStats, Recipient, SystemSettings } from './types';
-
-
+import type { RecentMessage, UserStats, Recipient, SystemSettings, Tenant, Role } from './types';
 
 interface MessagingInterfaceProps {
   userEmail: string;
@@ -15,6 +14,8 @@ interface MessagingInterfaceProps {
   recentMessages: RecentMessage[];
   userStats: UserStats;
   recipients: Recipient[];
+  tenants: Tenant[];
+  roles: Role[];
   accessibleTenants: string[];
   systemSettings: SystemSettings;
 }
@@ -25,12 +26,15 @@ export function MessagingInterface({
   recentMessages,
   userStats,
   recipients,
+  tenants,
+  roles,
   accessibleTenants,
   systemSettings
 }: MessagingInterfaceProps) {
   const { showToast } = useToast();
   const [selectedMessage, setSelectedMessage] = useState<RecentMessage | null>(null);
   const [isComposing, setIsComposing] = useState(false);
+  const [useRoleBasedMessaging, setUseRoleBasedMessaging] = useState(true); // Default to role-based messaging
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'unread' | 'sent' | 'received'>('all');
   const [messages, setMessages] = useState<RecentMessage[]>(recentMessages);
@@ -107,8 +111,6 @@ export function MessagingInterface({
     
     return matchesSearch && matchesFilter;
   });
-
-
 
   const handleSendMessage = async (messageData: {
     subject: string;
@@ -194,7 +196,61 @@ export function MessagingInterface({
     }
   };
 
+  const handleSendRoleBasedMessage = async (messageData: {
+    subject: string;
+    body: string;
+    tenants: string[];
+    roles: string[];
+    individualRecipients: string[];
+    messageType: string;
+  }) => {
+    setIsSending(true);
+    try {
+      const response = await fetch('/api/dashboard/messaging/send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(messageData),
+      });
 
+      if (response.ok) {
+        const result = await response.json() as { success: boolean; message?: string; error?: string };
+        if (result.success) {
+          showToast({
+            type: 'success',
+            title: 'Message Sent',
+            content: 'Message sent successfully!'
+          });
+          // Close composer and refresh page
+          setIsComposing(false);
+          window.location.reload();
+        } else {
+          showToast({
+            type: 'error',
+            title: 'Send Failed',
+            content: result.error || 'Failed to send message'
+          });
+        }
+      } else {
+        const errorData = await response.json().catch(() => ({ error: 'Failed to send message' })) as { error?: string };
+        showToast({
+          type: 'error',
+          title: 'Send Failed',
+          content: errorData.error || 'Failed to send message'
+        });
+      }
+    } catch (error) {
+      console.error('Error sending message:', error);
+      showToast({
+        type: 'error',
+        title: 'Send Error',
+        content: 'Error sending message. Please try again.'
+      });
+    } finally {
+      setIsSending(false);
+    }
+  };
 
   return (
     <Container size="4">
@@ -366,21 +422,66 @@ export function MessagingInterface({
         {/* Message Thread or Composer */}
         <Card style={{ flex: '2', display: 'flex', flexDirection: 'column' }}>
           {isComposing ? (
-            <MessageComposer
-              recipients={recipients}
-              accessibleTenants={accessibleTenants}
-              userEmail={userEmail}
-              onSend={handleSendMessage}
-              onCancel={() => {
-                setIsComposing(false);
-                setReplyToMessage(null);
-                setForwardMessage(null);
-              }}
-              systemSettings={systemSettings}
-              replyToMessage={replyToMessage || undefined}
-              forwardMessage={forwardMessage || undefined}
-              hideTenantSelection={!!replyToMessage}
-            />
+            <>
+              {/* Composer Type Toggle */}
+              <Box style={{ 
+                padding: '1rem', 
+                borderBottom: '1px solid var(--gray-6)',
+                backgroundColor: 'var(--gray-2)'
+              }}>
+                <Flex gap="2" align="center">
+                  <Text size="2" weight="medium">Composer Type:</Text>
+                  <Button 
+                    size="1" 
+                    variant={useRoleBasedMessaging ? 'solid' : 'soft'}
+                    onClick={() => setUseRoleBasedMessaging(true)}
+                  >
+                    Role-Based Messaging
+                  </Button>
+                  <Button 
+                    size="1" 
+                    variant={!useRoleBasedMessaging ? 'solid' : 'soft'}
+                    onClick={() => setUseRoleBasedMessaging(false)}
+                  >
+                    Simple Messaging
+                  </Button>
+                </Flex>
+              </Box>
+              
+              {useRoleBasedMessaging ? (
+                <UnifiedMessageComposer
+                  tenants={tenants}
+                  roles={roles}
+                  recipients={recipients}
+                  userEmail={userEmail}
+                  onSend={handleSendRoleBasedMessage}
+                  onCancel={() => {
+                    setIsComposing(false);
+                    setReplyToMessage(null);
+                    setForwardMessage(null);
+                  }}
+                  systemSettings={systemSettings}
+                  replyToMessage={replyToMessage || undefined}
+                  forwardMessage={forwardMessage || undefined}
+                />
+              ) : (
+                <MessageComposer
+                  recipients={recipients}
+                  accessibleTenants={accessibleTenants}
+                  userEmail={userEmail}
+                  onSend={handleSendMessage}
+                  onCancel={() => {
+                    setIsComposing(false);
+                    setReplyToMessage(null);
+                    setForwardMessage(null);
+                  }}
+                  systemSettings={systemSettings}
+                  replyToMessage={replyToMessage || undefined}
+                  forwardMessage={forwardMessage || undefined}
+                  hideTenantSelection={!!replyToMessage}
+                />
+              )}
+            </>
           ) : selectedMessage ? (
             <MessageThread
               message={selectedMessage}
