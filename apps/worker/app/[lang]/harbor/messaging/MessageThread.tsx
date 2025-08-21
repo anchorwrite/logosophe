@@ -281,13 +281,6 @@ export function MessageThread({ message, userEmail, tenantId, onClose, onMessage
                     ) : (
                       <Text size="3" color="gray">{t('messaging.noAttachmentsFound')}</Text>
                     )}
-                    {/* Debug info */}
-                    <Text size="1" color="gray" mt="2">
-                      Debug: HasAttachments={message.HasAttachments.toString()}, 
-                      AttachmentCount={message.AttachmentCount}, 
-                      attachments.length={attachments.length}, 
-                      isLoadingAttachments={isLoadingAttachments.toString()}
-                    </Text>
                   </Box>
                 )}
 

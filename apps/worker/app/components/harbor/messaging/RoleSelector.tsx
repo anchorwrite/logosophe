@@ -34,10 +34,6 @@ export const RoleSelector: React.FC<RoleSelectorProps> = ({
 }) => {
   const { t } = useTranslation('translations');
 
-  console.log('RoleSelector - Received roles:', roles);
-  console.log('RoleSelector - Received recipients:', recipients);
-  console.log('RoleSelector - Selected roles:', selectedRoles);
-
   // Group roles by tenant
   const rolesByTenant = roles.reduce((acc, role) => {
     if (!acc[role.TenantId]) {
@@ -46,8 +42,6 @@ export const RoleSelector: React.FC<RoleSelectorProps> = ({
     acc[role.TenantId].push(role);
     return acc;
   }, {} as Record<string, Role[]>);
-
-  console.log('RoleSelector - Roles by tenant:', rolesByTenant);
 
   const handleSelectAllRoles = () => {
     onRoleChange(roles.map(r => r.RoleId));
@@ -80,7 +74,7 @@ export const RoleSelector: React.FC<RoleSelectorProps> = ({
   if (roles.length === 0) {
     return (
       <Box>
-        <Text color="gray">No roles available for selected tenants</Text>
+        <Text color="gray">{t('messaging.noRecipients')}</Text>
       </Box>
     );
   }
@@ -88,90 +82,60 @@ export const RoleSelector: React.FC<RoleSelectorProps> = ({
   return (
     <Box>
       <Heading size="3" style={{ marginBottom: '1rem' }}>
-        Select Roles
+        {t('messaging.selectRoles')}
       </Heading>
-      
-      {/* Debug info */}
-      <Box style={{ marginBottom: '1rem', padding: '0.5rem', backgroundColor: '#f0f0f0', borderRadius: '4px' }}>
-        <Text size="2" color="gray">
-          Debug: {roles.length} roles received, {Object.keys(rolesByTenant).length} tenants
-        </Text>
-        <Text size="2" color="gray">
-          Roles: {JSON.stringify(roles)}
-        </Text>
-      </Box>
       
       <Flex gap="2" style={{ marginBottom: '1.5rem' }}>
         <Button variant="soft" onClick={handleSelectAllRoles}>
-          Select All Roles
+          {t('messaging.selectAllRoles')}
         </Button>
         <Button variant="soft" onClick={handleClearAllRoles}>
-          Clear All Roles
+          {t('messaging.clearAllRoles')}
         </Button>
       </Flex>
 
-      {Object.entries(rolesByTenant).map(([tenantId, tenantRoles]) => {
-        console.log('Rendering tenant:', tenantId, 'with roles:', tenantRoles);
-        return (
-          <Box key={tenantId} style={{ marginBottom: '1.5rem', border: '2px solid red', padding: '1rem' }}>
-            <Flex align="center" justify="between" style={{ marginBottom: '0.5rem' }}>
-              <Heading size="4">
-                {recipients.find(r => r.TenantId === tenantId)?.TenantName || tenantId}
-              </Heading>
-              <Flex gap="2">
-                <Button 
-                  variant="soft" 
-                  size="1" 
-                  onClick={() => handleSelectAllInTenant(tenantId)}
-                >
-                  Select All
-                </Button>
-                <Button 
-                  variant="soft" 
-                  size="1" 
-                  onClick={() => handleClearAllInTenant(tenantId)}
-                >
-                  Clear All
-                </Button>
-              </Flex>
+      {Object.entries(rolesByTenant).map(([tenantId, tenantRoles]) => (
+        <Box key={tenantId} style={{ marginBottom: '1.5rem' }}>
+          <Flex align="center" justify="between" style={{ marginBottom: '0.5rem' }}>
+            <Heading size="4">
+              {recipients.find(r => r.TenantId === tenantId)?.TenantName || tenantId}
+            </Heading>
+            <Flex gap="2">
+              <Button 
+                variant="soft" 
+                size="1" 
+                onClick={() => handleSelectAllInTenant(tenantId)}
+              >
+                {t('messaging.selectAll')}
+              </Button>
+              <Button 
+                variant="soft" 
+                size="1" 
+                onClick={() => handleClearAllInTenant(tenantId)}
+              >
+                {t('messaging.clearAll')}
+              </Button>
             </Flex>
-            
-            {/* Debug: Show tenantRoles array */}
-            <Box style={{ marginBottom: '1rem', padding: '0.5rem', backgroundColor: '#ffe6e6', borderRadius: '4px' }}>
-              <Text size="2" color="red">
-                Debug: tenantRoles array has {tenantRoles.length} items
-              </Text>
-              <Text size="2" color="red">
-                tenantRoles: {JSON.stringify(tenantRoles)}
-              </Text>
-            </Box>
-            
-            {tenantRoles.map((role, index) => {
-              console.log('Rendering role:', role, 'at index:', index);
-              return (
-                <Flex key={role.RoleId} align="center" style={{ marginBottom: '0.5rem', marginLeft: '1rem', border: '1px solid #ccc', padding: '0.5rem', borderRadius: '4px' }}>
-                  <input
-                    type="checkbox"
-                    id={`role-${tenantId}-${role.RoleId}`}
-                    checked={selectedRoles.includes(role.RoleId)}
-                    onChange={() => handleRoleToggle(role.RoleId)}
-                    style={{ marginRight: '0.5rem', width: '20px', height: '20px' }}
-                  />
-                  <label htmlFor={`role-${tenantId}-${role.RoleId}`} style={{ cursor: 'pointer' }}>
-                    <Text>
-                      {role.RoleId.charAt(0).toUpperCase() + role.RoleId.slice(1)}s ({role.UserCount} users)
-                    </Text>
-                  </label>
-                  {/* Debug info for each role */}
-                  <Text size="1" color="gray" style={{ marginLeft: '1rem' }}>
-                    [Debug: RoleId={role.RoleId}, UserCount={role.UserCount}]
-                  </Text>
-                </Flex>
-              );
-            })}
-          </Box>
-        );
-      })}
+          </Flex>
+          
+          {tenantRoles.map((role) => (
+            <Flex key={role.RoleId} align="center" style={{ marginBottom: '0.5rem', marginLeft: '1rem' }}>
+              <input
+                type="checkbox"
+                id={`role-${tenantId}-${role.RoleId}`}
+                checked={selectedRoles.includes(role.RoleId)}
+                onChange={() => handleRoleToggle(role.RoleId)}
+                style={{ marginRight: '0.5rem' }}
+              />
+              <label htmlFor={`role-${tenantId}-${role.RoleId}`} style={{ cursor: 'pointer' }}>
+                <Text>
+                  {t(`messaging.roleNames.${role.RoleId}`)} ({role.UserCount} {t('messaging.users')})
+                </Text>
+              </label>
+            </Flex>
+          ))}
+        </Box>
+      ))}
     </Box>
   );
 };

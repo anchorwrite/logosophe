@@ -84,7 +84,7 @@ export const IndividualRecipientSelector: React.FC<IndividualRecipientSelectorPr
   if (recipients.length === 0) {
     return (
       <Box>
-        <Text color="gray">No recipients available for selected tenants</Text>
+        <Text color="gray">{t('messaging.noRecipients')}</Text>
       </Box>
     );
   }
@@ -92,15 +92,15 @@ export const IndividualRecipientSelector: React.FC<IndividualRecipientSelectorPr
   return (
     <Box>
       <Heading size="3" style={{ marginBottom: '1rem' }}>
-        Select Individual Recipients (Optional)
+        {t('messaging.selectIndividualRecipients')} ({t('messaging.optional')})
       </Heading>
       
       <Flex gap="2" style={{ marginBottom: '1.5rem' }}>
         <Button variant="soft" onClick={handleSelectAll}>
-          Select All Recipients
+          {t('messaging.selectAllRecipients')}
         </Button>
         <Button variant="soft" onClick={handleClearAll}>
-          Clear All Recipients
+          {t('messaging.clearAllRecipients')}
         </Button>
       </Flex>
 
@@ -116,14 +116,14 @@ export const IndividualRecipientSelector: React.FC<IndividualRecipientSelectorPr
                 size="1" 
                 onClick={() => handleSelectAllInTenant(tenantId)}
               >
-                Select All
+                {t('messaging.selectAll')}
               </Button>
               <Button 
                 variant="soft" 
                 size="1" 
                 onClick={() => handleClearAllInTenant(tenantId)}
               >
-                Clear All
+                {t('messaging.clearAll')}
               </Button>
             </Flex>
           </Flex>
@@ -147,17 +147,13 @@ export const IndividualRecipientSelector: React.FC<IndividualRecipientSelectorPr
               >
                 <Flex align="center" gap="2">
                   <Text>
-                    {recipient.Name || recipient.Email} ({recipient.Roles.join(', ')})
+                    {recipient.Name || recipient.Email} ({recipient.Roles.map(roleId => t(`messaging.roleNames.${roleId}`)).join(', ')})
                   </Text>
-                  {recipient.IsBlocked && (
+                  {recipient.IsBlocked ? (
                     <Badge color="red" size="1">
-                      Blocked
+                      {t('messaging.blocked')}
                     </Badge>
-                  )}
-                  {/* Debug: Show recipient data */}
-                  <Text size="1" color="gray" style={{ marginLeft: '0.5rem' }}>
-                    [Debug: Roles={JSON.stringify(recipient.Roles)}]
-                  </Text>
+                  ) : null}
                 </Flex>
               </label>
             </Flex>
