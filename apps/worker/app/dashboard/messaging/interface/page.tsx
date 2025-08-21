@@ -6,10 +6,7 @@ import { getUserMessagingTenants, getSystemSettings } from '@/lib/messaging';
 import { NormalizedLogging, extractRequestContext } from '@/lib/normalized-logging';
 import { MessagingInterface } from './MessagingInterface';
 import type { D1Result } from '@cloudflare/workers-types';
-import type { RecentMessage, UserStats, Recipient, SystemSettings } from './types';
-
-
-
+import type { RecentMessage, UserStats, Recipient, SystemSettings, Tenant, Role } from './types';
 
 export default async function MessagingInterfacePage() {
   const session = await auth();
@@ -133,6 +130,72 @@ export default async function MessagingInterfacePage() {
     activeConversations: recentMessages.length
   };
 
+  // Get tenants with user counts
+  const tenantsQuery = `
+    SELECT 
+      t.Id,
+      t.Name,
+      COUNT(DISTINCT tu.Email) as UserCount
+    FROM Tenants t
+    LEFT JOIN TenantUsers tu ON t.Id = tu.TenantId
+    LEFT JOIN Subscribers s ON tu.Email = s.Email
+    WHERE t.Id IN (${accessibleTenants.map(() => '?').join(',')})
+    AND s.Active = TRUE AND s.Banned = FALSE
+    GROUP BY t.Id, t.Name
+    ORDER BY t.Name
+  `;
+
+  const tenantsResult = await db.prepare(tenantsQuery)
+    .bind(...accessibleTenants)
+    .all() as D1Result<Tenant>;
+  
+  const tenants = tenantsResult.results || [];
+
+  // Get roles with user counts
+  const rolesQuery = `
+    SELECT 
+      TenantId,
+      RoleId,
+      COUNT(DISTINCT Email) as UserCount
+    FROM (
+      -- Get roles from TenantUsers
+      SELECT 
+        tu.TenantId,
+        tu.RoleId,
+        tu.Email
+      FROM TenantUsers tu
+      LEFT JOIN Subscribers s ON tu.Email = s.Email
+      WHERE tu.TenantId IN (${accessibleTenants.map(() => '?').join(',')})
+      AND s.Active = TRUE AND s.Banned = FALSE
+      
+      UNION ALL
+      
+      -- Get roles from UserRoles
+      SELECT 
+        ur.TenantId,
+        ur.RoleId,
+        ur.Email
+      FROM UserRoles ur
+      LEFT JOIN Subscribers s ON ur.Email = s.Email
+      WHERE ur.TenantId IN (${accessibleTenants.map(() => '?').join(',')})
+      AND ur.RoleId IN ('subscriber', 'reviewer', 'author', 'editor')
+      AND s.Active = TRUE AND s.Banned = FALSE
+    )
+    GROUP BY TenantId, RoleId
+    ORDER BY TenantId, RoleId
+  `;
+
+  const rolesBindParams = [
+    ...accessibleTenants,  // First IN clause for TenantUsers
+    ...accessibleTenants   // Second IN clause for UserRoles
+  ];
+
+  const rolesResult = await db.prepare(rolesQuery)
+    .bind(...rolesBindParams)
+    .all() as D1Result<Role>;
+  
+  const roles = rolesResult.results || [];
+
   // Get available recipients for the user (one entry per user with consolidated roles)
   const recipientsQuery = `
     SELECT 
@@ -210,6 +273,8 @@ export default async function MessagingInterfacePage() {
       recentMessages={recentMessages}
       userStats={userStats}
       recipients={recipients}
+      tenants={tenants}
+      roles={roles}
       accessibleTenants={accessibleTenants}
       systemSettings={systemSettings}
     />

@@ -28,6 +28,18 @@ export interface Recipient {
   BlockerEmail?: string;
 }
 
+export interface Tenant {
+  Id: string;
+  Name: string;
+  UserCount: number;
+}
+
+export interface Role {
+  TenantId: string;
+  RoleId: string;
+  UserCount: number;
+}
+
 export interface SystemSettings {
   messagingEnabled: boolean;
   rateLimitSeconds: number;
