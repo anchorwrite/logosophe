@@ -772,6 +772,8 @@
     "history": {
       "title": "Historial de Flujos de Trabajo",
       "description": "Revisa flujos de trabajo completados y sus resultados",
+      "noWorkflows": "No Hay Flujos de Trabajo",
+      "noWorkflowsDescription": "Aún no tienes flujos de trabajo. ¡Comienza a colaborar para ver tu historial aquí!",
       "viewHistory": "Ver Historial",
       "detail": {
         "title": "Detalles del Historial de Flujo de Trabajo"

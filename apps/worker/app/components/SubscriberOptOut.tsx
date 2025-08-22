@@ -55,7 +55,7 @@ export default function SubscriberOptOut({ email }: SubscriberOptOutProps) {
     <Button 
       onClick={handleUnsubscribe}
       disabled={isLoading}
-      variant="soft"
+      variant="ghost"
       size="2"
     >
       {isLoading 

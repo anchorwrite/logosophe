@@ -773,6 +773,8 @@
     "history": {
       "title": "Historique des Flux de Travail",
       "description": "Révise les flux de travail terminés et leurs résultats",
+      "noWorkflows": "Aucun Flux de Travail",
+      "noWorkflowsDescription": "Vous n'avez pas encore de flux de travail. Commencez à collaborer pour voir votre historique ici !",
       "viewHistory": "Voir l'Historique",
       "detail": {
         "title": "Détails de l'Historique des Flux de Travail"

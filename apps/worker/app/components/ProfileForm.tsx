@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { Button, TextField, Text, Box, Card, Flex, Grid, Tabs, Avatar, Dialog } from '@radix-ui/themes';
-import { useSession } from 'next-auth/react';
 import type { Session } from 'next-auth';
 import { useToast } from '@/components/Toast';
 import { useTranslation } from 'react-i18next';
@@ -41,6 +40,8 @@ export default function ProfileForm({ session, updateName, updateEmail, isAdminU
   const { showToast } = useToast();
   const { t, i18n } = useTranslation('translations');
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingName, setIsLoadingName] = useState(false);
+  const [nameError, setNameError] = useState<string | null>(null);
   const [presetAvatars, setPresetAvatars] = useState<UserAvatar[]>([]);
   const [customAvatars, setCustomAvatars] = useState<UserAvatar[]>([]);
   const [selectedAvatar, setSelectedAvatar] = useState<string | null>(null);
@@ -49,7 +50,7 @@ export default function ProfileForm({ session, updateName, updateEmail, isAdminU
   const [showEmailConfirm, setShowEmailConfirm] = useState(false);
   const [pendingUpdate, setPendingUpdate] = useState<ProfileFormData | null>(null);
   const [formData, setFormData] = useState<ProfileFormData>({
-    name: session?.user?.name || '',
+    name: '',
     email: session?.user?.email || ''
   });
   const [currentPassword, setCurrentPassword] = useState('');
@@ -60,7 +61,8 @@ export default function ProfileForm({ session, updateName, updateEmail, isAdminU
     fetchPresetAvatars();
     fetchCustomAvatars();
     fetchCurrentAvatar();
-  }, []);
+    fetchUserName();
+  }, [session?.user?.email]);
 
   const fetchCurrentAvatar = async () => {
     try {
@@ -110,7 +112,30 @@ export default function ProfileForm({ session, updateName, updateEmail, isAdminU
     }
   };
 
-
+  const fetchUserName = async () => {
+    try {
+      setIsLoadingName(true);
+      setNameError(null);
+      const response = await fetch('/api/user/profile');
+      if (response.ok) {
+        const data = await response.json() as { name?: string; email?: string; image?: string };
+        // Handle both null/undefined and empty string cases
+        if (data.name && data.name.trim() !== '') {
+          setFormData(prev => ({
+            ...prev,
+            name: data.name as string
+          }));
+        }
+      } else {
+        setNameError('Failed to fetch profile information');
+      }
+    } catch (error) {
+      console.error('Error fetching user name:', error);
+      setNameError('Failed to fetch profile information');
+    } finally {
+      setIsLoadingName(false);
+    }
+  };
 
 
 
@@ -761,13 +786,20 @@ export default function ProfileForm({ session, updateName, updateEmail, isAdminU
                     <TextField.Slot>
                       <TextField.Input
                         name="name"
-                        placeholder={t('profile.name')}
+                        placeholder={isLoadingName ? t('common.status.loading') : t('profile.name')}
                         value={formData.name}
                         onChange={handleInputChange}
                         required
+                        disabled={isLoadingName}
                       />
                     </TextField.Slot>
                   </TextField.Root>
+                  {isLoadingName && (
+                    <Text size="1" color="gray" style={{ marginTop: '0.25rem' }}>
+                      {t('common.status.loading')}...
+                    </Text>
+                  )}
+
 
                   <TextField.Root style={{ width: '100%' }}>
                     <TextField.Slot>

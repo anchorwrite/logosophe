@@ -770,6 +770,8 @@
     "history": {
       "title": "Werkstroom Geschiedenis",
       "description": "Bekijk voltooide werkstromen en hun resultaten",
+      "noWorkflows": "Geen Werkstromen",
+      "noWorkflowsDescription": "Je hebt nog geen werkstromen. Begin met samenwerken om je geschiedenis hier te zien!",
       "viewHistory": "Geschiedenis Bekijken",
       "detail": {
         "title": "Werkstroom Geschiedenis Details"
