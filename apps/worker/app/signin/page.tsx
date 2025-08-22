@@ -47,6 +47,27 @@ export default async function SignInPage({
   };
 
   const session = await auth()
+  
+  // If user is already signed in, redirect them to appropriate page
+  if (session) {
+    try {
+      const context = await getCloudflareContext({async: true});
+      const db = context.env.DB;
+      const isAdmin = await db.prepare(
+        'SELECT 1 FROM Credentials WHERE Email = ?'
+      ).bind(session.user?.email).first();
+      
+      if (isAdmin) {
+        redirect('/dashboard');
+      } else {
+        redirect('/harbor');
+      }
+    } catch (error) {
+      // If we can't determine user type, default to harbor
+      redirect('/harbor');
+    }
+  }
+
   return (
     <main style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <Container>
@@ -152,88 +173,57 @@ export default async function SignInPage({
             <Flex direction="column" gap="3">
               <Box style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
                 <Heading>
-                  {session ? 'User Profile' : 'Administrator Sign In'}
+                  Administrator Sign In
                 </Heading>
               </Box>
               <Box style={{ display: 'flex', justifyContent: 'center', width: '100%', paddingBottom: '1rem' }}>
                 <Text color="gray">
-                  {session ? 'Manage your account' : '(System and tenant admins only!)'}
+                  (System and tenant admins only!)
                 </Text>
               </Box>
             </Flex>
           </Box>
           <Box style={{ padding: '1rem' }}>
-            {session ? (
-              <Flex direction="column" gap="4">
-                <Flex align="center" gap="3">
-                  <Avatar fallback={session.user?.name?.[0] || 'U'} src={session.user?.image || undefined} />
-                  <Flex direction="column" gap="1">
-                    <Text>
-                      {session.user?.name || 'No name set'}
-                    </Text>
-                    <Text color="gray">
-                      {session.user?.email || 'No email set'}
-                    </Text>
-                  </Flex>
-                </Flex>
-                <Box>
-                  <Text>
-                    User ID: {session.user?.id}
-                  </Text>
-                </Box>
-                <form
-                  action={async () => {
-                    'use server'
-                    await handleSignOut()
-                  }}
-                >
-                  <Button type="submit" variant="solid" color="red" style={{ width: '100%' }}>
-                    Sign Out
-                  </Button>
-                </form>
-              </Flex>
-            ) : (
-              <>
-                <form
-                  action={async (formData) => {
-                    'use server'
-                    let errorMessage: string | null = null;
-                    
-                    try {
-                      // Check if user is an admin first
-                      const context = await getCloudflareContext({async: true});
-                      const db = context.env.DB;
-                      const isAdmin = await db.prepare(
-                        'SELECT 1 FROM Credentials WHERE Email = ?'
-                      ).bind(formData.get('email')).first();
+            <form
+              action={async (formData) => {
+                'use server'
+                let errorMessage: string | null = null;
+                
+                try {
+                  // Check if user is an admin first
+                  const context = await getCloudflareContext({async: true});
+                  const db = context.env.DB;
+                  const isAdmin = await db.prepare(
+                    'SELECT 1 FROM Credentials WHERE Email = ?'
+                  ).bind(formData.get('email')).first();
 
-                      // Let Auth.js handle the redirect based on user type
-                      await signIn('credentials', {
-                        email: formData.get('email'),
-                        password: formData.get('password'),
-                        redirectTo: isAdmin ? '/dashboard' : '/harbor'
-                      })
-                    } catch (error) {
-                      // Don't catch NEXT_REDIRECT errors from signIn - let them bubble up
-                      if (error instanceof Error && error.message === 'NEXT_REDIRECT') {
-                        throw error;
-                      }
-                      
-                      if (error instanceof AuthError) {
-                        errorMessage = error.message || 'AuthenticationError';
-                      } else {
-                        console.error('Sign-in error:', error)
-                        errorMessage = 'AuthenticationError';
-                      }
-                    }
-                    
-                    // Handle redirects outside of try/catch to avoid NEXT_REDIRECT issues
-                    if (errorMessage) {
-                      redirect(`/signin?error=${errorMessage}`)
-                    }
-                  }}
-                  style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}
-                >
+                  // Let Auth.js handle the redirect based on user type
+                  await signIn('credentials', {
+                    email: formData.get('email'),
+                    password: formData.get('password'),
+                    redirectTo: isAdmin ? '/dashboard' : '/harbor'
+                  })
+                } catch (error) {
+                  // Don't catch NEXT_REDIRECT errors from signIn - let them bubble up
+                  if (error instanceof Error && error.message === 'NEXT_REDIRECT') {
+                    throw error;
+                  }
+                  
+                  if (error instanceof AuthError) {
+                    errorMessage = error.message || 'AuthenticationError';
+                  } else {
+                    console.error('Sign-in error:', error)
+                    errorMessage = 'AuthenticationError';
+                  }
+                }
+                
+                // Handle redirects outside of try/catch to avoid NEXT_REDIRECT issues
+                if (errorMessage) {
+                  redirect(`/signin?error=${errorMessage}`)
+                }
+              }}
+              style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}
+            >
                                      <input
                      type="email"
                      name="email"
@@ -266,8 +256,6 @@ export default async function SignInPage({
                     Sign In
                   </Button>
                 </form>
-              </>
-            )}
           </Box>
         </Card>
       </Container>
