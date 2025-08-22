@@ -30,17 +30,12 @@ export default async function SubscriberMessagingPage({ params }: { params: Prom
   const session = await auth();
   const { lang } = await params;
   
-  console.log('Messaging page - User email:', session?.user?.email);
-  console.log('Messaging page - User role:', session?.user?.role);
-  
   if (!session?.user?.email) {
-    console.log('Messaging page - No session, redirecting to signin');
     redirect('/signin');
   }
 
   // Only subscribers can access this page
   if (session.user.role !== 'subscriber') {
-    console.log('Messaging page - User role is not subscriber, redirecting to harbor');
     redirect(`/${lang}/harbor`);
   }
 
@@ -50,10 +45,7 @@ export default async function SubscriberMessagingPage({ params }: { params: Prom
 
   // Check if messaging is enabled
   const settings = await getSystemSettings();
-  console.log('Messaging page - All settings:', settings);
-  console.log('Messaging page - Messaging enabled:', settings.messaging_enabled);
   if (settings.messaging_enabled !== 'true') {
-    console.log('Messaging page - Messaging disabled, redirecting to harbor');
     redirect(`/${lang}/harbor`);
   }
 
@@ -74,10 +66,7 @@ export default async function SubscriberMessagingPage({ params }: { params: Prom
     .bind(session.user.email, session.user.email)
     .all() as any;
 
-  console.log('Messaging page - User tenants result:', userTenantsResult);
-
   if (!userTenantsResult?.results || userTenantsResult.results.length === 0) {
-    console.log('Messaging page - No tenant found in either table, redirecting to harbor');
     redirect(`/${lang}/harbor`);
   }
 
@@ -100,9 +89,7 @@ export default async function SubscriberMessagingPage({ params }: { params: Prom
   const userTenantId = userTenants[0].TenantId;
   const userTenantName = userTenants[0].TenantName;
 
-  console.log('Messaging page - Final userTenants:', userTenants);
-  console.log('Messaging page - Primary userTenantId:', userTenantId);
-  console.log('Messaging page - Primary userTenantName:', userTenantName);
+
 
   // Log access
   await normalizedLogging.logMessagingOperations({

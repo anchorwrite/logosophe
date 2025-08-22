@@ -117,7 +117,6 @@ export function SubscriberMessagingInterface({
         const response = await fetch(`/api/harbor/messaging/get?tenantId=${userTenantId}&limit=50`);
         if (response.ok) {
           const data = await response.json() as { success: boolean; messages?: RecentMessage[] };
-          console.log('Polling response:', data);
           if (data.success && data.messages) {
             // Only update messages if there are actual changes
             setMessages(prev => {
@@ -137,7 +136,6 @@ export function SubscriberMessagingInterface({
                   
                   if (hasAttachmentChanges) {
                     hasUpdates = true;
-                    console.log(`Updating message ${existingMsg.Id} with new attachment data`);
                   }
                   
                   // Merge the data, keeping existing properties but updating with new ones
@@ -147,17 +145,11 @@ export function SubscriberMessagingInterface({
               });
               
               if (newMessages.length > 0) {
-                console.log(`Found ${newMessages.length} new messages via polling:`, newMessages);
-                console.log('New message details:', newMessages[0]);
-                if (newMessages[0].HasAttachments) {
-                  console.log('New message has attachments:', newMessages[0].attachments);
-                }
                 return [...newMessages, ...updatedMessages];
               }
               
               // Only return updated messages if there are actual changes
               if (hasUpdates) {
-                console.log('Updating existing messages with new data');
                 return updatedMessages;
               }
               

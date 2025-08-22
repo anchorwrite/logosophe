@@ -771,6 +771,8 @@
     "history": {
       "title": "Workflow-Verlauf",
       "description": "Überprüfe abgeschlossene Workflows und ihre Ergebnisse",
+      "noWorkflows": "Keine Workflows",
+      "noWorkflowsDescription": "Du hast noch keine Workflows. Beginne mit der Zusammenarbeit, um deinen Verlauf hier zu sehen!",
       "viewHistory": "Verlauf anzeigen",
       "detail": {
         "title": "Workflow-Verlauf Details"

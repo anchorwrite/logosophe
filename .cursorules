@@ -266,6 +266,15 @@
   - Tenant membership is stored in the TenantUsers table
   - Role assignments are stored in the UserRoles table
 
+## User Profile Data
+- **Only subscribers and admin users have profiles** - regular users (non-subscribers) do not have profile data
+- **Subscriber profiles** are stored in the Subscribers table with fields: Name, Email, Active, etc.
+- **Admin user profiles** are stored in the Credentials table with fields: Email, Role, etc.
+- **Profile API endpoints** should check the appropriate table based on user type:
+  - Subscribers: Check Subscribers table first, fall back to users table
+  - Admin users: Check Credentials table first, fall back to users table
+  - Regular users: Only check users table (limited profile data)
+
 ## Role-Based Permissions
 - Static permissions per role:
   - author: write, view, upload, download, delete, link, share

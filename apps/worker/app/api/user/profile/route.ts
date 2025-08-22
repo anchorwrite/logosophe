@@ -9,6 +9,48 @@ interface ProfileUpdate {
   email: string;
 }
 
+// GET /api/user/profile - Get user profile information
+export async function GET(request: Request) {
+  try {
+    const session = await auth();
+    if (!session?.user?.email || !session?.user?.id) {
+      return new Response('Unauthorized', { status: 401 });
+    }
+
+    const { env } = await getCloudflareContext({async: true});
+    const db = env.DB;
+
+    // Get current user data - check Subscribers table first, then fall back to users table
+    let currentUser = await db.prepare(`
+      SELECT Name as name, Email as email, NULL as image
+      FROM Subscribers 
+      WHERE Email = ? AND Active = TRUE
+    `).bind(session.user.email).first();
+
+    if (!currentUser) {
+      // Fall back to users table if not found in Subscribers
+      currentUser = await db.prepare(`
+        SELECT name, email, image 
+        FROM users 
+        WHERE id = ?
+      `).bind(session.user.id).first();
+    }
+
+    if (!currentUser) {
+      return new Response('User not found', { status: 404 });
+    }
+
+    return Response.json({
+      name: currentUser.name,
+      email: currentUser.email,
+      image: currentUser.image
+    });
+  } catch (error) {
+    console.error('Error fetching profile:', error);
+    return new Response('Internal server error', { status: 500 });
+  }
+}
+
 // PUT /api/user/profile - Update user profile information
 export async function PUT(request: Request) {
   try {
