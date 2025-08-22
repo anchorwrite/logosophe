@@ -1,21 +1,28 @@
 'use client';
 
 import { useState } from 'react';
-import { Button, Flex, AlertDialog } from '@radix-ui/themes';
+import { Button, Flex, AlertDialog, Text } from '@radix-ui/themes';
 
 interface DeleteMessageButtonProps {
   messageId: number;
   tenantId: string;
+  showHardDelete?: boolean;
 }
 
-export default function DeleteMessageButton({ messageId, tenantId }: DeleteMessageButtonProps) {
+export default function DeleteMessageButton({ messageId, tenantId, showHardDelete = false }: DeleteMessageButtonProps) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [deleteType, setDeleteType] = useState<'soft' | 'hard'>('soft');
 
   const handleDelete = async () => {
     try {
       setIsDeleting(true);
-      const response = await fetch(`/api/dashboard/messaging/messages/${messageId}`, {
+      const url = new URL(`/api/dashboard/messaging/messages/${messageId}`, window.location.origin);
+      if (deleteType === 'hard') {
+        url.searchParams.set('type', 'hard');
+      }
+      
+      const response = await fetch(url.toString(), {
         method: 'DELETE',
       });
 
@@ -51,8 +58,35 @@ export default function DeleteMessageButton({ messageId, tenantId }: DeleteMessa
         <AlertDialog.Content>
           <AlertDialog.Title>Delete Message</AlertDialog.Title>
           <AlertDialog.Description>
-            Are you sure you want to delete this message? This action cannot be undone and will remove the message for all recipients.
+            {deleteType === 'soft' 
+              ? 'This will mark the message as deleted but keep it in the database for audit purposes. The message will be hidden from all users.'
+              : 'This will PERMANENTLY DELETE the message and all its data. This action cannot be undone and will remove the message completely from the system.'
+            }
           </AlertDialog.Description>
+          
+          {showHardDelete && (
+            <Flex gap="2" mt="3" align="center">
+              <Text size="2">Delete Type:</Text>
+              <Flex gap="1">
+                <Button 
+                  size="1" 
+                  variant={deleteType === 'soft' ? 'solid' : 'soft'}
+                  onClick={() => setDeleteType('soft')}
+                >
+                  Soft Delete
+                </Button>
+                <Button 
+                  size="1" 
+                  variant={deleteType === 'hard' ? 'solid' : 'soft'}
+                  color="red"
+                  onClick={() => setDeleteType('hard')}
+                >
+                  Hard Delete
+                </Button>
+              </Flex>
+            </Flex>
+          )}
+          
           <Flex gap="3" mt="4" justify="end">
             <AlertDialog.Cancel>
               <Button variant="soft" color="gray">
@@ -60,8 +94,13 @@ export default function DeleteMessageButton({ messageId, tenantId }: DeleteMessa
               </Button>
             </AlertDialog.Cancel>
             <AlertDialog.Action>
-              <Button variant="solid" color="red" onClick={handleDelete} disabled={isDeleting}>
-                {isDeleting ? 'Deleting...' : 'Delete Message'}
+              <Button 
+                variant="solid" 
+                color={deleteType === 'hard' ? 'red' : 'orange'} 
+                onClick={handleDelete} 
+                disabled={isDeleting}
+              >
+                {isDeleting ? 'Deleting...' : `${deleteType === 'hard' ? 'Permanently Delete' : 'Delete'} Message`}
               </Button>
             </AlertDialog.Action>
           </Flex>

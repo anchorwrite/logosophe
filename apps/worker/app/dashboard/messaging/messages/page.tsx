@@ -8,6 +8,7 @@ import { Container, Heading, Text, Flex, Card, Button, Box, Table, Badge } from 
 import Link from 'next/link';
 import type { D1Result } from '@cloudflare/workers-types';
 import DeleteMessageButton from './DeleteMessageButton';
+import BulkHardDeleteButton from './BulkHardDeleteButton';
 
 
 interface Message {
@@ -108,11 +109,14 @@ export default async function MessagesPage() {
               View and manage all messages in the system
             </Text>
           </Box>
-          <Button asChild>
-            <Link href="/dashboard/messaging/interface">
-              Compose New Message
-            </Link>
-          </Button>
+          <Flex gap="2">
+            <Button asChild>
+              <Link href="/dashboard/messaging/interface">
+                Compose New Message
+              </Link>
+            </Button>
+            <BulkHardDeleteButton accessibleTenants={accessibleTenants} />
+          </Flex>
         </Flex>
       </Box>
 
@@ -252,7 +256,7 @@ export default async function MessagesPage() {
                             View
                           </Link>
                         </Button>
-                        <DeleteMessageButton messageId={message.Id} tenantId={message.TenantId} />
+                        <DeleteMessageButton messageId={message.Id} tenantId={message.TenantId} showHardDelete={true} />
                       </Flex>
                     </Table.Cell>
                   </Table.Row>

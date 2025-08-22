@@ -418,7 +418,7 @@ SELECT DISTINCT Email FROM (
 ### Message Deletion System Architecture
 **Critical System Design for User Privacy and Data Control**
 
-The messaging system implements a sophisticated **soft deletion architecture** that provides multiple levels of message control while maintaining data integrity and audit trails.
+The messaging system implements a sophisticated **multi-tier deletion architecture** that provides multiple levels of message control while maintaining data integrity and audit trails.
 
 #### **Core Deletion Tables and Fields**
 ```sql
@@ -429,11 +429,19 @@ Messages.DeletedAt DATETIME
 -- MessageRecipients table: User-specific message deletion
 MessageRecipients.IsDeleted BOOLEAN DEFAULT FALSE  
 MessageRecipients.DeletedAt DATETIME
+
+-- MessageAttachments table: File attachment cleanup
+MessageAttachments (cascade delete with Messages)
+
+-- MessageLinks table: Link cleanup
+MessageLinks (cascade delete with Messages)
 ```
 
 #### **Deletion Logic Implementation**
 **Sender Deletion (Global)**: When a message sender deletes a message, it's removed for everyone
 **Recipient Deletion (User-Specific)**: When a recipient deletes a message, it's only hidden from their view
+**Admin Hard Delete (Permanent)**: When an admin performs hard delete, all related data is permanently removed
+**R2 Storage Cleanup**: File attachments are deleted from R2 storage before database cleanup
 
 #### **SSE Integration Requirements**
 - **Query Filtering**: All SSE polling queries must filter both deletion flags
@@ -457,12 +465,17 @@ MessageRecipients.DeletedAt DATETIME
 **Delete Endpoint**: `/api/harbor/messaging/messages/[id]/delete` handles both sender and recipient deletions
 **Archive Endpoint**: `/api/dashboard/messaging/messages/[id]/archive` provides message archiving functionality
 **Read Status**: `/api/dashboard/messaging/messages/[id]/mark-read` updates message read status in real-time
+**Admin Delete Endpoint**: `/api/dashboard/messaging/messages/[id]` supports both soft and hard delete with `?type=hard`
+**Bulk Delete Endpoint**: `/api/dashboard/messaging/messages/bulk-hard-delete` for efficient bulk operations
 
 #### **UI Integration**
 **Dashboard Interface**: Messages disappear from "Recent Messages" list when deleted or archived
 **Real-Time Updates**: SSE events immediately reflect deletion status changes
 **Visual Feedback**: Toast notifications confirm successful deletion operations
 **State Management**: Proper cleanup of deleted message references in UI components
+**Deletion Options**: Clear choice between soft delete (audit trail) and hard delete (permanent removal)
+**Bulk Operations**: Efficient interface for managing multiple soft-deleted messages
+**Storage Feedback**: Clear indication of R2 file cleanup operations
 
 ### Toast Notification System ✅
 **Professional User Feedback Implementation**
@@ -538,17 +551,23 @@ The messaging system has been reorganized to provide clear separation between ha
 - **Forward System**: Forward messages to new recipients with original message context
 - **Archive System**: Archive/unarchive messages with proper database updates
 - **Delete System**: Soft delete messages with user-specific visibility control
+- **Hard Delete System**: Permanent message deletion with R2 file cleanup and cascading database deletes
+- **Bulk Operations**: Bulk hard delete for soft-deleted messages with filtering options
 - **Message Composition**: Enhanced composer with reply/forward context handling
 
 #### **API Endpoints Created**
 - **POST** `/api/dashboard/messaging/messages/[id]/mark-read` - Mark messages as read
 - **POST** `/api/dashboard/messaging/messages/[id]/archive` - Archive/unarchive messages
 - **POST** `/api/harbor/messaging/messages/[id]/delete` - Delete messages (reuses harbor endpoint)
+- **DELETE** `/api/dashboard/messaging/messages/[id]` - Enhanced with hard delete support (`?type=hard`)
+- **POST** `/api/dashboard/messaging/messages/bulk-hard-delete` - Bulk hard delete with filtering options
 
 #### **UI Components Enhanced**
 - **MessagingInterface.tsx**: Main interface with real-time updates and message management
 - **MessageThread.tsx**: Individual message display with action buttons and read status
 - **MessageComposer.tsx**: Enhanced composer supporting replies and forwards
+- **DeleteMessageButton.tsx**: Individual message deletion with soft/hard delete options
+- **BulkHardDeleteButton.tsx**: Bulk deletion interface with filtering and confirmation
 - **Types.ts**: Consolidated type definitions eliminating compilation conflicts
 
 #### **Key Features Delivered**
@@ -557,12 +576,18 @@ The messaging system has been reorganized to provide clear separation between ha
 - **Professional Feedback**: Toast notifications replacing all alert() calls
 - **Real-Time Updates**: Automatic message list refresh after operations
 - **Visual Indicators**: Unread badges, announcement badges, and status indicators
+- **Flexible Deletion**: Soft delete for audit trails, hard delete for permanent removal
+- **Bulk Operations**: Efficient bulk deletion with tenant and age filtering
+- **Storage Cleanup**: Automatic R2 file deletion for complete message cleanup
 
 #### **User Experience Improvements**
 - **Streamlined Workflow**: Reply directly to sender without manual selection
 - **Immediate Feedback**: Toast notifications for all operations
 - **Visual Clarity**: Clear indicators for message types and status
 - **Responsive Design**: Professional interface matching enterprise standards
+- **Deletion Confirmation**: Clear dialogs for destructive operations
+- **Bulk Operations**: Efficient management of multiple messages
+- **Storage Transparency**: Clear feedback on file cleanup operations
 
 ### Phase 6 Completion Status: 100% ✅
 **What's Working**:
@@ -587,6 +612,9 @@ The messaging system has been reorganized to provide clear separation between ha
 - ✅ **Toast notifications replacing all alert() calls**
 - ✅ **Type consolidation eliminating compilation errors**
 - ✅ **Role-based messaging properly scoped to selected tenants**
+- ✅ **Dashboard Message Deletion for Admins with Hard Delete Support**
+- ✅ **R2 File Deletion Integration for Message Attachments**
+- ✅ **TypeScript Error Resolution in BulkHardDeleteButton**
 
 **What's Complete**:
 - ✅ All SSE infrastructure and event broadcasting
@@ -599,6 +627,9 @@ The messaging system has been reorganized to provide clear separation between ha
 - ✅ **Dashboard messaging interface with full CRUD operations**
 - ✅ **Message deletion system with user-specific visibility control**
 - ✅ **Professional UI components with proper error handling**
+- ✅ **Dashboard admin message deletion with hard delete support**
+- ✅ **R2 storage cleanup for message attachments**
+- ✅ **TypeScript compilation fixes for all dashboard components**
 
 **Next Steps**:
 1. Move to Phase 7: Testing & Optimization
@@ -614,10 +645,33 @@ The messaging system has been reorganized to provide clear separation between ha
 - Dashboard Messaging Interface ✅ (100%)
 - Message Deletion System ✅ (100%)
 - Role-Based Messaging System ✅ (100%)
+- Dashboard Admin Message Deletion ✅ (100%)
+- R2 File Cleanup Integration ✅ (100%)
 - Phase 7: Testing & Optimization 🔄 (0% - Ready to begin)
 
 ### Latest Achievements: Critical Bug Fixes and System Improvements ✅
 **Recent Issues Resolved**:
+
+#### **Dashboard Message Deletion for Admins - Hard Delete Support** ✅
+- **Problem**: Dashboard messaging interface needed admin message deletion capabilities with both soft and hard delete options
+- **Solution**: Implemented comprehensive message deletion system with individual and bulk hard delete support
+- **Result**: Global admin users can delete messages from any tenant, tenant admin users can delete messages from their assigned tenant(s)
+- **Components Created**: `DeleteMessageButton.tsx`, `BulkHardDeleteButton.tsx`
+- **API Endpoints**: Enhanced `/api/dashboard/messaging/messages/[id]` with `?type=hard` support, new `/api/dashboard/messaging/messages/bulk-hard-delete` endpoint
+- **Features**: Soft delete (IsDeleted flag), hard delete (permanent removal), R2 file cleanup, proper cascading deletes
+
+#### **R2 File Deletion Integration for Message Attachments** ✅
+- **Problem**: Message attachments were not being deleted from R2 storage when messages were deleted
+- **Solution**: Modified deletion endpoints to delete R2 files before removing database records
+- **Result**: Complete cleanup of both storage and database when messages are deleted
+- **Implementation**: R2 deletion happens first using `env.MEDIA_BUCKET.delete()`, then database records are removed
+- **Error Handling**: Continues with database cleanup even if R2 deletion fails (files become orphaned but database is clean)
+
+#### **TypeScript Error Resolution in BulkHardDeleteButton** ✅
+- **Problem**: TypeScript compilation error: `Property 'error' does not exist on type '{ message: string; summary?: {...} }'`
+- **Solution**: Updated type assertion to include optional `error` field for error responses
+- **Result**: Clean TypeScript compilation with proper type safety for both success and error API responses
+- **Type Structure**: `{ message?: string; error?: string; summary?: {...} }` with proper optional fields
 
 #### **Role-Based Messaging - Tenant + Role Scoping Fix** ✅
 - **Problem**: When selecting both tenants AND roles, messages were sent to ALL users in the tenant instead of just users with the specific role
@@ -694,6 +748,9 @@ The messaging system has been reorganized to provide clear separation between ha
 - **Improved Context Architecture**: Proper React Context provider placement for all components
 - **Better User Experience**: Clear visual indicators for messaging system status and unread counts
 - **Audit Trail**: Complete deletion logging with timestamps for compliance
+- **Admin Message Management**: Comprehensive dashboard message deletion with hard delete support
+- **Storage Cleanup**: R2 file deletion integration for complete message cleanup
+- **Type Safety**: Resolved all TypeScript compilation errors in dashboard components
 
 **Current System Status**: 
 - **Message Deletion**: Fully functional with proper privacy controls
@@ -701,6 +758,9 @@ The messaging system has been reorganized to provide clear separation between ha
 - **Context Access**: All components properly access messaging context
 - **User Interface**: Clear visual indicators for system status and message counts
 - **SSE Integration**: Robust real-time updates with proper deletion handling
+- **Admin Message Management**: Complete dashboard message deletion with hard delete support
+- **Storage Integration**: R2 file cleanup properly integrated with message deletion
+- **Dashboard Interface**: Full CRUD operations with professional user experience
 
 ## Success Metrics
 
@@ -1304,6 +1364,8 @@ The messaging system now provides comprehensive type safety with proper TypeScri
 - **Eliminated Duplication**: No more conflicting interface definitions across components
 - **Maintainability**: Centralized type management for easier updates and consistency
 - **Compilation Errors**: Resolved all TypeScript compilation conflicts
+- **API Response Types**: Proper type assertions for both success and error responses
+- **Dashboard Components**: All dashboard messaging components now compile without errors
 
 #### **Shared Type Definitions**
 - **RecentMessage**: Complete message interface with all required fields
@@ -1314,9 +1376,11 @@ The messaging system now provides comprehensive type safety with proper TypeScri
 
 #### **Type Safety Improvements**
 - **Database Queries**: Proper type assertions for all database query results
-- **API Responses**: Type-safe handling of API response data
+- **API Responses**: Type-safe handling of API response data with proper error field support
 - **Component Props**: Consistent prop types across all messaging components
 - **State Management**: Type-safe state updates and management
+- **Dashboard Components**: Complete type safety for all admin messaging operations
+- **Error Handling**: Proper typing for both success and error API responses
 
 #### **Database Schema Alignment**
 - **Column Names**: Corrected mismatches (MediaId vs MediaFileId, R2Key vs FileKey)
@@ -1329,6 +1393,8 @@ The messaging system now provides comprehensive type safety with proper TypeScri
 - **Better IDE Support**: Improved autocomplete and error detection
 - **Code Quality**: Consistent type usage across all components
 - **Maintenance**: Easier to update types and maintain consistency
+- **API Reliability**: Proper error handling with type-safe error responses
+- **Dashboard Stability**: All admin messaging operations now have complete type safety
 
 ## Phase 6 Achievements: Harbor Appbar Integration
 
@@ -1678,6 +1744,9 @@ The messaging SSE implementation is now a **production-ready, enterprise-grade r
 - **Toast Notifications**: Professional user feedback throughout the system
 - **Message Management**: Full message lifecycle management with proper database integration
 - **Role-Based Messaging**: Intelligent tenant + role combination with precise recipient targeting
+- **Admin Message Deletion**: Comprehensive dashboard message deletion with hard delete support
+- **Storage Integration**: Complete R2 file cleanup integration with message deletion
+- **Bulk Operations**: Efficient bulk deletion for soft-deleted messages with filtering options
 
 ### Next Steps: Phase 7 🔄
 
@@ -1702,10 +1771,13 @@ The implementation demonstrates the critical importance of:
 - **User Feedback Systems**: Toast notification system replacing blocking alerts
 - **Database Integration**: Proper SQLite datetime handling and soft deletion
 - **API Design**: RESTful endpoints with proper error handling and validation
+- **Storage Management**: Complete R2 file cleanup integration with database operations
+- **Admin Operations**: Comprehensive dashboard message management with flexible deletion options
+- **Type Assertions**: Proper TypeScript type safety for all API responses and error handling
 
 The phased approach has ensured a stable, secure, and scalable solution that maintains the existing security model while adding modern real-time capabilities and enhanced messaging features. The harbor appbar integration makes messaging highly discoverable and provides users with immediate visibility of their unread messages and connection status.
 
-**The messaging SSE implementation is now ready for production deployment** and represents a significant advancement in the user experience for harbor messaging, providing real-time capabilities that rival modern messaging platforms while maintaining the security and reliability standards expected in enterprise environments.
+**The messaging SSE implementation is now ready for production deployment** and represents a significant advancement in the user experience for harbor messaging, providing real-time capabilities that rival modern messaging platforms while maintaining the security and reliability standards expected in enterprise environments. The addition of comprehensive admin message deletion capabilities with R2 storage integration and bulk operations makes this a complete enterprise messaging solution.
 
 ### Key Lessons Learned: Role-Based Messaging
 

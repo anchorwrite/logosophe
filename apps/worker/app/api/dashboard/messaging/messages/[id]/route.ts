@@ -268,6 +268,14 @@ export async function DELETE(
       }
     }
 
+    // Check delete type from query parameters (default to soft delete)
+    const url = new URL(request.url);
+    const deleteType = url.searchParams.get('type') || 'soft';
+    
+    if (!['soft', 'hard'].includes(deleteType)) {
+      return NextResponse.json({ error: 'Invalid delete type. Use "soft" or "hard"' }, { status: 400 });
+    }
+
     // First, get all attachments for this message to delete from R2
     const attachmentsResult = await db.prepare(`
       SELECT ma.MediaId, mf.R2Key, mf.FileName
@@ -290,39 +298,88 @@ export async function DELETE(
       }
     }
 
-    // Now soft delete the message
-    await db.prepare(`
-      UPDATE Messages 
-      SET IsDeleted = TRUE, DeletedAt = datetime('now')
-      WHERE Id = ?
-    `).bind(messageId).run();
+    if (deleteType === 'hard') {
+      // HARD DELETE: Permanently remove all records
+      
+      // Delete MessageAttachments (cascade will handle this, but explicit for clarity)
+      await db.prepare(`
+        DELETE FROM MessageAttachments WHERE MessageId = ?
+      `).bind(messageId).run();
 
-    // Also soft delete all MessageRecipients for this message
-    await db.prepare(`
-      UPDATE MessageRecipients 
-      SET IsDeleted = TRUE, DeletedAt = datetime('now')
-      WHERE MessageId = ?
-    `).bind(messageId).run();
+      // Delete MessageLinks (cascade will handle this, but explicit for clarity)
+      await db.prepare(`
+        DELETE FROM MessageLinks WHERE MessageId = ?
+      `).bind(messageId).run();
 
-    // Log activity
-    const { ipAddress, userAgent } = extractRequestContext(request);
-    const normalizedLogging = new NormalizedLogging(db);
-    await normalizedLogging.logMessagingOperations({
-      userEmail: session.user.email,
-      tenantId: messageData.TenantId,
-      activityType: 'DELETE_MESSAGE_DASHBOARD',
-      accessType: 'write',
-      targetId: messageId.toString(),
-      targetName: `Message, ${attachments.length} attachments, and all recipients deleted by admin`,
-      ipAddress,
-      userAgent,
-      metadata: {
-        attachmentsDeleted: attachments.length,
-        attachmentNames: attachments.map(a => a.FileName)
-      }
-    });
+      // Delete MessageRecipients
+      await db.prepare(`
+        DELETE FROM MessageRecipients WHERE MessageId = ?
+      `).bind(messageId).run();
 
-    return NextResponse.json({ success: true, message: 'Message deleted successfully' });
+      // Finally delete the message itself
+      await db.prepare(`
+        DELETE FROM Messages WHERE Id = ?
+      `).bind(messageId).run();
+
+      // Log hard delete activity
+      const { ipAddress, userAgent } = extractRequestContext(request);
+      const normalizedLogging = new NormalizedLogging(db);
+      await normalizedLogging.logMessagingOperations({
+        userEmail: session.user.email,
+        tenantId: messageData.TenantId,
+        activityType: 'HARD_DELETE_MESSAGE_DASHBOARD',
+        accessType: 'write',
+        targetId: messageId.toString(),
+        targetName: `Message, ${attachments.length} attachments, and all recipients HARD DELETED by admin`,
+        ipAddress,
+        userAgent,
+        metadata: {
+          deleteType: 'hard',
+          attachmentsDeleted: attachments.length,
+          attachmentNames: attachments.map(a => a.FileName)
+        }
+      });
+
+      return NextResponse.json({ success: true, message: 'Message permanently deleted' });
+
+    } else {
+      // SOFT DELETE: Mark as deleted but keep records
+      
+      // Soft delete the message
+      await db.prepare(`
+        UPDATE Messages 
+        SET IsDeleted = TRUE, DeletedAt = datetime('now')
+        WHERE Id = ?
+      `).bind(messageId).run();
+
+      // Also soft delete all MessageRecipients for this message
+      await db.prepare(`
+        UPDATE MessageRecipients 
+        SET IsDeleted = TRUE, DeletedAt = datetime('now')
+        WHERE MessageId = ?
+      `).bind(messageId).run();
+
+      // Log soft delete activity
+      const { ipAddress, userAgent } = extractRequestContext(request);
+      const normalizedLogging = new NormalizedLogging(db);
+      await normalizedLogging.logMessagingOperations({
+        userEmail: session.user.email,
+        tenantId: messageData.TenantId,
+        activityType: 'DELETE_MESSAGE_DASHBOARD',
+        accessType: 'write',
+        targetId: messageId.toString(),
+        targetName: `Message, ${attachments.length} attachments, and all recipients soft deleted by admin`,
+        ipAddress,
+        userAgent,
+        metadata: {
+          deleteType: 'soft',
+          attachmentsDeleted: attachments.length,
+          attachmentNames: attachments.map(a => a.FileName)
+        }
+      });
+
+      return NextResponse.json({ success: true, message: 'Message deleted successfully' });
+    }
 
   } catch (error) {
     console.error('Error deleting message for dashboard:', error);
