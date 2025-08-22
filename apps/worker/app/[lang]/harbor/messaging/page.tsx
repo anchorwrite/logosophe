@@ -255,8 +255,6 @@ export default async function SubscriberMessagingPage({ params }: { params: Prom
     }
     return acc;
   }, [] as { TenantId: string; RoleId: string; UserCount: number }[]);
-  
-  console.log('Messaging page - Roles generated from recipients:', roles);
 
   // Calculate the actual available recipient count (excluding blocked users)
   const availableRecipientsCount = recipients.filter(r => !r.IsBlocked).length;

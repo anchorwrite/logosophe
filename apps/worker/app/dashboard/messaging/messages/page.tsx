@@ -7,6 +7,7 @@ import { NormalizedLogging, extractRequestContext } from '@/lib/normalized-loggi
 import { Container, Heading, Text, Flex, Card, Button, Box, Table, Badge } from '@radix-ui/themes';
 import Link from 'next/link';
 import type { D1Result } from '@cloudflare/workers-types';
+import DeleteMessageButton from './DeleteMessageButton';
 
 
 interface Message {
@@ -251,11 +252,7 @@ export default async function MessagesPage() {
                             View
                           </Link>
                         </Button>
-                        {message.IsRecalled && (
-                          <Button size="1" variant="soft" color="red">
-                            Delete
-                          </Button>
-                        )}
+                        <DeleteMessageButton messageId={message.Id} tenantId={message.TenantId} />
                       </Flex>
                     </Table.Cell>
                   </Table.Row>
