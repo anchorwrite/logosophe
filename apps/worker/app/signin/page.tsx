@@ -7,7 +7,6 @@ import { auth, signIn, signOut } from '@/auth'
 import { AuthError } from 'next-auth'
 import { handleSignOut } from '@/signout/actions'
 
-
 export const metadata: Metadata = {
   title: 'Logosophe Sign In Page',
 }
@@ -68,6 +67,21 @@ export default async function SignInPage({
     }
   }
 
+  // Only show error if it's a valid, non-empty error from a legitimate sign-in attempt
+  // This prevents showing errors from URL manipulation or redirect issues
+  const validErrors = ['CredentialsSignin', 'UserNotFound', 'IncorrectPassword', 'OAuthAccountNotLinked', 'Configuration'];
+  const shouldShowError = error && 
+                         typeof error === 'string' && 
+                         error.trim() !== '' && 
+                         validErrors.includes(error) &&
+                         // Only show if we have other indicators this was a real sign-in attempt
+                         (params?.callbackUrl || params?.error_description || params?.state);
+
+  // If we have an error parameter but no legitimate sign-in context, redirect to clean signin page
+  if (error && !shouldShowError) {
+    redirect('/signin');
+  }
+
   return (
     <main style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <Container>
@@ -88,7 +102,7 @@ export default async function SignInPage({
             </Flex>
           </Box>
           <Box style={{ padding: '1rem' }}>
-            {error && (error === 'OAuthAccountNotLinked' || error === 'Configuration') && (
+            {shouldShowError && (
               <Box style={{ 
                 backgroundColor: 'var(--red-2)', 
                 border: '1px solid var(--red-6)', 
