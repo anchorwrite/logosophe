@@ -243,36 +243,83 @@ export async function DELETE(
       return NextResponse.json({ error: 'Invalid message ID' }, { status: 400 });
     }
 
-    // Only system admins can delete messages
+    // Check if user has admin access
     const isAdmin = await isSystemAdmin(session.user.email, db);
-    if (!isAdmin) {
+    const accessibleTenants = await getUserMessagingTenants(session.user.email);
+    
+    if (!isAdmin && accessibleTenants.length === 0) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 
-    // Soft delete the message
+    // Get message data for access control and logging
+    const messageData = await db.prepare(`
+      SELECT TenantId FROM Messages WHERE Id = ?
+    `).bind(messageId).first() as { TenantId: string } | undefined;
+
+    if (!messageData) {
+      return NextResponse.json({ error: 'Message not found' }, { status: 404 });
+    }
+
+    // Check access control: Global admins can delete any message, tenant admins can only delete messages from their tenants
+    if (!isAdmin) {
+      // Tenant admin: check if message belongs to one of their accessible tenants
+      if (!accessibleTenants.includes(messageData.TenantId)) {
+        return NextResponse.json({ error: 'Access denied: Message not in your tenant scope' }, { status: 403 });
+      }
+    }
+
+    // First, get all attachments for this message to delete from R2
+    const attachmentsResult = await db.prepare(`
+      SELECT ma.MediaId, mf.R2Key, mf.FileName
+      FROM MessageAttachments ma
+      JOIN MediaFiles mf ON ma.MediaId = mf.Id
+      WHERE ma.MessageId = ?
+    `).bind(messageId).all() as D1Result<{ MediaId: number; R2Key: string; FileName: string }>;
+
+    const attachments = attachmentsResult.results || [];
+
+    // Delete files from R2 storage first
+    for (const attachment of attachments) {
+      try {
+        await env.MEDIA_BUCKET.delete(attachment.R2Key);
+        console.log(`Deleted R2 file: ${attachment.FileName} (${attachment.R2Key})`);
+      } catch (error) {
+        console.error(`Failed to delete R2 file ${attachment.FileName}:`, error);
+        // Continue with deletion even if R2 deletion fails
+        // The file will be orphaned in R2 but database will be cleaned up
+      }
+    }
+
+    // Now soft delete the message
     await db.prepare(`
       UPDATE Messages 
       SET IsDeleted = TRUE, DeletedAt = datetime('now')
       WHERE Id = ?
     `).bind(messageId).run();
 
-    // Get message data for logging
-    const messageData = await db.prepare(`
-      SELECT TenantId FROM Messages WHERE Id = ?
-    `).bind(messageId).first() as { TenantId: string } | undefined;
+    // Also soft delete all MessageRecipients for this message
+    await db.prepare(`
+      UPDATE MessageRecipients 
+      SET IsDeleted = TRUE, DeletedAt = datetime('now')
+      WHERE MessageId = ?
+    `).bind(messageId).run();
 
     // Log activity
     const { ipAddress, userAgent } = extractRequestContext(request);
     const normalizedLogging = new NormalizedLogging(db);
     await normalizedLogging.logMessagingOperations({
       userEmail: session.user.email,
-      tenantId: messageData?.TenantId || 'unknown',
+      tenantId: messageData.TenantId,
       activityType: 'DELETE_MESSAGE_DASHBOARD',
       accessType: 'write',
       targetId: messageId.toString(),
-      targetName: 'Message deleted by admin',
+      targetName: `Message, ${attachments.length} attachments, and all recipients deleted by admin`,
       ipAddress,
-      userAgent
+      userAgent,
+      metadata: {
+        attachmentsDeleted: attachments.length,
+        attachmentNames: attachments.map(a => a.FileName)
+      }
     });
 
     return NextResponse.json({ success: true, message: 'Message deleted successfully' });
