@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Container, Heading, Text, Flex, Card, Button, Box, Table, Badge, TextField } from '@radix-ui/themes';
+import UserProfileModal from './UserProfileModal';
 
 interface Recipient {
   Email: string;
@@ -12,7 +13,21 @@ interface Recipient {
   IsBlocked: boolean;
   IsActive: boolean;
   IsBanned: boolean;
-  IsPrimaryTenant: boolean; // New field to identify primary vs additional tenant rows
+  IsPrimaryTenant: boolean; // This is just for UI grouping, not a real concept
+  CreatedAt?: string;
+  Joined?: string;
+  LastSignin?: string;
+  AllTenants?: Array<{
+    TenantId: string;
+    TenantName?: string;
+    Roles: string[];
+  }>;
+  // Activity data
+  MessagesSent?: number;
+  MediaDocuments?: number;
+  PublishedDocuments?: number;
+  LastSigninFromLogs?: string;
+  IsGloballyBlocked?: boolean;
 }
 
 interface Tenant {
@@ -24,13 +39,24 @@ interface Tenant {
 interface RecipientsClientProps {
   initialUsers: Recipient[];
   initialTenants: Tenant[];
+  currentUserEmail: string;
+  isSystemAdmin: boolean;
+  accessibleTenants: string[];
 }
 
-export function RecipientsClient({ initialUsers, initialTenants }: RecipientsClientProps) {
+export function RecipientsClient({ 
+  initialUsers, 
+  initialTenants, 
+  currentUserEmail, 
+  isSystemAdmin, 
+  accessibleTenants 
+}: RecipientsClientProps) {
   const [users, setUsers] = useState<Recipient[]>(initialUsers);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTenant, setSelectedTenant] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
+  const [selectedUser, setSelectedUser] = useState<Recipient | null>(null);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
 
   const filteredUsers = users.filter(user => {
     const matchesSearch = searchTerm === '' || 
@@ -214,7 +240,21 @@ export function RecipientsClient({ initialUsers, initialTenants }: RecipientsCli
                             <Button size="1" variant="soft">
                               Message
                             </Button>
-                            <Button size="1" variant="soft">
+                            <Button 
+                              size="1" 
+                              variant="soft"
+                              onClick={() => {
+                                // Check access control: tenant admins can only view users in their accessible tenants
+                                if (!isSystemAdmin && !accessibleTenants.includes(user.TenantId)) {
+                                  return; // Should not happen due to server-side filtering, but safety check
+                                }
+                                setSelectedUser(user);
+                                setIsProfileModalOpen(true);
+                                
+                                // Log profile view (optional - could be moved to server-side if needed)
+                                console.log(`Viewing profile for user: ${user.Email} by ${currentUserEmail}`);
+                              }}
+                            >
                               View Profile
                             </Button>
                           </Flex>
@@ -261,6 +301,19 @@ export function RecipientsClient({ initialUsers, initialTenants }: RecipientsCli
           </Flex>
         </Box>
       </Card>
+
+      {/* User Profile Modal */}
+      <UserProfileModal
+        user={selectedUser}
+        isOpen={isProfileModalOpen}
+        onClose={() => {
+          setIsProfileModalOpen(false);
+          setSelectedUser(null);
+        }}
+        currentUserEmail={currentUserEmail}
+        isSystemAdmin={isSystemAdmin}
+        isTenantAdmin={!isSystemAdmin && accessibleTenants.length > 0}
+      />
     </Container>
   );
 } 
