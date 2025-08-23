@@ -17,7 +17,20 @@ interface Recipient {
   IsBlocked: boolean;
   IsActive: boolean;
   IsBanned: boolean;
-  IsPrimaryTenant: boolean;
+  IsPrimaryTenant: boolean; // This is just for UI grouping, not a real concept
+  CreatedAt?: string;
+  Joined?: string;
+  LastSignin?: string;
+  // Additional fields for profile modal
+  AllTenants?: Array<{
+    TenantId: string;
+    TenantName?: string;
+    Roles: string[];
+  }>;
+  // Activity data
+  MessagesSent?: number;
+  MediaDocuments?: number;
+  PublishedDocuments?: number;
 }
 
 interface Tenant {
@@ -73,13 +86,16 @@ export default async function RecipientsPage() {
         GROUP_CONCAT(COALESCE(ur.RoleId, tu.RoleId)) as RoleIds,
         s.Active,
         s.Banned,
-        CASE WHEN ub.BlockedEmail IS NOT NULL THEN 1 ELSE 0 END as IsBlocked
+        CASE WHEN ub.BlockedEmail IS NOT NULL THEN 1 ELSE 0 END as IsBlocked,
+        s.CreatedAt,
+        s.Joined,
+        s.Signin as LastSignin
       FROM TenantUsers tu
       LEFT JOIN Subscribers s ON tu.Email = s.Email
       LEFT JOIN UserRoles ur ON tu.Email = ur.Email AND tu.TenantId = ur.TenantId
       LEFT JOIN UserBlocks ub ON tu.Email = ub.BlockedEmail AND tu.TenantId = tu.TenantId AND ub.IsActive = TRUE
       WHERE s.Active = TRUE AND s.Banned = FALSE
-      GROUP BY tu.Email, s.Name, tu.TenantId, s.Active, s.Banned, ub.BlockedEmail, ub.BlockerEmail
+      GROUP BY tu.Email, s.Name, tu.TenantId, s.Active, s.Banned, ub.BlockedEmail, ub.BlockerEmail, s.CreatedAt, s.Joined, s.Signin
       ORDER BY tu.Email, tu.TenantId
     `;
 
@@ -105,14 +121,17 @@ export default async function RecipientsPage() {
         GROUP_CONCAT(COALESCE(ur.RoleId, tu.RoleId)) as RoleIds,
         s.Active,
         s.Banned,
-        CASE WHEN ub.BlockedEmail IS NOT NULL THEN 1 ELSE 0 END as IsBlocked
+        CASE WHEN ub.BlockedEmail IS NOT NULL THEN 1 ELSE 0 END as IsBlocked,
+        s.CreatedAt,
+        s.Joined,
+        s.Signin as LastSignin
       FROM TenantUsers tu
       LEFT JOIN Subscribers s ON tu.Email = s.Email
       LEFT JOIN UserRoles ur ON tu.Email = ur.Email AND tu.TenantId = ur.TenantId
       LEFT JOIN UserBlocks ub ON tu.Email = ub.BlockedEmail AND tu.TenantId = tu.TenantId AND ub.IsActive = TRUE
       WHERE tu.TenantId IN (${accessibleTenants.map(() => '?').join(',')})
       AND s.Active = TRUE AND s.Banned = FALSE
-      GROUP BY tu.Email, s.Name, tu.TenantId, s.Active, s.Banned, ub.BlockedEmail, ub.BlockerEmail
+      GROUP BY tu.Email, s.Name, tu.TenantId, s.Active, s.Banned, ub.BlockedEmail, ub.BlockerEmail, s.CreatedAt, s.Joined, s.Signin
       ORDER BY tu.TenantId, s.Name, tu.Email
     `;
     params = accessibleTenants;
@@ -140,8 +159,8 @@ export default async function RecipientsPage() {
   const tenantsResult = await db.prepare(tenantQuery).bind(...(isAdmin ? [] : accessibleTenants)).all() as D1Result<Tenant>;
   const tenants = tenantsResult.results || [];
 
-  // Process users to add online status and primary tenant flag
-  const processedUsers = users.map((user, index) => {
+  // Process users to add online status, primary tenant flag, and fetch all tenant memberships
+  const processedUsers = await Promise.all(users.map(async (user, index) => {
     // Determine if this is the first row for this user
     const isFirstRowForUser = index === 0 || users[index - 1].Email !== user.Email;
     
@@ -161,12 +180,116 @@ export default async function RecipientsPage() {
       isOnline = false;
     }
 
-    return {
-      ...user,
-      IsOnline: isOnline,
-      IsPrimaryTenant: isFirstRowForUser
-    };
-  });
+            // Fetch all tenant memberships and roles for this user
+        let allTenants: Array<{ TenantId: string; TenantName?: string; Roles: string[] }> = [];
+        let messagesSent = 0;
+        let mediaDocuments = 0;
+        let publishedDocuments = 0;
+        let lastSigninFromLogs: string | undefined = undefined;
+        let isGloballyBlocked = false;
+        let accessibleTenantsForUser = accessibleTenants; // For access control in blocking check
+        
+        if (isFirstRowForUser) {
+          try {
+            // Fetch tenant memberships
+            const tenantMemberships = await db.prepare(`
+              SELECT 
+                tu.TenantId,
+                t.Name as TenantName,
+                GROUP_CONCAT(COALESCE(ur.RoleId, tu.RoleId)) as RoleIds
+              FROM TenantUsers tu
+              LEFT JOIN Tenants t ON tu.TenantId = t.Id
+              LEFT JOIN UserRoles ur ON tu.Email = ur.Email AND tu.TenantId = ur.TenantId
+              WHERE tu.Email = ?
+              GROUP BY tu.TenantId, t.Name
+              ORDER BY tu.TenantId
+            `).bind(user.Email).all() as D1Result<{ TenantId: string; TenantName?: string; RoleIds: string }>;
+            
+            allTenants = (tenantMemberships.results || []).map(t => ({
+              TenantId: t.TenantId,
+              TenantName: t.TenantName || t.TenantId,
+              Roles: t.RoleIds ? t.RoleIds.split(',').filter(role => role.trim()) : []
+            }));
 
-  return <RecipientsClient initialUsers={processedUsers} initialTenants={tenants} />;
+            // Fetch activity data
+            const messagesResult = await db.prepare(`
+              SELECT COUNT(*) as count FROM Messages WHERE SenderEmail = ?
+            `).bind(user.Email).first() as { count: number } | null;
+            messagesSent = messagesResult?.count || 0;
+
+            const mediaResult = await db.prepare(`
+              SELECT COUNT(*) as count FROM MediaFiles WHERE UploadedBy = ?
+            `).bind(user.Email).first() as { count: number } | null;
+            mediaDocuments = mediaResult?.count || 0;
+
+            const publishedResult = await db.prepare(`
+              SELECT COUNT(*) as count FROM PublishedContent WHERE PublisherId = ?
+            `).bind(user.Email).first() as { count: number } | null;
+            publishedDocuments = publishedResult?.count || 0;
+
+            // Fetch last sign-in time from SystemLogs
+            const lastSigninResult = await db.prepare(`
+              SELECT Timestamp FROM SystemLogs 
+              WHERE UserEmail = ? AND ActivityType = 'signin' AND IsDeleted = 0
+              ORDER BY Timestamp DESC 
+              LIMIT 1
+            `).bind(user.Email).first() as { Timestamp: string } | null;
+            lastSigninFromLogs = lastSigninResult?.Timestamp || undefined;
+
+            // Check if user is globally blocked using same logic as blocks page
+            let blocksQuery = '';
+            let blockParams: any[] = [];
+            
+            if (isAdmin) {
+              // System admins can see all blocks - check if user is blocked anywhere
+              blocksQuery = `
+                SELECT COUNT(*) as count FROM UserBlocks 
+                WHERE BlockedEmail = ? AND IsActive = TRUE
+              `;
+              blockParams = [user.Email];
+            } else {
+              // Tenant admins can only see blocks from their accessible tenants
+              const placeholders = accessibleTenants.map(() => '?').join(',');
+              blocksQuery = `
+                SELECT COUNT(*) as count FROM UserBlocks 
+                WHERE BlockedEmail = ? AND TenantId IN (${placeholders}) AND IsActive = TRUE
+              `;
+              blockParams = [user.Email, ...accessibleTenants];
+            }
+            
+            const blocksResult = await db.prepare(blocksQuery).bind(...blockParams).first() as { count: number } | null;
+            isGloballyBlocked = (blocksResult?.count || 0) > 0;
+
+          } catch (error) {
+            console.error('Error fetching profile data for user:', user.Email, error);
+            allTenants = [];
+            messagesSent = 0;
+            mediaDocuments = 0;
+            publishedDocuments = 0;
+            lastSigninFromLogs = undefined;
+          }
+        }
+
+            return {
+          ...user,
+          IsOnline: isOnline,
+          IsPrimaryTenant: isFirstRowForUser,
+          AllTenants: allTenants,
+          MessagesSent: messagesSent,
+          MediaDocuments: mediaDocuments,
+          PublishedDocuments: publishedDocuments,
+          LastSigninFromLogs: lastSigninFromLogs,
+          IsGloballyBlocked: isGloballyBlocked
+        };
+  }));
+
+  return (
+    <RecipientsClient 
+      initialUsers={processedUsers} 
+      initialTenants={tenants}
+      currentUserEmail={session.user.email}
+      isSystemAdmin={isAdmin}
+      accessibleTenants={accessibleTenants}
+    />
+  );
 } 
