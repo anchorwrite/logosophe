@@ -1,12 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/auth';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
-import { isSystemAdmin, isTenantAdminFor } from '@/lib/access';
+import { auth } from '@/auth';
+import { isSystemAdmin } from '@/lib/access';
 import { getUserMessagingTenants } from '@/lib/messaging';
-import type { GetRecipientsResponse } from '@/types/messaging';
 
+interface GetRecipientsResponse {
+  users: {
+    email: string;
+    name: string;
+    tenantId: string;
+    roleIds: string; // Changed from roleId to roleIds to hold multiple roles
+    isOnline: boolean;
+    isBlocked: boolean;
+    isActive: boolean;
+    isBanned: boolean;
+  }[];
+  tenants: {
+    id: string;
+    name: string;
+    userCount: number;
+  }[];
+}
 
-// GET /api/messages/recipients - Get available recipients for messaging
 export async function GET(request: NextRequest) {
   try {
     const session = await auth();
@@ -16,26 +31,19 @@ export async function GET(request: NextRequest) {
 
     const { env } = await getCloudflareContext({async: true});
     const db = env.DB;
-    const { searchParams } = new URL(request.url);
-    const tenantId = searchParams.get('tenantId');
-    const includeInactive = searchParams.get('includeInactive') === 'true';
 
-    // Check if user is system admin
+    // Check if user has admin access
     const isAdmin = await isSystemAdmin(session.user.email, db);
-    
-    // Get user's accessible tenants
     const accessibleTenants = await getUserMessagingTenants(session.user.email);
     
     if (!isAdmin && accessibleTenants.length === 0) {
-      return NextResponse.json({ error: 'No accessible tenants found' }, { status: 403 });
+      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 
-    // If tenantId is specified, verify access
-    if (tenantId) {
-      if (!isAdmin && !accessibleTenants.includes(tenantId)) {
-        return NextResponse.json({ error: 'Access denied to specified tenant' }, { status: 403 });
-      }
-    }
+    // Get query parameters
+    const { searchParams } = new URL(request.url);
+    const tenantId = searchParams.get('tenantId');
+    const includeInactive = searchParams.get('includeInactive') === 'true';
 
     // Build query based on user's access level
     let userQuery = '';
@@ -43,22 +51,24 @@ export async function GET(request: NextRequest) {
     let params: any[] = [];
 
     if (isAdmin) {
-      // System admins can see all users across all tenants
+      // System admins can see all users with consolidated roles
       if (tenantId) {
         userQuery = `
           SELECT 
             tu.Email,
             s.Name,
             tu.TenantId,
-            tu.RoleId,
+            GROUP_CONCAT(COALESCE(ur.RoleId, tu.RoleId)) as RoleIds,
             s.Active,
             s.Banned,
             CASE WHEN ub.BlockedEmail IS NOT NULL THEN 1 ELSE 0 END as IsBlocked
           FROM TenantUsers tu
+          LEFT JOIN UserRoles ur ON tu.Email = ur.Email AND tu.TenantId = ur.TenantId
           LEFT JOIN Subscribers s ON tu.Email = s.Email
           LEFT JOIN UserBlocks ub ON tu.Email = ub.BlockedEmail AND tu.TenantId = ub.TenantId AND ub.IsActive = TRUE
           WHERE tu.TenantId = ?
           ${includeInactive ? '' : 'AND s.Active = TRUE AND s.Banned = FALSE'}
+          GROUP BY tu.Email, s.Name, tu.TenantId, s.Active, s.Banned, ub.BlockedEmail, ub.BlockerEmail
           ORDER BY s.Name, tu.Email
         `;
         params = [tenantId];
@@ -68,14 +78,16 @@ export async function GET(request: NextRequest) {
             tu.Email,
             s.Name,
             tu.TenantId,
-            tu.RoleId,
+            GROUP_CONCAT(COALESCE(ur.RoleId, tu.RoleId)) as RoleIds,
             s.Active,
             s.Banned,
             CASE WHEN ub.BlockedEmail IS NOT NULL THEN 1 ELSE 0 END as IsBlocked
           FROM TenantUsers tu
+          LEFT JOIN UserRoles ur ON tu.Email = ur.Email AND tu.TenantId = ur.TenantId
           LEFT JOIN Subscribers s ON tu.Email = s.Email
           LEFT JOIN UserBlocks ub ON tu.Email = ub.BlockedEmail AND tu.TenantId = ub.TenantId AND ub.IsActive = TRUE
           ${includeInactive ? '' : 'WHERE s.Active = TRUE AND s.Banned = FALSE'}
+          GROUP BY tu.Email, s.Name, tu.TenantId, s.Active, s.Banned, ub.BlockedEmail, ub.BlockerEmail
           ORDER BY tu.TenantId, s.Name, tu.Email
         `;
       }
@@ -84,7 +96,7 @@ export async function GET(request: NextRequest) {
         SELECT 
           t.Id,
           t.Name,
-          COUNT(tu.Email) as UserCount
+          COUNT(DISTINCT tu.Email) as UserCount
         FROM Tenants t
         LEFT JOIN TenantUsers tu ON t.Id = tu.TenantId
         LEFT JOIN Subscribers s ON tu.Email = s.Email
@@ -93,7 +105,7 @@ export async function GET(request: NextRequest) {
         ORDER BY t.Name
       `;
     } else {
-      // Regular users can only see users in their accessible tenants
+      // Regular users can only see users in their accessible tenants with consolidated roles
       if (tenantId) {
         if (!accessibleTenants.includes(tenantId)) {
           return NextResponse.json({ error: 'Access denied to specified tenant' }, { status: 403 });
@@ -103,15 +115,17 @@ export async function GET(request: NextRequest) {
             tu.Email,
             s.Name,
             tu.TenantId,
-            tu.RoleId,
+            GROUP_CONCAT(COALESCE(ur.RoleId, tu.RoleId)) as RoleIds,
             s.Active,
             s.Banned,
             CASE WHEN ub.BlockedEmail IS NOT NULL THEN 1 ELSE 0 END as IsBlocked
           FROM TenantUsers tu
+          LEFT JOIN UserRoles ur ON tu.Email = ur.Email AND tu.TenantId = ur.TenantId
           LEFT JOIN Subscribers s ON tu.Email = s.Email
           LEFT JOIN UserBlocks ub ON tu.Email = ub.BlockedEmail AND tu.TenantId = ub.TenantId AND ub.IsActive = TRUE
           WHERE tu.TenantId = ?
           ${includeInactive ? '' : 'AND s.Active = TRUE AND s.Banned = FALSE'}
+          GROUP BY tu.Email, s.Name, tu.TenantId, s.Active, s.Banned, ub.BlockedEmail, ub.BlockerEmail
           ORDER BY s.Name, tu.Email
         `;
         params = [tenantId];
@@ -121,15 +135,17 @@ export async function GET(request: NextRequest) {
             tu.Email,
             s.Name,
             tu.TenantId,
-            tu.RoleId,
+            GROUP_CONCAT(COALESCE(ur.RoleId, tu.RoleId)) as RoleIds,
             s.Active,
             s.Banned,
             CASE WHEN ub.BlockedEmail IS NOT NULL THEN 1 ELSE 0 END as IsBlocked
           FROM TenantUsers tu
+          LEFT JOIN UserRoles ur ON tu.Email = ur.Email AND tu.TenantId = ur.TenantId
           LEFT JOIN Subscribers s ON tu.Email = s.Email
           LEFT JOIN UserBlocks ub ON tu.Email = ub.BlockedEmail AND tu.TenantId = ub.TenantId AND ub.IsActive = TRUE
           WHERE tu.TenantId IN (${accessibleTenants.map(() => '?').join(',')})
           ${includeInactive ? '' : 'AND s.Active = TRUE AND s.Banned = FALSE'}
+          GROUP BY tu.Email, s.Name, tu.TenantId, s.Active, s.Banned, ub.BlockedEmail, ub.BlockerEmail
           ORDER BY tu.TenantId, s.Name, tu.Email
         `;
         params = accessibleTenants;
@@ -139,7 +155,7 @@ export async function GET(request: NextRequest) {
         SELECT 
           t.Id,
           t.Name,
-          COUNT(tu.Email) as UserCount
+          COUNT(DISTINCT tu.Email) as UserCount
         FROM Tenants t
         LEFT JOIN TenantUsers tu ON t.Id = tu.TenantId
         LEFT JOIN Subscribers s ON tu.Email = s.Email
@@ -162,7 +178,7 @@ export async function GET(request: NextRequest) {
       email: user.Email,
       name: user.Name,
       tenantId: user.TenantId,
-      roleId: user.RoleId,
+      roleIds: user.RoleIds, // Changed from roleId to roleIds
       isOnline: false, // TODO: Implement real-time online status
       isBlocked: user.IsBlocked === 1,
       isActive: user.Active === 1,

@@ -12,11 +12,12 @@ interface Recipient {
   Email: string;
   Name: string;
   TenantId: string;
-  RoleId: string;
+  RoleIds: string;
   IsOnline: boolean;
   IsBlocked: boolean;
   IsActive: boolean;
   IsBanned: boolean;
+  IsPrimaryTenant: boolean; // New field to identify primary vs additional tenant rows
 }
 
 interface Tenant {
@@ -57,35 +58,42 @@ export default async function RecipientsPage() {
     metadata: { accessGranted: true }
   });
 
-  // Build query based on user's access level
+  // Build query to get users with all their tenant memberships
   let userQuery = '';
   let tenantQuery = '';
   let params: any[] = [];
 
   if (isAdmin) {
-    // System admins can see all users
+    // System admins can see all users with all their tenant memberships
     userQuery = `
       SELECT 
         tu.Email,
         s.Name,
         tu.TenantId,
-        tu.RoleId,
+        GROUP_CONCAT(COALESCE(ur.RoleId, tu.RoleId)) as RoleIds,
         FALSE as IsOnline,
         CASE WHEN ub.BlockedEmail IS NOT NULL THEN 1 ELSE 0 END as IsBlocked,
         s.Active,
-        s.Banned
+        s.Banned,
+        CASE WHEN tu.TenantId = (
+          SELECT MIN(tu2.TenantId) 
+          FROM TenantUsers tu2 
+          WHERE tu2.Email = tu.Email
+        ) THEN 1 ELSE 0 END as IsPrimaryTenant
       FROM TenantUsers tu
       LEFT JOIN Subscribers s ON tu.Email = s.Email
-      LEFT JOIN UserBlocks ub ON tu.Email = ub.BlockedEmail AND tu.TenantId = ub.TenantId AND ub.IsActive = TRUE
+      LEFT JOIN UserRoles ur ON tu.Email = ur.Email AND tu.TenantId = ur.TenantId
+      LEFT JOIN UserBlocks ub ON tu.Email = ub.BlockedEmail AND tu.TenantId = tu.TenantId AND ub.IsActive = TRUE
       WHERE s.Active = TRUE AND s.Banned = FALSE
-      ORDER BY tu.TenantId, s.Name, tu.Email
+      GROUP BY tu.Email, s.Name, tu.TenantId, s.Active, s.Banned, ub.BlockedEmail, ub.BlockerEmail
+      ORDER BY tu.Email, tu.TenantId
     `;
 
     tenantQuery = `
       SELECT 
         t.Id,
         t.Name,
-        COUNT(tu.Email) as UserCount
+        COUNT(DISTINCT tu.Email) as UserCount
       FROM Tenants t
       LEFT JOIN TenantUsers tu ON t.Id = tu.TenantId
       LEFT JOIN Subscribers s ON tu.Email = s.Email
@@ -100,25 +108,32 @@ export default async function RecipientsPage() {
         tu.Email,
         s.Name,
         tu.TenantId,
-        tu.RoleId,
+        GROUP_CONCAT(COALESCE(ur.RoleId, tu.RoleId)) as RoleIds,
         FALSE as IsOnline,
         CASE WHEN ub.BlockedEmail IS NOT NULL THEN 1 ELSE 0 END as IsBlocked,
         s.Active,
-        s.Banned
+        s.Banned,
+        CASE WHEN tu.TenantId = (
+          SELECT MIN(tu2.TenantId) 
+          FROM TenantUsers tu2 
+          WHERE tu2.Email = tu.Email AND tu2.TenantId IN (${accessibleTenants.map(() => '?').join(',')})
+        ) THEN 1 ELSE 0 END as IsPrimaryTenant
       FROM TenantUsers tu
       LEFT JOIN Subscribers s ON tu.Email = s.Email
-      LEFT JOIN UserBlocks ub ON tu.Email = ub.BlockedEmail AND tu.TenantId = ub.TenantId AND ub.IsActive = TRUE
+      LEFT JOIN UserRoles ur ON tu.Email = ur.Email AND tu.TenantId = ur.TenantId
+      LEFT JOIN UserBlocks ub ON tu.Email = ub.BlockedEmail AND tu.TenantId = tu.TenantId AND ub.IsActive = TRUE
       WHERE tu.TenantId IN (${accessibleTenants.map(() => '?').join(',')})
       AND s.Active = TRUE AND s.Banned = FALSE
-      ORDER BY tu.TenantId, s.Name, tu.Email
+      GROUP BY tu.Email, s.Name, tu.TenantId, s.Active, s.Banned, ub.BlockedEmail, ub.BlockerEmail
+      ORDER BY tu.Email, tu.TenantId
     `;
-    params = accessibleTenants;
+    params = [...accessibleTenants, ...accessibleTenants]; // First set for the subquery, second for the main query
 
     tenantQuery = `
       SELECT 
         t.Id,
         t.Name,
-        COUNT(tu.Email) as UserCount
+        COUNT(DISTINCT tu.Email) as UserCount
       FROM Tenants t
       LEFT JOIN TenantUsers tu ON t.Id = tu.TenantId
       LEFT JOIN Subscribers s ON tu.Email = s.Email
