@@ -7,11 +7,12 @@ interface Recipient {
   Email: string;
   Name: string;
   TenantId: string;
-  RoleId: string;
+  RoleIds: string;
   IsOnline: boolean;
   IsBlocked: boolean;
   IsActive: boolean;
   IsBanned: boolean;
+  IsPrimaryTenant: boolean; // New field to identify primary vs additional tenant rows
 }
 
 interface Tenant {
@@ -41,10 +42,32 @@ export function RecipientsClient({ initialUsers, initialTenants }: RecipientsCli
     const matchesStatus = selectedStatus === '' || 
       (selectedStatus === 'online' && user.IsOnline) ||
       (selectedStatus === 'offline' && !user.IsOnline) ||
-      (selectedStatus === 'blocked' && user.IsBlocked);
+      (selectedStatus === 'blocked' && user.IsBlocked === true);
     
     return matchesSearch && matchesTenant && matchesStatus;
   });
+
+  // Helper function to render roles in a compact format
+  const renderRoles = (roleIds: string) => {
+    if (!roleIds) return <Text size="2" color="gray">user</Text>;
+    
+    const roles = roleIds.split(',').filter(role => role.trim());
+    
+    if (roles.length === 1) {
+      return <Badge variant="soft">{roles[0]}</Badge>;
+    }
+    
+    // For multiple roles, show them in a compact horizontal layout
+    return (
+      <Flex gap="1" wrap="wrap">
+        {roles.map((role, index) => (
+          <Badge key={index} variant="soft" size="1">
+            {role}
+          </Badge>
+        ))}
+      </Flex>
+    );
+  };
 
   return (
     <Container size="3">
@@ -138,55 +161,68 @@ export function RecipientsClient({ initialUsers, initialTenants }: RecipientsCli
                 <Table.Row>
                   <Table.ColumnHeaderCell>User</Table.ColumnHeaderCell>
                   <Table.ColumnHeaderCell>Tenant</Table.ColumnHeaderCell>
-                  <Table.ColumnHeaderCell>Role</Table.ColumnHeaderCell>
+                  <Table.ColumnHeaderCell>Roles</Table.ColumnHeaderCell>
                   <Table.ColumnHeaderCell>Status</Table.ColumnHeaderCell>
                   <Table.ColumnHeaderCell>Actions</Table.ColumnHeaderCell>
                 </Table.Row>
               </Table.Header>
               <Table.Body>
-                {filteredUsers.map((user) => (
-                  <Table.Row key={`${user.Email}-${user.TenantId}`}>
-                    <Table.Cell>
-                      <Box>
-                        <Text weight="medium" style={{ marginBottom: '0.25rem' }}>
-                          {user.Name || 'Unknown User'}
-                        </Text>
-                        <Text size="2" color="gray">
-                          {user.Email}
-                        </Text>
-                      </Box>
-                    </Table.Cell>
-                    <Table.Cell>
-                      <Badge variant="soft">{user.TenantId}</Badge>
-                    </Table.Cell>
-                    <Table.Cell>
-                      <Text size="2">{user.RoleId || 'user'}</Text>
-                    </Table.Cell>
-                    <Table.Cell>
-                      <Flex gap="2" align="center">
-                        <Badge 
-                          variant={user.IsOnline ? 'solid' : 'soft'}
-                          color={user.IsOnline ? 'green' : 'gray'}
-                        >
-                          {user.IsOnline ? 'Online' : 'Offline'}
-                        </Badge>
-                        {user.IsBlocked && (
-                          <Badge color="red">Blocked</Badge>
-                        )}
-                      </Flex>
-                    </Table.Cell>
-                    <Table.Cell>
-                      <Flex gap="2">
-                        <Button size="1" variant="soft">
-                          Message
-                        </Button>
-                        <Button size="1" variant="soft">
-                          View Profile
-                        </Button>
-                      </Flex>
-                    </Table.Cell>
-                  </Table.Row>
-                ))}
+                {filteredUsers.map((user, index) => {
+                  const isLastRowForUser = index === filteredUsers.length - 1 || 
+                    filteredUsers[index + 1].Email !== user.Email;
+                  
+                  return (
+                    <Table.Row 
+                      key={`${user.Email}-${user.TenantId}`}
+                      style={{
+                        borderBottom: isLastRowForUser ? '2px solid var(--gray-7)' : '1px solid var(--gray-4)'
+                      }}
+                    >
+                      <Table.Cell>
+                        <Box>
+                          {index === 0 || filteredUsers[index - 1].Email !== user.Email ? (
+                            <Text weight="medium">
+                              {user.Name || 'Unknown User'} ({user.Email})
+                            </Text>
+                          ) : null}
+                        </Box>
+                      </Table.Cell>
+                      <Table.Cell>
+                        <Badge variant="soft">{user.TenantId}</Badge>
+                      </Table.Cell>
+                      <Table.Cell>
+                        {renderRoles(user.RoleIds)}
+                      </Table.Cell>
+                      <Table.Cell>
+                        {index === 0 || filteredUsers[index - 1].Email !== user.Email ? (
+                          <>
+                            <Badge 
+                              variant={user.IsOnline ? 'solid' : 'soft'}
+                              color={user.IsOnline ? 'green' : 'gray'}
+                            >
+                              {user.IsOnline ? 'Online' : 'Offline'}
+                            </Badge>
+                            {user.IsBlocked === true && (
+                              <Badge color="red" style={{ marginLeft: '0.5rem' }}>Blocked</Badge>
+                            )}
+                          </>
+                        ) : null}
+                      </Table.Cell>
+                      <Table.Cell>
+                        {index === 0 || filteredUsers[index - 1].Email !== user.Email ? (
+                          <Flex gap="2">
+                            <Button size="1" variant="soft">
+                              Message
+                            </Button>
+                            <Button size="1" variant="soft">
+                              View Profile
+                            </Button>
+                          </Flex>
+                        ) : null}
+                      </Table.Cell>
+                    </Table.Row>
+                  );
+                })}
               </Table.Body>
             </Table.Root>
           )}
@@ -202,18 +238,18 @@ export function RecipientsClient({ initialUsers, initialTenants }: RecipientsCli
           <Flex gap="4" wrap="wrap">
             <Box style={{ flex: '1', minWidth: '200px' }}>
               <Text size="2" color="gray">Total Recipients</Text>
-              <Heading size="3">{users.length}</Heading>
+              <Heading size="3">{users.filter(u => u.IsPrimaryTenant).length}</Heading>
             </Box>
             <Box style={{ flex: '1', minWidth: '200px' }}>
               <Text size="2" color="gray">Online Users</Text>
               <Heading size="3">
-                {users.filter(u => u.IsOnline).length}
+                {users.filter(u => u.IsOnline && u.IsPrimaryTenant).length}
               </Heading>
             </Box>
             <Box style={{ flex: '1', minWidth: '200px' }}>
               <Text size="2" color="gray">Blocked Users</Text>
               <Heading size="3">
-                {users.filter(u => u.IsBlocked).length}
+                {users.filter(u => u.IsBlocked === true && u.IsPrimaryTenant).length}
               </Heading>
             </Box>
             <Box style={{ flex: '1', minWidth: '200px' }}>

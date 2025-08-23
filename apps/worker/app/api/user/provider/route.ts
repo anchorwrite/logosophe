@@ -34,14 +34,24 @@ export async function GET() {
 
     let provider = account?.provider || 'unknown';
     
-    // If no account found but user has emailVerified, they signed in via email magic link
+    // If no account found, check for other authentication methods
     if (!account) {
-      const user = await db.prepare(
-        'SELECT emailVerified FROM users WHERE id = ?'
-      ).bind(session?.user?.id).first() as { emailVerified: string | null } | null;
+      // Check if user is in Credentials table (admin/tenant users)
+      const credUser = await db.prepare(
+        'SELECT * FROM Credentials WHERE Email = ?'
+      ).bind(access.email).first();
       
-      if (user?.emailVerified) {
-        provider = 'email';
+      if (credUser) {
+        provider = 'credentials';
+      } else {
+        // Check if user has emailVerified (Resend magic link users)
+        const user = await db.prepare(
+          'SELECT emailVerified FROM users WHERE id = ?'
+        ).bind(session?.user?.id).first() as { emailVerified: string | null } | null;
+        
+        if (user?.emailVerified) {
+          provider = 'email';
+        }
       }
     }
 
