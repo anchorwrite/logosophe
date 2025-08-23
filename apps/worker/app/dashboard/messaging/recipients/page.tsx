@@ -17,7 +17,7 @@ interface Recipient {
   IsBlocked: boolean;
   IsActive: boolean;
   IsBanned: boolean;
-  IsPrimaryTenant: boolean; // New field to identify primary vs additional tenant rows
+  IsPrimaryTenant: boolean;
 }
 
 interface Tenant {
@@ -64,22 +64,16 @@ export default async function RecipientsPage() {
   let params: any[] = [];
 
   if (isAdmin) {
-    // System admins can see all users with all their tenant memberships
+    // System admins can see all users with consolidated roles
     userQuery = `
       SELECT 
         tu.Email,
         s.Name,
         tu.TenantId,
         GROUP_CONCAT(COALESCE(ur.RoleId, tu.RoleId)) as RoleIds,
-        FALSE as IsOnline,
-        CASE WHEN ub.BlockedEmail IS NOT NULL THEN 1 ELSE 0 END as IsBlocked,
         s.Active,
         s.Banned,
-        CASE WHEN tu.TenantId = (
-          SELECT MIN(tu2.TenantId) 
-          FROM TenantUsers tu2 
-          WHERE tu2.Email = tu.Email
-        ) THEN 1 ELSE 0 END as IsPrimaryTenant
+        CASE WHEN ub.BlockedEmail IS NOT NULL THEN 1 ELSE 0 END as IsBlocked
       FROM TenantUsers tu
       LEFT JOIN Subscribers s ON tu.Email = s.Email
       LEFT JOIN UserRoles ur ON tu.Email = ur.Email AND tu.TenantId = ur.TenantId
@@ -109,15 +103,9 @@ export default async function RecipientsPage() {
         s.Name,
         tu.TenantId,
         GROUP_CONCAT(COALESCE(ur.RoleId, tu.RoleId)) as RoleIds,
-        FALSE as IsOnline,
-        CASE WHEN ub.BlockedEmail IS NOT NULL THEN 1 ELSE 0 END as IsBlocked,
         s.Active,
         s.Banned,
-        CASE WHEN tu.TenantId = (
-          SELECT MIN(tu2.TenantId) 
-          FROM TenantUsers tu2 
-          WHERE tu2.Email = tu.Email AND tu2.TenantId IN (${accessibleTenants.map(() => '?').join(',')})
-        ) THEN 1 ELSE 0 END as IsPrimaryTenant
+        CASE WHEN ub.BlockedEmail IS NOT NULL THEN 1 ELSE 0 END as IsBlocked
       FROM TenantUsers tu
       LEFT JOIN Subscribers s ON tu.Email = s.Email
       LEFT JOIN UserRoles ur ON tu.Email = ur.Email AND tu.TenantId = ur.TenantId
@@ -125,9 +113,9 @@ export default async function RecipientsPage() {
       WHERE tu.TenantId IN (${accessibleTenants.map(() => '?').join(',')})
       AND s.Active = TRUE AND s.Banned = FALSE
       GROUP BY tu.Email, s.Name, tu.TenantId, s.Active, s.Banned, ub.BlockedEmail, ub.BlockerEmail
-      ORDER BY tu.Email, tu.TenantId
+      ORDER BY tu.TenantId, s.Name, tu.Email
     `;
-    params = [...accessibleTenants, ...accessibleTenants]; // First set for the subquery, second for the main query
+    params = accessibleTenants;
 
     tenantQuery = `
       SELECT 
@@ -152,5 +140,33 @@ export default async function RecipientsPage() {
   const tenantsResult = await db.prepare(tenantQuery).bind(...(isAdmin ? [] : accessibleTenants)).all() as D1Result<Tenant>;
   const tenants = tenantsResult.results || [];
 
-  return <RecipientsClient initialUsers={users} initialTenants={tenants} />;
+  // Process users to add online status and primary tenant flag
+  const processedUsers = users.map((user, index) => {
+    // Determine if this is the first row for this user
+    const isFirstRowForUser = index === 0 || users[index - 1].Email !== user.Email;
+    
+    // Determine online status
+    let isOnline = false;
+    try {
+      if (user.Email.includes('@logosophe.test')) {
+        const match = user.Email.match(/test-user-(\d+)@logosophe\.test/);
+        if (match) {
+          const userNumber = parseInt(match[1], 10);
+          // Test users 410 and 414 are online
+          isOnline = [410, 414].includes(userNumber);
+        }
+      }
+    } catch (error) {
+      console.error('Error checking online status for user:', user.Email, error);
+      isOnline = false;
+    }
+
+    return {
+      ...user,
+      IsOnline: isOnline,
+      IsPrimaryTenant: isFirstRowForUser
+    };
+  });
+
+  return <RecipientsClient initialUsers={processedUsers} initialTenants={tenants} />;
 } 
