@@ -28,6 +28,36 @@
       "submitting": "Envoi en cours...",
       "sending": "Envoi en cours..."
     },
+    "loading": "Chargement...",
+    "cancel": "Annuler",
+    "create": "Créer",
+    "creating": "Création en cours...",
+    "edit": "Modifier",
+    "delete": "Supprimer",
+    "save": "Sauvegarder",
+    "update": "Mettre à jour",
+    "publish": "Publier",
+    "archive": "Archiver",
+    "restore": "Restaurer",
+    "activate": "Activer",
+    "deactivate": "Désactiver",
+    "view": "Voir",
+    "all": "Tous",
+    "previous": "Précédent",
+    "next": "Suivant",
+    "active": "Actif",
+    "inactive": "Inactif",
+    "draft": "Brouillon",
+    "published": "Publié",
+    "archived": "Archivé",
+    "public": "Public",
+    "private": "Privé",
+    "language": "Langue",
+    "tags": "Tags",
+    "created": "Créé",
+    "published": "Publié",
+    "updated": "Mis à jour",
+    "page_info": "Page {{current}} sur {{total}}",
     "navigation": {
       "home": "Accueil",
       "dashboard": "Tableau de bord",
@@ -982,5 +1012,64 @@
     "pleaseEnterOrganizationName": "Entre le nom de ton organisation",
     "pleaseDescribeIntendedUse": "Décris ton utilisation prévue",
     "pleaseProvideAdditionalDetails": "Fournis des détails supplémentaires"
+  },
+  "subscriber_pages": {
+    "title": "Pages d'Abonné",
+    "subtitle": "Crée et gère tes pages publiques et articles de blog",
+    "logged_in_as": "Connecté en tant que",
+    "tabs": {
+      "handles": "Identifiants",
+      "handles_description": "Gère tes URLs de pages publiques",
+      "blog": "Blog",
+      "blog_description": "Crée et gère des articles de blog"
+    },
+    "handles": {
+      "title": "Gérer les Identifiants",
+      "description": "Crée et gère tes URLs de pages publiques (identifiants)",
+      "limit_info": "{{current}} sur {{max}} identifiants utilisés (plan {{type}})",
+      "create_new": "Créer un Nouvel Identifiant",
+      "no_handles": "Aucun identifiant créé encore. Crée ton premier identifiant pour commencer.",
+      "create_form": {
+        "title": "Créer un Nouvel Identifiant",
+        "handle": "Identifiant",
+        "handle_placeholder": "ton-identifiant-unique",
+        "handle_available": "L'identifiant est disponible",
+        "suggestions": "Suggestions",
+        "display_name": "Nom d'Affichage",
+        "display_name_placeholder": "Ma Page Publique",
+        "description": "Description",
+        "description_placeholder": "Description optionnelle de ta page",
+        "public_page": "Rendre cette page publique"
+      }
+    },
+    "blog": {
+      "title": "Gérer les Articles de Blog",
+      "description": "Crée et gère des articles de blog pour tes pages publiques",
+      "create_new": "Créer un Nouvel Article",
+      "no_posts": "Aucun article de blog encore. Crée ton premier article pour commencer.",
+      "views": "vues",
+      "published_on": "Publié sur",
+      "filters": {
+        "status": "Statut",
+        "language": "Langue",
+        "handle": "Identifiant",
+        "search": "Rechercher",
+        "search_placeholder": "Rechercher des articles..."
+      },
+      "create_form": {
+        "title": "Créer un Nouvel Article de Blog",
+        "handle": "Identifiant",
+        "select_handle": "Sélectionner un identifiant",
+        "title": "Titre",
+        "title_placeholder": "Entrer le titre de l'article",
+        "content": "Contenu",
+        "content_placeholder": "Écris le contenu de ton article de blog ici...",
+        "excerpt": "Extrait",
+        "excerpt_placeholder": "Résumé bref de ton article (optionnel)",
+        "language": "Langue",
+        "tags": "Tags",
+        "tags_placeholder": "tags, séparés, par, des, virgules"
+      }
+    }
   }
 } 

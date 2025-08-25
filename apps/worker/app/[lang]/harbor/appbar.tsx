@@ -84,9 +84,7 @@ function HarborAppBar({ lang }: { lang: Locale }) {
               </Link>
             </Button>
             {session.user.role === 'subscriber' && (
-              <>
-                <SubscriberOptOut email={session.user.email as string} />
-              </>
+              <SubscriberOptOut email={session.user.email as string} />
             )}
             <Button variant="ghost" asChild>
               <Link href={`/${lang}/harbor/profile`}>

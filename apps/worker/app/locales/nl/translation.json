@@ -28,6 +28,36 @@
       "submitting": "Versturen...",
       "sending": "Versturen..."
     },
+    "loading": "Laden...",
+    "cancel": "Annuleren",
+    "create": "Aanmaken",
+    "creating": "Aanmaken...",
+    "edit": "Bewerken",
+    "delete": "Verwijderen",
+    "save": "Opslaan",
+    "update": "Bijwerken",
+    "publish": "Publiceren",
+    "archive": "Archiveren",
+    "restore": "Herstellen",
+    "activate": "Activeren",
+    "deactivate": "Deactiveren",
+    "view": "Bekijken",
+    "all": "Alle",
+    "previous": "Vorige",
+    "next": "Volgende",
+    "active": "Actief",
+    "inactive": "Inactief",
+    "draft": "Concept",
+    "published": "Gepubliceerd",
+    "archived": "Gearchiveerd",
+    "public": "Openbaar",
+    "private": "Privé",
+    "language": "Taal",
+    "tags": "Tags",
+    "created": "Aangemaakt",
+    "published": "Gepubliceerd",
+    "updated": "Bijgewerkt",
+    "page_info": "Pagina {{current}} van {{total}}",
     "navigation": {
       "home": "Home",
       "dashboard": "Dashboard",
@@ -979,5 +1009,64 @@
     "pleaseEnterOrganizationName": "Voer je organisatienaam in",
     "pleaseDescribeIntendedUse": "Beschrijf je beoogde gebruik",
     "pleaseProvideAdditionalDetails": "Geef extra details"
+  },
+  "subscriber_pages": {
+    "title": "Abonnee Pagina's",
+    "subtitle": "Maak en beheer je openbare pagina's en blogberichten",
+    "logged_in_as": "Ingelogd als",
+    "tabs": {
+      "handles": "Handles",
+      "handles_description": "Beheer je openbare pagina URL's",
+      "blog": "Blog",
+      "blog_description": "Maak en beheer blogberichten"
+    },
+    "handles": {
+      "title": "Handles Beheren",
+      "description": "Maak en beheer je openbare pagina URL's (handles)",
+      "limit_info": "{{current}} van {{max}} handles gebruikt ({{type}} plan)",
+      "create_new": "Nieuwe Handle Maken",
+      "no_handles": "Nog geen handles gemaakt. Maak je eerste handle om te beginnen.",
+      "create_form": {
+        "title": "Nieuwe Handle Maken",
+        "handle": "Handle",
+        "handle_placeholder": "je-unieke-handle",
+        "handle_available": "Handle is beschikbaar",
+        "suggestions": "Suggesties",
+        "display_name": "Weergavenaam",
+        "display_name_placeholder": "Mijn Openbare Pagina",
+        "description": "Beschrijving",
+        "description_placeholder": "Optionele beschrijving van je pagina",
+        "public_page": "Deze pagina openbaar maken"
+      }
+    },
+    "blog": {
+      "title": "Blogberichten Beheren",
+      "description": "Maak en beheer blogberichten voor je openbare pagina's",
+      "create_new": "Nieuw Bericht Maken",
+      "no_posts": "Nog geen blogberichten. Maak je eerste bericht om te beginnen.",
+      "views": "weergaven",
+      "published_on": "Gepubliceerd op",
+      "filters": {
+        "status": "Status",
+        "language": "Taal",
+        "handle": "Handle",
+        "search": "Zoeken",
+        "search_placeholder": "Berichten zoeken..."
+      },
+      "create_form": {
+        "title": "Nieuw Blogbericht Maken",
+        "handle": "Handle",
+        "select_handle": "Selecteer een handle",
+        "title": "Titel",
+        "title_placeholder": "Voer berichttitel in",
+        "content": "Inhoud",
+        "content_placeholder": "Schrijf je blogberichtinhoud hier...",
+        "excerpt": "Uittreksel",
+        "excerpt_placeholder": "Korte samenvatting van je bericht (optioneel)",
+        "language": "Taal",
+        "tags": "Tags",
+        "tags_placeholder": "komma, gescheiden, tags"
+      }
+    }
   }
 } 
