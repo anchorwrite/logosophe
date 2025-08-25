@@ -28,6 +28,36 @@
       "submitting": "Wird gesendet...",
       "sending": "Wird gesendet..."
     },
+    "loading": "Laden...",
+    "cancel": "Abbrechen",
+    "create": "Erstellen",
+    "creating": "Wird erstellt...",
+    "edit": "Bearbeiten",
+    "delete": "Löschen",
+    "save": "Speichern",
+    "update": "Aktualisieren",
+    "publish": "Veröffentlichen",
+    "archive": "Archivieren",
+    "restore": "Wiederherstellen",
+    "activate": "Aktivieren",
+    "deactivate": "Deaktivieren",
+    "view": "Anzeigen",
+    "all": "Alle",
+    "previous": "Zurück",
+    "next": "Weiter",
+    "active": "Aktiv",
+    "inactive": "Inaktiv",
+    "draft": "Entwurf",
+    "published": "Veröffentlicht",
+    "archived": "Archiviert",
+    "public": "Öffentlich",
+    "private": "Privat",
+    "language": "Sprache",
+    "tags": "Tags",
+    "created": "Erstellt",
+    "published": "Veröffentlicht",
+    "updated": "Aktualisiert",
+    "page_info": "Seite {{current}} von {{total}}",
     "navigation": {
       "home": "Startseite",
       "dashboard": "Dashboard",
@@ -980,5 +1010,64 @@
     "pleaseEnterOrganizationName": "Bitte gib deinen Organisationsnamen ein",
     "pleaseDescribeIntendedUse": "Bitte beschreibe deine beabsichtigte Nutzung",
     "pleaseProvideAdditionalDetails": "Bitte gib zusätzliche Details an"
+  },
+  "subscriber_pages": {
+    "title": "Abonnenten-Seiten",
+    "subtitle": "Erstelle und verwalte deine öffentlichen Seiten und Blog-Beiträge",
+    "logged_in_as": "Angemeldet als",
+    "tabs": {
+      "handles": "Handles",
+      "handles_description": "Verwalte deine öffentlichen Seiten-URLs",
+      "blog": "Blog",
+      "blog_description": "Erstelle und verwalte Blog-Beiträge"
+    },
+    "handles": {
+      "title": "Handles verwalten",
+      "description": "Erstelle und verwalte deine öffentlichen Seiten-URLs (Handles)",
+      "limit_info": "{{current}} von {{max}} Handles verwendet ({{type}} Plan)",
+      "create_new": "Neues Handle erstellen",
+      "no_handles": "Noch keine Handles erstellt. Erstelle dein erstes Handle, um zu beginnen.",
+      "create_form": {
+        "title": "Neues Handle erstellen",
+        "handle": "Handle",
+        "handle_placeholder": "dein-eindeutiges-handle",
+        "handle_available": "Handle ist verfügbar",
+        "suggestions": "Vorschläge",
+        "display_name": "Anzeigename",
+        "display_name_placeholder": "Meine öffentliche Seite",
+        "description": "Beschreibung",
+        "description_placeholder": "Optionale Beschreibung deiner Seite",
+        "public_page": "Diese Seite öffentlich machen"
+      }
+    },
+    "blog": {
+      "title": "Blog-Beiträge verwalten",
+      "description": "Erstelle und verwalte Blog-Beiträge für deine öffentlichen Seiten",
+      "create_new": "Neuen Beitrag erstellen",
+      "no_posts": "Noch keine Blog-Beiträge. Erstelle deinen ersten Beitrag, um zu beginnen.",
+      "views": "Aufrufe",
+      "published_on": "Veröffentlicht auf",
+      "filters": {
+        "status": "Status",
+        "language": "Sprache",
+        "handle": "Handle",
+        "search": "Suchen",
+        "search_placeholder": "Beiträge durchsuchen..."
+      },
+      "create_form": {
+        "title": "Neuen Blog-Beitrag erstellen",
+        "handle": "Handle",
+        "select_handle": "Handle auswählen",
+        "title": "Titel",
+        "title_placeholder": "Beitragstitel eingeben",
+        "content": "Inhalt",
+        "content_placeholder": "Schreibe deinen Blog-Beitrag hier...",
+        "excerpt": "Auszug",
+        "excerpt_placeholder": "Kurze Zusammenfassung deines Beitrags (optional)",
+        "language": "Sprache",
+        "tags": "Tags",
+        "tags_placeholder": "komma, getrennte, tags"
+      }
+    }
   }
 } 

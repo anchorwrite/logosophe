@@ -43,18 +43,21 @@ export async function GET(
     }
 
     const { searchParams } = new URL(request.url);
-    const baseName = searchParams.get('baseName');
+    const baseName = searchParams.get('baseName') || searchParams.get('handle');
     const suggestionType = searchParams.get('suggestionType') || 'auto';
 
     if (!baseName) {
       return new Response(JSON.stringify({ 
-        error: 'baseName parameter is required' 
+        error: 'baseName or handle parameter is required' 
       }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' }
       });
     }
 
+    // Validate the handle
+    const validation = await validateHandle(db, baseName);
+    
     // Generate suggestions
     const suggestions = await generateHandleSuggestions(baseName, suggestionType as any);
     
@@ -64,9 +67,9 @@ export async function GET(
     return new Response(JSON.stringify({
       success: true,
       data: {
-        baseName,
-        suggestions,
-        suggestionType
+        isValid: validation.isValid,
+        errors: validation.errors,
+        suggestions: suggestions
       }
     }), {
       status: 200,

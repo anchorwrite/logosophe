@@ -26,6 +26,36 @@
         "submitting": "Submitting...",
         "sending": "Sending..."
       },
+    "loading": "Loading...",
+    "cancel": "Cancel",
+    "create": "Create",
+    "creating": "Creating...",
+    "edit": "Edit",
+    "delete": "Delete",
+    "save": "Save",
+    "update": "Update",
+    "publish": "Publish",
+    "archive": "Archive",
+    "restore": "Restore",
+    "activate": "Activate",
+    "deactivate": "Deactivate",
+    "view": "View",
+    "all": "All",
+    "previous": "Previous",
+    "next": "Next",
+    "active": "Active",
+    "inactive": "Inactive",
+    "draft": "Draft",
+    "published": "Published",
+    "archived": "Archived",
+    "public": "Public",
+    "private": "Private",
+    "language": "Language",
+    "tags": "Tags",
+    "created": "Created",
+    "published": "Published",
+    "updated": "Updated",
+    "page_info": "Page {{current}} of {{total}}",
     "navigation": {
       "home": "Home",
       "dashboard": "Dashboard",
@@ -981,5 +1011,71 @@
     "pleaseEnterOrganizationName": "Please enter your organization name",
     "pleaseDescribeIntendedUse": "Please describe your intended use",
     "pleaseProvideAdditionalDetails": "Please provide additional details"
+  },
+  "subscriber_pages": {
+    "title": "Subscriber Pages",
+    "subtitle": "Create and manage your public pages and blog posts",
+    "logged_in_as": "Logged in as",
+    "tabs": {
+      "handles": "Handles",
+      "handles_description": "Manage your public page URLs",
+      "blog": "Blog",
+      "blog_description": "Create and manage blog posts"
+    },
+    "handles": {
+      "title": "Manage Handles",
+      "description": "Create and manage your public page URLs (handles)",
+      "limit_info": "{{current}} of {{max}} handles used ({{type}} plan)",
+      "create_new": "Create New Handle",
+      "no_handles": "No handles created yet. Create your first handle to get started.",
+      "your_handles": "Your Handles",
+      "create_form": {
+        "title": "Create New Handle",
+        "handle": "Handle",
+        "handle_placeholder": "your-unique-handle",
+        "handle_available": "Handle is available",
+        "suggestions": "Suggestions",
+        "display_name": "Display Name",
+        "display_name_placeholder": "My Public Page",
+        "description": "Description",
+        "description_placeholder": "Optional description of your page",
+        "public_page": "Make this a public page"
+      },
+      "limit_reached": "Limit reached: {{current}}/{{max}} handles"
+    },
+    "blog": {
+      "title": "Manage Blog Posts",
+      "description": "Create and manage blog posts for your public pages",
+      "create_new": "Create New Post",
+      "no_posts": "No blog posts yet. Create your first post to get started.",
+      "your_posts": "Your Posts",
+      "total_posts": "Total Posts",
+      "published": "Published",
+      "drafts": "Drafts",
+      "views": "views",
+      "published_on": "Published on",
+      "filters": {
+        "title": "Filter Posts",
+        "status": "Status",
+        "language": "Language",
+        "handle": "Handle",
+        "search": "Search",
+        "search_placeholder": "Search posts..."
+      },
+      "create_form": {
+        "title": "Create New Blog Post",
+        "handle": "Handle",
+        "select_handle": "Select a handle",
+        "title": "Title",
+        "title_placeholder": "Enter post title",
+        "content": "Content",
+        "content_placeholder": "Write your blog post content here...",
+        "excerpt": "Excerpt",
+        "excerpt_placeholder": "Brief summary of your post (optional)",
+        "language": "Language",
+        "tags": "Tags",
+        "tags_placeholder": "comma, separated, tags"
+      }
+    }
   }
 }

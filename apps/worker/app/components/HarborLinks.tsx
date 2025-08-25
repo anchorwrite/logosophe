@@ -11,7 +11,8 @@ export default function HarborLinks({ lang }: { lang: string }) {
   const myLinks = [
     { href: `/${lang}/harbor/media`, label: t('harbor.mediaLibrary'), roles: ['subscriber'] },
     { href: `/${lang}/harbor/media/upload`, label: t('harbor.uploadMedia'), roles: ['subscriber'] },
-    { href: `/${lang}/harbor/content`, label: t('harbor.contentDashboard'), roles: ['publisher'] }
+    { href: `/${lang}/harbor/content`, label: t('harbor.contentDashboard'), roles: ['publisher'] },
+    { href: `/${lang}/harbor/subscriber-pages`, label: t('subscriber_pages.title'), roles: ['subscriber'] }
   ];
 
   const analyticsLinks = [

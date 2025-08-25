@@ -28,6 +28,36 @@
       "submitting": "Enviando...",
       "sending": "Enviando..."
     },
+    "loading": "Cargando...",
+    "cancel": "Cancelar",
+    "create": "Crear",
+    "creating": "Creando...",
+    "edit": "Editar",
+    "delete": "Eliminar",
+    "save": "Guardar",
+    "update": "Actualizar",
+    "publish": "Publicar",
+    "archive": "Archivar",
+    "restore": "Restaurar",
+    "activate": "Activar",
+    "deactivate": "Desactivar",
+    "view": "Ver",
+    "all": "Todos",
+    "previous": "Anterior",
+    "next": "Siguiente",
+    "active": "Activo",
+    "inactive": "Inactivo",
+    "draft": "Borrador",
+    "published": "Publicado",
+    "archived": "Archivado",
+    "public": "Público",
+    "private": "Privado",
+    "language": "Idioma",
+    "tags": "Etiquetas",
+    "created": "Creado",
+    "published": "Publicado",
+    "updated": "Actualizado",
+    "page_info": "Página {{current}} de {{total}}",
     "navigation": {
       "home": "Inicio",
       "dashboard": "Panel de control",
@@ -981,5 +1011,64 @@
     "pleaseEnterOrganizationName": "Por favor, introduce el nombre de tu organización",
     "pleaseDescribeIntendedUse": "Por favor, describe tu uso previsto",
     "pleaseProvideAdditionalDetails": "Por favor, proporciona detalles adicionales"
+  },
+  "subscriber_pages": {
+    "title": "Páginas de Suscriptor",
+    "subtitle": "Crea y gestiona tus páginas públicas y entradas de blog",
+    "logged_in_as": "Conectado como",
+    "tabs": {
+      "handles": "Identificadores",
+      "handles_description": "Gestiona tus URLs de páginas públicas",
+      "blog": "Blog",
+      "blog_description": "Crea y gestiona entradas de blog"
+    },
+    "handles": {
+      "title": "Gestionar Identificadores",
+      "description": "Crea y gestiona tus URLs de páginas públicas (identificadores)",
+      "limit_info": "{{current}} de {{max}} identificadores utilizados (plan {{type}})",
+      "create_new": "Crear Nuevo Identificador",
+      "no_handles": "Aún no se han creado identificadores. Crea tu primer identificador para comenzar.",
+      "create_form": {
+        "title": "Crear Nuevo Identificador",
+        "handle": "Identificador",
+        "handle_placeholder": "tu-identificador-unico",
+        "handle_available": "El identificador está disponible",
+        "suggestions": "Sugerencias",
+        "display_name": "Nombre de Visualización",
+        "display_name_placeholder": "Mi Página Pública",
+        "description": "Descripción",
+        "description_placeholder": "Descripción opcional de tu página",
+        "public_page": "Hacer esta página pública"
+      }
+    },
+    "blog": {
+      "title": "Gestionar Entradas de Blog",
+      "description": "Crea y gestiona entradas de blog para tus páginas públicas",
+      "create_new": "Crear Nueva Entrada",
+      "no_posts": "Aún no hay entradas de blog. Crea tu primera entrada para comenzar.",
+      "views": "vistas",
+      "published_on": "Publicado en",
+      "filters": {
+        "status": "Estado",
+        "language": "Idioma",
+        "handle": "Identificador",
+        "search": "Buscar",
+        "search_placeholder": "Buscar entradas..."
+      },
+      "create_form": {
+        "title": "Crear Nueva Entrada de Blog",
+        "handle": "Identificador",
+        "select_handle": "Seleccionar identificador",
+        "title": "Título",
+        "title_placeholder": "Introducir título de la entrada",
+        "content": "Contenido",
+        "content_placeholder": "Escribe el contenido de tu entrada de blog aquí...",
+        "excerpt": "Extracto",
+        "excerpt_placeholder": "Resumen breve de tu entrada (opcional)",
+        "language": "Idioma",
+        "tags": "Etiquetas",
+        "tags_placeholder": "etiquetas, separadas, por, comas"
+      }
+    }
   }
 }
