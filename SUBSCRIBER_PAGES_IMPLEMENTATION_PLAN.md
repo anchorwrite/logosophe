@@ -45,6 +45,7 @@ Workflow Collaboration → Content Creation → Publishing → Subscriber Pages 
 - **Access**: No authentication required
 - **Features**: Content discovery, contact messaging, public engagement
 - **Multiple Pages**: One subscriber can have multiple public pages (e.g., poetry, novels, professional work)
+- **Internationalization**: Full i18n support matching Harbor's existing system (en, es, fr, de, nl)
 - **Priority**: Primary focus for implementation
 
 **Handle Management**:
@@ -160,6 +161,49 @@ CREATE TABLE HandlePageConfig (
     UNIQUE(HandleId, SectionKey)
 );
 
+-- Admin Moderation and Monitoring
+CREATE TABLE SubscriberModeration (
+    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+    SubscriberEmail TEXT NOT NULL,
+    IsBanned BOOLEAN DEFAULT FALSE,
+    CanPost BOOLEAN DEFAULT TRUE,
+    IsModerated BOOLEAN DEFAULT FALSE,
+    IsTracked BOOLEAN DEFAULT TRUE,
+    BanReason TEXT,
+    ModeratedBy TEXT,
+    ModeratedAt DATETIME,
+    CreatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UpdatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (SubscriberEmail) REFERENCES Subscribers(Email),
+    FOREIGN KEY (ModeratedBy) REFERENCES Credentials(Email)
+);
+
+-- Content Moderation
+CREATE TABLE ContentModeration (
+    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+    ContentType TEXT NOT NULL,      -- 'blog_post', 'announcement', 'comment'
+    ContentId INTEGER NOT NULL,     -- ID of the moderated content
+    SubscriberEmail TEXT NOT NULL,
+    Action TEXT NOT NULL,           -- 'removed', 'hidden', 'flagged', 'approved'
+    Reason TEXT,
+    ModeratedBy TEXT,
+    ModeratedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (SubscriberEmail) REFERENCES Subscribers(Email),
+    FOREIGN KEY (ModeratedBy) REFERENCES Credentials(Email)
+);
+
+-- Handle Moderation
+CREATE TABLE HandleModeration (
+    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+    HandleId INTEGER NOT NULL,
+    Action TEXT NOT NULL,           -- 'suspended', 'hidden', 'flagged', 'approved'
+    Reason TEXT,
+    ModeratedBy TEXT,
+    ModeratedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (HandleId) REFERENCES SubscriberHandles(Id),
+    FOREIGN KEY (ModeratedBy) REFERENCES Credentials(Email)
+);
+
 -- Subscriber Blog Posts
 CREATE TABLE SubscriberBlogPosts (
     Id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -169,12 +213,59 @@ CREATE TABLE SubscriberBlogPosts (
     Excerpt TEXT,
     Status TEXT DEFAULT 'draft', -- draft, published, archived
     PublishedAt DATETIME,
-    Language TEXT DEFAULT 'en',
+    Language TEXT DEFAULT 'en',  -- Supports en, es, fr, de, nl
     Tags TEXT,
     ViewCount INTEGER DEFAULT 0,
     CreatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
     UpdatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (HandleId) REFERENCES SubscriberHandles(Id)
+);
+
+-- Blog Comments
+CREATE TABLE BlogComments (
+    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+    BlogPostId INTEGER NOT NULL,
+    AuthorEmail TEXT NOT NULL,
+    AuthorName TEXT NOT NULL,
+    Content TEXT NOT NULL,
+    ParentCommentId INTEGER,        -- For reply functionality
+    Status TEXT DEFAULT 'approved', -- approved, archived, flagged
+    IsModerated BOOLEAN DEFAULT FALSE,
+    CreatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UpdatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (BlogPostId) REFERENCES SubscriberBlogPosts(Id),
+    FOREIGN KEY (AuthorEmail) REFERENCES Subscribers(Email),
+    FOREIGN KEY (ParentCommentId) REFERENCES BlogComments(Id)
+);
+
+-- Content Ratings
+CREATE TABLE ContentRatings (
+    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+    ContentType TEXT NOT NULL,      -- 'blog_post', 'published_content'
+    ContentId INTEGER NOT NULL,     -- ID of the rated content
+    RaterEmail TEXT,               -- NULL for anonymous ratings
+    RaterName TEXT NOT NULL,       -- Display name for rating
+    Rating INTEGER NOT NULL,       -- 1-5 star rating
+    Review TEXT,                   -- Optional written review
+    Language TEXT DEFAULT 'en',    -- Language of the review
+    IsVerified BOOLEAN DEFAULT FALSE, -- Whether rater has verified account
+    Status TEXT DEFAULT 'approved', -- approved, flagged, archived
+    CreatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UpdatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (RaterEmail) REFERENCES Subscribers(Email),
+    UNIQUE(ContentType, ContentId, RaterEmail) -- One rating per user per content
+);
+
+-- Rating Analytics
+CREATE TABLE RatingAnalytics (
+    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+    ContentType TEXT NOT NULL,
+    ContentId INTEGER NOT NULL,
+    AverageRating DECIMAL(3,2) DEFAULT 0.00,
+    TotalRatings INTEGER DEFAULT 0,
+    RatingDistribution TEXT,       -- JSON: {"1": 5, "2": 10, "3": 25, "4": 30, "5": 30}
+    LastCalculated DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(ContentType, ContentId)
 );
 
 -- Subscriber Announcements
@@ -188,7 +279,7 @@ CREATE TABLE SubscriberAnnouncements (
     PublishedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
     ExpiresAt DATETIME,
     IsActive BOOLEAN DEFAULT TRUE,
-    Language TEXT DEFAULT 'en',
+    Language TEXT DEFAULT 'en',  -- Supports en, es, fr, de, nl
     FOREIGN KEY (HandleId) REFERENCES Subscribers(Email)
 );
 
@@ -234,7 +325,11 @@ CREATE TABLE SubscriberPageViews (
 - **Professional Presence**: Multiple public author pages for different content focuses
 - **Content Showcase**: Display published works with analytics per handle
 - **Engagement Tools**: Blog posts, announcements, contact messaging per handle
-- **Analytics**: Track page views and engagement per handle
+- **Content Management**: Full control over blog posts and comments with archiving capabilities
+- **Comment Engagement**: Threaded discussions with reply functionality
+- **Rating Feedback**: Receive ratings and reviews on content quality
+- **Quality Recognition**: Build reputation through positive ratings
+- **Analytics**: Track page views, engagement, and ratings per handle
 - **International Reach**: Multi-language content support
 - **Content Organization**: Separate pages for different genres, projects, or professional focuses
 - **Scalable Growth**: Upgrade handle limits as content needs grow (1 → 3 → 10 handles)
@@ -243,11 +338,16 @@ CREATE TABLE SubscriberPageViews (
 #### **For Readers/Visitors**
 - **Author Discovery**: Find and learn about content creators through memorable handles
 - **Content Exploration**: Browse author's published works organized by handle/focus
+- **Quality Assessment**: Rate and review content to help others discover quality work
 - **Direct Contact**: Send messages through existing messaging system
+- **Content Engagement**: Comment on blog posts with threaded reply discussions
+- **Rating System**: 1-5 star ratings with optional written reviews
+- **Content Discovery**: Find high-quality content through ratings and reviews
 - **Content Updates**: Stay informed about new publications from specific handles
-- **Multi-language Access**: Content in preferred language
+- **Multi-language Access**: Content in preferred language (en, es, fr, de, nl)
 - **Focused Discovery**: Find content in specific genres or professional areas
 - **Consistent Experience**: Familiar layout and navigation across all author pages
+- **Language-Specific Content**: Content displayed in user's preferred language
 
 #### **For Your Platform**
 - **Content Discovery**: Better content visibility and engagement
@@ -257,6 +357,9 @@ CREATE TABLE SubscriberPageViews (
 - **Monetization Ready**: Foundation for premium features with handle limit tiers
 - **Revenue Growth**: Handle limits provide clear upgrade path (1 → 3 → 10 handles)
 - **Maintainable System**: Template-based approach keeps development manageable
+- **Platform Governance**: Comprehensive admin monitoring and moderation capabilities
+- **Audit Compliance**: Complete audit trail for all subscriber page activities
+- **Analytics Integration**: Leverage existing analytics infrastructure for insights
 
 ### **Implementation Strategy**
 
@@ -273,7 +376,7 @@ CREATE TABLE SubscriberPageViews (
 1. **Blog System**: Create, edit, publish blog posts associated with specific handles
 2. **Announcements**: Manage publication announcements per handle
 3. **Content Integration**: Display published content on subscriber pages organized by handle
-4. **Internationalization**: Multi-language content support
+4. **Internationalization**: Full i18n support matching Harbor's system (en, es, fr, de, nl)
 5. **Handle Management**: Create, edit, and manage multiple public-facing handles with limit enforcement
 6. **Handle Validation**: Real-time handle availability checking and suggestions
 7. **Page Configuration**: Section selection and ordering interface for each handle
@@ -287,6 +390,7 @@ CREATE TABLE SubscriberPageViews (
 5. **Handle Validation**: Ensure handles are unique, URL-safe, and memorable
 6. **Handle Suggestions**: System-generated suggestions for new subscribers
 7. **Dynamic Rendering**: Template-based page rendering with selected sections
+8. **Internationalization**: Full i18n support for all public-facing content and UI
 
 #### **Phase 4: Advanced Features**
 1. **Subscriber of the Month**: Featured author system
@@ -294,6 +398,8 @@ CREATE TABLE SubscriberPageViews (
 3. **Social Features**: Follow authors, content sharing
 4. **Analytics Dashboard**: Advanced engagement metrics
 5. **Handle Limit Management**: Admin interface for managing handle limits and upgrades
+6. **Admin Monitoring Dashboard**: Comprehensive analytics and moderation tools
+7. **Content Moderation System**: Subscriber and content management capabilities
 
 ### **Technical Considerations**
 
@@ -316,6 +422,56 @@ CREATE TABLE SubscriberPageViews (
 - **No Build Required**: Content updates without rebuilding the site
 
 ### **Integration with Existing Features**
+
+#### **Leveraging Your Logging System**
+- **NormalizedLogging**: All subscriber page actions logged using existing system
+- **Action Tracking**: Create, update, delete, archive, moderate actions
+- **Analytics Integration**: Leverage existing analytics infrastructure
+- **Audit Trail**: Complete history of all subscriber page activities
+- **Performance Monitoring**: Track system performance and user behavior
+
+#### **Comprehensive Action Logging**
+```typescript
+// Example logging for subscriber page actions
+const subscriberPageActions = {
+  handle: {
+    create: 'subscriber_handle_created',
+    update: 'subscriber_handle_updated', 
+    archive: 'subscriber_handle_archived',
+    moderate: 'subscriber_handle_moderated'
+  },
+  blog: {
+    create: 'blog_post_created',
+    update: 'blog_post_updated',
+    publish: 'blog_post_published',
+    archive: 'blog_post_archived',
+    delete: 'blog_post_deleted'
+  },
+  comment: {
+    create: 'blog_comment_created',
+    update: 'blog_comment_updated',
+    reply: 'blog_comment_replied',
+    archive: 'blog_comment_archived',
+    moderate: 'blog_comment_moderated'
+  },
+  rating: {
+    create: 'content_rating_created',
+    update: 'content_rating_updated',
+    delete: 'content_rating_deleted',
+    moderate: 'content_rating_moderated'
+  },
+  announcement: {
+    create: 'announcement_created',
+    update: 'announcement_updated',
+    archive: 'announcement_archived'
+  },
+  page: {
+    view: 'subscriber_page_viewed',
+    section_view: 'page_section_viewed',
+    contact_form: 'contact_form_submitted'
+  }
+};
+```
 
 #### **Leveraging Your Messaging System**
 - **Contact Flow**: External page → Contact form → Messaging system
@@ -360,7 +516,14 @@ CREATE TABLE SubscriberPageViews (
 - `/[lang]/harbor/subscribers/[email]/handles` - Manage public handles (with limit display)
 - `/[lang]/harbor/subscribers/[email]/handles/[handleId]/config` - Configure page sections and layout
 - `/[lang]/harbor/subscribers/[email]/blog` - Manage blog posts across all handles
+- `/[lang]/harbor/subscribers/[email]/blog/[postId]/comments` - Manage comments for specific blog post
 - `/[lang]/harbor/subscribers/[email]/announcements` - Manage announcements across all handles
+
+#### **Dashboard Routes**
+- `/dashboard/subscriber-pages` - Admin analytics and monitoring dashboard
+- `/dashboard/subscriber-pages/[email]` - Individual subscriber monitoring
+- `/dashboard/subscriber-pages/handles/[handleId]` - Individual handle monitoring
+- `/dashboard/subscriber-pages/moderation` - Content moderation queue
 
 #### **External Routes**
 - `/[lang]/content/[handle]` - Public subscriber profile for specific handle (dynamic sections)
@@ -375,12 +538,23 @@ CREATE TABLE SubscriberPageViews (
 - `/api/harbor/subscribers/[email]/handles/suggestions` - Handle suggestions and validation
 - `/api/harbor/subscribers/[email]/handles/[handleId]/config` - Page configuration management
 - `/api/harbor/subscribers/[email]/blog` - Blog management across all handles
+- `/api/harbor/subscribers/[email]/blog/[postId]/comments` - Comment management for blog posts
+- `/api/harbor/subscribers/[email]/blog/[postId]/ratings` - Rating management for blog posts
+- `/api/harbor/subscribers/[email]/works/[contentId]/ratings` - Rating management for published content
 - `/api/harbor/subscribers/[email]/announcements` - Announcement management across all handles
 - `/api/content/[handle]/profile` - Public profile data for specific handle
 - `/api/content/[handle]/blog` - Public blog posts for specific handle
+- `/api/content/[handle]/blog/[postId]/comments` - Public comments for blog posts
+- `/api/content/[handle]/blog/[postId]/ratings` - Public ratings for blog posts
 - `/api/content/[handle]/works` - Published works for specific handle
+- `/api/content/[handle]/works/[contentId]/ratings` - Public ratings for published content
 - `/api/content/[handle]/sections` - Dynamic section data for public pages
 - `/api/dashboard/handle-limits` - Admin management of handle limits and tiers
+- `/api/dashboard/subscriber-pages` - Admin analytics and monitoring for public pages
+- `/api/dashboard/subscriber-pages/[email]/moderation` - Subscriber moderation actions
+- `/api/dashboard/subscriber-pages/handles/[handleId]/moderation` - Handle moderation actions
+- `/api/dashboard/subscriber-pages/content/[contentId]/moderation` - Content moderation actions
+- `/api/dashboard/subscriber-pages/ratings` - Rating moderation and analytics
 
 ### **Database Relationships**
 
@@ -389,12 +563,20 @@ CREATE TABLE SubscriberPageViews (
 Subscribers (Email) ←→ SubscriberProfiles (Email)
 Subscribers (Email) ←→ SubscriberHandles (SubscriberEmail)
 Subscribers (Email) ←→ HandleSuggestions (SubscriberEmail)
+Subscribers (Email) ←→ SubscriberModeration (SubscriberEmail)
 SubscriberHandles (Id) ←→ SubscriberBlogPosts (HandleId)
 SubscriberHandles (Id) ←→ SubscriberAnnouncements (HandleId)
 SubscriberHandles (Id) ←→ SubscriberPageViews (HandleId)
 SubscriberHandles (Id) ←→ HandlePageConfig (HandleId)
+SubscriberHandles (Id) ←→ HandleModeration (HandleId)
+SubscriberBlogPosts (Id) ←→ BlogComments (BlogPostId)
+BlogComments (Id) ←→ BlogComments (ParentCommentId) -- Self-referencing for replies
+SubscriberBlogPosts (Id) ←→ ContentRatings (ContentId) -- Blog post ratings
+PublishedContent (Id) ←→ ContentRatings (ContentId) -- Published content ratings
+ContentRatings (ContentId) ←→ RatingAnalytics (ContentId) -- Rating analytics
 PageSections (SectionKey) ←→ HandlePageConfig (SectionKey)
 SubscriberHandleLimits (LimitType) ←→ System Configuration
+ContentModeration (ContentId) ←→ Various Content Tables
 ```
 
 #### **Content Integration**
@@ -411,6 +593,297 @@ SubscriberPageViews (HandleId) ←→ SubscriberHandles (Id)
 ContentUsage (UserEmail) ←→ Subscribers (Email)
 ```
 
+### **Admin Monitoring and Moderation System**
+
+#### **Dashboard Overview**
+- **Global Admins**: Monitor all public pages across all tenants
+- **Tenant Admins**: Monitor public pages within their assigned tenants
+- **Analytics Dashboard**: Per-tenant and per-subscriber activity metrics
+- **Moderation Tools**: Content and subscriber management capabilities
+- **Real-time Monitoring**: Live tracking of page visits, content creation, and user activity
+
+#### **Analytics and Monitoring Features**
+- **Page Activity**: Track visits, views, and engagement per handle
+- **Content Metrics**: Blog posts, announcements, comments, and ratings
+- **Rating Analytics**: Average ratings, distributions, and trends per content
+- **User Behavior**: Subscriber activity patterns and content creation frequency
+- **Tenant Overview**: Cross-tenant comparison and performance metrics
+- **Trend Analysis**: Activity trends and growth patterns over time
+- **Quality Metrics**: Rating-based content quality assessment
+- **Action Logging**: Comprehensive logging of all subscriber page activities
+- **Audit Trail**: Complete history of content creation, modification, and moderation
+
+#### **Moderation and Control Features**
+- **Subscriber Moderation**: Ban, restrict posting, moderate, or track specific subscribers
+- **Content Moderation**: Remove, hide, flag, or approve inappropriate content
+- **Rating Moderation**: Flag, review, or archive inappropriate ratings
+- **Handle Moderation**: Suspend, hide, or flag problematic public pages
+- **Bulk Actions**: Mass moderation capabilities for efficient management
+- **Audit Trail**: Complete history of all moderation actions
+
+#### **Moderation Actions**
+```typescript
+// Example moderation actions
+const moderationActions = {
+  subscriber: {
+    ban: 'Ban subscriber from creating content',
+    restrict: 'Restrict posting capabilities',
+    moderate: 'Require approval for all content',
+    track: 'Monitor all activity closely'
+  },
+  content: {
+    remove: 'Permanently remove content',
+    hide: 'Hide content from public view',
+    flag: 'Flag for review',
+    approve: 'Approve flagged content'
+  },
+  handle: {
+    suspend: 'Temporarily suspend public page',
+    hide: 'Hide page from public access',
+    flag: 'Flag for review',
+    approve: 'Approve flagged page'
+  }
+};
+```
+
+#### **Dashboard Interface**
+- **Overview Cards**: System-wide metrics and key performance indicators
+- **Activity Tables**: Detailed subscriber and content activity lists
+- **Moderation Queue**: Pending moderation actions and flagged content
+- **Analytics Charts**: Visual representation of activity trends
+- **Search and Filter**: Advanced filtering by tenant, subscriber, content type, and date range
+- **Activity Logs**: Comprehensive view of all logged actions with filtering
+- **Audit Reports**: Detailed audit trails for compliance and investigation
+
+### **Content Management Features**
+
+#### **Blog Post Management**
+- **Draft System**: Create and edit posts before publishing
+- **Publishing Control**: Publish/unpublish posts with timestamps
+- **Archiving**: Soft-delete posts (maintains data, hides from public view)
+- **Multi-language Support**: Posts in en, es, fr, de, nl
+- **Tagging System**: Organize posts with tags for better discovery
+- **View Analytics**: Track post views and engagement
+- **Rating System**: 1-5 star ratings with optional reviews
+- **Bulk Operations**: Archive multiple posts at once
+- **Action Logging**: All blog post actions logged to SystemLogs
+
+#### **Comprehensive Logging Implementation**
+```typescript
+// Example logging implementation for subscriber pages
+import { NormalizedLogging } from '@/lib/logging';
+
+// Handle management logging
+async function logHandleAction(action: string, handleId: string, subscriberEmail: string, metadata: any) {
+  await NormalizedLogging.log({
+    category: 'subscriber_pages',
+    action: action,
+    target: 'handle',
+    userEmail: subscriberEmail,
+    metadata: {
+      handleId,
+      handle: metadata.handle,
+      displayName: metadata.displayName,
+      ...metadata
+    }
+  });
+}
+
+// Blog post logging
+async function logBlogPostAction(action: string, postId: string, subscriberEmail: string, metadata: any) {
+  await NormalizedLogging.log({
+    category: 'subscriber_pages',
+    action: action,
+    target: 'blog_post',
+    userEmail: subscriberEmail,
+    metadata: {
+      postId,
+      handleId: metadata.handleId,
+      title: metadata.title,
+      status: metadata.status,
+      ...metadata
+    }
+  });
+}
+
+// Comment logging
+async function logCommentAction(action: string, commentId: string, authorEmail: string, metadata: any) {
+  await NormalizedLogging.log({
+    category: 'subscriber_pages',
+    action: action,
+    target: 'blog_comment',
+    userEmail: authorEmail,
+    metadata: {
+      commentId,
+      blogPostId: metadata.blogPostId,
+      parentCommentId: metadata.parentCommentId,
+      status: metadata.status,
+      ...metadata
+    }
+  });
+}
+
+// Rating logging
+async function logRatingAction(action: string, ratingId: string, raterEmail: string, metadata: any) {
+  await NormalizedLogging.log({
+    category: 'subscriber_pages',
+    action: action,
+    target: 'content_rating',
+    userEmail: raterEmail,
+    metadata: {
+      ratingId,
+      contentType: metadata.contentType,
+      contentId: metadata.contentId,
+      rating: metadata.rating,
+      isVerified: metadata.isVerified,
+      ...metadata
+    }
+  });
+}
+```
+
+#### **Rating System**
+- **Star Ratings**: 1-5 star rating system for blog posts and published content
+- **Written Reviews**: Optional detailed reviews with multi-language support
+- **Anonymous Ratings**: Allow ratings without requiring account creation
+- **Verified Badges**: Highlight ratings from verified subscribers
+- **One Rating Per User**: Prevent rating manipulation
+- **Rating Analytics**: Real-time calculation of average ratings and distributions
+- **Rating Moderation**: Flag and review inappropriate ratings
+- **Rating Display**: Show average rating, total count, and distribution
+
+#### **Rating Features**
+```typescript
+// Example rating system features
+const ratingFeatures = {
+  rating: {
+    scale: '1-5 stars',
+    anonymous: 'Allow ratings without account',
+    verified: 'Highlight verified subscriber ratings',
+    unique: 'One rating per user per content',
+    review: 'Optional written review support'
+  },
+  analytics: {
+    average: 'Real-time average calculation',
+    distribution: 'Star count breakdown',
+    trends: 'Rating trends over time',
+    comparison: 'Compare ratings across content'
+  },
+  moderation: {
+    flag: 'Flag inappropriate ratings',
+    review: 'Admin review of flagged ratings',
+    archive: 'Hide problematic ratings',
+    restore: 'Restore archived ratings'
+  }
+};
+```
+
+#### **Comment System**
+- **Threaded Comments**: Full reply functionality with nested discussions
+- **Comment Moderation**: Approve, archive, or flag comments
+- **Author Attribution**: Comments linked to subscriber accounts
+- **Soft Deletion**: Archive comments without losing data
+- **Moderation Queue**: Review pending comments before approval
+- **Spam Protection**: Built-in spam detection and filtering
+- **Notification System**: Notify post authors of new comments
+
+#### **Content Lifecycle Management**
+```typescript
+// Example content status management
+const contentStatuses = {
+  blog: {
+    draft: 'Draft - not visible to public',
+    published: 'Published - visible to public',
+    archived: 'Archived - hidden from public, data preserved'
+  },
+  comments: {
+    approved: 'Approved - visible to public',
+    pending: 'Pending - awaiting moderation',
+    archived: 'Archived - hidden from public, data preserved',
+    flagged: 'Flagged - requires review'
+  }
+};
+```
+
+#### **Content Management Interface**
+- **Blog Dashboard**: Overview of all posts with status indicators
+- **Comment Management**: Threaded view with moderation tools
+- **Bulk Actions**: Select multiple items for batch operations
+- **Search and Filter**: Find specific posts or comments quickly
+- **Status Indicators**: Clear visual status for all content
+- **Archive Recovery**: Restore archived content when needed
+
+### **Internationalization Requirements**
+
+#### **Full i18n Support Matching Harbor**
+- **Language Support**: Complete support for en, es, fr, de, nl
+- **URL Structure**: `/[lang]/content/[handle]` following Harbor's pattern
+- **Content Localization**: Blog posts, announcements, and bio content in multiple languages
+- **UI Translation**: All interface elements translated using Harbor's existing i18n system
+- **Language Detection**: Automatic language detection and user preference handling
+
+#### **i18n Implementation Strategy**
+```typescript
+// Example i18n integration for subscriber pages
+import { useTranslation } from 'react-i18next';
+
+function SubscriberPage({ lang, handle }: { lang: string, handle: string }) {
+  const { t } = useTranslation('translations');
+  
+  return (
+    <PageTemplate>
+      <Header lang={lang} />
+      <AppBar sections={sections} lang={lang} />
+      <MainContent>
+        {sections.map(section => (
+          <SectionRenderer 
+            key={section.key}
+            section={section}
+            handleId={handle}
+            lang={lang}
+            t={t}
+          />
+        ))}
+      </MainContent>
+      <Footer lang={lang} />
+    </PageTemplate>
+  );
+}
+```
+
+#### **Content Language Support**
+- **Multi-language Content**: Blog posts and announcements can be created in multiple languages
+- **Language-Specific Display**: Content shown in user's preferred language
+- **Fallback Handling**: Graceful fallback to English when content not available in preferred language
+- **Language Metadata**: Track content language for analytics and discovery
+
+#### **Translation Keys Structure**
+```json
+{
+  "subscriberPages": {
+    "sections": {
+      "bio": "Biography",
+      "photo": "Photo",
+      "announcements": "Announcements",
+      "blog": "Blog",
+      "showcase": "Showcase",
+      "publishedMedia": "Published Media",
+      "contact": "Contact"
+    },
+    "actions": {
+      "sendMessage": "Send Message",
+      "viewProfile": "View Profile",
+      "readMore": "Read More"
+    },
+    "content": {
+      "noContent": "No content available",
+      "loading": "Loading...",
+      "error": "Error loading content"
+    }
+  }
+}
+```
+
 ### **Page Customization System**
 
 #### **Template-Based Approach**
@@ -419,6 +892,7 @@ ContentUsage (UserEmail) ←→ Subscribers (Email)
 - **Role-Based Filtering**: Available sections filtered by user's roles
 - **Dynamic Rendering**: Pages rendered based on selected sections
 - **No Full Customization**: Maintains system consistency and manageability
+- **Internationalized**: All sections support full i18n with Harbor's existing system
 
 #### **Available Page Sections**
 - **Bio**: Personal biography and professional information (all roles)
@@ -428,6 +902,8 @@ ContentUsage (UserEmail) ←→ Subscribers (Email)
 - **Showcase**: Featured media file or project (author, editor, publisher)
 - **Published Media**: Complete listing of published content (author, editor, publisher)
 - **Contact**: Contact form and messaging (all roles)
+
+**All sections support full internationalization (en, es, fr, de, nl)**
 
 #### **Role-Based Section Access**
 ```typescript
@@ -450,22 +926,23 @@ const roleSections = {
 
 #### **Dynamic Page Rendering**
 ```typescript
-// Example page rendering logic
-function renderPublicPage(handleId: string, sections: PageSection[]) {
+// Example page rendering logic with i18n support
+function renderPublicPage(handleId: string, sections: PageSection[], lang: string) {
   return (
     <PageTemplate>
-      <Header />
-      <AppBar sections={sections} />
+      <Header lang={lang} />
+      <AppBar sections={sections} lang={lang} />
       <MainContent>
         {sections.map(section => (
           <SectionRenderer 
             key={section.key}
             section={section}
             handleId={handleId}
+            lang={lang}
           />
         ))}
       </MainContent>
-      <Footer />
+      <Footer lang={lang} />
     </PageTemplate>
   );
 }
@@ -688,20 +1165,29 @@ function generateHandleSuggestions(userName: string, contentFocus: string): stri
 - Handle management integration into existing profile interface
 - Internal profile enhancement with handle creation and management
 - Handle creation interface with limit enforcement
+- i18n infrastructure setup for subscriber pages
 
 #### **Phase 2: Content Management (Weeks 3-4)**
 - Blog post creation and management with handle association
+- Blog post archiving and soft-delete functionality
+- Comment system with threaded reply functionality
+- Comment moderation and archiving capabilities
+- Rating system for blog posts and published content
+- Rating analytics and moderation tools
 - Announcement system implementation with handle association
 - Content publishing workflow organized by handle
+- Comprehensive action logging for all subscriber page activities
 - Basic analytics tracking per handle
 - Handle limit enforcement and upgrade prompts
 - Content management integration into existing internal profile interface
+- Multi-language content creation and management
 
 #### **Phase 3: Public Discovery (Weeks 5-6)**
 - External page creation and routing using handle-based URLs
 - Public profile display organized by handle focus
 - Content discovery interface with handle-based organization
 - Contact form integration through handle pages
+- Full i18n implementation for all public-facing pages and content
 
 #### **Phase 4: Enhancement (Weeks 7-8)**
 - Advanced analytics dashboard with handle-based insights
@@ -709,6 +1195,8 @@ function generateHandleSuggestions(userName: string, contentFocus: string): stri
 - Performance optimization
 - User testing and feedback on handle management
 - Admin interface for handle limit management and tier upgrades
+- Admin monitoring dashboard for public pages analytics and moderation
+- Content moderation system for subscriber and content management
 - Internal profile enhancements (messaging/workflow integration)
 
 #### **Phase 5: Launch (Weeks 9-10)**
@@ -724,6 +1212,9 @@ function generateHandleSuggestions(userName: string, contentFocus: string): stri
 #### **User Engagement**
 - **Page Views**: Track visits to subscriber pages per handle
 - **Content Creation**: Monitor blog posts and announcements per handle
+- **Content Actions**: Track create, update, archive, delete actions
+- **Comment Activity**: Monitor comment creation, replies, and moderation
+- **Rating Activity**: Track rating submissions and review engagement
 - **User Interaction**: Measure contact form submissions and messaging per handle
 - **Return Visitors**: Track repeat visits and engagement per handle
 - **Handle Utilization**: Monitor how many subscribers create multiple handles
@@ -738,8 +1229,13 @@ function generateHandleSuggestions(userName: string, contentFocus: string): stri
 
 #### **Content Quality**
 - **Content Engagement**: Reader interaction with content per handle
+- **Rating Quality**: Average ratings and rating distribution per content
+- **Review Engagement**: Written review submission rates and quality
+- **Content Lifecycle**: Track content creation, modification, and archival patterns
+- **Moderation Activity**: Monitor content and comment moderation actions
 - **Author Satisfaction**: Feedback from content creators on handle system
 - **Content Discovery**: How easily readers find content through handle-based organization
+- **Quality Recognition**: High-rated content discovery and promotion
 - **Community Building**: Growth in author-reader connections within handle categories
 - **Content Focus**: Effectiveness of handle-based content organization
 
@@ -750,6 +1246,8 @@ function generateHandleSuggestions(userName: string, contentFocus: string): stri
 - **Scalability Concerns**: Design for horizontal scaling from start
 - **Security Vulnerabilities**: Regular security audits and testing
 - **Data Loss**: Comprehensive backup and recovery strategies
+- **Logging Performance**: Ensure logging doesn't impact system performance
+- **Data Retention**: Manage log storage and retention policies
 
 #### **User Experience Risks**
 - **Feature Complexity**: Start simple and iterate based on feedback
@@ -790,5 +1288,7 @@ The handle-based system provides:
 - **Smart Suggestions**: AI-powered handle suggestions to reduce conflicts
 - **Flexible Presentation**: Role-based section selection for customized pages
 - **Consistent Experience**: Template-based approach maintains system consistency
+- **Global Reach**: Full internationalization support (en, es, fr, de, nl) matching Harbor's system
+- **Platform Governance**: Comprehensive admin monitoring and moderation for content quality
 
 This feature has the potential to significantly enhance your platform's value proposition and create new opportunities for growth and engagement.
