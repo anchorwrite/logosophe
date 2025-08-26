@@ -12,7 +12,7 @@ import { NormalizedLogging, extractRequestContext } from '@/lib/normalized-loggi
  */
 export async function logHandleAction(
   db: D1Database,
-  action: 'subscriber_handle_created' | 'subscriber_handle_updated' | 'subscriber_handle_archived' | 'subscriber_handle_moderated',
+  action: 'subscriber_handle_created' | 'subscriber_handle_updated' | 'subscriber_handle_archived' | 'subscriber_handle_moderated' | 'subscriber_handle_deleted',
   handleId: string,
   subscriberEmail: string,
   metadata: {

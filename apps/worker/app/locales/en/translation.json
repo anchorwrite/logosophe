@@ -50,6 +50,9 @@
     "archived": "Archived",
     "public": "Public",
     "private": "Private",
+    "make_public": "Make Public",
+    "make_private": "Make Private",
+    "preview": "Preview",
     "language": "Language",
     "tags": "Tags",
     "created": "Created",
@@ -1033,7 +1036,13 @@
       "description": "Create and manage your public page URLs (handles)",
       "limit_info": "{{current}} of {{max}} handles used ({{type}} plan)",
       "create_new": "Create New Handle",
+      "create_first": "Create Your First Handle",
       "no_handles": "No handles created yet. Create your first handle to get started.",
+      "view_disabled_inactive": "View is disabled for inactive handles",
+      "view_public_url": "View public page",
+      "view_internal_preview": "Preview page internally (not public)",
+      "public_disabled_inactive": "Public/Private toggle is disabled for inactive handles",
+      "delete_confirm": "Are you sure you want to delete this handle? This action cannot be undone and will remove all associated blog posts and content.",
       "your_handles": "Your Handles",
       "create_form": {
         "title": "Create New Handle",
@@ -1046,6 +1055,11 @@
         "description": "Description",
         "description_placeholder": "Optional description of your page",
         "public_page": "Make this a public page"
+      },
+      "edit_form": {
+        "title": "Edit Page Content",
+        "page_url": "Page URL",
+        "url_info": "The URL cannot be changed, but you can edit the page content below"
       },
       "limit_reached": "Limit reached: {{current}}/{{max}} handles"
     },
@@ -1094,6 +1108,19 @@
       "network_error": "Connection Error",
       "network_error_description": "We're having trouble loading this page. Please check your connection and try again.",
       "return_home": "Go to Logosophe",
+      "go_back": "Go Back",
+      "help_text": "If you believe this is an error, please contact the site administrator."
+    },
+    "preview_page": {
+      "preview_mode": "Preview Mode",
+      "preview_description": "This is a private preview. The page is not publicly accessible.",
+      "page_not_found": "Preview Not Found",
+      "page_not_found_description": "The preview you're looking for doesn't exist or may have been removed.",
+      "page_unavailable": "Preview Unavailable",
+      "page_unavailable_description": "The preview you're looking for may have been removed or is temporarily unavailable.",
+      "network_error": "Connection Error",
+      "network_error_description": "We're having trouble loading this preview. Please check your connection and try again.",
+      "back_to_handles": "Back to Handles",
       "go_back": "Go Back",
       "help_text": "If you believe this is an error, please contact the site administrator."
     }
