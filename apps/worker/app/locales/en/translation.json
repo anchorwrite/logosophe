@@ -1008,6 +1008,20 @@
     "title": "Subscriber Pages",
     "subtitle": "Create and manage your public pages and blog posts",
     "logged_in_as": "Logged in as",
+    "sections": {
+      "bio": "Biography",
+      "photo": "Photo",
+      "announcements": "Announcements",
+      "blog": "Blog",
+      "showcase": "Showcase",
+      "published_media": "Published Media",
+      "contact": "Contact"
+    },
+    "content": {
+      "noContent": "No content available",
+      "loading": "Loading...",
+      "error": "Error loading content"
+    },
     "tabs": {
       "handles": "Handles",
       "handles_description": "Manage your public page URLs",

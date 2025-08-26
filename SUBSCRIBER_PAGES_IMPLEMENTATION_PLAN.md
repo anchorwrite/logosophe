@@ -39,7 +39,7 @@ Workflow Collaboration → Content Creation → Publishing → Subscriber Pages 
 - **Features**: Detailed analytics, role information, tenant history, handle management
 - **Priority**: Use existing profile structure with potential future enhancements
 
-**External Pages** (`/[lang]/content/[handle]`):
+**External Pages** (`/[lang]/pages/[handle]`):
 - **Audience**: Anyone on the internet
 - **Content**: Public biography, published content, announcements
 - **Access**: No authentication required
@@ -510,7 +510,7 @@ const subscriberPageActions = {
 
 ### **URL Structure**
 
-#### **Internal Routes**
+#### **Internal Routes (Harbor - Authenticated Users)**
 - `/[lang]/harbor/subscribers/[email]` - Internal subscriber profile
 - `/[lang]/harbor/subscribers/[email]/edit` - Edit profile
 - `/[lang]/harbor/subscribers/[email]/handles` - Manage public handles (with limit display)
@@ -525,12 +525,14 @@ const subscriberPageActions = {
 - `/dashboard/subscriber-pages/handles/[handleId]` - Individual handle monitoring
 - `/dashboard/subscriber-pages/moderation` - Content moderation queue
 
-#### **External Routes**
-- `/[lang]/content/[handle]` - Public subscriber profile for specific handle (dynamic sections)
-- `/[lang]/content/[handle]/blog` - Public blog posts for specific handle
-- `/[lang]/content/[handle]/works` - Published content for specific handle
-- `/[lang]/content/[handle]/contact` - Contact form for specific handle
-- `/[lang]/content/[handle]/[section]` - Individual section pages (optional deep linking)
+#### **External Routes (Public Pages - Anyone)**
+- `/[lang]/pages/[handle]` - Public subscriber profile for specific handle (dynamic sections)
+- `/[lang]/pages/[handle]/blog` - Public blog posts for specific handle
+- `/[lang]/pages/[handle]/works` - Published content for specific handle
+- `/[lang]/pages/[handle]/contact` - Contact form for specific handle
+- `/[lang]/pages/[handle]/[section]` - Individual section pages (optional deep linking)
+
+**Note:** Changed from `/[lang]/harbor/handles/[handle]` to `/[lang]/pages/[handle]` for cleaner, more intuitive public URLs.
 
 #### **API Routes**
 - `/api/harbor/subscribers/[email]/profile` - Internal profile data
@@ -542,13 +544,13 @@ const subscriberPageActions = {
 - `/api/harbor/subscribers/[email]/blog/[postId]/ratings` - Rating management for blog posts
 - `/api/harbor/subscribers/[email]/works/[contentId]/ratings` - Rating management for published content
 - `/api/harbor/subscribers/[email]/announcements` - Announcement management across all handles
-- `/api/content/[handle]/profile` - Public profile data for specific handle
-- `/api/content/[handle]/blog` - Public blog posts for specific handle
-- `/api/content/[handle]/blog/[postId]/comments` - Public comments for blog posts
-- `/api/content/[handle]/blog/[postId]/ratings` - Public ratings for blog posts
-- `/api/content/[handle]/works` - Published works for specific handle
-- `/api/content/[handle]/works/[contentId]/ratings` - Public ratings for published content
-- `/api/content/[handle]/sections` - Dynamic section data for public pages
+- `/api/pages/[handle]/profile` - Public profile data for specific handle
+- `/api/pages/[handle]/blog` - Public blog posts for specific handle
+- `/api/pages/[handle]/blog/[postId]/comments` - Public comments for blog posts
+- `/api/pages/[handle]/blog/[postId]/ratings` - Public ratings for blog posts
+- `/api/pages/[handle]/works` - Published works for specific handle
+- `/api/pages/[handle]/works/[contentId]/ratings` - Public ratings for published content
+- `/api/pages/[handle]/sections` - Dynamic section data for public pages
 - `/api/dashboard/handle-limits` - Admin management of handle limits and tiers
 - `/api/dashboard/subscriber-pages` - Admin analytics and monitoring for public pages
 - `/api/dashboard/subscriber-pages/[email]/moderation` - Subscriber moderation actions
@@ -1203,7 +1205,8 @@ function generateHandleSuggestions(userName: string, contentFocus: string): stri
 **Current Status:**
 - 🔄 Basic blog post creation and management working
 - 🔄 Handle creation and management functional
-- 🔄 Public handle pages accessible via `/en/harbor/handles/[handle]`
+- ✅ **NEW**: Public handle pages now accessible via `/en/pages/[handle]` (cleaner URL structure)
+- ✅ **NEW**: API routes moved from `/api/harbor/handles/[handle]` to `/api/pages/[handle]`
 - 🔄 API routes functional and returning proper data
 
 **Next Steps:**
@@ -1227,7 +1230,14 @@ function generateHandleSuggestions(userName: string, contentFocus: string): stri
 
 ### **Key Implementation Gotchas & Lessons Learned**
 
-#### **1. Database Schema Issues**
+#### **1. URL Structure Optimization**
+**Problem:** Original plan used `/harbor/handles/[handle]` which felt internal/technical
+- **Issue:** Public-facing URLs exposed internal Harbor structure and felt too technical
+- **Root Cause:** Insufficient consideration of user experience for external visitors
+- **Solution:** Changed to `/pages/[handle]` for cleaner, more intuitive public URLs
+- **Lesson:** Public-facing URLs should be simple and user-friendly, not expose internal structure
+
+#### **2. Database Schema Issues**
 **Problem:** Initial SQL queries used incorrect column references
 - **Issue:** Referenced `sp.SubscriberEmail` instead of `sp.Email` in JOIN clauses
 - **Root Cause:** `SubscriberProfiles` table uses `Email` as primary key, not `SubscriberEmail`
@@ -1286,7 +1296,7 @@ function generateHandleSuggestions(userName: string, contentFocus: string): stri
 **Problem:** Dynamic route conflicts between `[handle]` and `[token]` parameters
 - **Issue:** Initially placed public API routes under `/api/content/[handle]/` which conflicted with existing `/api/content/[token]/` routes
 - **Root Cause:** Insufficient route planning and conflict checking
-- **Solution:** Moved all handle-based routes to `/api/harbor/handles/[handle]/` to avoid conflicts
+- **Solution:** Moved all handle-based routes to `/api/pages/[handle]/` for cleaner public URLs and to avoid conflicts
 
 ### **Implementation Timeline (Updated)**
 
