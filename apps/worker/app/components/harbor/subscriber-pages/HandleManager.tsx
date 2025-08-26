@@ -452,7 +452,7 @@ export default function HandleManager({ subscriberEmail }: { subscriberEmail: st
                           {handle.IsActive ? t('common.deactivate') : t('common.activate')}
                         </Button>
                         <Button
-                          onClick={() => window.open(`/harbor/handles/${handle.Handle}`, '_blank')}
+                          onClick={() => window.open(`/pages/${handle.Handle}`, '_blank')}
                           variant="outline"
                           size="2"
                         >

@@ -1,0 +1,201 @@
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useParams } from 'next/navigation';
+import { Box, Flex, Heading, Text, Card, Container, Separator, Button } from '@radix-ui/themes';
+import { SubscriberHandle, SubscriberBlogPost } from '@/types/subscriber-pages';
+
+interface PublicHandlePageProps {
+  params: Promise<{ lang: string; handle: string }>;
+}
+
+export default function PublicHandlePage({ params }: PublicHandlePageProps) {
+  const { t } = useTranslation('translations');
+  const [handle, setHandle] = useState<SubscriberHandle | null>(null);
+  const [blogPosts, setBlogPosts] = useState<SubscriberBlogPost[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+
+  useEffect(() => {
+    const loadPageData = async () => {
+      try {
+        const { lang, handle: handleName } = await params;
+        
+        // Load handle information
+        const handleResponse = await fetch(`/api/pages/${handleName}`);
+        if (!handleResponse.ok) {
+          throw new Error('Handle not found');
+        }
+        const handleData = await handleResponse.json() as { success: boolean; data: SubscriberHandle };
+        setHandle(handleData.data);
+
+        // Load blog posts
+        const blogResponse = await fetch(`/api/pages/${handleName}/blog?page=${currentPage}&limit=10&status=published`);
+        if (blogResponse.ok) {
+          const blogData = await blogResponse.json() as { 
+            success: boolean; 
+            data: SubscriberBlogPost[]; 
+            pagination: { totalPages: number } 
+          };
+          setBlogPosts(blogData.data);
+          setTotalPages(blogData.pagination.totalPages);
+        }
+
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load page');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadPageData();
+  }, [params, currentPage]);
+
+  if (loading) {
+    return (
+      <Box style={{ minHeight: '100vh', backgroundColor: 'var(--gray-1)' }}>
+        <Container size="4" py="6">
+          <Flex justify="center" align="center" style={{ minHeight: '50vh' }}>
+            <Text size="5">{t('common.loading')}</Text>
+          </Flex>
+        </Container>
+      </Box>
+    );
+  }
+
+  if (error || !handle) {
+    return (
+      <Box style={{ minHeight: '100vh', backgroundColor: 'var(--gray-1)' }}>
+        <Container size="4" py="6">
+          <Flex justify="center" align="center" style={{ minHeight: '50vh' }}>
+            <Text size="5" color="red">
+              {error || 'Page not found'}
+            </Text>
+          </Flex>
+        </Container>
+      </Box>
+    );
+  }
+
+  return (
+    <Box style={{ minHeight: '100vh', backgroundColor: 'var(--gray-1)' }}>
+      {/* Header */}
+      <Box style={{ backgroundColor: 'white', borderBottom: '1px solid var(--gray-6)' }}>
+        <Container size="4">
+          <Box py="6">
+            <Flex justify="between" align="center">
+              <Box>
+                <Heading size="8" mb="2">
+                  {handle.DisplayName}
+                </Heading>
+                {handle.Description && (
+                  <Text size="5" color="gray">
+                    {handle.Description}
+                  </Text>
+                )}
+              </Box>
+              <Text size="2" color="gray">
+                {t('common.created')}: {new Date(handle.CreatedAt).toLocaleDateString()}
+              </Text>
+            </Flex>
+          </Box>
+        </Container>
+      </Box>
+
+      {/* Content */}
+      <Container size="4" py="6">
+        {/* Bio Section */}
+        <Card mb="6">
+          <Box p="6">
+            <Heading size="6" mb="4">
+              {t('subscriber_pages.sections.bio')}
+            </Heading>
+            <Text size="3" color="gray">
+              {t('subscriber_pages.content.noContent')}
+            </Text>
+          </Box>
+        </Card>
+
+        {/* Blog Posts Section */}
+        <Card mb="6">
+          <Box p="6">
+            <Heading size="6" mb="4">
+              {t('subscriber_pages.sections.blog')}
+            </Heading>
+            
+            {blogPosts.length > 0 ? (
+              <Box style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                {blogPosts.map((post) => (
+                  <Card key={post.Id} style={{ backgroundColor: 'var(--gray-2)' }}>
+                    <Box p="4">
+                      <Heading size="4" mb="2">
+                        {post.Title}
+                      </Heading>
+                      {post.Excerpt && (
+                        <Text size="3" color="gray" mb="2">
+                          {post.Excerpt}
+                        </Text>
+                      )}
+                      <Flex justify="between" align="center">
+                        <Text size="2" color="gray">
+                          {new Date(post.CreatedAt).toLocaleDateString()}
+                        </Text>
+                        <Text size="2" color="gray">
+                          {post.ViewCount} {t('subscriber_pages.blog.views')}
+                        </Text>
+                      </Flex>
+                    </Box>
+                  </Card>
+                ))}
+              </Box>
+            ) : (
+              <Text size="3" color="gray">
+                {t('subscriber_pages.content.noContent')}
+              </Text>
+            )}
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <Flex justify="center" align="center" mt="4" gap="2">
+                <Button
+                  variant="soft"
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage(currentPage - 1)}
+                >
+                  {t('common.previous')}
+                </Button>
+                
+                <Text size="2" color="gray">
+                  {t('common.page_info', { current: currentPage, total: totalPages })}
+                </Text>
+                
+                <Button
+                  variant="soft"
+                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage(currentPage + 1)}
+                >
+                  {t('common.next')}
+                </Button>
+              </Flex>
+            )}
+          </Box>
+        </Card>
+
+        {/* Contact Section */}
+        <Card>
+          <Box p="6">
+            <Heading size="6" mb="4">
+              {t('subscriber_pages.sections.contact')}
+            </Heading>
+            <Text size="3" color="gray">
+              {t('subscriber_pages.content.noContent')}
+            </Text>
+          </Box>
+        </Card>
+      </Container>
+    </Box>
+  );
+}
