@@ -3,17 +3,17 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'next/navigation';
-import { Box, Flex, Heading, Text, Card, Container, Separator, Button } from '@radix-ui/themes';
+import { Box, Flex, Heading, Text, Card, Container, Separator, Button, Badge } from '@radix-ui/themes';
 import { SubscriberHandle, SubscriberBlogPost } from '@/types/subscriber-pages';
-import SubscriberPagesAppBar from '@/components/SubscriberPagesAppBar';
-import Footer from '@/components/Footer';
+import { useSession } from 'next-auth/react';
 
-interface PublicHandlePageProps {
+interface PreviewHandlePageProps {
   params: Promise<{ lang: string; handle: string }>;
 }
 
-export default function PublicHandlePage({ params }: PublicHandlePageProps) {
+export default function PreviewHandlePage({ params }: PreviewHandlePageProps) {
   const { t } = useTranslation('translations');
+  const { data: session } = useSession();
   const [handle, setHandle] = useState<SubscriberHandle | null>(null);
   const [blogPosts, setBlogPosts] = useState<SubscriberBlogPost[]>([]);
   const [loading, setLoading] = useState(true);
@@ -28,16 +28,16 @@ export default function PublicHandlePage({ params }: PublicHandlePageProps) {
         const { lang: langParam, handle: handleName } = await params;
         setLang(langParam);
         
-        // Load handle information
-        const handleResponse = await fetch(`/api/pages/${handleName}`);
+        // Load handle information (internal API that doesn't require public status)
+        const handleResponse = await fetch(`/api/harbor/preview/${handleName}`);
         if (!handleResponse.ok) {
           throw new Error('Handle not found');
         }
         const handleData = await handleResponse.json() as { success: boolean; data: SubscriberHandle };
         setHandle(handleData.data);
 
-        // Load blog posts
-        const blogResponse = await fetch(`/api/pages/${handleName}/blog?page=${currentPage}&limit=10&status=published`);
+        // Load blog posts (internal API)
+        const blogResponse = await fetch(`/api/harbor/preview/${handleName}/blog?page=${currentPage}&limit=10&status=published`);
         if (blogResponse.ok) {
           const blogData = await blogResponse.json() as { 
             success: boolean; 
@@ -49,7 +49,6 @@ export default function PublicHandlePage({ params }: PublicHandlePageProps) {
         }
 
       } catch (err) {
-        // Provide more user-friendly error messages
         if (err instanceof Error) {
           if (err.message === 'Handle not found') {
             setError('not_found');
@@ -93,16 +92,16 @@ export default function PublicHandlePage({ params }: PublicHandlePageProps) {
             <Box style={{ textAlign: 'center' }}>
               <Heading size="8" mb="3" color="gray">
                 {error === 'not_found' 
-                  ? t('subscriber_pages.public_page.page_not_found')
-                  : t('subscriber_pages.public_page.page_unavailable')
+                  ? t('subscriber_pages.preview_page.page_not_found')
+                  : t('subscriber_pages.preview_page.page_unavailable')
                 }
               </Heading>
               <Text size="5" color="gray" mb="4">
                 {error === 'not_found'
-                  ? t('subscriber_pages.public_page.page_not_found_description')
+                  ? t('subscriber_pages.preview_page.page_not_found_description')
                   : error === 'network_error'
-                  ? t('subscriber_pages.public_page.network_error_description')
-                  : t('subscriber_pages.public_page.page_unavailable_description')
+                  ? t('subscriber_pages.preview_page.network_error_description')
+                  : t('subscriber_pages.preview_page.page_unavailable_description')
                 }
               </Text>
             </Box>
@@ -112,23 +111,23 @@ export default function PublicHandlePage({ params }: PublicHandlePageProps) {
               <Button 
                 size="4" 
                 variant="solid"
-                onClick={() => window.location.href = '/'}
+                onClick={() => window.location.href = `/${lang}/harbor/subscriber-pages`}
               >
-                {t('subscriber_pages.public_page.return_home')}
+                {t('subscriber_pages.preview_page.back_to_handles')}
               </Button>
               <Button 
                 size="4" 
                 variant="outline"
                 onClick={() => window.history.back()}
               >
-                {t('subscriber_pages.public_page.go_back')}
+                {t('subscriber_pages.preview_page.go_back')}
               </Button>
             </Flex>
             
             {/* Additional Help */}
             <Box style={{ textAlign: 'center' }} mt="4">
               <Text size="3" color="gray">
-                {t('subscriber_pages.public_page.help_text')}
+                {t('subscriber_pages.preview_page.help_text')}
               </Text>
             </Box>
           </Flex>
@@ -138,31 +137,48 @@ export default function PublicHandlePage({ params }: PublicHandlePageProps) {
   }
 
   return (
-    <>
-      <SubscriberPagesAppBar lang={lang as 'en' | 'es' | 'de' | 'fr' | 'nl'} />
-      <Box style={{ minHeight: '100vh', backgroundColor: 'var(--gray-1)' }}>
-        {/* Header */}
-        <Box style={{ backgroundColor: 'white', borderBottom: '1px solid var(--gray-6)' }}>
-          <Container size="4">
-            <Box py="6">
-              <Flex justify="between" align="center">
-                <Box>
-                  <Heading size="8" mb="2">
-                    {handle.DisplayName}
-                  </Heading>
-                  {handle.Description ? (
-                    <Text size="5" color="gray">
-                      {handle.Description}
-                    </Text>
-                  ) : null}
-                </Box>
+    <Box style={{ minHeight: '100vh', backgroundColor: 'var(--gray-1)' }}>
+      {/* Preview Header */}
+      <Box style={{ backgroundColor: 'var(--orange-2)', borderBottom: '1px solid var(--orange-6)' }}>
+        <Container size="4">
+          <Box py="4">
+            <Flex justify="center" align="center" gap="3">
+              <Badge color="orange" size="2">
+                🔒 {t('subscriber_pages.preview_page.preview_mode')}
+              </Badge>
+              <Text size="3" color="orange">
+                {t('subscriber_pages.preview_page.preview_description')}
+              </Text>
+            </Flex>
+          </Box>
+        </Container>
+      </Box>
+
+      {/* Header */}
+      <Box style={{ backgroundColor: 'white', borderBottom: '1px solid var(--gray-6)' }}>
+        <Container size="4">
+          <Box py="6">
+            <Flex justify="between" align="center">
+              <Box>
+                <Heading size="8" mb="2">
+                  {handle.DisplayName}
+                </Heading>
+                {handle.Description ? (
+                  <Text size="5" color="gray" mb="3">
+                    {handle.Description}
+                  </Text>
+                ) : null}
                 <Text size="2" color="gray">
                   {t('common.created')}: {new Date(handle.CreatedAt).toLocaleDateString()}
                 </Text>
-              </Flex>
-            </Box>
-          </Container>
-        </Box>
+              </Box>
+              <Text size="2" color="gray">
+                {t('common.created')}: {new Date(handle.CreatedAt).toLocaleDateString()}
+              </Text>
+            </Flex>
+          </Box>
+        </Container>
+      </Box>
 
       {/* Content */}
       <Container size="4" py="6">
@@ -255,8 +271,6 @@ export default function PublicHandlePage({ params }: PublicHandlePageProps) {
           </Box>
         </Card>
       </Container>
-      </Box>
-      <Footer />
-    </>
+    </Box>
   );
 }

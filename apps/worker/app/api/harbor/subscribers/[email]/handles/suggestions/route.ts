@@ -55,6 +55,16 @@ export async function GET(
       });
     }
 
+    // Validate that we received a non-empty string
+    if (baseName.trim().length === 0) {
+      return new Response(JSON.stringify({ 
+        error: 'Handle parameter cannot be empty' 
+      }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
     // Validate the handle
     const validation = await validateHandle(db, baseName);
     
@@ -220,7 +230,7 @@ async function validateHandle(db: D1Database, handle: string): Promise<HandleVal
   const trimmedHandle = handle.trim();
   
   if (trimmedHandle.length < 3) {
-    errors.push('Handle must be at least 3 characters long');
+    errors.push(`Handle must be at least 3 characters long (received: "${trimmedHandle}" with length ${trimmedHandle.length})`);
   }
   
   if (trimmedHandle.length > 30) {

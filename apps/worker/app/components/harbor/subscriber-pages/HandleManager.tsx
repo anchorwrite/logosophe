@@ -58,10 +58,13 @@ export default function HandleManager({ subscriberEmail }: { subscriberEmail: st
   const [handleLimit, setHandleLimit] = useState<HandleLimit | null>(null);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
+  const [updating, setUpdating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
   // Form state
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [showEditForm, setShowEditForm] = useState(false);
+  const [editingHandle, setEditingHandle] = useState<SubscriberHandle | null>(null);
   const [formData, setFormData] = useState<CreateHandleRequest>({
     handle: '',
     displayName: '',
@@ -83,7 +86,8 @@ export default function HandleManager({ subscriberEmail }: { subscriberEmail: st
     try {
       setLoading(true);
       setError(null);
-      const response = await fetch(`/api/harbor/subscribers/${encodeURIComponent(subscriberEmail)}/handles`);
+      // Always include inactive handles so users can see and reactivate them
+      const response = await fetch(`/api/harbor/subscribers/${encodeURIComponent(subscriberEmail)}/handles?includeInactive=true`);
       
       if (!response.ok) {
         throw new Error('Failed to fetch handles');
@@ -114,6 +118,7 @@ export default function HandleManager({ subscriberEmail }: { subscriberEmail: st
     
     // Validate handle in real-time
     if (field === 'handle' && typeof value === 'string') {
+      // Use the value directly, not from formData which might not be updated yet
       validateHandle(value);
     }
   };
@@ -186,6 +191,98 @@ export default function HandleManager({ subscriberEmail }: { subscriberEmail: st
       ));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update handle status');
+    }
+  };
+
+  const togglePublicStatus = async (handleId: number, isPublic: boolean) => {
+    try {
+      const response = await fetch(`/api/harbor/subscribers/${encodeURIComponent(subscriberEmail)}/handles/${handleId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isPublic })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update public status');
+      }
+
+      setHandles(prev => prev.map(handle => 
+        handle.Id === handleId ? { ...handle, IsPublic: isPublic } : handle
+      ));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update public status');
+    }
+  };
+
+  const startEditHandle = (handle: SubscriberHandle) => {
+    setEditingHandle(handle);
+    setFormData({
+      handle: handle.Handle,
+      displayName: handle.DisplayName,
+      description: handle.Description || '',
+      isPublic: handle.IsPublic
+    });
+    setShowEditForm(true);
+  };
+
+  const updateHandle = async () => {
+    if (!editingHandle || !formData.displayName.trim()) {
+      setError('Please fill in all required fields');
+      return;
+    }
+
+    try {
+      setUpdating(true);
+      setError(null);
+
+      const response = await fetch(`/api/harbor/subscribers/${encodeURIComponent(subscriberEmail)}/handles/${editingHandle.Id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          isPublic: formData.isPublic
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update handle');
+      }
+
+      // Refresh handles list
+      fetchHandles();
+      
+      // Reset form
+      setShowEditForm(false);
+      setEditingHandle(null);
+      setFormData({ handle: '', displayName: '', description: '', isPublic: true });
+      
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update handle');
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const deleteHandle = async (handleId: number) => {
+    if (!confirm(t('subscriber_pages.handles.delete_confirm'))) {
+      return;
+    }
+
+    try {
+      setError(null);
+
+      const response = await fetch(`/api/harbor/subscribers/${encodeURIComponent(subscriberEmail)}/handles/${handleId}`, {
+        method: 'DELETE'
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete handle');
+      }
+
+      // Refresh handles list
+      fetchHandles();
+      
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete handle');
     }
   };
 
@@ -394,6 +491,100 @@ export default function HandleManager({ subscriberEmail }: { subscriberEmail: st
         </Card>
       )}
 
+      {/* Edit Handle Form Section */}
+      {showEditForm && editingHandle && (
+        <Card style={{ backgroundColor: 'var(--gray-2)', border: '2px solid var(--orange-6)' }}>
+          <Box p="6">
+            <Heading size="5" mb="4" color="orange">
+              {t('subscriber_pages.handles.edit_form.title')} - {editingHandle.Handle}
+            </Heading>
+            
+            <Box style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+              {/* Handle Display (Read-only) */}
+              <Box>
+                <Text weight="medium" size="3" mb="2">
+                  {t('subscriber_pages.handles.edit_form.page_url')}
+                </Text>
+                <Flex align="center">
+                  <Text color="gray" mr="2" size="3">logosophe.com/</Text>
+                  <Text size="3" style={{ fontFamily: 'monospace', backgroundColor: 'var(--gray-3)', padding: '0.5rem', borderRadius: '4px' }}>
+                    {editingHandle.Handle}
+                  </Text>
+                </Flex>
+                <Text size="2" color="gray" mt="1">
+                  {t('subscriber_pages.handles.edit_form.url_info')}
+                </Text>
+              </Box>
+
+              {/* Display Name Input */}
+              <Box>
+                <Text weight="medium" size="3" mb="2">
+                  {t('subscriber_pages.handles.create_form.display_name')}
+                </Text>
+                <TextField.Root>
+                  <TextField.Input
+                    value={formData.displayName}
+                    onChange={(e) => handleInputChange('displayName', e.target.value)}
+                    placeholder={t('subscriber_pages.handles.create_form.display_name_placeholder')}
+                    size="3"
+                  />
+                </TextField.Root>
+              </Box>
+
+              {/* Description Input */}
+              <Box>
+                <Text weight="medium" size="3" mb="2">
+                  {t('subscriber_pages.handles.create_form.description')}
+                </Text>
+                <TextArea
+                  value={formData.description}
+                  onChange={(e) => handleInputChange('description', e.target.value)}
+                  placeholder={t('subscriber_pages.handles.create_form.description_placeholder')}
+                  name="description"
+                />
+              </Box>
+
+              {/* Public Toggle */}
+              <Flex align="center">
+                <Checkbox
+                  id="editIsPublic"
+                  checked={formData.isPublic}
+                  onCheckedChange={(checked) => handleInputChange('isPublic', checked as boolean)}
+                />
+                <Text as="label" htmlFor="editIsPublic" ml="2" size="3">
+                  {t('subscriber_pages.handles.create_form.public_page')}
+                </Text>
+              </Flex>
+
+              <Separator />
+
+              {/* Form Actions */}
+              <Flex justify="end" gap="3">
+                <Button
+                  onClick={() => {
+                    setShowEditForm(false);
+                    setEditingHandle(null);
+                    setFormData({ handle: '', displayName: '', description: '', isPublic: true });
+                  }}
+                  variant="soft"
+                  size="3"
+                >
+                  {t('common.cancel')}
+                </Button>
+                <Button
+                  onClick={updateHandle}
+                  disabled={updating}
+                  variant="solid"
+                  size="3"
+                >
+                  {updating ? t('common.updating') : t('common.update')}
+                </Button>
+              </Flex>
+            </Box>
+          </Box>
+        </Card>
+      )}
+
       {/* Handles List Section */}
       <Card>
         <Box p="6">
@@ -411,8 +602,15 @@ export default function HandleManager({ subscriberEmail }: { subscriberEmail: st
             ) : handles.length === 0 ? (
               <Card style={{ backgroundColor: 'var(--gray-2)' }}>
                 <Box p="6">
-                  <Flex justify="center" align="center">
+                  <Flex direction="column" align="center" gap="3">
                     <Text color="gray" size="5">{t('subscriber_pages.handles.no_handles')}</Text>
+                    <Button
+                      onClick={() => setShowCreateForm(true)}
+                      variant="solid"
+                      size="3"
+                    >
+                      {t('subscriber_pages.handles.create_first')}
+                    </Button>
                   </Flex>
                 </Box>
               </Card>
@@ -427,23 +625,37 @@ export default function HandleManager({ subscriberEmail }: { subscriberEmail: st
                           <Badge color={handle.IsActive ? "green" : "gray"} size="2">
                             {handle.IsActive ? t('common.active') : t('common.inactive')}
                           </Badge>
-                          {handle.IsPublic && (
-                            <Badge color="blue" size="2">
-                              {t('common.public')}
-                            </Badge>
-                          )}
+                          <Badge color={handle.IsPublic ? "blue" : "orange"} size="2">
+                            {handle.IsPublic ? t('common.public') : t('common.private')}
+                          </Badge>
                         </Flex>
-                        <Text color="gray" mb="2" size="3">
-                          logosophe.com/{handle.Handle}
-                        </Text>
-                        {handle.Description && (
-                          <Text color="gray" mb="3" size="3">{handle.Description}</Text>
-                        )}
-                        <Text size="2" color="gray">
-                          {t('common.created')}: {new Date(handle.CreatedAt).toLocaleDateString()}
-                        </Text>
+                        <Box mb="3">
+                          <Text color="gray" size="3">
+                            <strong>URL:</strong> logosophe.com/{handle.Handle}
+                          </Text>
+                        </Box>
+                        {handle.Description ? (
+                          <Box mb="3">
+                            <Text color="gray" size="3">{handle.Description}</Text>
+                          </Box>
+                        ) : null}
+                        <Box>
+                          <Text size="2" color="gray">
+                            <strong>Created:</strong> {new Date(handle.CreatedAt).toLocaleDateString()}
+                          </Text>
+                        </Box>
                       </Box>
                       <Flex gap="2">
+                        {/* Edit Button - Always visible */}
+                        <Button
+                          onClick={() => startEditHandle(handle)}
+                          variant="outline"
+                          size="2"
+                        >
+                          {t('common.edit')}
+                        </Button>
+                        
+                        {/* Status Toggle Button */}
                         <Button
                           onClick={() => toggleHandleStatus(handle.Id, !handle.IsActive)}
                           variant={handle.IsActive ? "soft" : "solid"}
@@ -451,12 +663,48 @@ export default function HandleManager({ subscriberEmail }: { subscriberEmail: st
                         >
                           {handle.IsActive ? t('common.deactivate') : t('common.activate')}
                         </Button>
+                        
+                        {/* Public/Private Toggle Button */}
                         <Button
-                          onClick={() => window.open(`/pages/${handle.Handle}`, '_blank')}
+                          onClick={() => togglePublicStatus(handle.Id, !handle.IsPublic)}
+                          variant={handle.IsPublic ? "soft" : "solid"}
+                          color={handle.IsPublic ? "blue" : "orange"}
+                          size="2"
+                          disabled={!handle.IsActive}
+                          title={!handle.IsActive ? t('subscriber_pages.handles.public_disabled_inactive') : undefined}
+                        >
+                          {handle.IsPublic ? t('common.make_private') : t('common.make_public')}
+                        </Button>
+                        
+                        {/* View Button - Shows different URLs based on public/private status */}
+                        <Button
+                          onClick={() => {
+                            const url = handle.IsPublic 
+                              ? `/pages/${handle.Handle}`  // Public URL
+                              : `/harbor/preview/${handle.Handle}`; // Internal preview URL
+                            window.open(url, '_blank');
+                          }}
                           variant="outline"
                           size="2"
+                          disabled={!handle.IsActive}
+                          title={!handle.IsActive 
+                            ? t('subscriber_pages.handles.view_disabled_inactive') 
+                            : handle.IsPublic 
+                              ? t('subscriber_pages.handles.view_public_url')
+                              : t('subscriber_pages.handles.view_internal_preview')
+                          }
                         >
-                          {t('common.view')}
+                          {handle.IsPublic ? t('common.view') : t('common.preview')}
+                        </Button>
+                        
+                        {/* Delete Button - Always visible */}
+                        <Button
+                          onClick={() => deleteHandle(handle.Id)}
+                          variant="soft"
+                          color="red"
+                          size="2"
+                        >
+                          {t('common.delete')}
                         </Button>
                       </Flex>
                     </Flex>

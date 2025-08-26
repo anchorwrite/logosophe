@@ -327,6 +327,103 @@ export async function PATCH(
 }
 
 // =============================================================================
+// DELETE - Delete a handle
+// =============================================================================
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ email: string; handleId: string }> }
+) {
+  try {
+    const context = await getCloudflareContext({ async: true });
+    const db = context.env.DB;
+    
+    const session = await auth();
+    if (!session?.user?.email) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    const { email, handleId } = await params;
+    const subscriberEmail = decodeURIComponent(email);
+    const handleIdNum = parseInt(handleId);
+    
+    if (isNaN(handleIdNum)) {
+      return new Response(JSON.stringify({ error: 'Invalid handle ID' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+    
+    // Check access: subscriber can delete their own handles, admins can delete any
+    if (session.user.email !== subscriberEmail && 
+        !(await isSystemAdmin(session.user.email, db)) && 
+        !(await isTenantAdminFor(session.user.email, subscriberEmail))) {
+      return new Response(JSON.stringify({ error: 'Forbidden' }), {
+        status: 403,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Verify handle exists and belongs to this subscriber
+    const existingHandle = await getHandleById(db, handleIdNum, subscriberEmail);
+    
+    if (!existingHandle) {
+      return new Response(JSON.stringify({ error: 'Handle not found' }), {
+        status: 404,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Delete the handle
+    const deleteResult = await db.prepare(`
+      DELETE FROM SubscriberHandles 
+      WHERE Id = ? AND SubscriberEmail = ?
+    `).bind(handleIdNum, subscriberEmail).run();
+    
+    if (deleteResult.meta.changes === 0) {
+      return new Response(JSON.stringify({ error: 'Failed to delete handle' }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+    
+    // Log the action
+    await logHandleAction(
+      db,
+      'subscriber_handle_deleted',
+      handleIdNum.toString(),
+      subscriberEmail,
+      {
+        handleId: handleIdNum,
+        handle: existingHandle.Handle,
+        displayName: existingHandle.DisplayName,
+        isActive: existingHandle.IsActive,
+        isPublic: existingHandle.IsPublic
+      },
+      request
+    );
+    
+    return new Response(JSON.stringify({
+      success: true,
+      message: 'Handle deleted successfully'
+    }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' }
+    });
+
+  } catch (error) {
+    console.error('Error deleting handle:', error);
+    return new Response(JSON.stringify({ error: 'Internal server error' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+}
+
+// =============================================================================
 // Helper Functions
 // =============================================================================
 
