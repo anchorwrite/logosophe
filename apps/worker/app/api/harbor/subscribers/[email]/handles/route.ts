@@ -54,12 +54,8 @@ export async function GET(
     
     return new Response(JSON.stringify({
       success: true,
-      data: {
-        handles,
-        handleLimit,
-        currentCount: handles.length,
-        canCreateMore: handles.length < handleLimit.MaxHandles
-      }
+      data: handles,
+      handleLimit
     }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' }

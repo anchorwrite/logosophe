@@ -56,7 +56,7 @@ interface PaginatedResponse<T> extends ApiResponse<T[]> {
 }
 
 export default function BlogManager({ subscriberEmail }: { subscriberEmail: string }) {
-  const { t } = useTranslation();
+  const { t } = useTranslation('translations');
   const [posts, setPosts] = useState<SubscriberBlogPost[]>([]);
   const [handles, setHandles] = useState<SubscriberHandle[]>([]);
   const [loading, setLoading] = useState(true);
