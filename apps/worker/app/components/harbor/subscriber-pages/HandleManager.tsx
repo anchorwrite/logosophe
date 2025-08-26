@@ -53,7 +53,7 @@ interface HandleValidationResponse {
 }
 
 export default function HandleManager({ subscriberEmail }: { subscriberEmail: string }) {
-  const { t } = useTranslation();
+  const { t } = useTranslation('translations');
   const [handles, setHandles] = useState<SubscriberHandle[]>([]);
   const [handleLimit, setHandleLimit] = useState<HandleLimit | null>(null);
   const [loading, setLoading] = useState(true);

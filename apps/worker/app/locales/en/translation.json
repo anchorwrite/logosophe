@@ -53,7 +53,6 @@
     "language": "Language",
     "tags": "Tags",
     "created": "Created",
-    "published": "Published",
     "updated": "Updated",
     "page_info": "Page {{current}} of {{total}}",
     "navigation": {
@@ -290,13 +289,6 @@
   "Privacy Policy": "Privacy Policy",
   "Terms of Service": "Terms of Service",
   "All rights reserved": "All rights reserved",
-  "common": {
-    "loading": "Loading...",
-    "success": "Success",
-    "error": "Error",
-    "cancel": "Cancel",
-    "back": "Back"
-  },
   "auth": {
     "signIn": "Sign In",
     "signOut": "Sign Out"
