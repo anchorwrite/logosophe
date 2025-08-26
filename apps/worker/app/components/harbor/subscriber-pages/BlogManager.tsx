@@ -61,10 +61,13 @@ export default function BlogManager({ subscriberEmail }: { subscriberEmail: stri
   const [handles, setHandles] = useState<SubscriberHandle[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
+  const [updating, setUpdating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
   // Form state
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [showEditForm, setShowEditForm] = useState(false);
+  const [editingPost, setEditingPost] = useState<SubscriberBlogPost | null>(null);
   const [formData, setFormData] = useState<CreateBlogPostRequest>({
     handleId: 0,
     title: '',
@@ -205,6 +208,93 @@ export default function BlogManager({ subscriberEmail }: { subscriberEmail: stri
     } finally {
       setCreating(false);
     }
+  };
+
+  const editPost = async () => {
+    if (!editingPost || !formData.title.trim() || !formData.content.trim()) {
+      setError('Please fill in all required fields');
+      return;
+    }
+
+    try {
+      setUpdating(true);
+      setError(null);
+
+      const response = await fetch(`/api/harbor/subscribers/${encodeURIComponent(subscriberEmail)}/blog/${editingPost.Id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json() as { error?: string };
+        throw new Error(errorData.error || 'Failed to update blog post');
+      }
+
+      // Reset form and refresh posts
+      setFormData({
+        handleId: 0,
+        title: '',
+        content: '',
+        excerpt: '',
+        language: 'en',
+        tags: ''
+      });
+      setShowEditForm(false);
+      setEditingPost(null);
+      
+      // Refresh posts list
+      fetchPosts();
+      
+      // Show success message
+      alert('Blog post updated successfully!');
+      
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update blog post');
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const archivePost = async (postId: number) => {
+    if (!confirm('Are you sure you want to archive this blog post? It will be hidden from public view but can be restored later.')) {
+      return;
+    }
+    
+    try {
+      setError(null);
+      
+      const response = await fetch(`/api/harbor/subscribers/${encodeURIComponent(subscriberEmail)}/blog/${postId}`, {
+        method: 'DELETE'
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json() as { error?: string };
+        throw new Error(errorData.error || 'Failed to archive blog post');
+      }
+      
+      // Refresh posts list
+      fetchPosts();
+      
+      // Show success message
+      alert('Blog post archived successfully!');
+      
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to archive blog post');
+    }
+  };
+
+  const startEditPost = (post: SubscriberBlogPost) => {
+    setEditingPost(post);
+    setFormData({
+      handleId: post.HandleId,
+      title: post.Title,
+      content: post.Content,
+      excerpt: post.Excerpt || '',
+      language: post.Language,
+      tags: post.Tags || ''
+    });
+    setShowEditForm(true);
   };
 
   const updatePostStatus = async (postId: number, status: 'draft' | 'published' | 'archived') => {
@@ -521,6 +611,142 @@ export default function BlogManager({ subscriberEmail }: { subscriberEmail: stri
         </Card>
       )}
 
+      {/* Edit Blog Post Form Section */}
+      {showEditForm && editingPost && (
+        <Card style={{ backgroundColor: 'var(--gray-2)', border: '2px solid var(--orange-6)' }}>
+          <Box p="6">
+            <Heading size="5" mb="4" color="orange">
+              {t('subscriber_pages.blog.edit_form.title')} - {editingPost.Title}
+            </Heading>
+            
+            <Box style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+              {/* Handle Selection */}
+              <Box>
+                <Text weight="medium" size="3" mb="2">
+                  {t('subscriber_pages.blog.create_form.handle')}
+                </Text>
+                <Select.Root value={formData.handleId.toString()} onValueChange={(value) => handleInputChange('handleId', parseInt(value))}>
+                  <Select.Trigger />
+                  <Select.Content>
+                    {handles.map(handle => (
+                      <Select.Item key={handle.Id} value={handle.Id.toString()}>
+                        {handle.DisplayName} ({handle.Handle})
+                      </Select.Item>
+                    ))}
+                  </Select.Content>
+                </Select.Root>
+              </Box>
+
+              {/* Title Input */}
+              <Box>
+                <Text weight="medium" size="3" mb="2">
+                  {t('subscriber_pages.blog.create_form.title')}
+                </Text>
+                <TextField.Root>
+                  <TextField.Input
+                    value={formData.title}
+                    onChange={(e) => handleInputChange('title', e.target.value)}
+                    placeholder={t('subscriber_pages.blog.create_form.title_placeholder')}
+                    size="3"
+                  />
+                </TextField.Root>
+              </Box>
+
+              {/* Content Input */}
+              <Box>
+                <Text weight="medium" size="3" mb="2">
+                  {t('subscriber_pages.blog.create_form.content')}
+                </Text>
+                <TextArea
+                  value={formData.content}
+                  onChange={(e) => handleInputChange('content', e.target.value)}
+                  placeholder={t('subscriber_pages.blog.create_form.content_placeholder')}
+                  name="content"
+                />
+              </Box>
+
+              {/* Excerpt Input */}
+              <Box>
+                <Text weight="medium" size="3" mb="2">
+                  {t('subscriber_pages.blog.create_form.excerpt')}
+                </Text>
+                <TextArea
+                  value={formData.excerpt}
+                  onChange={(e) => handleInputChange('excerpt', e.target.value)}
+                  placeholder={t('subscriber_pages.blog.create_form.excerpt_placeholder')}
+                  name="excerpt"
+                />
+              </Box>
+
+              {/* Language and Tags */}
+              <Flex gap="4">
+                <Box style={{ flex:1 }}>
+                  <Text weight="medium" size="3" mb="2">
+                    {t('subscriber_pages.blog.create_form.language')}
+                  </Text>
+                  <Select.Root value={formData.language} onValueChange={(value) => handleInputChange('language', value)}>
+                    <Select.Trigger />
+                    <Select.Content>
+                      <Select.Item value="en">English</Select.Item>
+                      <Select.Item value="es">Español</Select.Item>
+                      <Select.Item value="fr">Français</Select.Item>
+                      <Select.Item value="de">Deutsch</Select.Item>
+                      <Select.Item value="nl">Nederlands</Select.Item>
+                    </Select.Content>
+                  </Select.Root>
+                </Box>
+
+                <Box style={{ flex:1 }}>
+                  <Text weight="medium" size="3" mb="2">
+                    {t('subscriber_pages.blog.create_form.tags')}
+                  </Text>
+                  <TextField.Root>
+                    <TextField.Input
+                      value={formData.tags}
+                      onChange={(e) => handleInputChange('tags', e.target.value)}
+                      placeholder={t('subscriber_pages.blog.create_form.tags_placeholder')}
+                      size="3"
+                    />
+                  </TextField.Root>
+                </Box>
+              </Flex>
+
+              <Separator />
+
+              {/* Form Actions */}
+              <Flex justify="end" gap="3">
+                <Button
+                  onClick={() => {
+                    setShowEditForm(false);
+                    setEditingPost(null);
+                    setFormData({
+                      handleId: 0,
+                      title: '',
+                      content: '',
+                      excerpt: '',
+                      language: 'en',
+                      tags: ''
+                    });
+                  }}
+                  variant="soft"
+                  size="3"
+                >
+                  {t('common.cancel')}
+                </Button>
+                <Button
+                  onClick={editPost}
+                  disabled={updating}
+                  variant="solid"
+                  size="3"
+                >
+                  {updating ? t('common.updating') : t('common.update')}
+                </Button>
+              </Flex>
+            </Box>
+          </Box>
+        </Card>
+      )}
+
       {/* Blog Posts List Section */}
       <Card>
         <Box p="6">
@@ -587,6 +813,16 @@ export default function BlogManager({ subscriberEmail }: { subscriberEmail: stri
                       </Box>
                       
                       <Flex gap="2">
+                        {/* Edit Button - Always visible */}
+                        <Button
+                          onClick={() => startEditPost(post)}
+                          variant="outline"
+                          size="2"
+                        >
+                          {t('common.edit')}
+                        </Button>
+                        
+                        {/* Status Management Buttons */}
                         {post.Status === 'draft' && (
                           <Button
                             onClick={() => updatePostStatus(post.Id, 'published')}
@@ -598,7 +834,7 @@ export default function BlogManager({ subscriberEmail }: { subscriberEmail: stri
                         )}
                         {post.Status === 'published' && (
                           <Button
-                            onClick={() => updatePostStatus(post.Id, 'archived')}
+                            onClick={() => archivePost(post.Id)}
                             variant="soft"
                             size="2"
                           >
