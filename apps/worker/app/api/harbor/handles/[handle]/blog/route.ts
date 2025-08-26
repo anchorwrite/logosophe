@@ -174,7 +174,7 @@ export async function POST(
       post.Id.toString(),
       subscriberEmail,
       {
-        handleId: body.handleId,
+        handleId: body.handleId.toString(),
         title: body.title,
         status: 'draft',
         language: body.language || 'en',

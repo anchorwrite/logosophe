@@ -3,12 +3,13 @@ import { TextArea as RadixTextArea, Box } from "@radix-ui/themes";
 import * as Label from "@radix-ui/react-label";
 import { InputProps } from '../types';
 
-const TextArea = ({ name, placeholder, onChange, t }: InputProps & { t: (key: string) => string }) => (
+const TextArea = ({ name, placeholder, onChange, value, t }: InputProps & { t: (key: string) => string; value?: string }) => (
   <Box>
     <RadixTextArea
       id={name}
       name={name}
       placeholder={placeholder}
+      value={value || ''}
       onChange={onChange}
       style={{
         width: "100%",
@@ -22,6 +23,6 @@ const TextArea = ({ name, placeholder, onChange, t }: InputProps & { t: (key: st
       }}
     />
   </Box>
-);
+ );
 
 export default withTranslation('translations')(TextArea);

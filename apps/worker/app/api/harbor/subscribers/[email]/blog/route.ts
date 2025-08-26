@@ -160,7 +160,7 @@ export async function POST(
       newPost.Id.toString(),
       subscriberEmail,
       {
-        handleId: newPost.HandleId,
+        handleId: newPost.HandleId.toString(),
         title: newPost.Title,
         status: newPost.Status,
         language: newPost.Language,

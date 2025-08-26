@@ -47,12 +47,12 @@ export async function logHandleAction(
  */
 export async function logBlogPostAction(
   db: D1Database,
-  action: 'blog_post_created' | 'blog_post_updated' | 'blog_post_published' | 'blog_post_archived' | 'blog_post_deleted',
+  action: 'blog_post_created' | 'blog_post_updated' | 'blog_post_published' | 'blog_post_archived' | 'blog_post_deleted' | 'subscriber_comment_created' | 'subscriber_comment_updated' | 'subscriber_comment_archived' | 'subscriber_comment_flagged',
   postId: string,
   subscriberEmail: string,
   metadata: {
-    handleId: number;
-    title: string;
+    handleId?: string;
+    title?: string;
     status: string;
     language?: string;
     tags?: string;
@@ -63,12 +63,20 @@ export async function logBlogPostAction(
   const context = request ? extractRequestContext(request) : {};
   const normalizedLogging = new NormalizedLogging(db);
   
+  // Determine target name based on action type
+  let targetName = 'Blog post';
+  if (action.startsWith('subscriber_comment_')) {
+    targetName = 'Comment';
+  } else if (metadata.title) {
+    targetName = `Blog post: ${metadata.title}`;
+  }
+
   await normalizedLogging.logSystemOperations({
     userEmail: subscriberEmail,
     activityType: action,
     accessType: 'write',
     targetId: postId,
-    targetName: `Blog post: ${metadata.title}`,
+    targetName,
     ipAddress: context.ipAddress,
     userAgent: context.userAgent,
     metadata: {

@@ -7,6 +7,7 @@ import { Box, Flex, Heading, Text, Card, Container, Separator, Button } from '@r
 import { SubscriberHandle, SubscriberBlogPost } from '@/types/subscriber-pages';
 import SubscriberPagesAppBar from '@/components/SubscriberPagesAppBar';
 import Footer from '@/components/Footer';
+import BlogComments from '@/components/harbor/subscriber-pages/BlogComments';
 
 interface PublicHandlePageProps {
   params: Promise<{ lang: string; handle: string }>;
@@ -188,26 +189,40 @@ export default function PublicHandlePage({ params }: PublicHandlePageProps) {
             {blogPosts.length > 0 ? (
               <Box style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 {blogPosts.map((post) => (
-                  <Card key={post.Id} style={{ backgroundColor: 'var(--gray-2)' }}>
-                    <Box p="4">
-                      <Heading size="4" mb="2">
-                        {post.Title}
-                      </Heading>
-                      {post.Excerpt ? (
-                        <Text size="3" color="gray" mb="2">
-                          {post.Excerpt}
-                        </Text>
-                      ) : null}
-                      <Flex justify="between" align="center">
-                        <Text size="2" color="gray">
-                          {new Date(post.CreatedAt).toLocaleDateString()}
-                        </Text>
-                        <Text size="2" color="gray">
-                          {post.ViewCount} {t('subscriber_pages.blog.views')}
-                        </Text>
-                      </Flex>
+                  <Box key={post.Id}>
+                    <Card style={{ backgroundColor: 'var(--gray-2)' }}>
+                      <Box p="4">
+                        <Heading size="4" mb="2">
+                          {post.Title}
+                        </Heading>
+                        {post.Excerpt ? (
+                          <Text size="3" color="gray" mb="2">
+                            {post.Excerpt}
+                          </Text>
+                        ) : null}
+                        <Flex justify="between" align="center">
+                          <Text size="2" color="gray">
+                            {new Date(post.CreatedAt).toLocaleDateString()}
+                          </Text>
+                          <Text size="2" color="gray">
+                            {post.ViewCount} {t('subscriber_pages.blog.views')}
+                          </Text>
+                        </Flex>
+                      </Box>
+                    </Card>
+                    
+                    {/* Comments Section */}
+                    <Box mt="4">
+                      <BlogComments 
+                        blogPostId={post.Id} 
+                        handleName={handle.Handle}
+                        onCommentAdded={() => {
+                          // Refresh the page to show new comments
+                          window.location.reload();
+                        }}
+                      />
                     </Box>
-                  </Card>
+                  </Box>
                 ))}
               </Box>
             ) : (

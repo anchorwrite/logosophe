@@ -302,7 +302,10 @@ export default function BlogManager({ subscriberEmail }: { subscriberEmail: stri
       const response = await fetch(`/api/harbor/subscribers/${encodeURIComponent(subscriberEmail)}/blog/${postId}`, {
         method: status === 'archived' ? 'DELETE' : 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: status === 'published' ? JSON.stringify({ publishedAt: new Date().toISOString() }) : undefined
+        body: status === 'archived' ? undefined : JSON.stringify({ 
+          status: status,
+          ...(status === 'published' && { publishedAt: new Date().toISOString() })
+        })
       });
 
       if (!response.ok) {
