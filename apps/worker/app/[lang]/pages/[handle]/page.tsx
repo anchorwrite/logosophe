@@ -18,11 +18,13 @@ export default function PublicHandlePage({ params }: PublicHandlePageProps) {
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [lang, setLang] = useState<string>('en');
 
   useEffect(() => {
     const loadPageData = async () => {
       try {
-        const { lang, handle: handleName } = await params;
+        const { lang: langParam, handle: handleName } = await params;
+        setLang(langParam);
         
         // Load handle information
         const handleResponse = await fetch(`/api/pages/${handleName}`);
@@ -45,7 +47,18 @@ export default function PublicHandlePage({ params }: PublicHandlePageProps) {
         }
 
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load page');
+        // Provide more user-friendly error messages
+        if (err instanceof Error) {
+          if (err.message === 'Handle not found') {
+            setError('not_found');
+          } else if (err.message.includes('Failed to fetch')) {
+            setError('network_error');
+          } else {
+            setError('general_error');
+          }
+        } else {
+          setError('general_error');
+        }
       } finally {
         setLoading(false);
       }
@@ -70,10 +83,52 @@ export default function PublicHandlePage({ params }: PublicHandlePageProps) {
     return (
       <Box style={{ minHeight: '100vh', backgroundColor: 'var(--gray-1)' }}>
         <Container size="4" py="6">
-          <Flex justify="center" align="center" style={{ minHeight: '50vh' }}>
-            <Text size="5" color="red">
-              {error || 'Page not found'}
-            </Text>
+          <Flex direction="column" justify="center" align="center" style={{ minHeight: '50vh' }} gap="6">
+            {/* Error Icon */}
+            <Box style={{ fontSize: '4rem', color: 'var(--gray-8)' }}>📄</Box>
+            
+            {/* Main Error Message */}
+            <Box style={{ textAlign: 'center' }}>
+              <Heading size="8" mb="3" color="gray">
+                {error === 'not_found' 
+                  ? t('subscriber_pages.public_page.page_not_found')
+                  : t('subscriber_pages.public_page.page_unavailable')
+                }
+              </Heading>
+              <Text size="5" color="gray" mb="4">
+                {error === 'not_found'
+                  ? t('subscriber_pages.public_page.page_not_found_description')
+                  : error === 'network_error'
+                  ? t('subscriber_pages.public_page.network_error_description')
+                  : t('subscriber_pages.public_page.page_unavailable_description')
+                }
+              </Text>
+            </Box>
+            
+            {/* Action Buttons */}
+            <Flex gap="4" wrap="wrap" justify="center">
+              <Button 
+                size="4" 
+                variant="solid"
+                onClick={() => window.location.href = '/'}
+              >
+                {t('subscriber_pages.public_page.return_home')}
+              </Button>
+              <Button 
+                size="4" 
+                variant="outline"
+                onClick={() => window.history.back()}
+              >
+                {t('subscriber_pages.public_page.go_back')}
+              </Button>
+            </Flex>
+            
+            {/* Additional Help */}
+            <Box style={{ textAlign: 'center' }} mt="4">
+              <Text size="3" color="gray">
+                {t('subscriber_pages.public_page.help_text')}
+              </Text>
+            </Box>
           </Flex>
         </Container>
       </Box>

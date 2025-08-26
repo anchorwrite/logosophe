@@ -1081,7 +1081,21 @@
         "language": "Language",
         "tags": "Tags",
         "tags_placeholder": "comma, separated, tags"
+      },
+      "edit_form": {
+        "title": "Edit Blog Post"
       }
+    },
+    "public_page": {
+      "page_not_found": "Page Not Found",
+      "page_not_found_description": "The page you're looking for doesn't exist or may have been removed.",
+      "page_unavailable": "This page is currently not available",
+      "page_unavailable_description": "The page you're looking for may have been removed, made private, or is temporarily unavailable.",
+      "network_error": "Connection Error",
+      "network_error_description": "We're having trouble loading this page. Please check your connection and try again.",
+      "return_home": "Go to Logosophe",
+      "go_back": "Go Back",
+      "help_text": "If you believe this is an error, please contact the site administrator."
     }
   }
 }
