@@ -1031,7 +1031,9 @@
       "handles": "Handles",
       "handles_description": "Manage your public page URLs",
       "blog": "Blog",
-      "blog_description": "Create and manage blog posts"
+      "blog_description": "Create and manage blog posts",
+      "announcements": "Announcements",
+      "announcements_description": "Create and manage public announcements"
     },
     "handles": {
       "title": "Manage Handles",
@@ -1115,6 +1117,24 @@
         "title": "Edit Blog Post"
       },
       "read_more": "Read More"
+    },
+    "announcements": {
+      "title": "Manage Announcements",
+      "description": "Create and manage public announcements for your pages",
+      "create": "Create Announcement",
+      "no_announcements": "No announcements yet. Create your first announcement to get started.",
+      "loading": "Loading announcements...",
+      "create_announcement": "Create New Announcement",
+      "edit_announcement": "Edit Announcement",
+      "preview": "Preview",
+      "title_label": "Title",
+      "title_placeholder": "Enter announcement title",
+      "content_label": "Content",
+      "content_placeholder": "Write your announcement content here...",
+      "link_label": "Link (Optional)",
+      "link_placeholder": "https://example.com",
+      "link_text_placeholder": "Link text (optional)",
+      "language_label": "Language"
     },
     "comments": {
       "title": "Comments",
