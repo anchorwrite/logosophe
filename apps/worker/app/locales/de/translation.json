@@ -1096,13 +1096,23 @@
       "drafts": "Entwürfe",
       "your_posts": "Deine Beiträge",
       "tags": "Tags",
-      "language_names": {
-        "en": "Englisch",
-        "es": "Spanisch",
-        "fr": "Französisch",
-        "de": "Deutsch",
-        "nl": "Niederländisch"
-      }
+              "language_names": {
+          "en": "Englisch",
+          "es": "Spanisch",
+          "fr": "Französisch",
+          "de": "Deutsch",
+          "nl": "Niederländisch"
+        },
+        "errors": {
+          "fill_required_fields": "Bitte fülle alle erforderlichen Felder aus"
+        },
+        "confirm": {
+          "archive": "Bist du sicher, dass du diesen Blog-Beitrag archivieren möchtest? Er wird vor der Öffentlichkeit versteckt, kann aber später wiederhergestellt werden."
+        },
+        "success": {
+          "updated": "Blog-Beitrag erfolgreich aktualisiert!",
+          "archived": "Blog-Beitrag erfolgreich archiviert!"
+        }
     }
   }
 } 
