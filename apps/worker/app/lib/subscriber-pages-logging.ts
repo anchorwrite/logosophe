@@ -2,6 +2,7 @@
 // This file contains logging functions for all subscriber page actions
 
 import { NormalizedLogging, extractRequestContext } from '@/lib/normalized-logging';
+import { getCloudflareContext } from '@opennextjs/cloudflare';
 
 // =============================================================================
 // LOGGING FUNCTIONS FOR SUBSCRIBER PAGES
@@ -86,6 +87,58 @@ export async function logBlogPostAction(
 }
 
 /**
+ * Log announcement actions
+ */
+export async function logAnnouncementAction(
+  action: 'created' | 'updated' | 'archived' | 'status_updated' | 'visibility_updated',
+  announcementId: string | number,
+  subscriberEmail: string,
+  metadata: {
+    title: string;
+    handleId: string | number;
+    handle: string;
+    isPublic?: boolean;
+    isActive?: boolean;
+    language?: string;
+    previousStatus?: boolean;
+    previousVisibility?: boolean;
+    [key: string]: any;
+  }
+) {
+  try {
+    const context = await getCloudflareContext({ async: true });
+    const db = context.env.DB;
+    const normalizedLogging = new NormalizedLogging(db);
+    
+    // Map action to activity type
+    const actionMap = {
+      'created': 'announcement_created',
+      'updated': 'announcement_updated',
+      'archived': 'announcement_archived',
+      'status_updated': 'announcement_status_updated',
+      'visibility_updated': 'announcement_visibility_updated'
+    };
+    
+    const activityType = actionMap[action] || 'announcement_action';
+    
+    await normalizedLogging.logSystemOperations({
+      userEmail: subscriberEmail,
+      activityType,
+      accessType: 'write',
+      targetId: announcementId.toString(),
+      targetName: `Announcement: ${metadata.title}`,
+      ipAddress: 'unknown', // Could be enhanced to extract from request context
+      userAgent: 'unknown', // Could be enhanced to extract from request context
+      metadata: {
+        ...metadata
+      }
+    });
+  } catch (error) {
+    console.error('Error logging announcement action:', error);
+  }
+}
+
+/**
  * Log comment actions
  */
 export async function logCommentAction(
@@ -158,42 +211,7 @@ export async function logRatingAction(
   });
 }
 
-/**
- * Log announcement actions
- */
-export async function logAnnouncementAction(
-  db: D1Database,
-  action: 'announcement_created' | 'announcement_updated' | 'announcement_archived',
-  announcementId: string,
-  subscriberEmail: string,
-  metadata: {
-    handleId: number;
-    title: string;
-    language?: string;
-    isActive?: boolean;
-    [key: string]: any;
-  },
-  request?: Request
-) {
-  const context = request ? extractRequestContext(request) : {};
-  const normalizedLogging = new NormalizedLogging(db);
-  
-  await normalizedLogging.logSystemOperations({
-    userEmail: subscriberEmail,
-    activityType: action,
-    accessType: 'write',
-    targetId: announcementId,
-    targetName: `Announcement: ${metadata.title}`,
-    ipAddress: context.ipAddress,
-    userAgent: context.userAgent,
-    metadata: {
-      announcementId,
-      language: metadata.language,
-      isActive: metadata.isActive,
-      ...metadata
-    }
-  });
-}
+
 
 /**
  * Log page view actions

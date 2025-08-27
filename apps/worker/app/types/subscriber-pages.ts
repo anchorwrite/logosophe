@@ -139,7 +139,10 @@ export interface SubscriberAnnouncement {
   PublishedAt: string;
   ExpiresAt?: string;
   IsActive: boolean;
+  IsPublic: boolean;
   Language: string;
+  CreatedAt?: string;
+  UpdatedAt?: string;
 }
 
 export interface SubscriberPageView {

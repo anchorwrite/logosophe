@@ -7,8 +7,9 @@ import { useRouter } from 'next/navigation';
 import { Box, Flex, Heading, Text, Tabs, Container } from '@radix-ui/themes';
 import HandleManager from '@/components/harbor/subscriber-pages/HandleManager';
 import BlogManager from '@/components/harbor/subscriber-pages/BlogManager';
+import AnnouncementManager from '@/components/harbor/subscriber-pages/AnnouncementManager';
 
-type TabType = 'handles' | 'blog';
+type TabType = 'handles' | 'blog' | 'announcements';
 
 export default function SubscriberPagesPage() {
   const { t } = useTranslation();
@@ -63,6 +64,9 @@ export default function SubscriberPagesPage() {
             <Tabs.Trigger value="blog">
               {t('subscriber_pages.tabs.blog')}
             </Tabs.Trigger>
+            <Tabs.Trigger value="announcements">
+              {t('subscriber_pages.tabs.announcements')}
+            </Tabs.Trigger>
           </Tabs.List>
 
           <Tabs.Content value="handles">
@@ -71,6 +75,9 @@ export default function SubscriberPagesPage() {
 
           <Tabs.Content value="blog">
             <BlogManager subscriberEmail={session.user.email} />
+          </Tabs.Content>
+          <Tabs.Content value="announcements">
+            <AnnouncementManager subscriberEmail={session.user.email} />
           </Tabs.Content>
         </Tabs.Root>
       </Container>

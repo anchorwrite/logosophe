@@ -1,0 +1,197 @@
+// Subscriber Announcements API Route
+// GET: List announcements for a subscriber
+// POST: Create a new announcement
+
+import { NextRequest } from 'next/server';
+import { getCloudflareContext } from '@opennextjs/cloudflare';
+import { auth } from '@/auth';
+import { SubscriberAnnouncement } from '@/types/subscriber-pages';
+import { logAnnouncementAction } from '@/lib/subscriber-pages-logging';
+
+interface CreateAnnouncementRequest {
+  title: string;
+  content: string;
+  link?: string;
+  linkText?: string;
+  isPublic: boolean;
+  isActive: boolean;
+  language: string;
+}
+
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ email: string }> }
+) {
+  try {
+    const { email } = await params;
+    const session = await auth();
+    
+    if (!session?.user?.email) {
+      return Response.json(
+        { success: false, error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    // Users can only view their own announcements
+    if (session.user.email !== email) {
+      return Response.json(
+        { success: false, error: 'Forbidden' },
+        { status: 403 }
+      );
+    }
+
+    const context = await getCloudflareContext({ async: true });
+    const db = context.env.DB;
+    
+    // Get all announcements for this subscriber
+    const announcementsResult = await db.prepare(`
+      SELECT 
+        sa.Id, sa.HandleId, sa.Title, sa.Content, sa.Link, sa.LinkText,
+        sa.PublishedAt, sa.ExpiresAt, sa.IsActive, sa.IsPublic, sa.Language,
+        sa.CreatedAt, sa.UpdatedAt,
+        sh.Handle, sh.DisplayName as HandleDisplayName
+      FROM SubscriberAnnouncements sa
+      INNER JOIN SubscriberHandles sh ON sa.HandleId = sh.Id
+      WHERE sh.SubscriberEmail = ?
+      ORDER BY sa.PublishedAt DESC
+    `).bind(email).all();
+
+    if (!announcementsResult.success) {
+      console.error('Database error fetching announcements:', announcementsResult.error);
+      return Response.json(
+        { success: false, error: 'Failed to fetch announcements' },
+        { status: 500 }
+      );
+    }
+
+    const announcements = announcementsResult.results as unknown as SubscriberAnnouncement[];
+
+    return Response.json({
+      success: true,
+      data: announcements
+    });
+
+  } catch (error) {
+    console.error('Error fetching announcements:', error);
+    return Response.json(
+      { success: false, error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ email: string }> }
+) {
+  try {
+    const { email } = await params;
+    const session = await auth();
+    
+    if (!session?.user?.email) {
+      return Response.json(
+        { success: false, error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    // Users can only create announcements for themselves
+    if (session.user.email !== email) {
+      return Response.json(
+        { success: false, error: 'Forbidden' },
+        { status: 403 }
+      );
+    }
+
+    const body: CreateAnnouncementRequest = await request.json();
+    const { title, content, link, linkText, isPublic, isActive, language } = body;
+
+    if (!title || !title.trim()) {
+      return Response.json(
+        { success: false, error: 'Title is required' },
+        { status: 400 }
+      );
+    }
+
+    if (!content || !content.trim()) {
+      return Response.json(
+        { success: false, error: 'Content is required' },
+        { status: 400 }
+      );
+    }
+
+    const context = await getCloudflareContext({ async: true });
+    const db = context.env.DB;
+    
+    // Get the subscriber's first active handle (or create a default one if needed)
+    const handleResult = await db.prepare(`
+      SELECT Id, Handle, DisplayName
+      FROM SubscriberHandles
+      WHERE SubscriberEmail = ? AND IsActive = 1
+      ORDER BY CreatedAt ASC
+      LIMIT 1
+    `).bind(email).first();
+
+    if (!handleResult) {
+      return Response.json(
+        { success: false, error: 'No active handle found. Please create a handle first.' },
+        { status: 400 }
+      );
+    }
+
+    // Create the announcement
+    const insertResult = await db.prepare(`
+      INSERT INTO SubscriberAnnouncements (
+        HandleId, Title, Content, Link, LinkText, PublishedAt, 
+        ExpiresAt, IsActive, IsPublic, Language, CreatedAt, UpdatedAt
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).bind(
+      (handleResult as any).Id,
+      title.trim(),
+      content.trim(),
+      link?.trim() || null,
+      linkText?.trim() || null,
+      new Date().toISOString(),
+      null, // No expiration date
+      isActive ? 1 : 0,
+      isPublic ? 1 : 0,
+      language || 'en',
+      new Date().toISOString(),
+      new Date().toISOString()
+    ).run();
+
+    if (!insertResult.success) {
+      console.error('Database error creating announcement:', insertResult.error);
+      return Response.json(
+        { success: false, error: 'Failed to create announcement' },
+        { status: 500 }
+      );
+    }
+
+    // Log the action
+    await logAnnouncementAction('created', insertResult.meta.last_row_id, email, {
+      title: title.trim(),
+      handleId: (handleResult as any).Id,
+      handle: (handleResult as any).Handle,
+      isPublic,
+      isActive,
+      language
+    });
+
+    return Response.json({
+      success: true,
+      data: {
+        id: insertResult.meta.last_row_id,
+        message: 'Announcement created successfully'
+      }
+    });
+
+  } catch (error) {
+    console.error('Error creating announcement:', error);
+    return Response.json(
+      { success: false, error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
