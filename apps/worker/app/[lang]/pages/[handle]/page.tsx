@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { Box, Flex, Heading, Text, Card, Container, Separator, Button, Badge } from '@radix-ui/themes';
-import { SubscriberHandle, SubscriberBlogPost } from '@/types/subscriber-pages';
+import { SubscriberHandle, SubscriberBlogPost, SubscriberAnnouncement, SubscriberBiography, SubscriberContactInfo } from '@/types/subscriber-pages';
 import SubscriberPagesAppBar from '@/components/SubscriberPagesAppBar';
 import Footer from '@/components/Footer';
 import BlogComments from '@/components/harbor/subscriber-pages/BlogComments';
@@ -19,6 +19,9 @@ export default function PublicHandlePage({ params }: PublicHandlePageProps) {
   const { t } = useTranslation('translations');
   const [handle, setHandle] = useState<SubscriberHandle | null>(null);
   const [blogPosts, setBlogPosts] = useState<SubscriberBlogPost[]>([]);
+  const [announcements, setAnnouncements] = useState<SubscriberAnnouncement[]>([]);
+  const [biography, setBiography] = useState<SubscriberBiography | null>(null);
+  const [contactInfo, setContactInfo] = useState<SubscriberContactInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -43,6 +46,42 @@ export default function PublicHandlePage({ params }: PublicHandlePageProps) {
         }
         const handleData = await handleResponse.json() as { success: boolean; data: SubscriberHandle };
         setHandle(handleData.data);
+
+        // Load announcements
+        const announcementsResponse = await fetch(`/api/pages/${handleName}/announcements`);
+        if (announcementsResponse.ok) {
+          const announcementsData = await announcementsResponse.json() as { 
+            success: boolean; 
+            data: SubscriberAnnouncement[] 
+          };
+          if (announcementsData.success) {
+            setAnnouncements(announcementsData.data);
+          }
+        }
+
+        // Load biography
+        const biographyResponse = await fetch(`/api/pages/${handleName}/biography`);
+        if (biographyResponse.ok) {
+          const biographyData = await biographyResponse.json() as { 
+            success: boolean; 
+            data: SubscriberBiography | null 
+          };
+          if (biographyData.success) {
+            setBiography(biographyData.data);
+          }
+        }
+
+        // Load contact info
+        const contactResponse = await fetch(`/api/pages/${handleName}/contact`);
+        if (contactResponse.ok) {
+          const contactData = await contactResponse.json() as { 
+            success: boolean; 
+            data: SubscriberContactInfo | null 
+          };
+          if (contactData.success) {
+            setContactInfo(contactData.data);
+          }
+        }
 
         // Load blog posts
         const blogResponse = await fetch(`/api/pages/${handleName}/blog?page=${currentPage}&limit=10&status=published`);
@@ -274,17 +313,57 @@ export default function PublicHandlePage({ params }: PublicHandlePageProps) {
 
       {/* Content */}
       <Container size="4" py="6">
-        {/* Bio Section */}
-        <Card mb="6">
-          <Box p="6">
-            <Heading size="6" mb="4">
-              {t('subscriber_pages.sections.bio')}
-            </Heading>
-            <Text size="3" color="gray">
-              {t('subscriber_pages.content.noContent')}
-            </Text>
-          </Box>
-        </Card>
+        {/* Announcements Section */}
+        {announcements.length > 0 && (
+          <Card mb="6">
+            <Box p="6">
+              <Heading size="6" mb="4">
+                {t('subscriber_pages.sections.announcements')}
+              </Heading>
+              
+              <Box style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                {announcements.map((announcement) => (
+                  <Card key={announcement.Id} style={{ backgroundColor: 'var(--gray-2)' }}>
+                    <Box p="4">
+                      <Heading size="4" mb="2">
+                        {announcement.Title}
+                      </Heading>
+                      <Text size="3" color="gray" mb="3">
+                        {announcement.Content}
+                      </Text>
+                      
+                      {announcement.Link && announcement.LinkText && (
+                        <Box mb="3">
+                          <Button asChild variant="solid" size="2">
+                            <a href={announcement.Link} target="_blank" rel="noopener noreferrer">
+                              {announcement.LinkText}
+                            </a>
+                          </Button>
+                        </Box>
+                      )}
+                      
+                      <Flex gap="2" align="center">
+                        <Text size="2" color="gray">
+                          {new Date(announcement.PublishedAt).toLocaleDateString()}
+                        </Text>
+                        {announcement.Language && (
+                          <Badge color="blue">
+                            {announcement.Language.toUpperCase()}
+                          </Badge>
+                        )}
+                        {announcement.ExpiresAt && (
+                          <Badge color="orange" variant="soft">
+                            {t('subscriber_pages.announcements.expires')}: {new Date(announcement.ExpiresAt).toLocaleDateString()}
+                          </Badge>
+                        )}
+                      </Flex>
+                    </Box>
+                  </Card>
+                ))}
+              </Box>
+            </Box>
+          </Card>
+        )}
 
         {/* Blog Posts Section */}
         <Card mb="6">
@@ -388,14 +467,91 @@ export default function PublicHandlePage({ params }: PublicHandlePageProps) {
         </Card>
 
         {/* Contact Section */}
-        <Card>
+        <Card mb="6">
           <Box p="6">
             <Heading size="6" mb="4">
               {t('subscriber_pages.sections.contact')}
             </Heading>
-            <Text size="3" color="gray">
-              {t('subscriber_pages.content.noContent')}
-            </Text>
+            {contactInfo ? (
+              <Box>
+                <Flex direction="column" gap="3">
+                  {contactInfo.Email && (
+                    <Flex gap="2" align="center">
+                      <Text size="3" weight="bold" style={{ minWidth: '80px' }}>Email:</Text>
+                      <Text size="3">{contactInfo.Email}</Text>
+                    </Flex>
+                  )}
+                  {contactInfo.Phone && (
+                    <Flex gap="2" align="center">
+                      <Text size="3" weight="bold" style={{ minWidth: '80px' }}>Phone:</Text>
+                      <Text size="3">{contactInfo.Phone}</Text>
+                    </Flex>
+                  )}
+                  {contactInfo.Website && (
+                    <Flex gap="2" align="center">
+                      <Text size="3" weight="bold" style={{ minWidth: '80px' }}>Website:</Text>
+                      <Text size="3">
+                        <a href={contactInfo.Website} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--blue-9)' }}>
+                          {contactInfo.Website}
+                        </a>
+                      </Text>
+                    </Flex>
+                  )}
+                  {contactInfo.Location && (
+                    <Flex gap="2" align="center">
+                      <Text size="3" weight="bold" style={{ minWidth: '80px' }}>Location:</Text>
+                      <Text size="3">{contactInfo.Location}</Text>
+                    </Flex>
+                  )}
+                  {contactInfo.SocialLinks && (
+                    <Flex gap="2" align="center">
+                      <Text size="3" weight="bold" style={{ minWidth: '80px' }}>Social:</Text>
+                      <Text size="3">{contactInfo.SocialLinks}</Text>
+                    </Flex>
+                  )}
+                </Flex>
+                <Flex gap="2" align="center" mt="4">
+                  <Badge color="blue">
+                    {contactInfo.Language.toUpperCase()}
+                  </Badge>
+                  <Text size="2" color="gray">
+                    {new Date(contactInfo.UpdatedAt).toLocaleDateString()}
+                  </Text>
+                </Flex>
+              </Box>
+            ) : (
+              <Text size="3" color="gray">
+                {t('subscriber_pages.content.noContent')}
+              </Text>
+            )}
+          </Box>
+        </Card>
+
+        {/* Bio Section - Moved to bottom */}
+        <Card>
+          <Box p="6">
+            <Heading size="6" mb="4">
+              {t('subscriber_pages.sections.bio')}
+            </Heading>
+            {biography ? (
+              <Box>
+                <Text size="3" style={{ whiteSpace: 'pre-wrap' }} mb="3">
+                  {biography.Bio}
+                </Text>
+                <Flex gap="2" align="center">
+                  <Badge color="blue">
+                    {biography.Language.toUpperCase()}
+                  </Badge>
+                  <Text size="2" color="gray">
+                    {new Date(biography.UpdatedAt).toLocaleDateString()}
+                  </Text>
+                </Flex>
+              </Box>
+            ) : (
+              <Text size="3" color="gray">
+                {t('subscriber_pages.content.noContent')}
+              </Text>
+            )}
           </Box>
         </Card>
       </Container>
