@@ -623,10 +623,10 @@ export default function HandleManager({ subscriberEmail }: { subscriberEmail: st
                         <Flex align="center" gap="3" mb="3">
                           <Heading size="4">{handle.DisplayName}</Heading>
                           <Badge color={handle.IsActive ? "green" : "gray"} size="2">
-                            {handle.IsActive ? t('common.active') : t('common.inactive')}
+                            {handle.IsActive ? t('subscriber_pages.handles.active') : t('subscriber_pages.handles.inactive')}
                           </Badge>
                           <Badge color={handle.IsPublic ? "blue" : "orange"} size="2">
-                            {handle.IsPublic ? t('common.public') : t('common.private')}
+                            {handle.IsPublic ? t('subscriber_pages.handles.public') : t('subscriber_pages.handles.private')}
                           </Badge>
                         </Flex>
                         <Box mb="3">
@@ -641,7 +641,7 @@ export default function HandleManager({ subscriberEmail }: { subscriberEmail: st
                         ) : null}
                         <Box>
                           <Text size="2" color="gray">
-                            <strong>Created:</strong> {new Date(handle.CreatedAt).toLocaleDateString()}
+                            <strong>{t('subscriber_pages.handles.created')}:</strong> {new Date(handle.CreatedAt).toLocaleDateString()}
                           </Text>
                         </Box>
                       </Box>
@@ -652,7 +652,7 @@ export default function HandleManager({ subscriberEmail }: { subscriberEmail: st
                           variant="outline"
                           size="2"
                         >
-                          {t('common.edit')}
+                          {t('subscriber_pages.handles.edit')}
                         </Button>
                         
                         {/* Status Toggle Button */}
@@ -661,7 +661,7 @@ export default function HandleManager({ subscriberEmail }: { subscriberEmail: st
                           variant={handle.IsActive ? "soft" : "solid"}
                           size="2"
                         >
-                          {handle.IsActive ? t('common.deactivate') : t('common.activate')}
+                          {handle.IsActive ? t('subscriber_pages.handles.deactivate') : t('subscriber_pages.handles.activate')}
                         </Button>
                         
                         {/* Public/Private Toggle Button */}
@@ -673,7 +673,7 @@ export default function HandleManager({ subscriberEmail }: { subscriberEmail: st
                           disabled={!handle.IsActive}
                           title={!handle.IsActive ? t('subscriber_pages.handles.public_disabled_inactive') : undefined}
                         >
-                          {handle.IsPublic ? t('common.make_private') : t('common.make_public')}
+                          {handle.IsPublic ? t('subscriber_pages.handles.make_private') : t('subscriber_pages.handles.make_public')}
                         </Button>
                         
                         {/* View Button - Shows different URLs based on public/private status */}
@@ -694,7 +694,7 @@ export default function HandleManager({ subscriberEmail }: { subscriberEmail: st
                               : t('subscriber_pages.handles.view_internal_preview')
                           }
                         >
-                          {handle.IsPublic ? t('common.view') : t('common.preview')}
+                          {handle.IsPublic ? t('subscriber_pages.handles.view') : t('subscriber_pages.handles.preview')}
                         </Button>
                         
                         {/* Delete Button - Always visible */}
@@ -704,7 +704,7 @@ export default function HandleManager({ subscriberEmail }: { subscriberEmail: st
                           color="red"
                           size="2"
                         >
-                          {t('common.delete')}
+                          {t('subscriber_pages.handles.delete')}
                         </Button>
                       </Flex>
                     </Flex>

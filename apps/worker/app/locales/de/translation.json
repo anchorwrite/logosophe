@@ -1026,7 +1026,27 @@
       "description": "Erstelle und verwalte deine öffentlichen Seiten-URLs (Handles)",
       "limit_info": "{{current}} von {{max}} Handles verwendet ({{type}} Plan)",
       "create_new": "Neues Handle erstellen",
+      "limit_reached": "Limit erreicht: {{current}}/{{max}} Handles",
+      "your_handles": "Deine Handles",
       "no_handles": "Noch keine Handles erstellt. Erstelle dein erstes Handle, um zu beginnen.",
+      "create_first": "Erstelle dein erstes Handle",
+      "public_disabled_inactive": "Öffentlich/Privat-Umschaltung ist für inaktive Handles deaktiviert",
+      "view_disabled_inactive": "Ansicht ist für inaktive Handles deaktiviert",
+      "view_public_url": "Öffentliche Seite anzeigen",
+      "view_internal_preview": "Seite intern in der Vorschau anzeigen",
+      "active": "Aktiv",
+      "inactive": "Inaktiv",
+      "public": "Öffentlich",
+      "private": "Privat",
+      "edit": "Bearbeiten",
+      "deactivate": "Deaktivieren",
+      "activate": "Aktivieren",
+      "make_private": "Privat machen",
+      "make_public": "Öffentlich machen",
+      "view": "Anzeigen",
+      "preview": "Vorschau",
+      "delete": "Löschen",
+      "created": "Erstellt",
       "create_form": {
         "title": "Neues Handle erstellen",
         "handle": "Handle",
@@ -1067,6 +1087,21 @@
         "language": "Sprache",
         "tags": "Tags",
         "tags_placeholder": "komma, getrennte, tags"
+      },
+      "edit_form": {
+        "title": "Blog-Beitrag bearbeiten"
+      },
+      "total_posts": "Gesamtbeiträge",
+      "published": "Veröffentlicht",
+      "drafts": "Entwürfe",
+      "your_posts": "Deine Beiträge",
+      "tags": "Tags",
+      "language_names": {
+        "en": "Englisch",
+        "es": "Spanisch",
+        "fr": "Französisch",
+        "de": "Deutsch",
+        "nl": "Niederländisch"
       }
     }
   }

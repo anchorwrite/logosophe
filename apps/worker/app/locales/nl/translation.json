@@ -1025,7 +1025,27 @@
       "description": "Maak en beheer je openbare pagina URL's (handles)",
       "limit_info": "{{current}} van {{max}} handles gebruikt ({{type}} plan)",
       "create_new": "Nieuwe Handle Maken",
+      "limit_reached": "Limiet bereikt: {{current}}/{{max}} handles",
+      "your_handles": "Jouw Handles",
       "no_handles": "Nog geen handles gemaakt. Maak je eerste handle om te beginnen.",
+      "create_first": "Maak je eerste handle",
+      "public_disabled_inactive": "Openbaar/privé schakelaar is uitgeschakeld voor inactieve handles",
+      "view_disabled_inactive": "Weergave is uitgeschakeld voor inactieve handles",
+      "view_public_url": "Openbare pagina bekijken",
+      "view_internal_preview": "Interne voorvertoning van pagina",
+      "active": "Actief",
+      "inactive": "Inactief",
+      "public": "Openbaar",
+      "private": "Privé",
+      "edit": "Bewerken",
+      "deactivate": "Deactiveren",
+      "activate": "Activeren",
+      "make_private": "Privé maken",
+      "make_public": "Openbaar maken",
+      "view": "Bekijken",
+      "preview": "Voorvertoning",
+      "delete": "Verwijderen",
+      "created": "Gemaakt",
       "create_form": {
         "title": "Nieuwe Handle Maken",
         "handle": "Handle",
@@ -1066,6 +1086,21 @@
         "language": "Taal",
         "tags": "Tags",
         "tags_placeholder": "komma, gescheiden, tags"
+      },
+      "edit_form": {
+        "title": "Blog Bericht Bewerken"
+      },
+      "total_posts": "Totaal Berichten",
+      "published": "Gepubliceerd",
+      "drafts": "Concepten",
+      "your_posts": "Jouw Berichten",
+      "tags": "Tags",
+      "language_names": {
+        "en": "Engels",
+        "es": "Spaans",
+        "fr": "Frans",
+        "de": "Duits",
+        "nl": "Nederlands"
       }
     }
   }

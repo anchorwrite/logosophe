@@ -158,7 +158,7 @@ export default function PublicHandlePage({ params }: PublicHandlePageProps) {
                   ) : null}
                 </Box>
                 <Text size="2" color="gray">
-                  {t('common.created')}: {new Date(handle.CreatedAt).toLocaleDateString()}
+                  {t('subscriber_pages.handles.created')}: {new Date(handle.CreatedAt).toLocaleDateString()}
                 </Text>
               </Flex>
             </Box>
