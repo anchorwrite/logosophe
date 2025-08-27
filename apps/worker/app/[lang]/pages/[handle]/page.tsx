@@ -3,11 +3,13 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import { Box, Flex, Heading, Text, Card, Container, Separator, Button } from '@radix-ui/themes';
 import { SubscriberHandle, SubscriberBlogPost } from '@/types/subscriber-pages';
 import SubscriberPagesAppBar from '@/components/SubscriberPagesAppBar';
 import Footer from '@/components/Footer';
 import BlogComments from '@/components/harbor/subscriber-pages/BlogComments';
+import SubscriberOptIn from '@/components/SubscriberOptIn';
 
 interface PublicHandlePageProps {
   params: Promise<{ lang: string; handle: string }>;
@@ -23,6 +25,10 @@ export default function PublicHandlePage({ params }: PublicHandlePageProps) {
   const [totalPages, setTotalPages] = useState(1);
   const [lang, setLang] = useState<string>('en');
   const [viewedPosts, setViewedPosts] = useState<Set<number>>(new Set());
+  const [showOptIn, setShowOptIn] = useState(false);
+  const [subscriberStatusChecked, setSubscriberStatusChecked] = useState(false);
+  const [commentRefreshKey, setCommentRefreshKey] = useState(0);
+  const { data: session } = useSession();
 
   useEffect(() => {
     const loadPageData = async () => {
@@ -82,6 +88,41 @@ export default function PublicHandlePage({ params }: PublicHandlePageProps) {
       });
     }
   }, [blogPosts, handle, viewedPosts]);
+
+  // Check if user needs to see opt-in prompt
+  useEffect(() => {
+    if (session?.user?.email && !subscriberStatusChecked) {
+      // Check if we've already shown the opt-in for this user in this session
+      const hasShownOptIn = localStorage.getItem(`optInShown_${session.user.email}`);
+      
+      if (!hasShownOptIn) {
+        // Check if user is already a subscriber
+        checkSubscriberStatus(session.user.email);
+      } else {
+        setSubscriberStatusChecked(true);
+      }
+    }
+  }, [session, subscriberStatusChecked]); // Only check once per session
+
+  const checkSubscriberStatus = async (email: string) => {
+    try {
+      const response = await fetch(`/api/auth/subscriber-status?email=${encodeURIComponent(email)}`);
+      if (response.ok) {
+        const data = await response.json() as { isSubscriber: boolean };
+        // If user is not a subscriber, show opt-in prompt
+        if (!data.isSubscriber) {
+          setShowOptIn(true);
+          // Mark that we've shown the opt-in for this user
+          localStorage.setItem(`optInShown_${email}`, 'true');
+        }
+      }
+    } catch (error) {
+      console.error('Error checking subscriber status:', error);
+    } finally {
+      // Mark that we've checked the subscriber status for this user
+      setSubscriberStatusChecked(true);
+    }
+  };
 
   const trackBlogPostView = async (postId: number, handleName: string) => {
     try {
@@ -251,11 +292,12 @@ export default function PublicHandlePage({ params }: PublicHandlePageProps) {
                     {/* Comments Section */}
                     <Box mt="4">
                       <BlogComments 
+                        key={`${post.Id}-${commentRefreshKey}`}
                         blogPostId={post.Id} 
                         handleName={handle.Handle}
                         onCommentAdded={() => {
-                          // Refresh the page to show new comments
-                          window.location.reload();
+                          // Refresh comments by updating the key
+                          setCommentRefreshKey(prev => prev + 1);
                         }}
                       />
                     </Box>
@@ -307,8 +349,46 @@ export default function PublicHandlePage({ params }: PublicHandlePageProps) {
           </Box>
         </Card>
       </Container>
-      </Box>
-      <Footer />
-    </>
-  );
-}
+              </Box>
+        <Footer />
+        
+        {/* Subscriber Opt-In Prompt */}
+        {showOptIn && session?.user?.email && (
+          <Box style={{ 
+            position: 'fixed', 
+            top: 0, 
+            left: 0, 
+            right: 0, 
+            bottom: 0, 
+            backgroundColor: 'rgba(0, 0, 0, 0.8)', 
+            zIndex: 1000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}>
+            <Box style={{ 
+              backgroundColor: 'white', 
+              padding: '2rem', 
+              borderRadius: 'var(--radius-3)',
+              maxWidth: '600px',
+              width: '90%'
+            }}>
+              <SubscriberOptIn email={session.user.email} />
+              <Flex justify="center" mt="3">
+                <Button 
+                  variant="soft" 
+                  onClick={() => {
+                    setShowOptIn(false);
+                    // Mark that we've shown the opt-in for this user
+                    localStorage.setItem(`optInShown_${session.user.email}`, 'true');
+                  }}
+                >
+                  {t('common.skip_subscription')}
+                </Button>
+              </Flex>
+            </Box>
+          </Box>
+        )}
+      </>
+    );
+  }

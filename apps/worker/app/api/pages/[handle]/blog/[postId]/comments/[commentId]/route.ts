@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server';
+import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { auth } from '@/auth';
 import { D1Database } from '@cloudflare/workers-types';
 import { logBlogPostAction } from '@/lib/subscriber-pages-logging';
@@ -205,7 +206,8 @@ export async function DELETE(
       );
     }
 
-    const db = (request as any).env.DB as D1Database;
+    const context = await getCloudflareContext({ async: true });
+    const db = context.env.DB;
     
     // Verify the comment exists and belongs to the user
     const commentResult = await db.prepare(`

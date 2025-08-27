@@ -200,7 +200,14 @@ const BlogComments: React.FC<BlogCommentsProps> = ({
   };
 
   const canModifyComment = (comment: Comment) => {
-    return session?.user?.email === comment.AuthorEmail;
+    const canModify = session?.user?.email === comment.AuthorEmail;
+    console.log('canModifyComment check:', {
+      userEmail: session?.user?.email,
+      commentAuthorEmail: comment.AuthorEmail,
+      canModify,
+      commentId: comment.Id
+    });
+    return canModify;
   };
 
   const canModerateComment = (comment: Comment) => {
@@ -218,7 +225,6 @@ const BlogComments: React.FC<BlogCommentsProps> = ({
         <Flex gap="3" align="start">
           <Avatar 
             size="2" 
-            src={`/api/avatars/${comment.AuthorEmail}`}
             fallback={comment.AuthorName?.charAt(0)?.toUpperCase() || '?'}
           />
           <Box style={{ flex: 1 }}>
@@ -372,7 +378,7 @@ const BlogComments: React.FC<BlogCommentsProps> = ({
       </Flex>
 
       {/* New Comment Form */}
-      {session?.user?.email && (
+      {session?.user?.email ? (
         <Card style={{ marginBottom: 'var(--space-4)', padding: 'var(--space-4)' }}>
           <Text weight="bold" style={{ marginBottom: 'var(--space-2)' }}>
             {t('subscriber_pages.comments.add_comment')}
@@ -390,6 +396,22 @@ const BlogComments: React.FC<BlogCommentsProps> = ({
           >
             {t('subscriber_pages.comments.submit')}
           </Button>
+        </Card>
+      ) : (
+        <Card style={{ marginBottom: 'var(--space-4)', padding: 'var(--space-4)' }}>
+          <Box style={{ textAlign: 'center' }}>
+            <Text weight="bold" style={{ marginBottom: 'var(--space-2)', display: 'block' }}>
+              {t('subscriber_pages.comments.sign_in_required')}
+            </Text>
+            <Text size="2" color="gray" style={{ marginBottom: 'var(--space-3)', display: 'block' }}>
+              {t('subscriber_pages.comments.sign_in_description')}
+            </Text>
+            <Button asChild>
+              <a href={`/signin?redirectTo=${encodeURIComponent(window.location.pathname)}`}>
+                {t('common.sign_in')}
+              </a>
+            </Button>
+          </Box>
         </Card>
       )}
 
@@ -410,12 +432,15 @@ const BlogComments: React.FC<BlogCommentsProps> = ({
           <Dialog.Overlay 
             style={{
               position: 'fixed',
-              inset: 0,
-              backgroundColor: 'rgba(0, 0, 0, 0.8)',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(0, 0, 0, 0.5)',
               zIndex: 1000
             }}
           />
-          <Dialog.Content 
+          <Dialog.Content
             style={{
               position: 'fixed',
               top: '50%',
@@ -426,10 +451,11 @@ const BlogComments: React.FC<BlogCommentsProps> = ({
               borderRadius: 'var(--radius-3)',
               boxShadow: 'var(--shadow-4)',
               zIndex: 1001,
-              minWidth: '400px'
+              minWidth: '400px',
+              maxWidth: '90vw'
             }}
           >
-            <Dialog.Title style={{ fontSize: 'var(--font-size-4)', fontWeight: 'var(--font-weight-6)', marginBottom: 'var(--space-3)' }}>
+            <Dialog.Title style={{ marginBottom: 'var(--space-3)', fontSize: 'var(--font-size-4)', fontWeight: 'bold' }}>
               {t('subscriber_pages.comments.delete_confirm_title')}
             </Dialog.Title>
             <Dialog.Description style={{ marginBottom: 'var(--space-4)', color: 'var(--gray-11)' }}>
