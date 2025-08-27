@@ -1017,6 +1017,20 @@
     "title": "Pages d'Abonné",
     "subtitle": "Crée et gère tes pages publiques et articles de blog",
     "logged_in_as": "Connecté en tant que",
+    "sections": {
+      "bio": "Biographie",
+      "photo": "Photo",
+      "announcements": "Annonces",
+      "blog": "Blog",
+      "showcase": "Vitrine",
+      "published_media": "Médias Publiés",
+      "contact": "Contact"
+    },
+    "content": {
+      "noContent": "Aucun contenu disponible",
+      "loading": "Chargement...",
+      "error": "Erreur lors du chargement du contenu"
+    },
     "tabs": {
       "handles": "Identifiants",
       "handles_description": "Gère tes URLs de pages publiques",
@@ -1060,7 +1074,13 @@
         "description": "Description",
         "description_placeholder": "Description optionnelle de ta page",
         "public_page": "Rendre cette page publique"
-      }
+      },
+      "edit_form": {
+        "title": "Modifier le Contenu de la Page",
+        "page_url": "URL de la Page",
+        "url_info": "L'URL ne peut pas être modifiée, mais tu peux éditer le contenu de la page ci-dessous"
+      },
+      "delete_confirm": "Es-tu sûr de vouloir supprimer cet identifiant ? Cette action ne peut pas être annulée et supprimera tous les articles de blog et le contenu associés."
     },
     "blog": {
       "title": "Gérer les Articles de Blog",
@@ -1070,9 +1090,10 @@
       "views": "vues",
       "published_on": "Publié sur",
       "filters": {
+        "title": "Filtrer les Articles",
         "status": "Statut",
         "language": "Langue",
-        "handle": "Identifiant",
+        "handles": "Identifiant",
         "search": "Rechercher",
         "search_placeholder": "Rechercher des articles..."
       },
@@ -1095,7 +1116,7 @@
       },
       "total_posts": "Total des Articles",
       "published": "Publié",
-      "drafts": "Brouillons",
+      "draft": "Brouillons",
       "your_posts": "Vos Articles",
       "tags": "Tags",
       "language_names": {
@@ -1105,6 +1126,50 @@
         "de": "Allemand",
         "nl": "Néerlandais"
       }
+    },
+    "comments": {
+      "title": "Commentaires",
+      "loading": "Chargement des commentaires...",
+      "no_comments": "Aucun commentaire encore. Sois le premier à commenter !",
+      "add_comment": "Ajouter un commentaire",
+      "comment_placeholder": "Écris ton commentaire ici...",
+      "submit": "Publier le Commentaire",
+      "reply": "Répondre",
+      "reply_placeholder": "Écris ta réponse ici...",
+      "submit_reply": "Publier la Réponse",
+      "edit_placeholder": "Modifie ton commentaire...",
+      "delete_confirm_title": "Supprimer le Commentaire",
+      "delete_confirm_message": "Es-tu sûr de vouloir supprimer ce commentaire ? Cette action ne peut pas être annulée.",
+      "flag": "Signaler",
+      "status": {
+        "approved": "Approuvé",
+        "flagged": "Signalé",
+        "archived": "Archivé"
+      }
+    },
+    "public_page": {
+      "page_not_found": "Page Non Trouvée",
+      "page_not_found_description": "La page que tu cherches n'existe pas ou a peut-être été supprimée.",
+      "page_unavailable": "Cette page n'est pas disponible actuellement",
+      "page_unavailable_description": "La page que tu cherches a peut-être été supprimée, rendue privée, ou est temporairement indisponible.",
+      "network_error": "Erreur de Connexion",
+      "network_error_description": "Nous avons des difficultés à charger cette page. Vérifie ta connexion et réessaie.",
+      "return_home": "Aller à Logosophe",
+      "go_back": "Retour",
+      "help_text": "Si tu crois que c'est une erreur, contacte l'administrateur du site."
+    },
+    "preview_page": {
+      "preview_mode": "Mode Aperçu",
+      "preview_description": "Ceci est un aperçu privé. La page n'est pas accessible publiquement.",
+      "page_not_found": "Aperçu Non Trouvé",
+      "page_not_found_description": "L'aperçu que tu cherches n'existe pas ou a peut-être été supprimé.",
+      "page_unavailable": "Aperçu Indisponible",
+      "page_unavailable_description": "L'aperçu que tu cherches a peut-être été supprimé ou est temporairement indisponible.",
+      "network_error": "Erreur de Connexion",
+      "network_error_description": "Nous avons des difficultés à charger cet aperçu. Vérifie ta connexion et réessaie.",
+      "back_to_handles": "Retour aux Identifiants",
+      "go_back": "Retour",
+      "help_text": "Si tu crois que c'est une erreur, contacte l'administrator du site."
     }
   }
 } 

@@ -1015,6 +1015,20 @@
     "title": "Abonnenten-Seiten",
     "subtitle": "Erstelle und verwalte deine öffentlichen Seiten und Blog-Beiträge",
     "logged_in_as": "Angemeldet als",
+    "sections": {
+      "bio": "Biografie",
+      "photo": "Foto",
+      "announcements": "Ankündigungen",
+      "blog": "Blog",
+      "showcase": "Showcase",
+      "published_media": "Veröffentlichte Medien",
+      "contact": "Kontakt"
+    },
+    "content": {
+      "noContent": "Kein Inhalt verfügbar",
+      "loading": "Laden...",
+      "error": "Fehler beim Laden des Inhalts"
+    },
     "tabs": {
       "handles": "Handles",
       "handles_description": "Verwalte deine öffentlichen Seiten-URLs",
@@ -1058,7 +1072,13 @@
         "description": "Beschreibung",
         "description_placeholder": "Optionale Beschreibung deiner Seite",
         "public_page": "Diese Seite öffentlich machen"
-      }
+      },
+      "edit_form": {
+        "title": "Seiteninhalt bearbeiten",
+        "page_url": "Seiten-URL",
+        "url_info": "Die URL kann nicht geändert werden, aber du kannst den Seiteninhalt unten bearbeiten"
+      },
+      "delete_confirm": "Bist du sicher, dass du dieses Handle löschen möchtest? Diese Aktion kann nicht rückgängig gemacht werden und entfernt alle zugehörigen Blog-Beiträge und Inhalte."
     },
     "blog": {
       "title": "Blog-Beiträge verwalten",
@@ -1068,6 +1088,7 @@
       "views": "Aufrufe",
       "published_on": "Veröffentlicht auf",
       "filters": {
+        "title": "Beiträge filtern",
         "status": "Status",
         "language": "Sprache",
         "handle": "Handle",
@@ -1096,23 +1117,57 @@
       "drafts": "Entwürfe",
       "your_posts": "Deine Beiträge",
       "tags": "Tags",
-              "language_names": {
-          "en": "Englisch",
-          "es": "Spanisch",
-          "fr": "Französisch",
-          "de": "Deutsch",
-          "nl": "Niederländisch"
-        },
-        "errors": {
-          "fill_required_fields": "Bitte fülle alle erforderlichen Felder aus"
-        },
-        "confirm": {
-          "archive": "Bist du sicher, dass du diesen Blog-Beitrag archivieren möchtest? Er wird vor der Öffentlichkeit versteckt, kann aber später wiederhergestellt werden."
-        },
-        "success": {
-          "updated": "Blog-Beitrag erfolgreich aktualisiert!",
-          "archived": "Blog-Beitrag erfolgreich archiviert!"
-        }
+      "language_names": {
+        "en": "Englisch",
+        "es": "Spanisch",
+        "fr": "Französisch",
+        "de": "Deutsch",
+        "nl": "Niederländisch"
+      }
+    },
+    "comments": {
+      "title": "Kommentare",
+      "loading": "Kommentare werden geladen...",
+      "no_comments": "Noch keine Kommentare. Sei der Erste, der kommentiert!",
+      "add_comment": "Kommentar hinzufügen",
+      "comment_placeholder": "Schreibe deinen Kommentar hier...",
+      "submit": "Kommentar posten",
+      "reply": "Antworten",
+      "reply_placeholder": "Schreibe deine Antwort hier...",
+      "submit_reply": "Antwort posten",
+      "edit_placeholder": "Bearbeite deinen Kommentar...",
+      "delete_confirm_title": "Kommentar löschen",
+      "delete_confirm_message": "Bist du sicher, dass du diesen Kommentar löschen möchtest? Diese Aktion kann nicht rückgängig gemacht werden.",
+      "flag": "Melden",
+      "status": {
+        "approved": "Genehmigt",
+        "flagged": "Gemeldet",
+        "archived": "Archiviert"
+      }
+    },
+    "public_page": {
+      "page_not_found": "Seite nicht gefunden",
+      "page_not_found_description": "Die gesuchte Seite existiert nicht oder wurde möglicherweise entfernt.",
+      "page_unavailable": "Diese Seite ist derzeit nicht verfügbar",
+      "page_unavailable_description": "Die gesuchte Seite wurde möglicherweise entfernt, privat gemacht oder ist vorübergehend nicht verfügbar.",
+      "network_error": "Verbindungsfehler",
+      "network_error_description": "Wir haben Probleme beim Laden dieser Seite. Bitte überprüfe deine Verbindung und versuche es erneut.",
+      "return_home": "Zu Logosophe gehen",
+      "go_back": "Zurück",
+      "help_text": "Wenn du glaubst, dass dies ein Fehler ist, kontaktiere bitte den Site-Administrator."
+    },
+    "preview_page": {
+      "preview_mode": "Vorschau-Modus",
+      "preview_description": "Dies ist eine private Vorschau. Die Seite ist nicht öffentlich zugänglich.",
+      "page_not_found": "Vorschau nicht gefunden",
+      "page_not_found_description": "Die gesuchte Vorschau existiert nicht oder wurde möglicherweise entfernt.",
+      "page_unavailable": "Vorschau nicht verfügbar",
+      "page_unavailable_description": "Die gesuchte Vorschau wurde möglicherweise entfernt oder ist vorübergehend nicht verfügbar.",
+      "network_error": "Verbindungsfehler",
+      "network_error_description": "Wir haben Probleme beim Laden dieser Vorschau. Bitte überprüfe deine Verbindung und versuche es erneut.",
+      "back_to_handles": "Zurück zu Handles",
+      "go_back": "Zurück",
+      "help_text": "Wenn du glaubst, dass dies ein Fehler ist, kontaktiere bitte den Site-Administrator."
     }
   }
 } 
