@@ -1027,7 +1027,27 @@
       "description": "Crea y gestiona tus URLs de páginas públicas (identificadores)",
       "limit_info": "{{current}} de {{max}} identificadores utilizados (plan {{type}})",
       "create_new": "Crear Nuevo Identificador",
+      "limit_reached": "Límite alcanzado: {{current}}/{{max}} identificadores",
+      "your_handles": "Tus Identificadores",
       "no_handles": "Aún no se han creado identificadores. Crea tu primer identificador para comenzar.",
+      "create_first": "Crea tu primer identificador",
+      "public_disabled_inactive": "La alternancia público/privado está deshabilitada para identificadores inactivos",
+      "view_disabled_inactive": "La vista está deshabilitada para identificadores inactivos",
+      "view_public_url": "Ver página pública",
+      "view_internal_preview": "Vista previa interna de la página",
+      "active": "Activo",
+      "inactive": "Inactivo",
+      "public": "Público",
+      "private": "Privado",
+      "edit": "Editar",
+      "deactivate": "Desactivar",
+      "activate": "Activar",
+      "make_private": "Hacer Privado",
+      "make_public": "Hacer Público",
+      "view": "Ver",
+      "preview": "Vista Previa",
+      "delete": "Eliminar",
+      "created": "Creado",
       "create_form": {
         "title": "Crear Nuevo Identificador",
         "handle": "Identificador",
@@ -1068,6 +1088,21 @@
         "language": "Idioma",
         "tags": "Etiquetas",
         "tags_placeholder": "etiquetas, separadas, por, comas"
+      },
+      "edit_form": {
+        "title": "Editar Entrada de Blog"
+      },
+      "total_posts": "Total de Entradas",
+      "published": "Publicado",
+      "drafts": "Borradores",
+      "your_posts": "Tus Entradas",
+      "tags": "Tags",
+      "language_names": {
+        "en": "Inglés",
+        "es": "Español",
+        "fr": "Francés",
+        "de": "Alemán",
+        "nl": "Neerlandés"
       }
     }
   }

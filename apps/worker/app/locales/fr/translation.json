@@ -1028,7 +1028,27 @@
       "description": "Crée et gère tes URLs de pages publiques (identifiants)",
       "limit_info": "{{current}} sur {{max}} identifiants utilisés (plan {{type}})",
       "create_new": "Créer un Nouvel Identifiant",
+      "limit_reached": "Limite atteinte : {{current}}/{{max}} identifiants",
+      "your_handles": "Tes identifiants",
       "no_handles": "Aucun identifiant créé encore. Crée ton premier identifiant pour commencer.",
+      "create_first": "Crée ton premier identifiant",
+      "public_disabled_inactive": "La bascule public/privé est désactivée pour les identifiants inactifs",
+      "view_disabled_inactive": "La vue est désactivée pour les identifiants inactifs",
+      "view_public_url": "Voir la page publique",
+      "view_internal_preview": "Aperçu interne de la page",
+      "active": "Actif",
+      "inactive": "Inactif",
+      "public": "Public",
+      "private": "Privé",
+      "edit": "Modifier",
+      "deactivate": "Désactiver",
+      "activate": "Activer",
+      "make_private": "Rendre privé",
+      "make_public": "Rendre public",
+      "view": "Voir",
+      "preview": "Aperçu",
+      "delete": "Supprimer",
+      "created": "Créé",
       "create_form": {
         "title": "Créer un Nouvel Identifiant",
         "handle": "Identifiant",
@@ -1069,6 +1089,21 @@
         "language": "Langue",
         "tags": "Tags",
         "tags_placeholder": "tags, séparés, par, des, virgules"
+      },
+      "edit_form": {
+        "title": "Modifier l'Article de Blog"
+      },
+      "total_posts": "Total des Articles",
+      "published": "Publié",
+      "drafts": "Brouillons",
+      "your_posts": "Vos Articles",
+      "tags": "Tags",
+      "language_names": {
+        "en": "Anglais",
+        "es": "Espagnol",
+        "fr": "Français",
+        "de": "Allemand",
+        "nl": "Néerlandais"
       }
     }
   }

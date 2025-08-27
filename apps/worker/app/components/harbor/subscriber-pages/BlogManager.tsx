@@ -437,11 +437,11 @@ export default function BlogManager({ subscriberEmail }: { subscriberEmail: stri
                 <Select.Trigger />
                 <Select.Content>
                   <Select.Item value="all">{t('common.all')}</Select.Item>
-                  <Select.Item value="en">English</Select.Item>
-                  <Select.Item value="es">Español</Select.Item>
-                  <Select.Item value="fr">Français</Select.Item>
-                  <Select.Item value="de">Deutsch</Select.Item>
-                  <Select.Item value="nl">Nederlands</Select.Item>
+                  <Select.Item value="en">{t('subscriber_pages.blog.language_names.en')}</Select.Item>
+                  <Select.Item value="es">{t('subscriber_pages.blog.language_names.es')}</Select.Item>
+                  <Select.Item value="fr">{t('subscriber_pages.blog.language_names.fr')}</Select.Item>
+                  <Select.Item value="de">{t('subscriber_pages.blog.language_names.de')}</Select.Item>
+                  <Select.Item value="nl">{t('subscriber_pages.blog.language_names.nl')}</Select.Item>
                 </Select.Content>
               </Select.Root>
             </Box>
@@ -555,11 +555,11 @@ export default function BlogManager({ subscriberEmail }: { subscriberEmail: stri
                   <Select.Root value={formData.language} onValueChange={(value) => handleInputChange('language', value)}>
                     <Select.Trigger />
                     <Select.Content>
-                      <Select.Item value="en">English</Select.Item>
-                      <Select.Item value="es">Español</Select.Item>
-                      <Select.Item value="fr">Français</Select.Item>
-                      <Select.Item value="de">Deutsch</Select.Item>
-                      <Select.Item value="nl">Nederlands</Select.Item>
+                      <Select.Item value="en">{t('subscriber_pages.blog.language_names.en')}</Select.Item>
+                      <Select.Item value="es">{t('subscriber_pages.blog.language_names.es')}</Select.Item>
+                      <Select.Item value="fr">{t('subscriber_pages.blog.language_names.fr')}</Select.Item>
+                      <Select.Item value="de">{t('subscriber_pages.blog.language_names.de')}</Select.Item>
+                      <Select.Item value="nl">{t('subscriber_pages.blog.language_names.nl')}</Select.Item>
                     </Select.Content>
                   </Select.Root>
                 </Box>
@@ -690,11 +690,11 @@ export default function BlogManager({ subscriberEmail }: { subscriberEmail: stri
                   <Select.Root value={formData.language} onValueChange={(value) => handleInputChange('language', value)}>
                     <Select.Trigger />
                     <Select.Content>
-                      <Select.Item value="en">English</Select.Item>
-                      <Select.Item value="es">Español</Select.Item>
-                      <Select.Item value="fr">Français</Select.Item>
-                      <Select.Item value="de">Deutsch</Select.Item>
-                      <Select.Item value="nl">Nederlands</Select.Item>
+                                              <Select.Item value="en">{t('subscriber_pages.blog.language_names.en')}</Select.Item>
+                        <Select.Item value="es">{t('subscriber_pages.blog.language_names.es')}</Select.Item>
+                        <Select.Item value="fr">{t('subscriber_pages.blog.language_names.fr')}</Select.Item>
+                        <Select.Item value="de">{t('subscriber_pages.blog.language_names.de')}</Select.Item>
+                        <Select.Item value="nl">{t('subscriber_pages.blog.language_names.nl')}</Select.Item>
                     </Select.Content>
                   </Select.Root>
                 </Box>
