@@ -333,6 +333,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth(async () => {
         return session;
       },
       async redirect({ url, baseUrl }) {
+        // Check if there's a redirectTo parameter
+        const urlObj = new URL(url);
+        const redirectTo = urlObj.searchParams.get('redirectTo');
+        
+        if (redirectTo && redirectTo.startsWith('/')) {
+          // Redirect to the specified page
+          return `${baseUrl}${redirectTo}`;
+        }
+        
         // Handle redirects for different authentication flows
         if (url.startsWith('/')) return `${baseUrl}${url}`
         else if (new URL(url).origin === baseUrl) return url
