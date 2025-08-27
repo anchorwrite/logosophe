@@ -21,6 +21,7 @@ export default function PreviewHandlePage({ params }: PreviewHandlePageProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [lang, setLang] = useState<string>('en');
+  const [viewedPosts, setViewedPosts] = useState<Set<number>>(new Set());
 
   useEffect(() => {
     const loadPageData = async () => {
@@ -67,6 +68,42 @@ export default function PreviewHandlePage({ params }: PreviewHandlePageProps) {
 
     loadPageData();
   }, [params, currentPage]);
+
+  // Track views for blog posts when they're displayed
+  useEffect(() => {
+    if (blogPosts.length > 0 && handle) {
+      blogPosts.forEach(post => {
+        if (!viewedPosts.has(post.Id)) {
+          trackBlogPostView(post.Id, handle.Handle);
+          setViewedPosts(prev => new Set(prev).add(post.Id));
+        }
+      });
+    }
+  }, [blogPosts, handle, viewedPosts]);
+
+  const trackBlogPostView = async (postId: number, handleName: string) => {
+    try {
+      const response = await fetch(`/api/pages/${handleName}/blog/${postId}/view`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      
+      if (response.ok) {
+        const data = await response.json() as { success: boolean; data: { viewCount: number } };
+        if (data.success) {
+          // Update the view count in the local state
+          setBlogPosts(prev => prev.map(post => 
+            post.Id === postId 
+              ? { ...post, ViewCount: data.data.viewCount }
+              : post
+          ));
+        }
+      }
+    } catch (error) {
+      // Silently fail view tracking - don't break the user experience
+      console.error('Failed to track blog post view:', error);
+    }
+  };
 
   if (loading) {
     return (

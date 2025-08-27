@@ -58,6 +58,7 @@ export default function PublicHandlePage() {
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
+  const [viewedPosts, setViewedPosts] = useState<Set<number>>(new Set());
 
   useEffect(() => {
     if (handle) {
@@ -65,6 +66,42 @@ export default function PublicHandlePage() {
       fetchPosts();
     }
   }, [handle, currentPage]);
+
+  // Track views for blog posts when they're displayed
+  useEffect(() => {
+    if (posts.length > 0) {
+      posts.forEach(post => {
+        if (!viewedPosts.has(post.Id)) {
+          trackBlogPostView(post.Id, handle);
+          setViewedPosts(prev => new Set(prev).add(post.Id));
+        }
+      });
+    }
+  }, [posts, handle, viewedPosts]);
+
+  const trackBlogPostView = async (postId: number, handleName: string) => {
+    try {
+      const response = await fetch(`/api/pages/${handleName}/blog/${postId}/view`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      
+      if (response.ok) {
+        const data = await response.json() as { success: boolean; data: { viewCount: number } };
+        if (data.success) {
+          // Update the view count in the local state
+          setPosts(prev => prev.map(post => 
+            post.Id === postId 
+              ? { ...post, ViewCount: data.data.viewCount }
+              : post
+          ));
+        }
+      }
+    } catch (error) {
+      // Silently fail view tracking - don't break the user experience
+      console.error('Failed to track blog post view:', error);
+    }
+  };
 
   const fetchHandleInfo = async () => {
     try {
