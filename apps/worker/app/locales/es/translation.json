@@ -1016,6 +1016,20 @@
     "title": "Páginas de Suscriptor",
     "subtitle": "Crea y gestiona tus páginas públicas y entradas de blog",
     "logged_in_as": "Conectado como",
+    "sections": {
+      "bio": "Biografía",
+      "photo": "Foto",
+      "announcements": "Anuncios",
+      "blog": "Blog",
+      "showcase": "Escaparate",
+      "published_media": "Medios Publicados",
+      "contact": "Contacto"
+    },
+    "content": {
+      "noContent": "No hay contenido disponible",
+      "loading": "Cargando...",
+      "error": "Error al cargar contenido"
+    },
     "tabs": {
       "handles": "Identificadores",
       "handles_description": "Gestiona tus URLs de páginas públicas",
@@ -1059,7 +1073,13 @@
         "description": "Descripción",
         "description_placeholder": "Descripción opcional de tu página",
         "public_page": "Hacer esta página pública"
-      }
+      },
+      "edit_form": {
+        "title": "Editar Contenido de Página",
+        "page_url": "URL de Página",
+        "url_info": "La URL no se puede cambiar, pero puedes editar el contenido de la página abajo"
+      },
+      "delete_confirm": "¿Estás seguro de que quieres eliminar este identificador? Esta acción no se puede deshacer y eliminará todas las entradas de blog y contenido asociados."
     },
     "blog": {
       "title": "Gestionar Entradas de Blog",
@@ -1069,6 +1089,7 @@
       "views": "vistas",
       "published_on": "Publicado en",
       "filters": {
+        "title": "Filtrar Entradas",
         "status": "Estado",
         "language": "Idioma",
         "handle": "Identificador",
@@ -1104,6 +1125,50 @@
         "de": "Alemán",
         "nl": "Neerlandés"
       }
+    },
+    "comments": {
+      "title": "Comentarios",
+      "loading": "Cargando comentarios...",
+      "no_comments": "Aún no hay comentarios. ¡Sé el primero en comentar!",
+      "add_comment": "Añadir comentario",
+      "comment_placeholder": "Escribe tu comentario aquí...",
+      "submit": "Publicar Comentario",
+      "reply": "Responder",
+      "reply_placeholder": "Escribe tu respuesta aquí...",
+      "submit_reply": "Publicar Respuesta",
+      "edit_placeholder": "Edita tu comentario...",
+      "delete_confirm_title": "Eliminar Comentario",
+      "delete_confirm_message": "¿Estás seguro de que quieres eliminar este comentario? Esta acción no se puede deshacer.",
+      "flag": "Reportar",
+      "status": {
+        "approved": "Aprobado",
+        "flagged": "Reportado",
+        "archived": "Archivado"
+      }
+    },
+    "public_page": {
+      "page_not_found": "Página No Encontrada",
+      "page_not_found_description": "La página que buscas no existe o puede haber sido eliminada.",
+      "page_unavailable": "Esta página no está disponible actualmente",
+      "page_unavailable_description": "La página que buscas puede haber sido eliminada, hecha privada, o está temporalmente no disponible.",
+      "network_error": "Error de Conexión",
+      "network_error_description": "Tenemos problemas para cargar esta página. Por favor, verifica tu conexión e intenta de nuevo.",
+      "return_home": "Ir a Logosophe",
+      "go_back": "Volver",
+      "help_text": "Si crees que esto es un error, por favor contacta al administrador del sitio."
+    },
+    "preview_page": {
+      "preview_mode": "Modo Vista Previa",
+      "preview_description": "Esta es una vista previa privada. La página no es públicamente accesible.",
+      "page_not_found": "Vista Previa No Encontrada",
+      "page_not_found_description": "La vista previa que buscas no existe o puede haber sido eliminada.",
+      "page_unavailable": "Vista Previa No Disponible",
+      "page_unavailable_description": "La vista previa que buscas puede haber sido eliminada o está temporalmente no disponible.",
+      "network_error": "Error de Conexión",
+      "network_error_description": "Tenemos problemas para cargar esta vista previa. Por favor, verifica tu conexión e intenta de nuevo.",
+      "back_to_handles": "Volver a Identificadores",
+      "go_back": "Volver",
+      "help_text": "Si crees que esto es un error, por favor contacta al administrador del sitio."
     }
   }
 }

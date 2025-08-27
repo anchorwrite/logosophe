@@ -1014,12 +1014,26 @@
     "title": "Abonnee Pagina's",
     "subtitle": "Maak en beheer je openbare pagina's en blogberichten",
     "logged_in_as": "Ingelogd als",
-    "tabs": {
-      "handles": "Handles",
-      "handles_description": "Beheer je openbare pagina URL's",
+    "sections": {
+      "bio": "Biografie",
+      "photo": "Foto",
+      "announcements": "Aankondigingen",
       "blog": "Blog",
-      "blog_description": "Maak en beheer blogberichten"
+      "showcase": "Showcase",
+      "published_media": "Gepubliceerde Media",
+      "contact": "Contact"
     },
+    "content": {
+      "noContent": "Geen inhoud beschikbaar",
+      "loading": "Laden...",
+      "error": "Fout bij het laden van inhoud"
+    },
+          "tabs": {
+        "handles": "Handles",
+        "handles_description": "Beheer je openbare pagina URL's",
+        "blog": "Blog",
+        "blog_description": "Maak en beheer blogberichten"
+      },
     "handles": {
       "title": "Handles Beheren",
       "description": "Maak en beheer je openbare pagina URL's (handles)",
@@ -1057,7 +1071,13 @@
         "description": "Beschrijving",
         "description_placeholder": "Optionele beschrijving van je pagina",
         "public_page": "Deze pagina openbaar maken"
-      }
+      },
+      "edit_form": {
+        "title": "Pagina Inhoud Bewerken",
+        "page_url": "Pagina URL",
+        "url_info": "De URL kan niet worden gewijzigd, maar je kunt de pagina-inhoud hieronder bewerken"
+      },
+      "delete_confirm": "Weet je zeker dat je deze handle wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt en zal alle bijbehorende blogberichten en inhoud verwijderen."
     },
     "blog": {
       "title": "Blogberichten Beheren",
@@ -1067,6 +1087,7 @@
       "views": "weergaven",
       "published_on": "Gepubliceerd op",
       "filters": {
+        "title": "Berichten Filteren",
         "status": "Status",
         "language": "Taal",
         "handle": "Handle",
@@ -1102,6 +1123,50 @@
         "de": "Duits",
         "nl": "Nederlands"
       }
+    },
+    "comments": {
+      "title": "Reacties",
+      "loading": "Reacties laden...",
+      "no_comments": "Nog geen reacties. Wees de eerste om te reageren!",
+      "add_comment": "Reactie toevoegen",
+      "comment_placeholder": "Schrijf je reactie hier...",
+      "submit": "Reactie Posten",
+      "reply": "Beantwoorden",
+      "reply_placeholder": "Schrijf je antwoord hier...",
+      "submit_reply": "Antwoord Posten",
+      "edit_placeholder": "Bewerk je reactie...",
+      "delete_confirm_title": "Reactie Verwijderen",
+      "delete_confirm_message": "Weet je zeker dat je deze reactie wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.",
+      "flag": "Rapporteren",
+      "status": {
+        "approved": "Goedgekeurd",
+        "flagged": "Gerapporteerd",
+        "archived": "Gearchiveerd"
+      }
+    },
+    "public_page": {
+      "page_not_found": "Pagina Niet Gevonden",
+      "page_not_found_description": "De pagina die je zoekt bestaat niet of is mogelijk verwijderd.",
+      "page_unavailable": "Deze pagina is momenteel niet beschikbaar",
+      "page_unavailable_description": "De pagina die je zoekt is mogelijk verwijderd, privé gemaakt, of is tijdelijk niet beschikbaar.",
+      "network_error": "Verbindingsfout",
+      "network_error_description": "We hebben problemen met het laden van deze pagina. Controleer je verbinding en probeer het opnieuw.",
+      "return_home": "Ga naar Logosophe",
+      "go_back": "Ga Terug",
+      "help_text": "Als je denkt dat dit een fout is, neem dan contact op met de site beheerder."
+    },
+    "preview_page": {
+      "preview_mode": "Voorvertoning Modus",
+      "preview_description": "Dit is een privé voorvertoning. De pagina is niet openbaar toegankelijk.",
+      "page_not_found": "Voorvertoning Niet Gevonden",
+      "page_not_found_description": "De voorvertoning die je zoekt bestaat niet of is mogelijk verwijderd.",
+      "page_unavailable": "Voorvertoning Niet Beschikbaar",
+      "page_unavailable_description": "De voorvertoning die je zoekt is mogelijk verwijerd of is tijdelijk niet beschikbaar.",
+      "network_error": "Verbindingsfout",
+      "network_error_description": "We hebben problemen met het laden van deze voorvertoning. Controleer je verbinding en probeer het opnieuw.",
+      "back_to_handles": "Terug naar Handles",
+      "go_back": "Ga Terug",
+      "help_text": "Als je denkt dat dit een fout is, neem dan contact op met de site beheerder."
     }
   }
 } 
