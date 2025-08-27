@@ -12,6 +12,7 @@ interface UpdateAnnouncementRequest {
   content: string;
   link?: string;
   linkText?: string;
+  handleId: number;
   isPublic: boolean;
   isActive: boolean;
   language: string;
@@ -49,7 +50,7 @@ export async function PUT(
     }
 
     const body: UpdateAnnouncementRequest = await request.json();
-    const { title, content, link, linkText, isPublic, isActive, language } = body;
+    const { title, content, link, linkText, handleId, isPublic, isActive, language } = body;
 
     if (!title || !title.trim()) {
       return Response.json(
@@ -61,6 +62,13 @@ export async function PUT(
     if (!content || !content.trim()) {
       return Response.json(
         { success: false, error: 'Content is required' },
+        { status: 400 }
+      );
+    }
+
+    if (!handleId || isNaN(handleId)) {
+      return Response.json(
+        { success: false, error: 'Valid handle ID is required' },
         { status: 400 }
       );
     }
@@ -86,17 +94,32 @@ export async function PUT(
       );
     }
 
+    // Verify the new handle exists and belongs to this user
+    const newHandleResult = await db.prepare(`
+      SELECT Id, Handle, DisplayName
+      FROM SubscriberHandles
+      WHERE Id = ? AND SubscriberEmail = ? AND IsActive = 1
+    `).bind(handleId, email).first();
+
+    if (!newHandleResult) {
+      return Response.json(
+        { success: false, error: 'New handle not found or access denied' },
+        { status: 400 }
+      );
+    }
+
     // Update the announcement
     const updateResult = await db.prepare(`
       UPDATE SubscriberAnnouncements 
       SET Title = ?, Content = ?, Link = ?, LinkText = ?, 
-          IsActive = ?, IsPublic = ?, Language = ?, UpdatedAt = ?
+          HandleId = ?, IsActive = ?, IsPublic = ?, Language = ?, UpdatedAt = ?
       WHERE Id = ?
     `).bind(
       title.trim(),
       content.trim(),
       link?.trim() || null,
       linkText?.trim() || null,
+      handleId,
       isActive ? 1 : 0,
       isPublic ? 1 : 0,
       language || 'en',
@@ -115,8 +138,8 @@ export async function PUT(
     // Log the action
     await logAnnouncementAction('updated', announcementId, email, {
       title: title.trim(),
-      handleId: (existingAnnouncement as any).HandleId,
-      handle: (existingAnnouncement as any).Handle,
+      handleId: handleId,
+      handle: (newHandleResult as any).Handle,
       isPublic,
       isActive,
       language
@@ -190,15 +213,11 @@ export async function DELETE(
       );
     }
 
-    // Soft delete by setting IsActive to false
+    // Hard delete the announcement
     const deleteResult = await db.prepare(`
-      UPDATE SubscriberAnnouncements 
-      SET IsActive = 0, UpdatedAt = ?
+      DELETE FROM SubscriberAnnouncements 
       WHERE Id = ?
-    `).bind(
-      new Date().toISOString(),
-      announcementId
-    ).run();
+    `).bind(announcementId).run();
 
     if (!deleteResult.success) {
       console.error('Database error archiving announcement:', deleteResult.error);
@@ -209,7 +228,7 @@ export async function DELETE(
     }
 
     // Log the action
-    await logAnnouncementAction('archived', announcementId, email, {
+    await logAnnouncementAction('deleted', announcementId, email, {
       title: (existingAnnouncement as any).Title,
       handleId: (existingAnnouncement as any).HandleId,
       handle: (existingAnnouncement as any).Handle
@@ -218,7 +237,7 @@ export async function DELETE(
     return Response.json({
       success: true,
       data: {
-        message: 'Announcement archived successfully'
+        message: 'Announcement deleted successfully'
       }
     });
 

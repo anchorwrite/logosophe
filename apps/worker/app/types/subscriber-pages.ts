@@ -143,6 +143,38 @@ export interface SubscriberAnnouncement {
   Language: string;
   CreatedAt?: string;
   UpdatedAt?: string;
+  Handle?: string;
+  HandleDisplayName?: string;
+}
+
+export interface SubscriberBiography {
+  Id: number;
+  HandleId: number;
+  Bio: string;
+  IsActive: boolean;
+  IsPublic: boolean;
+  Language: string;
+  CreatedAt: string;
+  UpdatedAt: string;
+  Handle?: string;
+  HandleDisplayName?: string;
+}
+
+export interface SubscriberContactInfo {
+  Id: number;
+  HandleId: number;
+  Email?: string;
+  Phone?: string;
+  Website?: string;
+  Location?: string;
+  SocialLinks?: string;
+  IsActive: boolean;
+  IsPublic: boolean;
+  Language: string;
+  CreatedAt: string;
+  UpdatedAt: string;
+  Handle?: string;
+  HandleDisplayName?: string;
 }
 
 export interface SubscriberPageView {

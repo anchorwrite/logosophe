@@ -13,6 +13,7 @@ interface CreateAnnouncementRequest {
   content: string;
   link?: string;
   linkText?: string;
+  handleId: number;
   isPublic: boolean;
   isActive: boolean;
   language: string;
@@ -105,7 +106,7 @@ export async function POST(
     }
 
     const body: CreateAnnouncementRequest = await request.json();
-    const { title, content, link, linkText, isPublic, isActive, language } = body;
+    const { title, content, link, linkText, handleId, isPublic, isActive, language } = body;
 
     if (!title || !title.trim()) {
       return Response.json(
@@ -121,21 +122,26 @@ export async function POST(
       );
     }
 
+    if (!handleId || isNaN(handleId)) {
+      return Response.json(
+        { success: false, error: 'Valid handle ID is required' },
+        { status: 400 }
+      );
+    }
+
     const context = await getCloudflareContext({ async: true });
     const db = context.env.DB;
     
-    // Get the subscriber's first active handle (or create a default one if needed)
+    // Verify the handle exists and belongs to this subscriber
     const handleResult = await db.prepare(`
       SELECT Id, Handle, DisplayName
       FROM SubscriberHandles
-      WHERE SubscriberEmail = ? AND IsActive = 1
-      ORDER BY CreatedAt ASC
-      LIMIT 1
-    `).bind(email).first();
+      WHERE Id = ? AND SubscriberEmail = ? AND IsActive = 1
+    `).bind(handleId, email).first();
 
     if (!handleResult) {
       return Response.json(
-        { success: false, error: 'No active handle found. Please create a handle first.' },
+        { success: false, error: 'Handle not found or access denied. Please select a valid handle.' },
         { status: 400 }
       );
     }
@@ -147,7 +153,7 @@ export async function POST(
         ExpiresAt, IsActive, IsPublic, Language, CreatedAt, UpdatedAt
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).bind(
-      (handleResult as any).Id,
+      handleId,
       title.trim(),
       content.trim(),
       link?.trim() || null,
@@ -172,7 +178,7 @@ export async function POST(
     // Log the action
     await logAnnouncementAction('created', insertResult.meta.last_row_id, email, {
       title: title.trim(),
-      handleId: (handleResult as any).Id,
+      handleId: handleId,
       handle: (handleResult as any).Handle,
       isPublic,
       isActive,

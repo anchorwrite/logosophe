@@ -43,13 +43,39 @@ const AnnouncementManager: React.FC<AnnouncementManagerProps> = ({
   const [content, setContent] = useState('');
   const [link, setLink] = useState('');
   const [linkText, setLinkText] = useState('');
+  const [selectedHandleId, setSelectedHandleId] = useState<number | null>(null);
   const [isPublic, setIsPublic] = useState(true);
   const [isActive, setIsActive] = useState(true);
   const [language, setLanguage] = useState('en');
+  
+  // Handle list state
+  const [handles, setHandles] = useState<Array<{ Id: number; Handle: string; DisplayName: string; IsActive: boolean }>>([]);
 
   useEffect(() => {
     fetchAnnouncements();
+    fetchHandles();
   }, [subscriberEmail]);
+
+  const fetchHandles = async () => {
+    try {
+      const response = await fetch(`/api/harbor/subscribers/${subscriberEmail}/handles`);
+      if (response.ok) {
+        const data = await response.json() as { success: boolean; data: Array<{ Id: number; Handle: string; DisplayName: string; IsActive: boolean }> };
+        if (data.success) {
+          setHandles(data.data);
+          // Set the first active handle as default if none selected
+          if (!selectedHandleId && data.data.length > 0) {
+            const firstActiveHandle = data.data.find(h => h.IsActive);
+            if (firstActiveHandle) {
+              setSelectedHandleId(firstActiveHandle.Id);
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching handles:', error);
+    }
+  };
 
   const fetchAnnouncements = async () => {
     try {
@@ -73,6 +99,7 @@ const AnnouncementManager: React.FC<AnnouncementManagerProps> = ({
     setContent('');
     setLink('');
     setLinkText('');
+    setSelectedHandleId(handles.length > 0 ? handles.find(h => h.IsActive)?.Id || handles[0].Id : null);
     setIsPublic(true);
     setIsActive(true);
     setLanguage('en');
@@ -89,7 +116,8 @@ const AnnouncementManager: React.FC<AnnouncementManagerProps> = ({
     setContent(announcement.Content);
     setLink(announcement.Link || '');
     setLinkText(announcement.LinkText || '');
-    setIsPublic(announcement.IsActive);
+    setSelectedHandleId(announcement.HandleId);
+    setIsPublic(announcement.IsPublic);
     setIsActive(announcement.IsActive);
     setLanguage(announcement.Language);
     setShowEditDialog(true);
@@ -104,11 +132,17 @@ const AnnouncementManager: React.FC<AnnouncementManagerProps> = ({
     if (!title.trim() || !content.trim()) return;
 
     try {
+      if (!selectedHandleId) {
+        alert('Please select a handle for this announcement');
+        return;
+      }
+
       const announcementData = {
         title: title.trim(),
         content: content.trim(),
         link: link.trim() || undefined,
         linkText: linkText.trim() || undefined,
+        handleId: selectedHandleId,
         isPublic,
         isActive,
         language
@@ -138,7 +172,7 @@ const AnnouncementManager: React.FC<AnnouncementManagerProps> = ({
     }
   };
 
-  const handleArchive = async (announcementId: number) => {
+  const handleDelete = async (announcementId: number) => {
     try {
       const response = await fetch(`/api/harbor/subscribers/${subscriberEmail}/announcements/${announcementId}`, {
         method: 'DELETE'
@@ -148,7 +182,7 @@ const AnnouncementManager: React.FC<AnnouncementManagerProps> = ({
         fetchAnnouncements();
       }
     } catch (error) {
-      console.error('Error archiving announcement:', error);
+      console.error('Error deleting announcement:', error);
     }
   };
 
@@ -234,15 +268,18 @@ const AnnouncementManager: React.FC<AnnouncementManagerProps> = ({
                         </a>
                       </Flex>
                     )}
-                    <Flex gap="2" align="center" mb="2">
-                      <Calendar size={14} />
-                      <Text size="2" color="gray">
-                        {new Date(announcement.PublishedAt).toLocaleDateString()}
-                      </Text>
-                      <Badge color={announcement.Language === 'en' ? 'blue' : 'green'}>
-                        {announcement.Language.toUpperCase()}
-                      </Badge>
-                    </Flex>
+                                         <Flex gap="2" align="center" mb="2">
+                       <Calendar size={14} />
+                       <Text size="2" color="gray">
+                         {new Date(announcement.PublishedAt).toLocaleDateString()}
+                       </Text>
+                       <Badge color={announcement.Language === 'en' ? 'blue' : 'green'}>
+                         {announcement.Language.toUpperCase()}
+                       </Badge>
+                       <Badge color="purple" variant="soft">
+                         {announcement.HandleDisplayName || `Handle ${announcement.HandleId}`}
+                       </Badge>
+                     </Flex>
                   </Box>
                   <Flex gap="2" direction="column">
                     <Button 
@@ -290,10 +327,10 @@ const AnnouncementManager: React.FC<AnnouncementManagerProps> = ({
                     size="1"
                     variant="soft"
                     color="red"
-                    onClick={() => handleArchive(announcement.Id)}
+                    onClick={() => handleDelete(announcement.Id)}
                   >
-                    <Archive size={14} />
-                    {t('common.archive')}
+                    <Trash2 size={14} />
+                    {t('common.delete')}
                   </Button>
                 </Flex>
               </Box>
@@ -336,6 +373,30 @@ const AnnouncementManager: React.FC<AnnouncementManagerProps> = ({
                   fontSize: 'var(--font-size-2)'
                 }}
               />
+            </Box>
+
+            <Box>
+              <Text size="2" color="gray" style={{ marginBottom: 'var(--space-2)', display: 'block' }}>
+                {t('subscriber_pages.announcements.handle_label')} *
+              </Text>
+              <select
+                value={selectedHandleId || ''}
+                onChange={(e) => setSelectedHandleId(parseInt(e.target.value) || null)}
+                style={{
+                  width: '100%',
+                  padding: 'var(--space-2)',
+                  border: '1px solid var(--gray-6)',
+                  borderRadius: 'var(--radius-2)',
+                  fontSize: 'var(--font-size-2)'
+                }}
+              >
+                <option value="">Select a handle</option>
+                {handles.map((handle) => (
+                  <option key={handle.Id} value={handle.Id}>
+                    {handle.DisplayName} ({handle.Handle})
+                  </option>
+                ))}
+              </select>
             </Box>
 
             <Box>
@@ -463,15 +524,18 @@ const AnnouncementManager: React.FC<AnnouncementManagerProps> = ({
                   </Flex>
                 </Box>
               )}
-              <Flex gap="2" align="center" mb="3">
-                <Calendar size={14} />
-                <Text size="2" color="gray">
-                  {new Date(previewAnnouncement.PublishedAt).toLocaleDateString()}
-                </Text>
-                <Badge color={previewAnnouncement.Language === 'en' ? 'blue' : 'green'}>
-                  {previewAnnouncement.Language.toUpperCase()}
-                </Badge>
-              </Flex>
+                             <Flex gap="2" align="center" mb="3">
+                 <Calendar size={14} />
+                 <Text size="2" color="gray">
+                   {new Date(previewAnnouncement.PublishedAt).toLocaleDateString()}
+                 </Text>
+                 <Badge color={previewAnnouncement.Language === 'en' ? 'blue' : 'green'}>
+                   {previewAnnouncement.Language.toUpperCase()}
+                 </Badge>
+                 <Badge color="purple" variant="soft">
+                   {previewAnnouncement.HandleDisplayName || `Handle ${previewAnnouncement.HandleId}`}
+                 </Badge>
+               </Flex>
               <Flex gap="2" align="center">
                 <Badge color={previewAnnouncement.IsActive ? "green" : "gray"}>
                   {previewAnnouncement.IsActive ? t('common.active') : t('common.inactive')}

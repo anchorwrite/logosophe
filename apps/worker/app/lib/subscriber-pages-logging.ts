@@ -90,7 +90,7 @@ export async function logBlogPostAction(
  * Log announcement actions
  */
 export async function logAnnouncementAction(
-  action: 'created' | 'updated' | 'archived' | 'status_updated' | 'visibility_updated',
+  action: 'created' | 'updated' | 'deleted' | 'status_updated' | 'visibility_updated' | 'viewed',
   announcementId: string | number,
   subscriberEmail: string,
   metadata: {
@@ -114,9 +114,10 @@ export async function logAnnouncementAction(
     const actionMap = {
       'created': 'announcement_created',
       'updated': 'announcement_updated',
-      'archived': 'announcement_archived',
+      'deleted': 'announcement_deleted',
       'status_updated': 'announcement_status_updated',
-      'visibility_updated': 'announcement_visibility_updated'
+      'visibility_updated': 'announcement_visibility_updated',
+      'viewed': 'announcement_viewed'
     };
     
     const activityType = actionMap[action] || 'announcement_action';
