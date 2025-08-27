@@ -173,7 +173,7 @@ export default function BlogManager({ subscriberEmail }: { subscriberEmail: stri
 
   const createPost = async () => {
     if (!formData.title.trim() || !formData.content.trim() || !formData.handleId) {
-      setError('Please fill in all required fields');
+      setError(t('subscriber_pages.blog.errors.fill_required_fields'));
       return;
     }
 
@@ -212,7 +212,7 @@ export default function BlogManager({ subscriberEmail }: { subscriberEmail: stri
 
   const editPost = async () => {
     if (!editingPost || !formData.title.trim() || !formData.content.trim()) {
-      setError('Please fill in all required fields');
+      setError(t('subscriber_pages.blog.errors.fill_required_fields'));
       return;
     }
 
@@ -247,7 +247,7 @@ export default function BlogManager({ subscriberEmail }: { subscriberEmail: stri
       fetchPosts();
       
       // Show success message
-      alert('Blog post updated successfully!');
+      alert(t('subscriber_pages.blog.success.updated'));
       
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update blog post');
@@ -257,7 +257,7 @@ export default function BlogManager({ subscriberEmail }: { subscriberEmail: stri
   };
 
   const archivePost = async (postId: number) => {
-    if (!confirm('Are you sure you want to archive this blog post? It will be hidden from public view but can be restored later.')) {
+    if (!confirm(t('subscriber_pages.blog.confirm.archive'))) {
       return;
     }
     
@@ -277,7 +277,7 @@ export default function BlogManager({ subscriberEmail }: { subscriberEmail: stri
       fetchPosts();
       
       // Show success message
-      alert('Blog post archived successfully!');
+      alert(t('subscriber_pages.blog.success.archived'));
       
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to archive blog post');
@@ -803,7 +803,7 @@ export default function BlogManager({ subscriberEmail }: { subscriberEmail: stri
                           </Text>
                           {post.Language && (
                             <Badge color="gray" size="1">
-                              {post.Language.toUpperCase()}
+                              {t(`subscriber_pages.blog.language_names.${post.Language}`)}
                             </Badge>
                           )}
                         </Flex>
