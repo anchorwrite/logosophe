@@ -29,6 +29,8 @@
         "sending": "Sending..."
       },
     "loading": "Loading...",
+    "search": "Search",
+    "searching": "Searching...",
     "cancel": "Cancel",
     "create": "Create",
     "creating": "Creating...",
@@ -1115,8 +1117,10 @@
         "excerpt": "Excerpt",
         "excerpt_placeholder": "Brief summary of your post (optional)",
         "language": "Language",
-        "tags": "Tags",
-        "tags_placeholder": "comma, separated, tags"
+              "tags": "Tags",
+      "tags_placeholder": "comma, separated, tags",
+      "linked_content": "Linked Harbor Content",
+      "link_harbor_content": "Link Harbor Content"
       },
       "edit_form": {
         "title": "Edit Blog Post"
@@ -1140,6 +1144,8 @@
       "link_label": "Link (Optional)",
       "link_placeholder": "https://example.com",
       "link_text_placeholder": "Link text (optional)",
+      "linked_content_label": "Linked Harbor Content",
+      "link_harbor_content": "Link Harbor Content",
       "language_label": "Language",
       "expires": "Expires"
     },
@@ -1243,6 +1249,14 @@
       "back_to_handles": "Back to Handles",
       "go_back": "Go Back",
       "help_text": "If you believe this is an error, please contact the site administrator."
+    },
+    "content_linker": {
+      "title": "Link Published Content",
+      "search_placeholder": "Search for published content by title, author, or description...",
+      "link_content": "Link Content",
+      "published_by": "Published by",
+      "published_on": "Published on",
+      "no_results": "No content found matching your search."
     }
   }
 }

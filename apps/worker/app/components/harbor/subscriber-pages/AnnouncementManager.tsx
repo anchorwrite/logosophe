@@ -16,8 +16,9 @@ import {
   Container
 } from '@radix-ui/themes';
 import * as Dialog from '@radix-ui/react-dialog';
-import { Plus, Edit3, Eye, Archive, Trash2, Globe, Lock, Calendar, Link } from 'lucide-react';
+import { Plus, Edit3, Eye, Archive, Trash2, Globe, Lock, Calendar, Link, X } from 'lucide-react';
 import { SubscriberAnnouncement } from '@/types/subscriber-pages';
+import ContentLinker from './ContentLinker';
 
 interface AnnouncementManagerProps {
   subscriberEmail: string;
@@ -35,6 +36,7 @@ const AnnouncementManager: React.FC<AnnouncementManagerProps> = ({
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showPreviewDialog, setShowPreviewDialog] = useState(false);
+  const [showContentLinker, setShowContentLinker] = useState(false);
   const [editingAnnouncement, setEditingAnnouncement] = useState<SubscriberAnnouncement | null>(null);
   const [previewAnnouncement, setPreviewAnnouncement] = useState<SubscriberAnnouncement | null>(null);
   
@@ -43,6 +45,7 @@ const AnnouncementManager: React.FC<AnnouncementManagerProps> = ({
   const [content, setContent] = useState('');
   const [link, setLink] = useState('');
   const [linkText, setLinkText] = useState('');
+  const [linkedContent, setLinkedContent] = useState<Array<{ id: number; title: string; mediaType: string; accessToken: string }>>([]);
   const [selectedHandleId, setSelectedHandleId] = useState<number | null>(null);
   const [isPublic, setIsPublic] = useState(true);
   const [isActive, setIsActive] = useState(true);
@@ -94,11 +97,23 @@ const AnnouncementManager: React.FC<AnnouncementManagerProps> = ({
     }
   };
 
+  const handleContentSelected = (content: { id: number; title: string; mediaType: string; accessToken: string }) => {
+    // Check if content is already linked
+    if (!linkedContent.find(c => c.id === content.id)) {
+      setLinkedContent([...linkedContent, content]);
+    }
+  };
+
+  const removeLinkedContent = (contentId: number) => {
+    setLinkedContent(linkedContent.filter(c => c.id !== contentId));
+  };
+
   const resetForm = () => {
     setTitle('');
     setContent('');
     setLink('');
     setLinkText('');
+    setLinkedContent([]);
     setSelectedHandleId(handles.length > 0 ? handles.find(h => h.IsActive)?.Id || handles[0].Id : null);
     setIsPublic(true);
     setIsActive(true);
@@ -444,6 +459,35 @@ const AnnouncementManager: React.FC<AnnouncementManagerProps> = ({
               />
             </Box>
 
+            <Box>
+              <Text size="2" color="gray" style={{ marginBottom: 'var(--space-2)', display: 'block' }}>
+                {t('subscriber_pages.announcements.linked_content_label')} (Optional)
+              </Text>
+              
+              {linkedContent.length > 0 && (
+                <Box mb="2" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  {linkedContent.map((content) => (
+                    <Flex key={content.id} justify="between" align="center" p="2" style={{ backgroundColor: 'var(--gray-3)', borderRadius: 'var(--radius-2)' }}>
+                      <Text size="2">{content.title}</Text>
+                      <Button size="1" variant="soft" color="red" onClick={() => removeLinkedContent(content.id)}>
+                        <X size={12} />
+                      </Button>
+                    </Flex>
+                  ))}
+                </Box>
+              )}
+              
+              <Button 
+                size="2" 
+                variant="soft" 
+                onClick={() => setShowContentLinker(true)}
+                style={{ width: '100%' }}
+              >
+                <Link size={14} />
+                {t('subscriber_pages.announcements.link_harbor_content')}
+              </Button>
+            </Box>
+
             <Flex gap="2" align="center">
               <Button
                 size="1"
@@ -556,6 +600,13 @@ const AnnouncementManager: React.FC<AnnouncementManagerProps> = ({
           </Flex>
         </Dialog.Content>
       </Dialog.Root>
+
+      {/* Content Linker Dialog */}
+      <ContentLinker
+        isOpen={showContentLinker}
+        onClose={() => setShowContentLinker(false)}
+        onContentSelected={handleContentSelected}
+      />
     </Box>
   );
 };

@@ -5,6 +5,8 @@ import { useTranslation } from 'react-i18next';
 import { Button, Box, Flex, Heading, Text, Card, TextField, Badge, Separator, Select } from '@radix-ui/themes';
 import Container from '@/common/Container';
 import TextArea from '@/common/TextArea';
+import ContentLinker from './ContentLinker';
+import { X, Link } from 'lucide-react';
 
 interface SubscriberBlogPost {
   Id: number;
@@ -69,6 +71,7 @@ export default function BlogManager({ subscriberEmail }: { subscriberEmail: stri
   // Form state
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [showEditForm, setShowEditForm] = useState(false);
+  const [showContentLinker, setShowContentLinker] = useState(false);
   const [editingPost, setEditingPost] = useState<SubscriberBlogPost | null>(null);
   const [formData, setFormData] = useState<CreateBlogPostRequest>({
     handleId: 0,
@@ -78,6 +81,7 @@ export default function BlogManager({ subscriberEmail }: { subscriberEmail: stri
     language: 'en',
     tags: ''
   });
+  const [linkedContent, setLinkedContent] = useState<Array<{ id: number; title: string; mediaType: string; accessToken: string }>>([]);
 
   // Filters
   const [filters, setFilters] = useState({
@@ -188,6 +192,17 @@ export default function BlogManager({ subscriberEmail }: { subscriberEmail: stri
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleContentSelected = (content: { id: number; title: string; mediaType: string; accessToken: string }) => {
+    // Check if content is already linked
+    if (!linkedContent.find(c => c.id === content.id)) {
+      setLinkedContent([...linkedContent, content]);
+    }
+  };
+
+  const removeLinkedContent = (contentId: number) => {
+    setLinkedContent(linkedContent.filter(c => c.id !== contentId));
   };
 
   const handleInputChange = (field: keyof CreateBlogPostRequest, value: string | number) => {
@@ -602,6 +617,36 @@ export default function BlogManager({ subscriberEmail }: { subscriberEmail: stri
                 </Box>
               </Flex>
 
+              {/* Content Linking */}
+              <Box>
+                <Text weight="medium" size="3" mb="2">
+                  {t('subscriber_pages.blog.create_form.linked_content')} (Optional)
+                </Text>
+                
+                {linkedContent.length > 0 && (
+                  <Box mb="2" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    {linkedContent.map((content) => (
+                      <Flex key={content.id} justify="between" align="center" p="2" style={{ backgroundColor: 'var(--gray-3)', borderRadius: 'var(--radius-2)' }}>
+                        <Text size="2">{content.title}</Text>
+                        <Button size="1" variant="soft" color="red" onClick={() => removeLinkedContent(content.id)}>
+                          <X size={12} />
+                        </Button>
+                      </Flex>
+                    ))}
+                  </Box>
+                )}
+                
+                <Button 
+                  size="2" 
+                  variant="soft" 
+                  onClick={() => setShowContentLinker(true)}
+                  style={{ width: '100%' }}
+                >
+                  <Link size={14} />
+                  {t('subscriber_pages.blog.create_form.link_harbor_content')}
+                </Button>
+              </Box>
+
               <Separator />
 
               {/* Form Actions */}
@@ -916,6 +961,13 @@ export default function BlogManager({ subscriberEmail }: { subscriberEmail: stri
           )}
         </Box>
       </Card>
+
+      {/* Content Linker Dialog */}
+      <ContentLinker
+        isOpen={showContentLinker}
+        onClose={() => setShowContentLinker(false)}
+        onContentSelected={handleContentSelected}
+      />
     </Box>
   );
 }
