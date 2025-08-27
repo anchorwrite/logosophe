@@ -1113,7 +1113,8 @@
       },
       "edit_form": {
         "title": "Edit Blog Post"
-      }
+      },
+      "read_more": "Read More"
     },
     "comments": {
       "title": "Comments",
@@ -1136,6 +1137,26 @@
         "flagged": "Flagged",
         "archived": "Archived"
       }
+    },
+    "ratings": {
+      "title": "Ratings",
+      "loading": "Loading ratings...",
+      "no_ratings": "No ratings yet. Be the first to rate!",
+      "add_rating": "Add a Rating",
+      "select_rating": "Select your rating",
+      "your_name": "Your Name",
+      "name_placeholder": "Enter your name",
+      "optional_review": "Optional Review",
+      "review_placeholder": "Share your thoughts about this post (optional)",
+      "submit": "Submit Rating",
+      "submitting": "Submitting...",
+      "sign_in_required": "Sign In to Rate",
+      "sign_in_description": "Rate this post with a free account. Basic authentication required (no subscription needed).",
+      "already_rated": "You've Already Rated This Post",
+      "your_rating": "Your rating:",
+      "total_ratings": "total ratings",
+      "verified": "Verified",
+      "selected_rating": "Selected rating: {{rating}} stars"
     },
     "public_page": {
       "page_not_found": "Page Not Found",

@@ -1114,6 +1114,7 @@
       "edit_form": {
         "title": "Modifier l'Article de Blog"
       },
+      "read_more": "Lire Plus",
       "total_posts": "Total des Articles",
       "published": "Publié",
       "draft": "Brouillons",
@@ -1141,11 +1142,33 @@
       "delete_confirm_title": "Supprimer le Commentaire",
       "delete_confirm_message": "Es-tu sûr de vouloir supprimer ce commentaire ? Cette action ne peut pas être annulée.",
       "flag": "Signaler",
+      "sign_in_required": "Se Connecter pour Commenter",
+      "sign_in_description": "Rejoins la discussion avec un compte gratuit. L'authentification de base est requise (aucun abonnement nécessaire).",
       "status": {
         "approved": "Approuvé",
         "flagged": "Signalé",
         "archived": "Archivé"
       }
+    },
+    "ratings": {
+      "title": "Évaluations",
+      "loading": "Chargement des évaluations...",
+      "no_ratings": "Aucune évaluation encore. Sois le premier à évaluer !",
+      "add_rating": "Ajouter une Évaluation",
+      "select_rating": "Sélectionne ton évaluation",
+      "your_name": "Ton Nom",
+      "name_placeholder": "Entre ton nom",
+      "optional_review": "Avis Optionnel",
+      "review_placeholder": "Partage tes pensées sur cet article (optionnel)",
+      "submit": "Soumettre l'Évaluation",
+      "submitting": "Soumission...",
+      "sign_in_required": "Se Connecter pour Évaluer",
+      "sign_in_description": "Évalue cet article avec un compte gratuit. L'authentification de base est requise (aucun abonnement nécessaire).",
+      "already_rated": "Tu As Déjà Évalué Cet Article",
+      "your_rating": "Ton évaluation :",
+      "total_ratings": "évaluations totales",
+      "verified": "Vérifié",
+      "selected_rating": "Évaluation sélectionnée : {{rating}} étoiles"
     },
     "public_page": {
       "page_not_found": "Page Non Trouvée",

@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import { Box, Flex, Heading, Text, Card, Container, Separator, Button } from '@radix-ui/themes';
+import { Box, Flex, Heading, Text, Card, Container, Separator, Button, Badge } from '@radix-ui/themes';
 import { SubscriberHandle, SubscriberBlogPost } from '@/types/subscriber-pages';
 import SubscriberPagesAppBar from '@/components/SubscriberPagesAppBar';
 import Footer from '@/components/Footer';
@@ -52,7 +52,36 @@ export default function PublicHandlePage({ params }: PublicHandlePageProps) {
             data: SubscriberBlogPost[]; 
             pagination: { totalPages: number } 
           };
-          setBlogPosts(blogData.data);
+          
+          // Fetch ratings for each blog post
+          const postsWithRatings = await Promise.all(
+            blogData.data.map(async (post) => {
+              try {
+                const ratingsResponse = await fetch(`/api/pages/${handleName}/blog/${post.Id}/ratings`);
+                if (ratingsResponse.ok) {
+                  const ratingsData = await ratingsResponse.json() as { 
+                    success: boolean; 
+                    data: { ratings: any[]; analytics: any } 
+                  };
+                  if (ratingsData.success) {
+                    return {
+                      ...post,
+                      ratingAnalytics: {
+                        averageRating: ratingsData.data.analytics.averageRating,
+                        totalRatings: ratingsData.data.analytics.totalRatings,
+                        ratingDistribution: ratingsData.data.analytics.ratingDistribution
+                      }
+                    };
+                  }
+                }
+              } catch (error) {
+                console.error(`Error fetching ratings for post ${post.Id}:`, error);
+              }
+              return post;
+            })
+          );
+          
+          setBlogPosts(postsWithRatings);
           setTotalPages(blogData.pagination.totalPages);
         }
 
@@ -279,12 +308,33 @@ export default function PublicHandlePage({ params }: PublicHandlePageProps) {
                           </Text>
                         ) : null}
                         <Flex justify="between" align="center">
-                          <Text size="2" color="gray">
-                            {new Date(post.CreatedAt).toLocaleDateString()}
-                          </Text>
-                          <Text size="2" color="gray">
-                            {post.ViewCount} {t('subscriber_pages.blog.views')}
-                          </Text>
+                          <Flex gap="2" align="center">
+                            <Text size="2" color="gray">
+                              {new Date(post.CreatedAt).toLocaleDateString()}
+                            </Text>
+                            <Text size="2" color="gray">
+                              {post.ViewCount} {t('subscriber_pages.blog.views')}
+                            </Text>
+                            {post.Language && (
+                              <Badge color="blue">
+                                {post.Language.toUpperCase()}
+                              </Badge>
+                            )}
+                            {/* Ratings Summary */}
+                            {post.ratingAnalytics && post.ratingAnalytics.totalRatings > 0 && (
+                              <Flex gap="1" align="center">
+                                <Text size="2" color="gray">★</Text>
+                                <Text size="2" color="gray">
+                                  {post.ratingAnalytics.averageRating.toFixed(1)} ({post.ratingAnalytics.totalRatings})
+                                </Text>
+                              </Flex>
+                            )}
+                          </Flex>
+                          <Button asChild variant="outline" size="2">
+                            <a href={`/${lang}/pages/${handle.Handle}/blog/${post.Id}`}>
+                              {t('subscriber_pages.blog.read_more')}
+                            </a>
+                          </Button>
                         </Flex>
                       </Box>
                     </Card>

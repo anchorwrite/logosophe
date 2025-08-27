@@ -84,6 +84,11 @@ export interface SubscriberBlogPost {
   ViewCount: number;
   CreatedAt: string;
   UpdatedAt: string;
+  ratingAnalytics?: {
+    averageRating: number;
+    totalRatings: number;
+    ratingDistribution: { [key: number]: number };
+  };
 }
 
 export interface BlogComment {

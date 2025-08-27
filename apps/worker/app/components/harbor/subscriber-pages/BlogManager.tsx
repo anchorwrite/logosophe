@@ -21,6 +21,8 @@ interface SubscriberBlogPost {
   UpdatedAt: string;
   Handle?: string;
   HandleDisplayName?: string;
+  averageRating?: number;
+  totalRatings?: number;
 }
 
 interface SubscriberHandle {
@@ -149,7 +151,28 @@ export default function BlogManager({ subscriberEmail }: { subscriberEmail: stri
       
       // Ensure posts is always an array
       if (data.data && Array.isArray(data.data)) {
-        setPosts(data.data);
+        // Fetch rating data for each post
+        const postsWithRatings = await Promise.all(
+          data.data.map(async (post) => {
+            try {
+              const ratingResponse = await fetch(`/api/harbor/subscribers/${encodeURIComponent(subscriberEmail)}/blog/${post.Id}/ratings`);
+              if (ratingResponse.ok) {
+                const ratingData = await ratingResponse.json() as { success: boolean; analytics: any };
+                if (ratingData.success && ratingData.analytics) {
+                  return {
+                    ...post,
+                    averageRating: ratingData.analytics.averageRating,
+                    totalRatings: ratingData.analytics.totalRatings
+                  };
+                }
+              }
+            } catch (error) {
+              console.error('Failed to fetch ratings for post:', post.Id, error);
+            }
+            return post;
+          })
+        );
+        setPosts(postsWithRatings);
       } else {
         setPosts([]);
       }
@@ -805,6 +828,14 @@ export default function BlogManager({ subscriberEmail }: { subscriberEmail: stri
                             <Badge color="gray" size="1">
                               {t(`subscriber_pages.blog.language_names.${post.Language}`)}
                             </Badge>
+                          )}
+                          {/* Ratings Display */}
+                          {post.averageRating && post.totalRatings && (
+                            <Flex gap="1" align="center">
+                              <Text size="2" color="gray">
+                                ⭐ {post.averageRating.toFixed(1)} ({post.totalRatings})
+                              </Text>
+                            </Flex>
                           )}
                         </Flex>
                         
