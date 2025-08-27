@@ -201,12 +201,6 @@ const BlogComments: React.FC<BlogCommentsProps> = ({
 
   const canModifyComment = (comment: Comment) => {
     const canModify = session?.user?.email === comment.AuthorEmail;
-    console.log('canModifyComment check:', {
-      userEmail: session?.user?.email,
-      commentAuthorEmail: comment.AuthorEmail,
-      canModify,
-      commentId: comment.Id
-    });
     return canModify;
   };
 

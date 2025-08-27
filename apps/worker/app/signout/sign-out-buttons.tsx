@@ -16,11 +16,8 @@ export function SignOutButtons() {
     e.preventDefault()
     try {
       await handleSignOut()
-      // The server action should have redirected, but if not, we can redirect here
-      // This is a fallback in case the server redirect doesn't work
-      setTimeout(() => {
-        router.push('/')
-      }, 100)
+      // Redirect to home page after successful signout
+      router.push('/')
     } catch (error) {
       console.error('Error during signout:', error)
       console.error('Sign out failed')
