@@ -466,6 +466,97 @@ export default function PublicHandlePage({ params }: PublicHandlePageProps) {
           </Box>
         </Card>
 
+        {/* Announcements Section */}
+        {announcements && announcements.length > 0 && (
+          <Card mb="6">
+            <Box p="6">
+              <Heading size="6" mb="4">
+                {t('subscriber_pages.sections.announcements')}
+              </Heading>
+              <Flex direction="column" gap="4">
+                {announcements.map((announcement) => (
+                  <Box key={announcement.Id} p="4" style={{ border: '1px solid var(--gray-6)', borderRadius: 'var(--radius-3)' }}>
+                    <Heading size="4" mb="2">
+                      {announcement.Title}
+                    </Heading>
+                    <Text size="3" mb="3" style={{ whiteSpace: 'pre-wrap' }}>
+                      {announcement.Content}
+                    </Text>
+                    
+                    {/* Linked Harbor Content */}
+                    {announcement.linkedContent && announcement.linkedContent.length > 0 && (
+                      <Box mt="4">
+                        <Text size="2" weight="bold" mb="2" color="gray">
+                          {t('subscriber_pages.announcements.linked_content_label')}:
+                        </Text>
+                        <Flex direction="column" gap="2">
+                          {announcement.linkedContent.map((content) => (
+                            <Card key={content.id} size="1">
+                              <Box p="3">
+                                <Flex justify="between" align="start" gap="2">
+                                  <Box style={{ flex: 1 }}>
+                                    <Text size="2" weight="bold">
+                                      {content.title}
+                                    </Text>
+                                    {content.description && (
+                                      <Text size="1" color="gray" mb="1">
+                                        {content.description}
+                                      </Text>
+                                    )}
+                                    <Flex gap="1" align="center" mb="1">
+                                      {content.form && (
+                                        <Badge color="blue" size="1">
+                                          {content.form}
+                                        </Badge>
+                                      )}
+                                      {content.genre && (
+                                        <Badge color="green" size="1">
+                                          {content.genre}
+                                        </Badge>
+                                      )}
+                                    </Flex>
+                                  </Box>
+                                  <Button asChild size="1">
+                                    <a 
+                                      href={`/api/harbor/content/${content.id}/download?token=${content.accessToken}`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                    >
+                                      {t('common.download')}
+                                    </a>
+                                  </Button>
+                                </Flex>
+                              </Box>
+                            </Card>
+                          ))}
+                        </Flex>
+                      </Box>
+                    )}
+                    
+                    <Flex gap="2" align="center" mt="3">
+                      {announcement.Language && (
+                        <Badge color="blue" variant="soft">
+                          {announcement.Language.toUpperCase()}
+                        </Badge>
+                      )}
+                      {announcement.PublishedAt && (
+                        <Text size="2" color="gray">
+                          {new Date(announcement.PublishedAt).toLocaleDateString()}
+                        </Text>
+                      )}
+                      {announcement.ExpiresAt && (
+                        <Text size="2" color="gray">
+                          {t('subscriber_pages.announcements.expires')}: {new Date(announcement.ExpiresAt).toLocaleDateString()}
+                        </Text>
+                      )}
+                    </Flex>
+                  </Box>
+                ))}
+              </Flex>
+            </Box>
+          </Card>
+        )}
+
         {/* Contact Section */}
         <Card mb="6">
           <Box p="6">

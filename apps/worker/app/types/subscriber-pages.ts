@@ -84,6 +84,21 @@ export interface SubscriberBlogPost {
   ViewCount: number;
   CreatedAt: string;
   UpdatedAt: string;
+  linkedContent?: Array<{
+    id: number;
+    title: string; // This comes from MediaFiles.FileName
+    description?: string; // This comes from MediaFiles.Description
+    mediaType: string; // This comes from MediaFiles.MediaType
+    accessToken: string;
+    form?: string;
+    genre?: string;
+    language?: string; // This comes from MediaFiles.Language
+    publisher: {
+      email: string;
+      name: string;
+    };
+    publishedAt: string;
+  }>;
   ratingAnalytics?: {
     averageRating: number;
     totalRatings: number;
@@ -145,6 +160,21 @@ export interface SubscriberAnnouncement {
   UpdatedAt?: string;
   Handle?: string;
   HandleDisplayName?: string;
+  linkedContent?: Array<{
+    id: number;
+    title: string; // This comes from MediaFiles.FileName
+    description?: string; // This comes from MediaFiles.Description
+    mediaType: string; // This comes from MediaFiles.MediaType
+    accessToken: string;
+    form?: string;
+    genre?: string;
+    language?: string; // This comes from MediaFiles.Language
+    publisher: {
+      email: string;
+      name: string;
+    };
+    publishedAt: string;
+  }>;
 }
 
 export interface SubscriberBiography {

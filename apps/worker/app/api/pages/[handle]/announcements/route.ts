@@ -37,12 +37,53 @@ export async function GET(
 
     const announcements = announcementsResult.results as any[];
 
+    // Get linked content for each announcement
+    const announcementsWithLinkedContent = await Promise.all(
+      announcements.map(async (announcement) => {
+        const linkedContentResult = await db.prepare(`
+          SELECT 
+            pc.Id, mf.FileName as Title, mf.Description, mf.MediaType, pc.AccessToken,
+            pc.FormId, pc.GenreId, mf.Language, pc.PublishedAt,
+            f.Name as FormName, g.Name as GenreName,
+            pc.PublisherId
+          FROM ContentLinks cl
+          INNER JOIN PublishedContent pc ON cl.LinkedContentId = pc.Id
+          INNER JOIN MediaFiles mf ON pc.MediaId = mf.Id
+          LEFT JOIN Form f ON pc.FormId = f.Id
+          LEFT JOIN Genre g ON pc.GenreId = g.Id
+          WHERE cl.SourceType = 'announcement' AND cl.SourceId = ?
+          ORDER BY pc.PublishedAt DESC
+        `).bind(announcement.Id).all();
+
+        const linkedContent = linkedContentResult.results?.map((item: any) => ({
+          id: item.Id as number,
+          title: item.Title as string,
+          description: item.Description as string | undefined,
+          mediaType: item.MediaType as string,
+          accessToken: item.AccessToken as string,
+          form: item.FormName as string | undefined,
+          genre: item.GenreName as string | undefined,
+          language: item.Language as string | undefined,
+          publisher: {
+            email: item.PublisherId as string,
+            name: item.PublisherId as string // Using email as name for now
+          },
+          publishedAt: item.PublishedAt as string
+        })) || [];
+
+        return {
+          ...announcement,
+          linkedContent
+        };
+      })
+    );
+
     // Log the view action for analytics
-    if (announcements.length > 0) {
+    if (announcementsWithLinkedContent.length > 0) {
       try {
         // For public views, we don't have specific announcement details
         // Just log that announcements were viewed for this handle
-        console.log(`Announcements viewed for handle: ${handle}, count: ${announcements.length}`);
+        console.log(`Announcements viewed for handle: ${handle}, count: ${announcementsWithLinkedContent.length}`);
       } catch (logError) {
         // Don't fail the request if logging fails
         console.error('Failed to log announcement view:', logError);
@@ -51,7 +92,7 @@ export async function GET(
 
     return Response.json({
       success: true,
-      data: announcements
+      data: announcementsWithLinkedContent
     });
 
   } catch (error) {

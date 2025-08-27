@@ -34,6 +34,7 @@
     "cancel": "Cancel",
     "create": "Create",
     "creating": "Creating...",
+    "updating": "Updating...",
     "edit": "Edit",
     "delete": "Delete",
     "save": "Save",
@@ -1125,7 +1126,26 @@
       "edit_form": {
         "title": "Edit Blog Post"
       },
-      "read_more": "Read More"
+      "confirm": {
+        "archive": "Are you sure you want to archive this blog post? This will hide it from public view but preserve all content and data."
+      },
+      "success": {
+        "created": "Blog post created successfully",
+        "updated": "Blog post updated successfully",
+        "deleted": "Blog post deleted successfully",
+        "archived": "Blog post archived successfully"
+      },
+      "language_names": {
+        "en": "English",
+        "es": "Español",
+        "fr": "Français",
+        "de": "Deutsch",
+        "nl": "Nederlands"
+      },
+      "tags": "Tags",
+      "read_more": "Read More",
+      "linked_content_title": "Linked Harbor Content",
+      "published_by": "Published by"
     },
     "announcements": {
       "title": "Manage Announcements",
@@ -1147,7 +1167,12 @@
       "linked_content_label": "Linked Harbor Content",
       "link_harbor_content": "Link Harbor Content",
       "language_label": "Language",
-      "expires": "Expires"
+      "expires": "Expires",
+      "success": {
+        "created": "Announcement created successfully",
+        "updated": "Announcement updated successfully",
+        "deleted": "Announcement deleted successfully"
+      }
     },
     "biography": {
       "title": "Manage Biographies",
@@ -1161,7 +1186,12 @@
       "handle_label": "Handle",
       "content_label": "Biography Content",
       "content_placeholder": "Write your biography content here...",
-      "language_label": "Language"
+      "language_label": "Language",
+      "success": {
+        "created": "Biography created successfully",
+        "updated": "Biography updated successfully",
+        "deleted": "Biography deleted successfully"
+      }
     },
     "contact_info": {
       "title": "Manage Contact Information",
@@ -1182,7 +1212,12 @@
       "location_label": "Location",
       "location_placeholder": "City, Country",
       "social_links_label": "Social Links",
-      "social_links_placeholder": "Twitter: @username, LinkedIn: linkedin.com/in/username"
+      "social_links_placeholder": "Twitter: @username, LinkedIn: linkedin.com/in/username",
+      "success": {
+        "created": "Contact information created successfully",
+        "updated": "Contact information updated successfully",
+        "deleted": "Contact information deleted successfully"
+      }
     },
     "comments": {
       "title": "Comments",

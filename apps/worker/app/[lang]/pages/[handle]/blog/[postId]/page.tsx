@@ -169,6 +169,65 @@ export default function BlogPostDetailPage({ params }: BlogPostDetailPageProps) 
               }}
               dangerouslySetInnerHTML={{ __html: post.Content }}
             />
+
+            {/* Linked Harbor Content */}
+            {post.linkedContent && post.linkedContent.length > 0 && (
+              <Box mt="6">
+                <Separator mb="4" />
+                <Heading size="4" mb="4">
+                  {t('subscriber_pages.blog.linked_content_title')}
+                </Heading>
+                <Flex direction="column" gap="3">
+                  {post.linkedContent.map((content) => (
+                    <Card key={content.id}>
+                      <Box p="4">
+                        <Flex justify="between" align="start" gap="3">
+                          <Box style={{ flex: 1 }}>
+                            <Heading size="3" mb="2">
+                              {content.title}
+                            </Heading>
+                            {content.description && (
+                              <Text size="2" color="gray" mb="2">
+                                {content.description}
+                              </Text>
+                            )}
+                            <Flex gap="2" align="center" mb="2">
+                              {content.form && (
+                                <Badge color="blue">
+                                  {content.form}
+                                </Badge>
+                              )}
+                              {content.genre && (
+                                <Badge color="green">
+                                  {content.genre}
+                                </Badge>
+                              )}
+                              {content.language && (
+                                <Badge color="orange">
+                                  {content.language.toUpperCase()}
+                                </Badge>
+                              )}
+                            </Flex>
+                            <Text size="1" color="gray">
+                              {t('subscriber_pages.blog.published_by')}: {content.publisher.name}
+                            </Text>
+                          </Box>
+                          <Button asChild size="2">
+                            <a 
+                              href={`/api/harbor/content/${content.id}/download?token=${content.accessToken}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              {t('common.download')}
+                            </a>
+                          </Button>
+                        </Flex>
+                      </Box>
+                    </Card>
+                  ))}
+                </Flex>
+              </Box>
+            )}
           </Box>
         </Card>
 

@@ -54,6 +54,38 @@ export async function GET(
       SELECT ViewCount FROM SubscriberBlogPosts WHERE Id = ?
     `).bind(postIdNum).first();
 
+    // Get linked content
+    const linkedContentResult = await db.prepare(`
+      SELECT 
+        pc.Id, mf.FileName as Title, mf.Description, mf.MediaType, pc.AccessToken,
+        pc.FormId, pc.GenreId, mf.Language, pc.PublishedAt,
+        f.Name as FormName, g.Name as GenreName,
+        pc.PublisherId
+      FROM ContentLinks cl
+      INNER JOIN PublishedContent pc ON cl.LinkedContentId = pc.Id
+      INNER JOIN MediaFiles mf ON pc.MediaId = mf.Id
+      LEFT JOIN Form f ON pc.FormId = f.Id
+      LEFT JOIN Genre g ON pc.GenreId = g.Id
+      WHERE cl.SourceType = 'blog_post' AND cl.SourceId = ?
+      ORDER BY pc.PublishedAt DESC
+    `).bind(postIdNum).all();
+
+    const linkedContent = linkedContentResult.results?.map((item: any) => ({
+      id: item.Id as number,
+      title: item.Title as string,
+      description: item.Description as string | undefined,
+      mediaType: item.MediaType as string,
+      accessToken: item.AccessToken as string,
+      form: item.FormName as string | undefined,
+      genre: item.GenreName as string | undefined,
+      language: item.Language as string | undefined,
+      publisher: {
+        email: item.PublisherId as string,
+        name: item.PublisherId as string // Using email as name for now
+      },
+      publishedAt: item.PublishedAt as string
+    })) || [];
+
     const blogPost: SubscriberBlogPost = {
       Id: postResult.Id as number,
       HandleId: postResult.HandleId as number,
@@ -66,7 +98,8 @@ export async function GET(
       Tags: postResult.Tags as string | undefined,
       ViewCount: (updatedViewCount as any).ViewCount as number,
       CreatedAt: postResult.CreatedAt as string,
-      UpdatedAt: postResult.UpdatedAt as string
+      UpdatedAt: postResult.UpdatedAt as string,
+      linkedContent
     };
 
     return Response.json({
