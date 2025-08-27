@@ -1111,6 +1111,7 @@
       "edit_form": {
         "title": "Blog Bericht Bewerken"
       },
+      "read_more": "Lees Meer",
       "total_posts": "Totaal Berichten",
       "published": "Gepubliceerd",
       "drafts": "Concepten",
@@ -1138,11 +1139,33 @@
       "delete_confirm_title": "Reactie Verwijderen",
       "delete_confirm_message": "Weet je zeker dat je deze reactie wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.",
       "flag": "Rapporteren",
+      "sign_in_required": "Inloggen om te Reageren",
+      "sign_in_description": "Doe mee aan de discussie met een gratis account. Basis authenticatie vereist (geen abonnement nodig).",
       "status": {
         "approved": "Goedgekeurd",
         "flagged": "Gerapporteerd",
         "archived": "Gearchiveerd"
       }
+    },
+    "ratings": {
+      "title": "Beoordelingen",
+      "loading": "Beoordelingen laden...",
+      "no_ratings": "Nog geen beoordelingen. Wees de eerste om te beoordelen!",
+      "add_rating": "Beoordeling Toevoegen",
+      "select_rating": "Selecteer je beoordeling",
+      "your_name": "Jouw Naam",
+      "name_placeholder": "Voer je naam in",
+      "optional_review": "Optionele Beoordeling",
+      "review_placeholder": "Deel je gedachten over dit bericht (optioneel)",
+      "submit": "Beoordeling Indienen",
+      "submitting": "Indienen...",
+      "sign_in_required": "Inloggen om te Beoordelen",
+      "sign_in_description": "Beoordeel dit bericht met een gratis account. Basis authenticatie vereist (geen abonnement nodig).",
+      "already_rated": "Je hebt dit bericht al beoordeeld",
+      "your_rating": "Jouw beoordeling:",
+      "total_ratings": "totaal beoordelingen",
+      "verified": "Geverifieerd",
+      "selected_rating": "Geselecteerde beoordeling: {{rating}} sterren"
     },
     "public_page": {
       "page_not_found": "Pagina Niet Gevonden",

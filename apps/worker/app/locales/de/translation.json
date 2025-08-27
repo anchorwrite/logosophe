@@ -1112,6 +1112,7 @@
       "edit_form": {
         "title": "Blog-Beitrag bearbeiten"
       },
+      "read_more": "Weiterlesen",
       "total_posts": "Gesamtbeiträge",
       "published": "Veröffentlicht",
       "drafts": "Entwürfe",
@@ -1139,11 +1140,33 @@
       "delete_confirm_title": "Kommentar löschen",
       "delete_confirm_message": "Bist du sicher, dass du diesen Kommentar löschen möchtest? Diese Aktion kann nicht rückgängig gemacht werden.",
       "flag": "Melden",
+      "sign_in_required": "Anmelden zum Kommentieren",
+      "sign_in_description": "Schließe dich der Diskussion mit einem kostenlosen Konto an. Grundlegende Authentifizierung erforderlich (kein Abonnement erforderlich).",
       "status": {
         "approved": "Genehmigt",
         "flagged": "Gemeldet",
         "archived": "Archiviert"
       }
+    },
+    "ratings": {
+      "title": "Bewertungen",
+      "loading": "Bewertungen werden geladen...",
+      "no_ratings": "Noch keine Bewertungen. Sei der Erste, der bewertet!",
+      "add_rating": "Bewertung hinzufügen",
+      "select_rating": "Wähle deine Bewertung",
+      "your_name": "Dein Name",
+      "name_placeholder": "Gib deinen Namen ein",
+      "optional_review": "Optionale Bewertung",
+      "review_placeholder": "Teile deine Gedanken zu diesem Beitrag (optional)",
+      "submit": "Bewertung absenden",
+      "submitting": "Wird gesendet...",
+      "sign_in_required": "Anmelden zum Bewerten",
+      "sign_in_description": "Bewerte diesen Beitrag mit einem kostenlosen Konto. Grundlegende Authentifizierung erforderlich (kein Abonnement erforderlich).",
+      "already_rated": "Du hast diesen Beitrag bereits bewertet",
+      "your_rating": "Deine Bewertung:",
+      "total_ratings": "Gesamtbewertungen",
+      "verified": "Verifiziert",
+      "selected_rating": "Ausgewählte Bewertung: {{rating}} Sterne"
     },
     "public_page": {
       "page_not_found": "Seite nicht gefunden",

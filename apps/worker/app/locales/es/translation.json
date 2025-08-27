@@ -1113,6 +1113,7 @@
       "edit_form": {
         "title": "Editar Entrada de Blog"
       },
+      "read_more": "Leer Más",
       "total_posts": "Total de Entradas",
       "published": "Publicado",
       "drafts": "Borradores",
@@ -1140,11 +1141,33 @@
       "delete_confirm_title": "Eliminar Comentario",
       "delete_confirm_message": "¿Estás seguro de que quieres eliminar este comentario? Esta acción no se puede deshacer.",
       "flag": "Reportar",
+      "sign_in_required": "Iniciar Sesión para Comentar",
+      "sign_in_description": "Únete a la discusión con una cuenta gratuita. Se requiere autenticación básica (no se necesita suscripción).",
       "status": {
         "approved": "Aprobado",
         "flagged": "Reportado",
         "archived": "Archivado"
       }
+    },
+    "ratings": {
+      "title": "Calificaciones",
+      "loading": "Cargando calificaciones...",
+      "no_ratings": "Aún no hay calificaciones. ¡Sé el primero en calificar!",
+      "add_rating": "Añadir Calificación",
+      "select_rating": "Selecciona tu calificación",
+      "your_name": "Tu Nombre",
+      "name_placeholder": "Introduce tu nombre",
+      "optional_review": "Reseña Opcional",
+      "review_placeholder": "Comparte tus pensamientos sobre esta entrada (opcional)",
+      "submit": "Enviar Calificación",
+      "submitting": "Enviando...",
+      "sign_in_required": "Iniciar Sesión para Calificar",
+      "sign_in_description": "Califica esta entrada con una cuenta gratuita. Se requiere autenticación básica (no se necesita suscripción).",
+      "already_rated": "Ya Has Calificado Esta Entrada",
+      "your_rating": "Tu calificación:",
+      "total_ratings": "calificaciones totales",
+      "verified": "Verificado",
+      "selected_rating": "Calificación seleccionada: {{rating}} estrellas"
     },
     "public_page": {
       "page_not_found": "Página No Encontrada",
