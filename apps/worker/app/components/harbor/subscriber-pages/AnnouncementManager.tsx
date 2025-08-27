@@ -18,7 +18,7 @@ import {
 import * as Dialog from '@radix-ui/react-dialog';
 import { Plus, Edit3, Eye, Archive, Trash2, Globe, Lock, Calendar, Link, X } from 'lucide-react';
 import { SubscriberAnnouncement } from '@/types/subscriber-pages';
-import ContentLinker from './ContentLinker';
+import ContentSelector from './ContentSelector';
 
 interface AnnouncementManagerProps {
   subscriberEmail: string;
@@ -45,7 +45,7 @@ const AnnouncementManager: React.FC<AnnouncementManagerProps> = ({
   const [content, setContent] = useState('');
   const [link, setLink] = useState('');
   const [linkText, setLinkText] = useState('');
-  const [linkedContent, setLinkedContent] = useState<Array<{ id: number; title: string; mediaType: string; accessToken: string }>>([]);
+  const [linkedContent, setLinkedContent] = useState<Array<{ id: number; mediaId: number; title: string; description: string; mediaType: string; fileSize: number; language: string; form: string; genre: string; publisher: { email: string; name: string }; publishedAt: string; accessToken: string }>>([]);
   const [selectedHandleId, setSelectedHandleId] = useState<number | null>(null);
   const [isPublic, setIsPublic] = useState(true);
   const [isActive, setIsActive] = useState(true);
@@ -97,11 +97,8 @@ const AnnouncementManager: React.FC<AnnouncementManagerProps> = ({
     }
   };
 
-  const handleContentSelected = (content: { id: number; title: string; mediaType: string; accessToken: string }) => {
-    // Check if content is already linked
-    if (!linkedContent.find(c => c.id === content.id)) {
-      setLinkedContent([...linkedContent, content]);
-    }
+  const handleContentSelected = (content: Array<{ id: number; mediaId: number; title: string; description: string; mediaType: string; fileSize: number; language: string; form: string; genre: string; publisher: { email: string; name: string }; publishedAt: string; accessToken: string }>) => {
+    setLinkedContent(content);
   };
 
   const removeLinkedContent = (contentId: number) => {
@@ -601,12 +598,18 @@ const AnnouncementManager: React.FC<AnnouncementManagerProps> = ({
         </Dialog.Content>
       </Dialog.Root>
 
-      {/* Content Linker Dialog */}
-      <ContentLinker
-        isOpen={showContentLinker}
-        onClose={() => setShowContentLinker(false)}
-        onContentSelected={handleContentSelected}
-      />
+      {/* Content Selector Dialog */}
+      <Dialog.Root open={showContentLinker} onOpenChange={setShowContentLinker}>
+        <Dialog.Content style={{ maxWidth: '1200px', maxHeight: '80vh' }}>
+          <Dialog.Title>{t('subscriber_pages.content_linker.title')}</Dialog.Title>
+          <ContentSelector
+            selectedContent={linkedContent}
+            onSelectionChange={handleContentSelected}
+            onClose={() => setShowContentLinker(false)}
+            lang={language}
+          />
+        </Dialog.Content>
+      </Dialog.Root>
     </Box>
   );
 };

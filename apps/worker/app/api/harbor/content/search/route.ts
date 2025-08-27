@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '20');
     const offset = parseInt(searchParams.get('offset') || '0');
 
-    // Search published content by title, author, or description
+    // Search published content by title, description, form, or genre
     let sql = `
       SELECT 
         pc.Id,
@@ -20,22 +20,20 @@ export async function GET(request: NextRequest) {
         pc.PublisherId,
         pc.PublishedAt,
         pc.AccessToken,
+        pc.FormId,
+        pc.GenreId,
+        pc.Language,
         mf.FileName as Title,
         mf.Description,
         mf.MediaType,
         mf.FileSize,
-        mf.Language,
         f.Name as FormName,
-        g.Name as GenreName,
-        c.Email as PublisherEmail,
-        c.Name as PublisherName
+        g.Name as GenreName
       FROM PublishedContent pc
       INNER JOIN MediaFiles mf ON pc.MediaId = mf.Id
-      INNER JOIN Credentials c ON pc.PublisherId = c.Email
       LEFT JOIN Form f ON pc.FormId = f.Id
       LEFT JOIN Genre g ON pc.GenreId = g.Id
       WHERE pc.ApprovalStatus = 'approved'
-        AND pc.IsActive = 1
     `;
 
     const params: any[] = [];
@@ -44,12 +42,11 @@ export async function GET(request: NextRequest) {
       sql += ` AND (
         mf.FileName LIKE ? OR 
         mf.Description LIKE ? OR 
-        c.Name LIKE ? OR
         f.Name LIKE ? OR
         g.Name LIKE ?
       )`;
       const searchTerm = `%${query.trim()}%`;
-      params.push(searchTerm, searchTerm, searchTerm, searchTerm, searchTerm);
+      params.push(searchTerm, searchTerm, searchTerm, searchTerm);
     }
 
     sql += ` ORDER BY pc.PublishedAt DESC LIMIT ? OFFSET ?`;
@@ -72,8 +69,8 @@ export async function GET(request: NextRequest) {
         form: item.FormName,
         genre: item.GenreName,
         publisher: {
-          email: item.PublisherEmail,
-          name: item.PublisherName
+          email: item.PublisherId, // PublisherId is the email
+          name: item.PublisherId.split('@')[0] // Extract name from email
         },
         publishedAt: item.PublishedAt,
         accessToken: item.AccessToken

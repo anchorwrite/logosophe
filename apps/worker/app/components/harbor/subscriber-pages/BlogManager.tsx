@@ -2,10 +2,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button, Box, Flex, Heading, Text, Card, TextField, Badge, Separator, Select } from '@radix-ui/themes';
+import { Button, Box, Flex, Heading, Text, Card, TextField, Badge, Separator, Select, Dialog } from '@radix-ui/themes';
 import Container from '@/common/Container';
 import TextArea from '@/common/TextArea';
-import ContentLinker from './ContentLinker';
+import ContentSelector from './ContentSelector';
 import { X, Link } from 'lucide-react';
 
 interface SubscriberBlogPost {
@@ -81,7 +81,7 @@ export default function BlogManager({ subscriberEmail }: { subscriberEmail: stri
     language: 'en',
     tags: ''
   });
-  const [linkedContent, setLinkedContent] = useState<Array<{ id: number; title: string; mediaType: string; accessToken: string }>>([]);
+  const [linkedContent, setLinkedContent] = useState<Array<{ id: number; mediaId: number; title: string; description: string; mediaType: string; fileSize: number; language: string; form: string; genre: string; publisher: { email: string; name: string }; publishedAt: string; accessToken: string }>>([]);
 
   // Filters
   const [filters, setFilters] = useState({
@@ -194,11 +194,8 @@ export default function BlogManager({ subscriberEmail }: { subscriberEmail: stri
     }
   };
 
-  const handleContentSelected = (content: { id: number; title: string; mediaType: string; accessToken: string }) => {
-    // Check if content is already linked
-    if (!linkedContent.find(c => c.id === content.id)) {
-      setLinkedContent([...linkedContent, content]);
-    }
+  const handleContentSelected = (content: Array<{ id: number; mediaId: number; title: string; description: string; mediaType: string; fileSize: number; language: string; form: string; genre: string; publisher: { email: string; name: string }; publishedAt: string; accessToken: string }>) => {
+    setLinkedContent(content);
   };
 
   const removeLinkedContent = (contentId: number) => {
@@ -962,12 +959,18 @@ export default function BlogManager({ subscriberEmail }: { subscriberEmail: stri
         </Box>
       </Card>
 
-      {/* Content Linker Dialog */}
-      <ContentLinker
-        isOpen={showContentLinker}
-        onClose={() => setShowContentLinker(false)}
-        onContentSelected={handleContentSelected}
-      />
+      {/* Content Selector Dialog */}
+      <Dialog.Root open={showContentLinker} onOpenChange={setShowContentLinker}>
+        <Dialog.Content style={{ maxWidth: '1200px', maxHeight: '80vh' }}>
+          <Dialog.Title>{t('subscriber_pages.content_linker.title')}</Dialog.Title>
+          <ContentSelector
+            selectedContent={linkedContent}
+            onSelectionChange={handleContentSelected}
+            onClose={() => setShowContentLinker(false)}
+            lang={formData.language}
+          />
+        </Dialog.Content>
+      </Dialog.Root>
     </Box>
   );
 }
