@@ -99,9 +99,9 @@ export async function handleSignOut(redirectTo?: string) {
     // Use provided redirectTo or default to main page
     if (redirectTo === undefined) {
       // For regular sign out, redirect to main page
-      await signOut({ redirectTo: '/' })
+      await signOut()
     } else {
-      await signOut({ redirectTo })
+      await signOut()
     }
   } catch (error) {
     // Only log real errors, not redirects
