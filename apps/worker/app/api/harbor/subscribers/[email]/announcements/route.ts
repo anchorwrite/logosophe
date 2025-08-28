@@ -45,7 +45,36 @@ export async function GET(
     const context = await getCloudflareContext({ async: true });
     const db = context.env.DB;
     
-    // Get all announcements for this subscriber
+    // Parse query parameters for filtering
+    const { searchParams } = new URL(request.url);
+    const status = searchParams.get('status');
+    const language = searchParams.get('language');
+    const handleId = searchParams.get('handleId');
+    
+    // Build WHERE clause with filters
+    let whereClause = 'sh.SubscriberEmail = ?';
+    const dbParams: any[] = [email];
+    
+    // Only apply status filter if specifically requested
+    // When no status filter is applied, show ALL announcements (active + inactive)
+    if (status === 'active') {
+      whereClause += ' AND sa.IsActive = 1';
+    } else if (status === 'inactive') {
+      whereClause += ' AND sa.IsActive = 0';
+    }
+    // If status is null or 'all', no additional filter is added, so all announcements are shown
+    
+    if (language && language !== 'all') {
+      whereClause += ' AND sa.Language = ?';
+      dbParams.push(language);
+    }
+    
+    if (handleId && handleId !== 'all') {
+      whereClause += ' AND sa.HandleId = ?';
+      dbParams.push(parseInt(handleId));
+    }
+    
+    // Get filtered announcements for this subscriber
     const announcementsResult = await db.prepare(`
       SELECT 
         sa.Id, sa.HandleId, sa.Title, sa.Content, sa.Link, sa.LinkText,
@@ -54,9 +83,9 @@ export async function GET(
         sh.Handle, sh.DisplayName as HandleDisplayName
       FROM SubscriberAnnouncements sa
       INNER JOIN SubscriberHandles sh ON sa.HandleId = sh.Id
-      WHERE sh.SubscriberEmail = ?
+      WHERE ${whereClause}
       ORDER BY sa.PublishedAt DESC
-    `).bind(email).all();
+    `).bind(...dbParams).all();
 
     if (!announcementsResult.success) {
       console.error('Database error fetching announcements:', announcementsResult.error);

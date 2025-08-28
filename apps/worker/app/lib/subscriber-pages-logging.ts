@@ -48,7 +48,7 @@ export async function logHandleAction(
  */
 export async function logBlogPostAction(
   db: D1Database,
-  action: 'blog_post_created' | 'blog_post_updated' | 'blog_post_published' | 'blog_post_archived' | 'blog_post_deleted' | 'subscriber_comment_created' | 'subscriber_comment_updated' | 'subscriber_comment_archived' | 'subscriber_comment_flagged',
+  action: 'blog_post_created' | 'blog_post_updated' | 'blog_post_published' | 'blog_post_archived' | 'blog_post_hard_deleted' | 'blog_post_deleted' | 'subscriber_comment_created' | 'subscriber_comment_updated' | 'subscriber_comment_archived' | 'subscriber_comment_flagged',
   postId: string,
   subscriberEmail: string,
   metadata: {
@@ -90,7 +90,7 @@ export async function logBlogPostAction(
  * Log announcement actions
  */
 export async function logAnnouncementAction(
-  action: 'created' | 'updated' | 'deleted' | 'status_updated' | 'visibility_updated' | 'viewed',
+  action: 'created' | 'updated' | 'deleted' | 'hard_deleted' | 'status_updated' | 'visibility_updated' | 'viewed',
   announcementId: string | number,
   subscriberEmail: string,
   metadata: {
@@ -115,6 +115,7 @@ export async function logAnnouncementAction(
       'created': 'announcement_created',
       'updated': 'announcement_updated',
       'deleted': 'announcement_deleted',
+      'hard_deleted': 'announcement_hard_deleted',
       'status_updated': 'announcement_status_updated',
       'visibility_updated': 'announcement_visibility_updated',
       'viewed': 'announcement_viewed'

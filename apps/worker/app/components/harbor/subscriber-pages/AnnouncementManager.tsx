@@ -16,7 +16,7 @@ import {
   Container
 } from '@radix-ui/themes';
 import * as Dialog from '@radix-ui/react-dialog';
-import { Plus, Edit3, Eye, Archive, Trash2, Globe, Lock, Calendar, Link, X } from 'lucide-react';
+import { Plus, Edit3, Eye, Archive, Trash2, Globe, Lock, Calendar, Link, X, RefreshCw } from 'lucide-react';
 import { SubscriberAnnouncement } from '@/types/subscriber-pages';
 import ContentSelector from './ContentSelector';
 
@@ -53,11 +53,18 @@ const AnnouncementManager: React.FC<AnnouncementManagerProps> = ({
   
   // Handle list state
   const [handles, setHandles] = useState<Array<{ Id: number; Handle: string; DisplayName: string; IsActive: boolean }>>([]);
+  
+  // Filters
+  const [filters, setFilters] = useState({
+    status: 'all',
+    language: 'all',
+    handleId: 'all'
+  });
 
   useEffect(() => {
     fetchAnnouncements();
     fetchHandles();
-  }, [subscriberEmail]);
+  }, [subscriberEmail, filters]);
 
   const fetchHandles = async () => {
     try {
@@ -83,7 +90,19 @@ const AnnouncementManager: React.FC<AnnouncementManagerProps> = ({
   const fetchAnnouncements = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/harbor/subscribers/${subscriberEmail}/announcements`);
+      const params = new URLSearchParams();
+      
+      if (filters.status !== 'all') {
+        params.append('status', filters.status);
+      }
+      if (filters.language !== 'all') {
+        params.append('language', filters.language);
+      }
+      if (filters.handleId !== 'all') {
+        params.append('handleId', filters.handleId);
+      }
+      
+      const response = await fetch(`/api/harbor/subscribers/${subscriberEmail}/announcements?${params}`);
       if (response.ok) {
         const data = await response.json() as { success: boolean; data: SubscriberAnnouncement[] };
         if (data.success) {
@@ -173,6 +192,29 @@ const AnnouncementManager: React.FC<AnnouncementManagerProps> = ({
       });
 
       if (response.ok) {
+        const result = await response.json() as { success: boolean; data: { Id: number } };
+        
+        // Save content links if any are selected
+        if (linkedContent.length > 0 && result.data?.Id) {
+          try {
+            const linksResponse = await fetch('/api/harbor/content-links', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                sourceType: 'announcement',
+                sourceId: result.data.Id,
+                linkedContentIds: linkedContent.map(content => content.id)
+              }),
+            });
+
+            if (!linksResponse.ok) {
+              console.warn('Failed to save content links, but announcement was saved');
+            }
+          } catch (linkError) {
+            console.warn('Failed to save content links:', linkError);
+          }
+        }
+        
         setShowCreateDialog(false);
         setShowEditDialog(false);
         resetForm();
@@ -185,6 +227,10 @@ const AnnouncementManager: React.FC<AnnouncementManagerProps> = ({
   };
 
   const handleDelete = async (announcementId: number) => {
+    if (!confirm(t('subscriber_pages.announcements.confirm.delete'))) {
+      return;
+    }
+    
     try {
       const response = await fetch(`/api/harbor/subscribers/${subscriberEmail}/announcements/${announcementId}`, {
         method: 'DELETE'
@@ -195,6 +241,24 @@ const AnnouncementManager: React.FC<AnnouncementManagerProps> = ({
       }
     } catch (error) {
       console.error('Error deleting announcement:', error);
+    }
+  };
+
+  const handleHardDelete = async (announcementId: number) => {
+    if (!confirm(t('subscriber_pages.announcements.confirm.hard_delete'))) {
+      return;
+    }
+    
+    try {
+      const response = await fetch(`/api/harbor/subscribers/${subscriberEmail}/announcements/${announcementId}/hard-delete`, {
+        method: 'DELETE'
+      });
+
+      if (response.ok) {
+        fetchAnnouncements();
+      }
+    } catch (error) {
+      console.error('Error hard deleting announcement:', error);
     }
   };
 
@@ -248,6 +312,77 @@ const AnnouncementManager: React.FC<AnnouncementManagerProps> = ({
         </Button>
       </Flex>
 
+      {/* Filter Controls */}
+      <Box mb="4" p="3" style={{ backgroundColor: 'var(--gray-2)', borderRadius: 'var(--radius-3)' }}>
+        <Flex gap="3" align="center" wrap="wrap">
+          <Box>
+            <Text size="2" color="gray" mb="1" style={{ display: 'block' }}>
+              Status
+            </Text>
+            <select
+              value={filters.status}
+              onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
+              style={{
+                padding: 'var(--space-2)',
+                border: '1px solid var(--gray-6)',
+                borderRadius: 'var(--radius-2)',
+                fontSize: 'var(--font-size-2)'
+              }}
+            >
+              <option value="all">{t('common.all')}</option>
+              <option value="active">{t('common.active')}</option>
+              <option value="inactive">{t('common.inactive')}</option>
+            </select>
+          </Box>
+          
+          <Box>
+            <Text size="2" color="gray" mb="1" style={{ display: 'block' }}>
+              Language
+            </Text>
+            <select
+              value={filters.language}
+              onChange={(e) => setFilters(prev => ({ ...prev, language: e.target.value }))}
+              style={{
+                padding: 'var(--space-2)',
+                border: '1px solid var(--gray-6)',
+                borderRadius: 'var(--radius-2)',
+                fontSize: 'var(--font-size-2)'
+              }}
+            >
+              <option value="all">{t('common.all')}</option>
+              <option value="en">English</option>
+              <option value="es">Español</option>
+              <option value="fr">Français</option>
+              <option value="de">Deutsch</option>
+              <option value="nl">Nederlands</option>
+            </select>
+          </Box>
+          
+          <Box>
+            <Text size="2" color="gray" mb="1" style={{ display: 'block' }}>
+              {t('subscriber_pages.announcements.handle_label')}
+            </Text>
+            <select
+              value={filters.handleId}
+              onChange={(e) => setFilters(prev => ({ ...prev, handleId: e.target.value }))}
+              style={{
+                padding: 'var(--space-2)',
+                border: '1px solid var(--gray-2)',
+                borderRadius: 'var(--radius-2)',
+                fontSize: 'var(--font-size-2)'
+              }}
+            >
+              <option value="all">{t('common.all')}</option>
+              {handles.map((handle) => (
+                <option key={handle.Id} value={handle.Id}>
+                  {handle.DisplayName} ({handle.Handle})
+                </option>
+              ))}
+            </select>
+          </Box>
+        </Flex>
+      </Box>
+
       {announcements.length === 0 ? (
         <Card>
           <Box p="6" style={{ textAlign: 'center' }}>
@@ -261,9 +396,15 @@ const AnnouncementManager: React.FC<AnnouncementManagerProps> = ({
               <Box p="4">
                 <Flex justify="between" align="start" mb="3">
                   <Box style={{ flex: 1 }}>
-                    <Heading size="4" mb="2">
-                      {announcement.Title}
-                    </Heading>
+                    <Flex align="center" gap="3" mb="2">
+                      <Heading size="4">{announcement.Title}</Heading>
+                      <Badge color={announcement.IsActive ? 'green' : 'gray'} size="2">
+                        {announcement.IsActive ? t('common.active') : t('common.inactive')}
+                      </Badge>
+                      <Badge color={announcement.IsPublic ? 'blue' : 'orange'} size="2">
+                        {announcement.IsPublic ? t('common.public') : t('common.private')}
+                      </Badge>
+                    </Flex>
                     <Text size="3" color="gray" mb="2">
                       {announcement.Content}
                     </Text>
@@ -335,15 +476,40 @@ const AnnouncementManager: React.FC<AnnouncementManagerProps> = ({
                       {announcement.IsPublic ? t('common.public') : t('common.private')}
                     </Button>
                   </Flex>
-                  <Button
-                    size="1"
-                    variant="soft"
-                    color="red"
-                    onClick={() => handleDelete(announcement.Id)}
-                  >
-                    <Trash2 size={14} />
-                    {t('common.delete')}
-                  </Button>
+                  <Flex gap="2">
+                    {announcement.IsActive ? (
+                      <Button
+                        size="1"
+                        variant="soft"
+                        color="orange"
+                        onClick={() => handleDelete(announcement.Id)}
+                      >
+                        <Archive size={12} />
+                        {t('common.archive')}
+                      </Button>
+                    ) : (
+                      <>
+                        <Button
+                          size="1"
+                          variant="soft"
+                          color="green"
+                          onClick={() => handleToggleStatus(announcement.Id, true)}
+                        >
+                          <RefreshCw size={12} />
+                          {t('common.restore')}
+                        </Button>
+                        <Button
+                          size="1"
+                          variant="soft"
+                          color="red"
+                          onClick={() => handleHardDelete(announcement.Id)}
+                        >
+                          <Trash2 size={12} />
+                          {t('common.delete')}
+                        </Button>
+                      </>
+                    )}
+                  </Flex>
                 </Flex>
               </Box>
             </Card>
