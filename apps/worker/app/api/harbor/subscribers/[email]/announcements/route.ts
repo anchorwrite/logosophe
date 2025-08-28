@@ -56,11 +56,13 @@ export async function GET(
     const dbParams: any[] = [email];
     
     // Only apply status filter if specifically requested
-    // When no status filter is applied, show ALL announcements (active + inactive)
-    if (status === 'active') {
-      whereClause += ' AND sa.IsActive = 1';
-    } else if (status === 'inactive') {
-      whereClause += ' AND sa.IsActive = 0';
+    // When no status filter is applied, show ALL announcements (draft + published + archived)
+    if (status === 'draft') {
+      whereClause += ' AND sa.IsActive = 0 AND sa.IsPublic = 0';
+    } else if (status === 'published') {
+      whereClause += ' AND sa.IsActive = 1 AND sa.IsPublic = 1';
+    } else if (status === 'archived') {
+      whereClause += ' AND sa.IsActive = 0 AND sa.IsPublic = 1';
     }
     // If status is null or 'all', no additional filter is added, so all announcements are shown
     
@@ -84,7 +86,7 @@ export async function GET(
       FROM SubscriberAnnouncements sa
       INNER JOIN SubscriberHandles sh ON sa.HandleId = sh.Id
       WHERE ${whereClause}
-      ORDER BY sa.PublishedAt DESC
+      ORDER BY sa.CreatedAt DESC
     `).bind(...dbParams).all();
 
     if (!announcementsResult.success) {
@@ -217,7 +219,7 @@ export async function POST(
     return Response.json({
       success: true,
       data: {
-        id: insertResult.meta.last_row_id,
+        Id: insertResult.meta.last_row_id,
         message: 'Announcement created successfully'
       }
     });

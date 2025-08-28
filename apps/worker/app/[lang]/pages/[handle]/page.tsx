@@ -311,353 +311,364 @@ export default function PublicHandlePage({ params }: PublicHandlePageProps) {
           </Container>
         </Box>
 
-      {/* Content */}
-      <Container size="4" py="6">
-        {/* Announcements Section */}
-        {announcements.length > 0 && (
-          <Card mb="6">
-            <Box p="6">
-              <Heading size="6" mb="4">
-                {t('subscriber_pages.sections.announcements')}
-              </Heading>
-              
-              <Box style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                {announcements.map((announcement) => (
-                  <Card key={announcement.Id} style={{ backgroundColor: 'var(--gray-2)' }}>
-                    <Box p="4">
+        {/* Content */}
+        <Container size="4" py="6">
+          {/* Announcements Section */}
+          {announcements.length > 0 && (
+            <Card mb="6">
+              <Box p="6">
+                <Heading size="6" mb="4">
+                  {t('subscriber_pages.sections.announcements')}
+                </Heading>
+                
+                <Flex direction="column" gap="4">
+                  {announcements.map((announcement) => (
+                    <Box key={announcement.Id} p="4" style={{ border: '1px solid var(--gray-6)', borderRadius: 'var(--radius-3)' }}>
                       <Heading size="4" mb="2">
                         {announcement.Title}
                       </Heading>
-                      <Text size="3" color="gray" mb="3">
+                      <Text size="3" mb="3" style={{ whiteSpace: 'pre-wrap' }}>
                         {announcement.Content}
                       </Text>
                       
-                      {announcement.Link && announcement.LinkText && (
-                        <Box mb="3">
-                          <Button asChild variant="solid" size="2">
-                            <a href={announcement.Link} target="_blank" rel="noopener noreferrer">
-                              {announcement.LinkText}
-                            </a>
-                          </Button>
+                      {/* Linked Harbor Content */}
+                      {announcement.linkedContent && announcement.linkedContent.length > 0 && (
+                        <Box mt="4">
+                          <Text size="2" weight="bold" mb="2" color="gray">
+                            {t('subscriber_pages.announcements.linked_content_label')}:
+                          </Text>
+                          <Flex direction="column" gap="2">
+                            {announcement.linkedContent.map((content) => (
+                              <Card key={content.id} size="1">
+                                <Box p="3">
+                                  <Flex justify="between" align="start" gap="2">
+                                    <Box style={{ flex: 1 }}>
+                                      <Text size="2" weight="bold">
+                                        {content.title}
+                                      </Text>
+                                      {content.description && (
+                                        <Text size="1" color="gray" mb="1">
+                                          {content.description}
+                                        </Text>
+                                      )}
+                                      <Flex gap="1" align="center" mb="1">
+                                        {content.form && (
+                                          <Badge color="blue" size="1">
+                                            {content.form}
+                                          </Badge>
+                                        )}
+                                        {content.genre && (
+                                          <Badge color="green" size="1">
+                                            {content.genre}
+                                          </Badge>
+                                        )}
+                                      </Flex>
+                                    </Box>
+                                    <Flex gap="2">
+                                      <Button asChild size="1" variant="soft">
+                                        <a 
+                                          href={`/api/content/${content.accessToken}/preview`}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                        >
+                                          {t('common.view')}
+                                        </a>
+                                      </Button>
+                                      <Button asChild size="1">
+                                        <a 
+                                          href={`/api/content/${content.accessToken}/download`}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                        >
+                                          {t('common.download')}
+                                        </a>
+                                      </Button>
+                                    </Flex>
+                                  </Flex>
+                                </Box>
+                              </Card>
+                            ))}
+                          </Flex>
                         </Box>
                       )}
                       
-                      <Flex gap="2" align="center">
-                        <Text size="2" color="gray">
-                          {new Date(announcement.PublishedAt).toLocaleDateString()}
-                        </Text>
+                      <Flex gap="2" align="center" mt="3">
                         {announcement.Language && (
-                          <Badge color="blue">
+                          <Badge color="blue" variant="soft">
                             {announcement.Language.toUpperCase()}
                           </Badge>
                         )}
+                        {announcement.PublishedAt && (
+                          <Text size="2" color="gray">
+                            {new Date(announcement.PublishedAt).toLocaleDateString()}
+                          </Text>
+                        )}
                         {announcement.ExpiresAt && (
-                          <Badge color="orange" variant="soft">
+                          <Text size="2" color="gray">
                             {t('subscriber_pages.announcements.expires')}: {new Date(announcement.ExpiresAt).toLocaleDateString()}
-                          </Badge>
+                          </Text>
                         )}
                       </Flex>
                     </Box>
-                  </Card>
-                ))}
+                  ))}
+                </Flex>
               </Box>
-            </Box>
-          </Card>
-        )}
+            </Card>
+          )}
 
-        {/* Blog Posts Section */}
-        <Card mb="6">
-          <Box p="6">
-            <Heading size="6" mb="4">
-              {t('subscriber_pages.sections.blog')}
-            </Heading>
-            
-            {blogPosts.length > 0 ? (
-              <Box style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                {blogPosts.map((post) => (
-                  <Box key={post.Id}>
-                    <Card style={{ backgroundColor: 'var(--gray-2)' }}>
-                      <Box p="4">
-                        <Heading size="4" mb="2">
-                          {post.Title}
-                        </Heading>
-                        {post.Excerpt ? (
-                          <Text size="3" color="gray" mb="2">
-                            {post.Excerpt}
-                          </Text>
-                        ) : null}
-                        <Flex justify="between" align="center">
-                          <Flex gap="2" align="center">
-                            <Text size="2" color="gray">
-                              {new Date(post.CreatedAt).toLocaleDateString()}
-                            </Text>
-                            <Text size="2" color="gray">
-                              {post.ViewCount} {t('subscriber_pages.blog.views')}
-                            </Text>
-                            {post.Language && (
-                              <Badge color="blue">
-                                {post.Language.toUpperCase()}
-                              </Badge>
-                            )}
-                            {/* Ratings Summary */}
-                            {post.ratingAnalytics && post.ratingAnalytics.totalRatings > 0 && (
-                              <Flex gap="1" align="center">
-                                <Text size="2" color="gray">★</Text>
-                                <Text size="2" color="gray">
-                                  {post.ratingAnalytics.averageRating.toFixed(1)} ({post.ratingAnalytics.totalRatings})
-                                </Text>
-                              </Flex>
-                            )}
-                          </Flex>
-                          <Button asChild variant="outline" size="2">
-                            <a href={`/${lang}/pages/${handle.Handle}/blog/${post.Id}`}>
-                              {t('subscriber_pages.blog.read_more')}
-                            </a>
-                          </Button>
-                        </Flex>
-                      </Box>
-                    </Card>
-                    
-                    {/* Comments Section */}
-                    <Box mt="4">
-                      <BlogComments 
-                        key={`${post.Id}-${commentRefreshKey}`}
-                        blogPostId={post.Id} 
-                        handleName={handle.Handle}
-                        onCommentAdded={() => {
-                          // Refresh comments by updating the key
-                          setCommentRefreshKey(prev => prev + 1);
-                        }}
-                      />
-                    </Box>
-                  </Box>
-                ))}
-              </Box>
-            ) : (
-              <Text size="3" color="gray">
-                {t('subscriber_pages.content.noContent')}
-              </Text>
-            )}
-
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <Flex justify="center" align="center" mt="4" gap="2">
-                <Button
-                  variant="soft"
-                  disabled={currentPage === 1}
-                  onClick={() => setCurrentPage(currentPage - 1)}
-                >
-                  {t('common.previous')}
-                </Button>
-                
-                <Text size="2" color="gray">
-                  {t('common.page_info', { current: currentPage, total: totalPages })}
-                </Text>
-                
-                <Button
-                  variant="soft"
-                  disabled={currentPage === totalPages}
-                  onClick={() => setCurrentPage(currentPage + 1)}
-                >
-                  {t('common.next')}
-                </Button>
-              </Flex>
-            )}
-          </Box>
-        </Card>
-
-        {/* Announcements Section */}
-        {announcements && announcements.length > 0 && (
+          {/* Blog Posts Section */}
           <Card mb="6">
             <Box p="6">
               <Heading size="6" mb="4">
-                {t('subscriber_pages.sections.announcements')}
+                {t('subscriber_pages.sections.blog')}
               </Heading>
-              <Flex direction="column" gap="4">
-                {announcements.map((announcement) => (
-                  <Box key={announcement.Id} p="4" style={{ border: '1px solid var(--gray-6)', borderRadius: 'var(--radius-3)' }}>
-                    <Heading size="4" mb="2">
-                      {announcement.Title}
-                    </Heading>
-                    <Text size="3" mb="3" style={{ whiteSpace: 'pre-wrap' }}>
-                      {announcement.Content}
-                    </Text>
-                    
-                    {/* Linked Harbor Content */}
-                    {announcement.linkedContent && announcement.linkedContent.length > 0 && (
-                      <Box mt="4">
-                        <Text size="2" weight="bold" mb="2" color="gray">
-                          {t('subscriber_pages.announcements.linked_content_label')}:
-                        </Text>
-                        <Flex direction="column" gap="2">
-                          {announcement.linkedContent.map((content) => (
-                            <Card key={content.id} size="1">
-                              <Box p="3">
-                                <Flex justify="between" align="start" gap="2">
-                                  <Box style={{ flex: 1 }}>
-                                    <Text size="2" weight="bold">
-                                      {content.title}
-                                    </Text>
-                                    {content.description && (
-                                      <Text size="1" color="gray" mb="1">
-                                        {content.description}
-                                      </Text>
-                                    )}
-                                    <Flex gap="1" align="center" mb="1">
-                                      {content.form && (
-                                        <Badge color="blue" size="1">
-                                          {content.form}
-                                        </Badge>
-                                      )}
-                                      {content.genre && (
-                                        <Badge color="green" size="1">
-                                          {content.genre}
-                                        </Badge>
-                                      )}
-                                    </Flex>
-                                  </Box>
-                                  <Flex gap="2">
-                                    <Button asChild size="1" variant="soft">
-                                      <a 
-                                        href={`/api/content/${content.accessToken}/preview`}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                      >
-                                        {t('common.view')}
-                                      </a>
-                                    </Button>
-                                    <Button asChild size="1">
-                                      <a 
-                                        href={`/api/content/${content.accessToken}/download`}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                      >
-                                        {t('common.download')}
-                                      </a>
-                                    </Button>
-                                  </Flex>
+              
+              {blogPosts.length > 0 ? (
+                <Box style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  {blogPosts.map((post) => (
+                    <Box key={post.Id}>
+                      <Card style={{ backgroundColor: 'var(--gray-2)' }}>
+                        <Box p="4">
+                          <Heading size="4" mb="2">
+                            {post.Title}
+                          </Heading>
+                          {post.Excerpt ? (
+                            <Text size="3" color="gray" mb="2">
+                              {post.Excerpt}
+                            </Text>
+                          ) : null}
+                          
+                          {/* Linked Harbor Content */}
+                          {post.linkedContent && post.linkedContent.length > 0 && (
+                            <Box mt="3" mb="3">
+                              <Text size="2" weight="bold" mb="2" color="gray">
+                                {t('subscriber_pages.blog.linked_content_label')}:
+                              </Text>
+                              <Flex direction="column" gap="2">
+                                {post.linkedContent.map((content) => (
+                                  <Card key={content.id} size="1">
+                                    <Box p="3">
+                                      <Flex justify="between" align="start" gap="2">
+                                        <Box style={{ flex: 1 }}>
+                                          <Text size="2" weight="bold">
+                                            {content.title}
+                                          </Text>
+                                          {content.description && (
+                                            <Text size="1" color="gray" mb="1">
+                                              {content.description}
+                                            </Text>
+                                          )}
+                                          <Flex gap="1" align="center" mb="1">
+                                            {content.form && (
+                                              <Badge color="blue" size="1">
+                                                {content.form}
+                                              </Badge>
+                                            )}
+                                            {content.genre && (
+                                              <Badge color="green" size="1">
+                                                {content.genre}
+                                              </Badge>
+                                            )}
+                                          </Flex>
+                                        </Box>
+                                        <Flex gap="2">
+                                          <Button asChild size="1" variant="soft">
+                                            <a 
+                                              href={`/api/content/${content.accessToken}/preview`}
+                                              target="_blank"
+                                              rel="noopener noreferrer"
+                                            >
+                                              {t('common.view')}
+                                            </a>
+                                          </Button>
+                                          <Button asChild size="1">
+                                            <a 
+                                              href={`/api/content/${content.accessToken}/download`}
+                                              target="_blank"
+                                              rel="noopener noreferrer"
+                                            >
+                                              {t('common.download')}
+                                            </a>
+                                          </Button>
+                                        </Flex>
+                                      </Flex>
+                                    </Box>
+                                  </Card>
+                                ))}
+                              </Flex>
+                            </Box>
+                          )}
+                          
+                          <Flex justify="between" align="center">
+                            <Flex gap="2" align="center">
+                              <Text size="2" color="gray">
+                                {new Date(post.CreatedAt).toLocaleDateString()}
+                              </Text>
+                              <Text size="2" color="gray">
+                                {post.ViewCount} {t('subscriber_pages.blog.views')}
+                              </Text>
+                              {post.Language && (
+                                <Badge color="blue">
+                                  {post.Language.toUpperCase()}
+                                </Badge>
+                              )}
+                              {/* Ratings Summary */}
+                              {post.ratingAnalytics && post.ratingAnalytics.totalRatings > 0 && (
+                                <Flex gap="1" align="center">
+                                  <Text size="2" color="gray">★</Text>
+                                  <Text size="2" color="gray">
+                                    {post.ratingAnalytics.averageRating.toFixed(1)} ({post.ratingAnalytics.totalRatings})
+                                  </Text>
                                 </Flex>
-                              </Box>
-                            </Card>
-                          ))}
-                        </Flex>
+                              )}
+                            </Flex>
+                            <Button asChild variant="outline" size="2">
+                              <a href={`/${lang}/pages/${handle.Handle}/blog/${post.Id}`}>
+                                {t('subscriber_pages.blog.read_more')}
+                              </a>
+                            </Button>
+                          </Flex>
+                        </Box>
+                      </Card>
+                      
+                      {/* Comments Section */}
+                      <Box mt="4">
+                        <BlogComments 
+                          key={`${post.Id}-${commentRefreshKey}`}
+                          blogPostId={post.Id} 
+                          handleName={handle.Handle}
+                          onCommentAdded={() => {
+                            // Refresh comments by updating the key
+                            setCommentRefreshKey(prev => prev + 1);
+                          }}
+                        />
                       </Box>
-                    )}
-                    
-                    <Flex gap="2" align="center" mt="3">
-                      {announcement.Language && (
-                        <Badge color="blue" variant="soft">
-                          {announcement.Language.toUpperCase()}
-                        </Badge>
-                      )}
-                      {announcement.PublishedAt && (
-                        <Text size="2" color="gray">
-                          {new Date(announcement.PublishedAt).toLocaleDateString()}
-                        </Text>
-                      )}
-                      {announcement.ExpiresAt && (
-                        <Text size="2" color="gray">
-                          {t('subscriber_pages.announcements.expires')}: {new Date(announcement.ExpiresAt).toLocaleDateString()}
-                        </Text>
-                      )}
-                    </Flex>
-                  </Box>
-                ))}
-              </Flex>
+                    </Box>
+                  ))}
+                </Box>
+              ) : (
+                <Text size="3" color="gray">
+                  {t('subscriber_pages.content.noContent')}
+                </Text>
+              )}
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <Flex justify="center" align="center" mt="4" gap="2">
+                  <Button
+                    variant="soft"
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage(currentPage - 1)}
+                  >
+                    {t('common.previous')}
+                  </Button>
+                  
+                  <Text size="2" color="gray">
+                    {t('common.page_info', { current: currentPage, total: totalPages })}
+                  </Text>
+                  
+                  <Button
+                    variant="soft"
+                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage(currentPage + 1)}
+                  >
+                    {t('common.next')}
+                  </Button>
+                </Flex>
+              )}
             </Box>
           </Card>
-        )}
 
-        {/* Contact Section */}
-        <Card mb="6">
-          <Box p="6">
-            <Heading size="6" mb="4">
-              {t('subscriber_pages.sections.contact')}
-            </Heading>
-            {contactInfo ? (
-              <Box>
-                <Flex direction="column" gap="3">
-                  {contactInfo.Email && (
-                    <Flex gap="2" align="center">
-                      <Text size="3" weight="bold" style={{ minWidth: '80px' }}>Email:</Text>
-                      <Text size="3">{contactInfo.Email}</Text>
-                    </Flex>
-                  )}
-                  {contactInfo.Phone && (
-                    <Flex gap="2" align="center">
-                      <Text size="3" weight="bold" style={{ minWidth: '80px' }}>Phone:</Text>
-                      <Text size="3">{contactInfo.Phone}</Text>
-                    </Flex>
-                  )}
-                  {contactInfo.Website && (
-                    <Flex gap="2" align="center">
-                      <Text size="3" weight="bold" style={{ minWidth: '80px' }}>Website:</Text>
-                      <Text size="3">
-                        <a href={contactInfo.Website} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--blue-9)' }}>
-                          {contactInfo.Website}
-                        </a>
-                      </Text>
-                    </Flex>
-                  )}
-                  {contactInfo.Location && (
-                    <Flex gap="2" align="center">
-                      <Text size="3" weight="bold" style={{ minWidth: '80px' }}>Location:</Text>
-                      <Text size="3">{contactInfo.Location}</Text>
-                    </Flex>
-                  )}
-                  {contactInfo.SocialLinks && (
-                    <Flex gap="2" align="center">
-                      <Text size="3" weight="bold" style={{ minWidth: '80px' }}>Social:</Text>
-                      <Text size="3">{contactInfo.SocialLinks}</Text>
-                    </Flex>
-                  )}
-                </Flex>
-                <Flex gap="2" align="center" mt="4">
-                  <Badge color="blue">
-                    {contactInfo.Language.toUpperCase()}
-                  </Badge>
-                  <Text size="2" color="gray">
-                    {new Date(contactInfo.UpdatedAt).toLocaleDateString()}
-                  </Text>
-                </Flex>
-              </Box>
-            ) : (
-              <Text size="3" color="gray">
-                {t('subscriber_pages.content.noContent')}
-              </Text>
-            )}
-          </Box>
-        </Card>
-
-        {/* Bio Section - Moved to bottom */}
-        <Card>
-          <Box p="6">
-            <Heading size="6" mb="4">
-              {t('subscriber_pages.sections.bio')}
-            </Heading>
-            {biography ? (
-              <Box>
-                <Text size="3" style={{ whiteSpace: 'pre-wrap' }} mb="3">
-                  {biography.Bio}
+          {/* Contact Section */}
+          <Card mb="6">
+            <Box p="6">
+              <Heading size="6" mb="4">
+                {t('subscriber_pages.sections.contact')}
+              </Heading>
+              {contactInfo ? (
+                <Box>
+                  <Flex direction="column" gap="3">
+                    {contactInfo.Email && (
+                      <Flex gap="2" align="center">
+                        <Text size="3" weight="bold" style={{ minWidth: '80px' }}>Email:</Text>
+                        <Text size="3">{contactInfo.Email}</Text>
+                      </Flex>
+                    )}
+                    {contactInfo.Phone && (
+                      <Flex gap="2" align="center">
+                        <Text size="3" weight="bold" style={{ minWidth: '80px' }}>Phone:</Text>
+                        <Text size="3">{contactInfo.Phone}</Text>
+                      </Flex>
+                    )}
+                    {contactInfo.Website && (
+                      <Flex gap="2" align="center">
+                        <Text size="3" weight="bold" style={{ minWidth: '80px' }}>Website:</Text>
+                        <Text size="3">
+                          <a href={contactInfo.Website} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--blue-9)' }}>
+                            {contactInfo.Website}
+                          </a>
+                        </Text>
+                      </Flex>
+                    )}
+                    {contactInfo.Location && (
+                      <Flex gap="2" align="center">
+                        <Text size="3" weight="bold" style={{ minWidth: '80px' }}>Location:</Text>
+                        <Text size="3">{contactInfo.Location}</Text>
+                      </Flex>
+                    )}
+                    {contactInfo.SocialLinks && (
+                      <Flex gap="2" align="center">
+                        <Text size="3" weight="bold" style={{ minWidth: '80px' }}>Social:</Text>
+                        <Text size="3">{contactInfo.SocialLinks}</Text>
+                      </Flex>
+                    )}
+                  </Flex>
+                  <Flex gap="2" align="center" mt="4">
+                    <Badge color="blue">
+                      {contactInfo.Language.toUpperCase()}
+                    </Badge>
+                    <Text size="2" color="gray">
+                      {new Date(contactInfo.UpdatedAt).toLocaleDateString()}
+                    </Text>
+                  </Flex>
+                </Box>
+              ) : (
+                <Text size="3" color="gray">
+                  {t('subscriber_pages.content.noContent')}
                 </Text>
-                <Flex gap="2" align="center">
-                  <Badge color="blue">
-                    {biography.Language.toUpperCase()}
-                  </Badge>
-                  <Text size="2" color="gray">
-                    {new Date(biography.UpdatedAt).toLocaleDateString()}
+              )}
+            </Box>
+          </Card>
+
+          {/* Bio Section - Moved to bottom */}
+          <Card>
+            <Box p="6">
+              <Heading size="6" mb="4">
+                {t('subscriber_pages.sections.bio')}
+              </Heading>
+              {biography ? (
+                <Box>
+                  <Text size="3" style={{ whiteSpace: 'pre-wrap' }} mb="3">
+                    {biography.Bio}
                   </Text>
-                </Flex>
-              </Box>
-            ) : (
-              <Text size="3" color="gray">
-                {t('subscriber_pages.content.noContent')}
-              </Text>
-            )}
-          </Box>
-        </Card>
-      </Container>
-              </Box>
+                  <Flex gap="2" align="center">
+                    <Badge color="blue">
+                      {biography.Language.toUpperCase()}
+                    </Badge>
+                    <Text size="2" color="gray">
+                      {new Date(biography.UpdatedAt).toLocaleDateString()}
+                    </Text>
+                  </Flex>
+                </Box>
+              ) : (
+                <Text size="3" color="gray">
+                  {t('subscriber_pages.content.noContent')}
+                </Text>
+              )}
+            </Box>
+          </Card>
+        </Container>
+        
         <Footer />
         
         {/* Subscriber Opt-In Prompt */}
@@ -697,6 +708,7 @@ export default function PublicHandlePage({ params }: PublicHandlePageProps) {
             </Box>
           </Box>
         )}
-      </>
-    );
-  }
+      </Box>
+    </>
+  );
+}

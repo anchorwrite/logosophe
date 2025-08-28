@@ -47,8 +47,8 @@ const AnnouncementManager: React.FC<AnnouncementManagerProps> = ({
   const [linkText, setLinkText] = useState('');
   const [linkedContent, setLinkedContent] = useState<Array<{ id: number; mediaId: number; title: string; description: string; mediaType: string; fileSize: number; language: string; form: string; genre: string; publisher: { email: string; name: string }; publishedAt: string; accessToken: string }>>([]);
   const [selectedHandleId, setSelectedHandleId] = useState<number | null>(null);
-  const [isPublic, setIsPublic] = useState(true);
-  const [isActive, setIsActive] = useState(true);
+  const [isPublic, setIsPublic] = useState(false);
+  const [isActive, setIsActive] = useState(false);
   const [language, setLanguage] = useState('en');
   
   // Handle list state
@@ -131,8 +131,8 @@ const AnnouncementManager: React.FC<AnnouncementManagerProps> = ({
     setLinkText('');
     setLinkedContent([]);
     setSelectedHandleId(handles.length > 0 ? handles.find(h => h.IsActive)?.Id || handles[0].Id : null);
-    setIsPublic(true);
-    setIsActive(true);
+    setIsPublic(false);
+    setIsActive(false);
     setLanguage('en');
   };
 
@@ -294,6 +294,43 @@ const AnnouncementManager: React.FC<AnnouncementManagerProps> = ({
     }
   };
 
+  const handlePublish = async (announcementId: number) => {
+    try {
+      // Publish = make active and public
+      const statusResponse = await fetch(`/api/harbor/subscribers/${subscriberEmail}/announcements/${announcementId}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isActive: true })
+      });
+
+      const visibilityResponse = await fetch(`/api/harbor/subscribers/${subscriberEmail}/announcements/${announcementId}/visibility`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isPublic: true })
+      });
+
+      if (statusResponse.ok && visibilityResponse.ok) {
+        fetchAnnouncements();
+      }
+    } catch (error) {
+      console.error('Error publishing announcement:', error);
+    }
+  };
+
+  const getStatusColor = (isActive: boolean, isPublic: boolean) => {
+    if (isActive && isPublic) return 'green';    // Published
+    if (isActive && !isPublic) return 'yellow';  // Draft (active but private)
+    if (!isActive && isPublic) return 'gray';    // Archived
+    return 'orange';                              // Draft (inactive and private)
+  };
+
+  const getStatusText = (isActive: boolean, isPublic: boolean) => {
+    if (isActive && isPublic) return t('common.published');
+    if (isActive && !isPublic) return t('common.draft');
+    if (!isActive && isPublic) return t('common.archived');
+    return t('common.draft');
+  };
+
   if (loading) {
     return (
       <Box>
@@ -332,6 +369,7 @@ const AnnouncementManager: React.FC<AnnouncementManagerProps> = ({
               <option value="all">{t('common.all')}</option>
               <option value="active">{t('common.active')}</option>
               <option value="inactive">{t('common.inactive')}</option>
+              <option value="archived">{t('common.archived')}</option>
             </select>
           </Box>
           
@@ -392,24 +430,28 @@ const AnnouncementManager: React.FC<AnnouncementManagerProps> = ({
       ) : (
         <Box style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           {announcements.map((announcement) => (
-            <Card key={announcement.Id} style={{ backgroundColor: 'var(--gray-2)' }}>
-              <Box p="4">
-                <Flex justify="between" align="start" mb="3">
+            <Card key={announcement.Id} style={{ border: '1px solid var(--gray-6)' }}>
+              <Box p="5">
+                <Flex justify="between" align="start">
                   <Box style={{ flex: 1 }}>
-                    <Flex align="center" gap="3" mb="2">
+                    <Flex align="center" gap="3" mb="3">
                       <Heading size="4">{announcement.Title}</Heading>
-                      <Badge color={announcement.IsActive ? 'green' : 'gray'} size="2">
-                        {announcement.IsActive ? t('common.active') : t('common.inactive')}
+                      <Badge color={getStatusColor(announcement.IsActive, announcement.IsPublic)} size="2">
+                        {getStatusText(announcement.IsActive, announcement.IsPublic)}
                       </Badge>
-                      <Badge color={announcement.IsPublic ? 'blue' : 'orange'} size="2">
-                        {announcement.IsPublic ? t('common.public') : t('common.private')}
-                      </Badge>
+                      {announcement.HandleDisplayName && (
+                        <Badge color="blue" size="2">
+                          {announcement.HandleDisplayName}
+                        </Badge>
+                      )}
                     </Flex>
-                    <Text size="3" color="gray" mb="2">
+                    
+                    <Text color="gray" mb="3" size="3" style={{ whiteSpace: 'pre-wrap' }}>
                       {announcement.Content}
                     </Text>
+                    
                     {announcement.Link && (
-                      <Flex align="center" gap="1" mb="2">
+                      <Flex align="center" gap="1" mb="3">
                         <Link size={14} />
                         <a 
                           href={announcement.Link} 
@@ -421,94 +463,84 @@ const AnnouncementManager: React.FC<AnnouncementManagerProps> = ({
                         </a>
                       </Flex>
                     )}
-                                         <Flex gap="2" align="center" mb="2">
-                       <Calendar size={14} />
-                       <Text size="2" color="gray">
-                         {new Date(announcement.PublishedAt).toLocaleDateString()}
-                       </Text>
-                       <Badge color={announcement.Language === 'en' ? 'blue' : 'green'}>
-                         {announcement.Language.toUpperCase()}
-                       </Badge>
-                       <Badge color="purple" variant="soft">
-                         {announcement.HandleDisplayName || `Handle ${announcement.HandleId}`}
-                       </Badge>
-                     </Flex>
+                    
+                    <Flex gap="4" align="center" mb="3">
+                      <Text size="2" color="gray">
+                        {t('subscriber_pages.announcements.published_on')}: {new Date(announcement.CreatedAt || announcement.PublishedAt || new Date()).toLocaleDateString()}
+                      </Text>
+                      {announcement.Language && (
+                        <Badge color="gray" size="1">
+                          {announcement.Language.toUpperCase()}
+                        </Badge>
+                      )}
+                    </Flex>
                   </Box>
-                  <Flex gap="2" direction="column">
-                    <Button 
-                      size="2" 
-                      variant="soft" 
-                      onClick={() => handlePreview(announcement)}
-                    >
-                      <Eye size={14} />
-                      {t('common.preview')}
-                    </Button>
-                    <Button 
-                      size="2" 
-                      variant="soft" 
+                  
+                  <Flex gap="2">
+                    {/* Edit Button - Always visible */}
+                    <Button
                       onClick={() => handleEdit(announcement)}
+                      variant="outline"
+                      size="2"
                     >
-                      <Edit3 size={14} />
                       {t('common.edit')}
                     </Button>
-                  </Flex>
-                </Flex>
-
-                <Separator mb="3" />
-
-                <Flex justify="between" align="center">
-                  <Flex gap="2" align="center">
-                    <Button
-                      size="1"
-                      variant={announcement.IsActive ? "solid" : "soft"}
-                      color={announcement.IsActive ? "green" : "gray"}
-                      onClick={() => handleToggleStatus(announcement.Id, !announcement.IsActive)}
-                    >
-                      {announcement.IsActive ? t('common.active') : t('common.inactive')}
-                    </Button>
-                    <Button
-                      size="1"
-                      variant={announcement.IsPublic ? "solid" : "soft"}
-                      color={announcement.IsPublic ? "blue" : "gray"}
-                      onClick={() => handleToggleVisibility(announcement.Id, !announcement.IsPublic)}
-                    >
-                      {announcement.IsPublic ? <Globe size={12} /> : <Lock size={12} />}
-                      {announcement.IsPublic ? t('common.public') : t('common.private')}
-                    </Button>
-                  </Flex>
-                  <Flex gap="2">
-                    {announcement.IsActive ? (
-                      <Button
-                        size="1"
-                        variant="soft"
-                        color="orange"
-                        onClick={() => handleDelete(announcement.Id)}
-                      >
-                        <Archive size={12} />
-                        {t('common.archive')}
-                      </Button>
-                    ) : (
-                      <>
-                        <Button
-                          size="1"
-                          variant="soft"
-                          color="green"
-                          onClick={() => handleToggleStatus(announcement.Id, true)}
-                        >
-                          <RefreshCw size={12} />
-                          {t('common.restore')}
-                        </Button>
-                        <Button
-                          size="1"
-                          variant="soft"
-                          color="red"
-                          onClick={() => handleHardDelete(announcement.Id)}
-                        >
-                          <Trash2 size={12} />
-                          {t('common.delete')}
-                        </Button>
-                      </>
-                    )}
+                    
+                    {/* Status Management Buttons */}
+                    {(() => {
+                      if (!announcement.IsActive && !announcement.IsPublic) {
+                        return (
+                          <Button
+                            onClick={() => handlePublish(announcement.Id)}
+                            variant="solid"
+                            size="2"
+                          >
+                            {t('common.publish')}
+                          </Button>
+                        );
+                      } else if (announcement.IsActive && announcement.IsPublic) {
+                        return (
+                          <Button
+                            onClick={() => handleToggleStatus(announcement.Id, false)}
+                            variant="soft"
+                            size="2"
+                          >
+                            {t('common.archive')}
+                          </Button>
+                        );
+                      } else if (!announcement.IsActive && announcement.IsPublic) {
+                        return (
+                          <>
+                            <Button
+                              onClick={() => handleToggleStatus(announcement.Id, true)}
+                              variant="solid"
+                              size="2"
+                            >
+                              {t('common.restore')}
+                            </Button>
+                            <Button
+                              onClick={() => handleHardDelete(announcement.Id)}
+                              variant="soft"
+                              color="red"
+                              size="2"
+                            >
+                              {t('common.delete')}
+                            </Button>
+                          </>
+                        );
+                      } else if (announcement.IsActive && !announcement.IsPublic) {
+                        return (
+                          <Button
+                            onClick={() => handlePublish(announcement.Id)}
+                            variant="solid"
+                            size="2"
+                          >
+                            {t('common.publish')}
+                          </Button>
+                        );
+                      }
+                      return null;
+                    })()}
                   </Flex>
                 </Flex>
               </Box>
