@@ -52,6 +52,12 @@ const ContentBlock = ({
   const handleButtonClick = (item: any) => {
     if (item.title === "Browse Content") {
       router.push('/content');
+    } else if (item.title === "Browse Subscriber Pages") {
+      const currentLang = window.location.pathname.split('/')[1] || 'en';
+      router.push(`/${currentLang}/pages`);
+    } else if (item.title === "Browse Authors") {
+      const currentLang = window.location.pathname.split('/')[1] || 'en';
+      router.push(`/${currentLang}/pages`);
     } else if (item.title.includes("Tenant")) {
       router.push('/tenant-application');
     } else if (item.title.includes("Subscriber")) {

@@ -136,7 +136,7 @@
         "title": "Browse Content"
       },
       {
-        "title": "Learn more",
+        "title": "Browse Authors",
         "color": "#fff"
       }
     ]
@@ -1306,6 +1306,31 @@
       "published_by": "Published by",
       "published_on": "Published on",
       "no_results": "No content found matching your search."
+    },
+    "directory": {
+      "title": "Discover Subscriber Pages",
+      "description": "Explore public pages from content creators, authors, and professionals",
+      "search_placeholder": "Search handles, names, or descriptions...",
+      "filter_by_focus": "Filter by focus",
+      "all_focus_areas": "All Focus Areas",
+      "sort_by": "Sort by",
+      "most_recent": "Most Recent",
+      "name_az": "Name A-Z",
+      "most_active": "Most Active",
+      "quick_filters": "Quick Filters:",
+      "all": "All",
+      "poetry": "Poetry",
+      "novels": "Novels",
+      "short_stories": "Short Stories",
+      "academic": "Academic",
+      "professional": "Professional",
+      "technical": "Technical",
+      "showing_results": "Showing {{count}} of {{total}} public pages",
+      "no_results": "No subscriber pages found matching your criteria",
+      "no_results_help": "Try adjusting your search terms or filters",
+      "view_page": "View Page",
+      "no_description": "No description available",
+      "try_again": "Try Again"
     }
   }
 }
