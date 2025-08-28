@@ -16,6 +16,7 @@ interface UpdateAnnouncementRequest {
   isPublic: boolean;
   isActive: boolean;
   language: string;
+  status?: 'draft' | 'published' | 'archived';
 }
 
 export async function PUT(
@@ -148,6 +149,7 @@ export async function PUT(
     return Response.json({
       success: true,
       data: {
+        Id: announcementId,
         message: 'Announcement updated successfully'
       }
     });

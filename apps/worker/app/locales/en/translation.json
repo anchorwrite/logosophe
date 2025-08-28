@@ -60,6 +60,7 @@
     "make_private": "Make Private",
     "visibility": "Visibility",
     "preview": "Preview",
+    "close": "Close",
     "language": "Language",
     "tags": "Tags",
     "created": "Created",
@@ -1151,6 +1152,7 @@
       "tags": "Tags",
       "read_more": "Read More",
       "linked_content_title": "Linked Harbor Content",
+      "linked_content_label": "Linked Harbor Content",
       "published_by": "Published by"
     },
     "announcements": {
@@ -1173,6 +1175,7 @@
       "linked_content_label": "Linked Harbor Content",
       "link_harbor_content": "Link Harbor Content",
       "language_label": "Language",
+      "published_on": "Published on",
       "expires": "Expires",
       "confirm": {
         "delete": "Are you sure you want to archive this announcement? This will hide it from public view but preserve all content and data.",

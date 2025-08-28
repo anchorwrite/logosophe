@@ -264,7 +264,48 @@ async function getPublicBlogPosts(
   
   const posts = postsQuery.results as unknown as SubscriberBlogPost[];
   
-  return { posts, total };
+  // Get linked content for each blog post
+  const postsWithLinkedContent = await Promise.all(
+    posts.map(async (post) => {
+      const linkedContentResult = await db.prepare(`
+        SELECT 
+          pc.Id, mf.FileName as Title, mf.Description, mf.MediaType, pc.AccessToken,
+          pc.FormId, pc.GenreId, mf.Language, pc.PublishedAt,
+          f.Name as FormName, g.Name as GenreName,
+          pc.PublisherId
+        FROM ContentLinks cl
+        INNER JOIN PublishedContent pc ON cl.LinkedContentId = pc.Id
+        INNER JOIN MediaFiles mf ON pc.MediaId = mf.Id
+        LEFT JOIN Form f ON pc.FormId = f.Id
+        LEFT JOIN Genre g ON pc.GenreId = g.Id
+        WHERE cl.ContentType = 'blog_post' AND cl.ContentId = ?
+        ORDER BY pc.PublishedAt DESC
+      `).bind(post.Id).all();
+
+      const linkedContent = linkedContentResult.results?.map((item: any) => ({
+        id: item.Id as number,
+        title: item.Title as string,
+        description: item.Description as string | undefined,
+        mediaType: item.MediaType as string,
+        accessToken: item.AccessToken as string,
+        form: item.FormName as string | undefined,
+        genre: item.GenreName as string | undefined,
+        language: item.Language as string | undefined,
+        publisher: {
+          email: item.PublisherId as string,
+          name: item.PublisherId as string // Using email as name for now
+        },
+        publishedAt: item.PublishedAt as string
+      })) || [];
+
+      return {
+        ...post,
+        linkedContent
+      };
+    })
+  );
+  
+  return { posts: postsWithLinkedContent, total };
 }
 
 async function createBlogPost(
