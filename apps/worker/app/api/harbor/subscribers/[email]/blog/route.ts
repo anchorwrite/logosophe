@@ -202,10 +202,7 @@ async function getSubscriberBlogPosts(
   const whereConditions = ['sh.SubscriberEmail = ?'];
   const params = [subscriberEmail];
   
-  if (filters.status) {
-    whereConditions.push('sbp.Status = ?');
-    params.push(filters.status);
-  }
+  // Status filter is handled separately below to properly include archived posts
   
   if (filters.language) {
     whereConditions.push('sbp.Language = ?');
@@ -218,8 +215,11 @@ async function getSubscriberBlogPosts(
     params.push(searchTerm, searchTerm);
   }
   
-  // Always exclude archived posts unless explicitly requested
-  whereConditions.push('sbp.Status != "archived"');
+  // Only exclude archived posts if status filter is specifically set to exclude them
+  if (filters.status && filters.status !== 'all' && filters.status !== 'archived') {
+    whereConditions.push('sbp.Status = ?');
+    params.push(filters.status);
+  }
   
   const whereClause = whereConditions.join(' AND ');
   

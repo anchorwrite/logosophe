@@ -66,7 +66,7 @@ export async function GET(
       INNER JOIN MediaFiles mf ON pc.MediaId = mf.Id
       LEFT JOIN Form f ON pc.FormId = f.Id
       LEFT JOIN Genre g ON pc.GenreId = g.Id
-      WHERE cl.SourceType = 'blog_post' AND cl.SourceId = ?
+      WHERE cl.ContentType = 'blog_post' AND cl.ContentId = ?
       ORDER BY pc.PublishedAt DESC
     `).bind(postIdNum).all();
 

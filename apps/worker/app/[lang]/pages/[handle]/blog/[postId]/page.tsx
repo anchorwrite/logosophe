@@ -212,15 +212,26 @@ export default function BlogPostDetailPage({ params }: BlogPostDetailPageProps) 
                               {t('subscriber_pages.blog.published_by')}: {content.publisher.name}
                             </Text>
                           </Box>
-                          <Button asChild size="2">
-                            <a 
-                              href={`/api/harbor/content/${content.id}/download?token=${content.accessToken}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                            >
-                              {t('common.download')}
-                            </a>
-                          </Button>
+                          <Flex gap="2">
+                            <Button asChild size="2" variant="soft">
+                              <a 
+                                href={`/api/content/${content.accessToken}/preview`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              >
+                                {t('common.view')}
+                              </a>
+                            </Button>
+                            <Button asChild size="2">
+                              <a 
+                                href={`/api/content/${content.accessToken}/download`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              >
+                                {t('common.download')}
+                              </a>
+                            </Button>
+                          </Flex>
                         </Flex>
                       </Box>
                     </Card>

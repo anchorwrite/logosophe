@@ -228,6 +228,28 @@ export default function BlogManager({ subscriberEmail }: { subscriberEmail: stri
       }
 
       const data = await response.json() as ApiResponse<SubscriberBlogPost>;
+      
+      // Save content links if any are selected
+      if (linkedContent.length > 0) {
+        try {
+          const linksResponse = await fetch('/api/harbor/content-links', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              sourceType: 'blog_post',
+              sourceId: data.data.Id,
+              linkedContentIds: linkedContent.map(content => content.id)
+            }),
+          });
+
+          if (!linksResponse.ok) {
+            console.warn('Failed to save content links, but blog post was created');
+          }
+        } catch (linkError) {
+          console.warn('Failed to save content links:', linkError);
+        }
+      }
+      
       setPosts(prev => [data.data, ...prev]);
       setShowCreateForm(false);
       setFormData({
@@ -238,6 +260,7 @@ export default function BlogManager({ subscriberEmail }: { subscriberEmail: stri
         language: 'en',
         tags: ''
       });
+      setLinkedContent([]); // Clear linked content
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create blog post');
     } finally {
@@ -266,6 +289,27 @@ export default function BlogManager({ subscriberEmail }: { subscriberEmail: stri
         throw new Error(errorData.error || 'Failed to update blog post');
       }
 
+      // Save content links if any are selected
+      if (linkedContent.length > 0) {
+        try {
+          const linksResponse = await fetch('/api/harbor/content-links', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              sourceType: 'blog_post',
+              sourceId: editingPost.Id,
+              linkedContentIds: linkedContent.map(content => content.id)
+            }),
+          });
+
+          if (!linksResponse.ok) {
+            console.warn('Failed to save content links, but blog post was updated');
+          }
+        } catch (linkError) {
+          console.warn('Failed to save content links:', linkError);
+        }
+      }
+      
       // Reset form and refresh posts
       setFormData({
         handleId: 0,
@@ -277,6 +321,7 @@ export default function BlogManager({ subscriberEmail }: { subscriberEmail: stri
       });
       setShowEditForm(false);
       setEditingPost(null);
+      setLinkedContent([]); // Clear linked content
       
       // Refresh posts list
       fetchPosts();
@@ -288,6 +333,34 @@ export default function BlogManager({ subscriberEmail }: { subscriberEmail: stri
       setError(err instanceof Error ? err.message : 'Failed to update blog post');
     } finally {
       setUpdating(false);
+    }
+  };
+
+  const hardDeletePost = async (postId: number) => {
+    if (!confirm(t('subscriber_pages.blog.confirm.hard_delete'))) {
+      return;
+    }
+    
+    try {
+      setError(null);
+      
+      const response = await fetch(`/api/harbor/subscribers/${encodeURIComponent(subscriberEmail)}/blog/${postId}/hard-delete`, {
+        method: 'DELETE'
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json() as { error?: string };
+        throw new Error(errorData.error || 'Failed to permanently delete blog post');
+      }
+      
+      // Refresh posts list
+      fetchPosts();
+      
+      // Show success message
+      alert(t('subscriber_pages.blog.success.hard_deleted'));
+      
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to permanently delete blog post');
     }
   };
 
@@ -910,7 +983,7 @@ export default function BlogManager({ subscriberEmail }: { subscriberEmail: stri
                         )}
                         {post.Status === 'published' && (
                           <Button
-                            onClick={() => archivePost(post.Id)}
+                            onClick={() => updatePostStatus(post.Id, 'archived')}
                             variant="soft"
                             size="2"
                           >
@@ -918,13 +991,23 @@ export default function BlogManager({ subscriberEmail }: { subscriberEmail: stri
                           </Button>
                         )}
                         {post.Status === 'archived' && (
-                          <Button
-                            onClick={() => updatePostStatus(post.Id, 'published')}
-                            variant="solid"
-                            size="2"
-                          >
-                            {t('common.restore')}
-                          </Button>
+                          <>
+                            <Button
+                              onClick={() => updatePostStatus(post.Id, 'published')}
+                              variant="solid"
+                              size="2"
+                            >
+                              {t('common.restore')}
+                            </Button>
+                            <Button
+                              onClick={() => hardDeletePost(post.Id)}
+                              variant="soft"
+                              color="red"
+                              size="2"
+                            >
+                              {t('common.delete')}
+                            </Button>
+                          </>
                         )}
                       </Flex>
                     </Flex>
