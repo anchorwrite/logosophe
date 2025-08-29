@@ -27,6 +27,16 @@ function getCorsOrigin(request: Request): string {
   return allowedOrigins[0];
 }
 
+// Helper function to get sender name based on email type
+function getSenderName(emailType: 'tenant_application' | 'contact_form'): string {
+  const senderNames = {
+    tenant_application: 'Logosophe Tenant Application',
+    contact_form: 'Logosophe Contact Submission'
+  };
+  
+  return senderNames[emailType];
+}
+
 async function handleRequest(request: Request, env: CloudflareEnv): Promise<Response> {
   console.log("Received request:", {
     method: request.method,
@@ -72,6 +82,7 @@ async function handleRequest(request: Request, env: CloudflareEnv): Promise<Resp
 
     // Determine submission type and validate accordingly
     const isTenantApplication = data.organization && data.purpose;
+    const emailType = isTenantApplication ? 'tenant_application' : 'contact_form';
     
     if (isTenantApplication) {
       // Tenant application - organization and purpose are required
@@ -167,7 +178,8 @@ async function handleRequest(request: Request, env: CloudflareEnv): Promise<Resp
     
     // Create email using mimetext library as recommended by Cloudflare
     const msg = createMimeMessage();
-    msg.setSender({ name: "Logosophe Contact Form", addr: env.EMAIL_FROM_ADDRESS });
+    const senderName = getSenderName(emailType);
+    msg.setSender({ name: senderName, addr: env.EMAIL_FROM_ADDRESS });
     msg.setRecipient(env.EMAIL_TO_ADDRESS);
     msg.setSubject(data.subject);
     msg.addMessage({
