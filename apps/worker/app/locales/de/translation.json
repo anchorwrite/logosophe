@@ -26,7 +26,9 @@
       "success": "Erfolg",
       "warning": "Warnung",
       "submitting": "Wird gesendet...",
-      "sending": "Wird gesendet..."
+      "sending": "Wird gesendet...",
+      "error": "Fehler",
+      "success": "Erfolg"
     },
     "loading": "Laden...",
     "cancel": "Abbrechen",
@@ -481,7 +483,42 @@
       "tenantLoadError": "Fehler beim Laden der Mandanten",
       "selectTenantError": "Bitte wähle mindestens einen Mandanten aus",
       "uploadError": "Fehler beim Hochladen der Datei",
-      "uploadSuccess": "Datei erfolgreich hochgeladen"
+      "uploadSuccess": "Datei erfolgreich hochgeladen",
+      "emailPreferences": {
+        "title": "E-Mail-Einstellungen",
+        "description": "Wähle aus, welche Arten von E-Mails du von Logosophe erhalten möchtest:",
+        "handleTitle": "Handle-spezifische E-Mail-Einstellungen",
+        "handleDescription": "Wähle aus, welche Updates du für jeden deiner öffentlichen Handles erhalten möchtest:",
+        "handle": "Handle",
+        "noHandles": "Du hast noch keine öffentlichen Handles. Erstelle einen Handle, um handle-spezifische E-Mail-Updates zu erhalten.",
+        "loadError": "Fehler beim Laden der E-Mail-Einstellungen",
+        "updateSuccess": "E-Mail-Einstellungen erfolgreich aktualisiert",
+        "updateError": "Fehler beim Aktualisieren der E-Mail-Einstellungen",
+        "handleUpdateSuccess": "Handle-Einstellungen erfolgreich aktualisiert",
+        "handleUpdateError": "Fehler beim Aktualisieren der Handle-Einstellungen",
+        "types": {
+          "newsletters": "Newsletter",
+          "announcements": "Ankündigungen",
+          "roleUpdates": "Rollen-Updates",
+          "tenantUpdates": "Mandanten-Updates",
+          "workflowUpdates": "Workflow-Updates",
+          "handleUpdates": "Handle-Updates",
+          "blogUpdates": "Blog-Updates",
+          "contentUpdates": "Inhalts-Updates",
+          "welcome": "Willkommens-E-Mails"
+        },
+        "descriptions": {
+          "newsletters": "Regelmäßige Newsletter-Inhalte",
+          "announcements": "Systemankündigungen und Updates",
+          "role_updates": "Rollenzuweisung und Berechtigungsänderungen",
+          "tenant_updates": "Mandanten-spezifische Nachrichten und Updates",
+          "workflow_updates": "Workflow-bezogene Benachrichtigungen",
+          "handle_updates": "Handle-spezifische Inhalts-Updates",
+          "blog_updates": "Blog-Beitrag-Benachrichtigungen",
+          "content_updates": "Neue veröffentlichte Inhalts-Benachrichtigungen",
+          "welcome": "Willkommens-E-Mails für neue Abonnenten"
+        }
+      }
     }
   },
   "content": {
@@ -1033,7 +1070,15 @@
       "handles": "Handles",
       "handles_description": "Verwalte deine öffentlichen Seiten-URLs",
       "blog": "Blog",
-      "blog_description": "Erstelle und verwalte Blog-Beiträge"
+      "blog_description": "Erstelle und verwalte Blog-Beiträge",
+      "announcements": "Ankündigungen",
+      "announcements_description": "Erstelle und verwalte öffentliche Ankündigungen",
+      "biography": "Biografie",
+      "biography_description": "Erstelle und verwalte öffentliche Biografien",
+      "contact": "Kontakt",
+      "contact_description": "Erstelle und verwalte öffentliche Kontaktinformationen",
+      "emailPreferences": "E-Mail-Einstellungen",
+      "emailPreferences_description": "Verwalte deine E-Mail-Benachrichtigungseinstellungen"
     },
     "handles": {
       "title": "Handles verwalten",
@@ -1191,6 +1236,42 @@
       "back_to_handles": "Zurück zu Handles",
       "go_back": "Zurück",
       "help_text": "Wenn du glaubst, dass dies ein Fehler ist, kontaktiere bitte den Site-Administrator."
+    }
+  },
+  "verifyEmail": {
+    "verifying": "E-Mail wird verifiziert...",
+    "success": "E-Mail verifiziert!",
+    "alreadyVerified": "Bereits verifiziert",
+    "failed": "Verifizierung fehlgeschlagen",
+    "pleaseWait": "Bitte warten Sie, während wir Ihre E-Mail-Adresse verifizieren...",
+    "email": "E-Mail",
+    "verifiedAt": "Verifiziert am",
+    "goHome": "Zur Startseite",
+    "goToHarbor": "Zu Harbor gehen"
+  },
+  "unsubscribe": {
+    "processing": "Abmeldung wird verarbeitet...",
+    "success": "Erfolgreich abgemeldet!",
+    "failed": "Abmeldung fehlgeschlagen",
+    "pleaseWait": "Bitte warten Sie, während wir Ihre Abmeldeanfrage verarbeiten...",
+    "email": "E-Mail",
+    "unsubscribedFrom": "Abgemeldet von",
+    "handleSpecific": "Handle-spezifische E-Mails",
+    "unsubscribedAt": "Abgemeldet am",
+    "info": "Sie können Ihre E-Mail-Einstellungen immer verwalten oder sich wieder anmelden, indem Sie Ihr Harbor-Dashboard besuchen.",
+    "goHome": "Zur Startseite",
+    "managePreferences": "Einstellungen verwalten",
+    "types": {
+      "all": "alle E-Mails",
+      "newsletters": "Newsletter",
+      "announcements": "Ankündigungen",
+      "roleUpdates": "Rollen-Updates",
+      "tenantUpdates": "Mandanten-Updates",
+      "workflowUpdates": "Workflow-Updates",
+      "handleUpdates": "Handle-Updates",
+      "blogUpdates": "Blog-Updates",
+      "contentUpdates": "Inhalts-Updates",
+      "welcome": "Willkommens-E-Mails"
     }
   }
 } 

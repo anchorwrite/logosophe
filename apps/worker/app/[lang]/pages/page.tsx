@@ -2,7 +2,6 @@ import { Suspense } from 'react';
 import { Box, Container, Heading, Text } from '@radix-ui/themes';
 import { SubscriberPagesDirectory } from '@/components/harbor/subscriber-pages/SubscriberPagesDirectory';
 import Header from '@/components/Header';
-import AppBar from '@/appbar';
 import Footer from '@/components/Footer';
 
 interface SubscriberPagesPageProps {
@@ -15,7 +14,6 @@ export default async function SubscriberPagesPage({ params }: SubscriberPagesPag
   return (
     <>
       <Header />
-      <AppBar lang={lang} />
       <Container size="4" py="6">
         <Box mb="6">
           <Heading size="8" mb="2">

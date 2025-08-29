@@ -26,7 +26,9 @@
       "success": "Succès",
       "warning": "Avertissement",
       "submitting": "Envoi en cours...",
-      "sending": "Envoi en cours..."
+      "sending": "Envoi en cours...",
+      "error": "Erreur",
+      "success": "Succès"
     },
     "loading": "Chargement...",
     "cancel": "Annuler",
@@ -483,7 +485,42 @@
       "tenantLoadError": "Échec du chargement des locataires",
       "selectTenantError": "Veuillez sélectionner au moins un locataire",
       "uploadError": "Échec du téléchargement du fichier",
-      "uploadSuccess": "Fichier téléchargé avec succès"
+      "uploadSuccess": "Fichier téléchargé avec succès",
+      "emailPreferences": {
+        "title": "Préférences d'E-mail",
+        "description": "Choisissez quels types d'e-mails vous souhaitez recevoir de Logosophe :",
+        "handleTitle": "Préférences d'E-mail Spécifiques aux Handles",
+        "handleDescription": "Choisissez quelles mises à jour vous souhaitez recevoir pour chacun de vos handles publics :",
+        "handle": "Handle",
+        "noHandles": "Vous n'avez pas encore de handles publics. Créez un handle pour recevoir des mises à jour d'e-mail spécifiques aux handles.",
+        "loadError": "Échec du chargement des préférences d'e-mail",
+        "updateSuccess": "Préférences d'e-mail mises à jour avec succès",
+        "updateError": "Échec de la mise à jour des préférences d'e-mail",
+        "handleUpdateSuccess": "Préférences de handle mises à jour avec succès",
+        "handleUpdateError": "Échec de la mise à jour des préférences de handle",
+        "types": {
+          "newsletters": "Newsletters",
+          "announcements": "Annonces",
+          "roleUpdates": "Mises à Jour de Rôle",
+          "tenantUpdates": "Mises à Jour de Locataire",
+          "workflowUpdates": "Mises à Jour de Flux de Travail",
+          "handleUpdates": "Mises à Jour de Handle",
+          "blogUpdates": "Mises à Jour de Blog",
+          "contentUpdates": "Mises à Jour de Contenu",
+          "welcome": "E-mails de Bienvenue"
+        },
+        "descriptions": {
+          "newsletters": "Contenu régulier de newsletter",
+          "announcements": "Annonces et mises à jour du système",
+          "role_updates": "Attribution de rôle et changements de permissions",
+          "tenant_updates": "Nouvelles et mises à jour spécifiques aux locataires",
+          "workflow_updates": "Notifications liées au flux de travail",
+          "handle_updates": "Mises à jour de contenu spécifiques aux handles",
+          "blog_updates": "Notifications de billets de blog",
+          "content_updates": "Notifications de nouveau contenu publié",
+          "welcome": "E-mails de bienvenue pour les nouveaux abonnés"
+        }
+      }
     }
   },
   "content": {
@@ -1035,7 +1072,15 @@
       "handles": "Identifiants",
       "handles_description": "Gère tes URLs de pages publiques",
       "blog": "Blog",
-      "blog_description": "Crée et gère des articles de blog"
+      "blog_description": "Crée et gère des articles de blog",
+      "announcements": "Annonces",
+      "announcements_description": "Crée et gère des annonces publiques",
+      "biography": "Biographie",
+      "biography_description": "Crée et gère des biographies publiques",
+      "contact": "Contact",
+      "contact_description": "Crée et gère des informations de contact publiques",
+      "emailPreferences": "Préférences d'E-mail",
+      "emailPreferences_description": "Gère tes préférences de notifications par e-mail"
     },
     "handles": {
       "title": "Gérer les Identifiants",
@@ -1193,6 +1238,42 @@
       "back_to_handles": "Retour aux Identifiants",
       "go_back": "Retour",
       "help_text": "Si tu crois que c'est une erreur, contacte l'administrator du site."
+    }
+  },
+  "verifyEmail": {
+    "verifying": "Vérification de l'E-mail...",
+    "success": "E-mail Vérifié !",
+    "alreadyVerified": "Déjà Vérifié",
+    "failed": "Échec de la Vérification",
+    "pleaseWait": "Veuillez patienter pendant que nous vérifions votre adresse e-mail...",
+    "email": "E-mail",
+    "verifiedAt": "Vérifié le",
+    "goHome": "Aller à l'Accueil",
+    "goToHarbor": "Aller à Harbor"
+  },
+  "unsubscribe": {
+    "processing": "Traitement de la Désinscription...",
+    "success": "Désinscription Réussie !",
+    "failed": "Échec de la Désinscription",
+    "pleaseWait": "Veuillez patienter pendant que nous traitons votre demande de désinscription...",
+    "email": "E-mail",
+    "unsubscribedFrom": "Désinscrit de",
+    "handleSpecific": "E-mails spécifiques aux handles",
+    "unsubscribedAt": "Désinscrit le",
+    "info": "Vous pouvez toujours gérer vos préférences d'e-mail ou vous réinscrire en visitant votre tableau de bord Harbor.",
+    "goHome": "Aller à l'Accueil",
+    "managePreferences": "Gérer les Préférences",
+    "types": {
+      "all": "tous les e-mails",
+      "newsletters": "newsletters",
+      "announcements": "annonces",
+      "roleUpdates": "mises à jour de rôle",
+      "tenantUpdates": "mises à jour de locataire",
+      "workflowUpdates": "mises à jour de flux de travail",
+      "handleUpdates": "mises à jour de handle",
+      "blogUpdates": "mises à jour de blog",
+      "contentUpdates": "mises à jour de contenu",
+      "welcome": "e-mails de bienvenue"
     }
   }
 } 

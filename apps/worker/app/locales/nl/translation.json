@@ -26,7 +26,9 @@
       "success": "Succes",
       "warning": "Waarschuwing",
       "submitting": "Versturen...",
-      "sending": "Versturen..."
+      "sending": "Versturen...",
+      "error": "Fout",
+      "success": "Succes"
     },
     "loading": "Laden...",
     "cancel": "Annuleren",
@@ -481,7 +483,42 @@
       "tenantLoadError": "Fout bij laden huurders",
       "selectTenantError": "Selecteer ten minste één huurder",
       "uploadError": "Fout bij uploaden bestand",
-      "uploadSuccess": "Bestand succesvol geüpload"
+      "uploadSuccess": "Bestand succesvol geüpload",
+      "emailPreferences": {
+        "title": "E-mail Voorkeuren",
+        "description": "Kies welke soorten e-mails je wilt ontvangen van Logosophe:",
+        "handleTitle": "Handle-specifieke E-mail Voorkeuren",
+        "handleDescription": "Kies welke updates je wilt ontvangen voor elk van je openbare handles:",
+        "handle": "Handle",
+        "noHandles": "Je hebt nog geen openbare handles. Maak een handle aan om handle-specifieke e-mail updates te ontvangen.",
+        "loadError": "Fout bij laden e-mail voorkeuren",
+        "updateSuccess": "E-mail voorkeuren succesvol bijgewerkt",
+        "updateError": "Fout bij bijwerken e-mail voorkeuren",
+        "handleUpdateSuccess": "Handle voorkeuren succesvol bijgewerkt",
+        "handleUpdateError": "Fout bij bijwerken handle voorkeuren",
+        "types": {
+          "newsletters": "Nieuwsbrieven",
+          "announcements": "Aankondigingen",
+          "roleUpdates": "Rol Updates",
+          "tenantUpdates": "Huurder Updates",
+          "workflowUpdates": "Werkstroom Updates",
+          "handleUpdates": "Handle Updates",
+          "blogUpdates": "Blog Updates",
+          "contentUpdates": "Inhoud Updates",
+          "welcome": "Welkomst E-mails"
+        },
+        "descriptions": {
+          "newsletters": "Regelmatige nieuwsbrief inhoud",
+          "announcements": "Systeem aankondigingen en updates",
+          "role_updates": "Rol toewijzing en machtigingswijzigingen",
+          "tenant_updates": "Huurder-specifiek nieuws en updates",
+          "workflow_updates": "Werkstroom-gerelateerde meldingen",
+          "handle_updates": "Handle-specifieke inhoud updates",
+          "blog_updates": "Blog bericht meldingen",
+          "content_updates": "Nieuwe gepubliceerde inhoud meldingen",
+          "welcome": "Welkomst e-mails voor nieuwe abonnees"
+        }
+      }
     }
   },
   "content": {
@@ -1032,7 +1069,15 @@
         "handles": "Handles",
         "handles_description": "Beheer je openbare pagina URL's",
         "blog": "Blog",
-        "blog_description": "Maak en beheer blogberichten"
+        "blog_description": "Maak en beheer blogberichten",
+        "announcements": "Aankondigingen",
+        "announcements_description": "Maak en beheer openbare aankondigingen",
+        "biography": "Biografie",
+        "biography_description": "Maak en beheer openbare biografieën",
+        "contact": "Contact",
+        "contact_description": "Maak en beheer openbare contactinformatie",
+        "emailPreferences": "E-mail Voorkeuren",
+        "emailPreferences_description": "Beheer je e-mail notificatie voorkeuren"
       },
     "handles": {
       "title": "Handles Beheren",
@@ -1190,6 +1235,42 @@
       "back_to_handles": "Terug naar Handles",
       "go_back": "Ga Terug",
       "help_text": "Als je denkt dat dit een fout is, neem dan contact op met de site beheerder."
+    }
+  },
+  "verifyEmail": {
+    "verifying": "E-mail Verifiëren...",
+    "success": "E-mail Geverifieerd!",
+    "alreadyVerified": "Al Geverifieerd",
+    "failed": "Verificatie Mislukt",
+    "pleaseWait": "Even geduld terwijl we je e-mailadres verifiëren...",
+    "email": "E-mail",
+    "verifiedAt": "Geverifieerd op",
+    "goHome": "Ga naar Homepage",
+    "goToHarbor": "Ga naar Harbor"
+  },
+  "unsubscribe": {
+    "processing": "Afmelden Verwerken...",
+    "success": "Succesvol Afgemeld!",
+    "failed": "Afmelden Mislukt",
+    "pleaseWait": "Even geduld terwijl we je afmelding verwerken...",
+    "email": "E-mail",
+    "unsubscribedFrom": "Afgemeld van",
+    "handleSpecific": "Handle-specifieke e-mails",
+    "unsubscribedAt": "Afgemeld op",
+    "info": "Je kunt altijd je e-mail voorkeuren beheren of opnieuw aanmelden door je Harbor dashboard te bezoeken.",
+    "goHome": "Ga naar Homepage",
+    "managePreferences": "Voorkeuren Beheren",
+    "types": {
+      "all": "alle e-mails",
+      "newsletters": "nieuwsbrieven",
+      "announcements": "aankondigingen",
+      "roleUpdates": "rol updates",
+      "tenantUpdates": "huurder updates",
+      "workflowUpdates": "werkstroom updates",
+      "handleUpdates": "handle updates",
+      "blogUpdates": "blog updates",
+      "contentUpdates": "inhoud updates",
+      "welcome": "welkomst e-mails"
     }
   }
 } 
