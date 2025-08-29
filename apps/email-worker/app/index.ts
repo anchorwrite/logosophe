@@ -6,6 +6,8 @@ interface EmailData {
   email: string;
   subject: string;
   message: string;
+  organization?: string;
+  purpose?: string;
 }
 
 // Helper function to validate CORS origin
@@ -54,7 +56,7 @@ async function handleRequest(request: Request, env: CloudflareEnv): Promise<Resp
     console.log("Received data:", data);
 
     // Validate required fields
-    if (!data.name || !data.email || !data.subject || !data.message) {
+    if (!data.name || !data.email || !data.message) {
       console.error("Missing required fields:", data);
       return new Response(
         JSON.stringify({ error: "Missing required fields" }),
@@ -68,25 +70,82 @@ async function handleRequest(request: Request, env: CloudflareEnv): Promise<Resp
       );
     }
 
-    // Store in database
+    // Determine submission type and validate accordingly
+    const isTenantApplication = data.organization && data.purpose;
+    
+    if (isTenantApplication) {
+      // Tenant application - organization and purpose are required
+      if (!data.organization || !data.purpose) {
+        console.error("Missing tenant application fields:", data);
+        return new Response(
+          JSON.stringify({ error: "Missing organization or purpose for tenant application" }),
+          {
+            status: 400,
+            headers: {
+              "Content-Type": "application/json",
+              "Access-Control-Allow-Origin": getCorsOrigin(request),
+            },
+          }
+        );
+      }
+    } else {
+      // Contact form - subject is required
+      if (!data.subject) {
+        console.error("Missing subject for contact form:", data);
+        return new Response(
+          JSON.stringify({ error: "Missing subject for contact form" }),
+          {
+            status: 400,
+            headers: {
+              "Content-Type": "application/json",
+              "Access-Control-Allow-Origin": getCorsOrigin(request),
+            },
+          }
+        );
+      }
+    }
+
+    // Store in appropriate table based on data type
     try {
-      const stmt = env.DB.prepare(
-        'INSERT INTO contact_submissions (name, email, subject, message, created_at) VALUES (?, ?, ?, ?, ?)'
-      );
-      await stmt.bind(
-        data.name,
-        data.email,
-        data.subject,
-        data.message,
-        new Date().toISOString()
-      ).run();
-      console.log("Successfully stored submission in database");
+      if (isTenantApplication) {
+        // This is a tenant application submission
+        const stmt = env.DB.prepare(`
+          INSERT INTO TenantSubmissions (name, email, organization, purpose, message, created_at) 
+          VALUES (?, ?, ?, ?, ?, ?)
+        `);
+        await stmt.bind(
+          data.name,
+          data.email,
+          data.organization,
+          data.purpose,
+          data.message,
+          new Date().toISOString()
+        ).run();
+        console.log("Successfully stored tenant application in database");
+      } else {
+        // This is a contact form submission
+        const stmt = env.DB.prepare(`
+          INSERT INTO ContactSubmissions (name, email, subject, message, created_at) 
+          VALUES (?, ?, ?, ?, ?)
+        `);
+        await stmt.bind(
+          data.name,
+          data.email,
+          data.subject,
+          data.message,
+          new Date().toISOString()
+        ).run();
+        console.log("Successfully stored contact submission in database");
+      }
     } catch (dbError) {
       console.error("Error storing in database:", dbError);
       // Continue with email sending even if database fails
     }
 
-    const emailBody = `Name: ${data.name}\nEmail: ${data.email}\nSubject: ${data.subject}\n\nMessage:\n${data.message}`;
+    // Create appropriate email body based on submission type
+    const emailBody = isTenantApplication
+      ? `Name: ${data.name}\nEmail: ${data.email}\nOrganization: ${data.organization}\nPurpose: ${data.purpose}\n\nAdditional Details:\n${data.message}`
+      : `Name: ${data.name}\nEmail: ${data.email}\nSubject: ${data.subject}\n\nMessage:\n${data.message}`;
     
     // Check if EMAIL binding exists
     if (!env.EMAIL) {
