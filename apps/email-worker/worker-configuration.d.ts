@@ -3,8 +3,8 @@
 // Runtime types generated with workerd@1.20250823.0 2024-12-30 nodejs_compat
 declare namespace Cloudflare {
 	interface Env {
-		EMAIL_FROM_ADDRESS: "info@anchorwrite.net";
-		EMAIL_TO_ADDRESS: "info@logosophe.com";
+		EMAIL_FROM_ADDRESS: "info@logosophe.com";
+		EMAIL_TO_ADDRESS: "info@anchorwrite.net";
 		DB: D1Database;
 		EMAIL: SendEmail;
 	}
