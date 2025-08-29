@@ -50,11 +50,6 @@
       "custom_domain": true,
     },
   ],
-  "tail_consumers": [
-    {
-      "service": "logosophe-tail"
-    }
-  ],
   "triggers": {
     "crons": [
       "0 15 * * *"
