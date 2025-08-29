@@ -7,7 +7,7 @@
     "nodejs_compat"
   ],
   "vars": {
-    "EMAIL_FROM_ADDRESS": "info@logosophe.com",
+    "EMAIL_FROM_ADDRESS": "info@anchorwrite.net",
     "EMAIL_TO_ADDRESS": "info@logosophe.com"
   },
   "d1_databases": [
