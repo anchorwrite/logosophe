@@ -194,55 +194,13 @@
   3. This ensures the compiled JavaScript matches the TypeScript source
   4. Required for changes to take effect in production
 
-## Tail Worker Setup
-- **Purpose**: Provides observability and logging for the main worker application
-- **Location**: `apps/tail-worker/` - Separate Cloudflare Worker for processing events
-- **Configuration**: Uses same D1 database as main worker for analytics storage
-- **Deployment**: Automated via GitHub Actions (`.github/workflows/tail-worker-deployment.yaml`)
+## Logging & Analytics System
+- **Current Status**: Production-ready, enterprise-grade analytics platform
+- **Implementation**: Complete NormalizedLogging system with dual analytics dashboards
+- **Features**: Real-time analytics, trend analysis, multi-language support
+- **Documentation**: See `LOGGING_AND_ANALYTICS_README.md` for complete details
 
-### Tail Worker Architecture
-- **Event Processing**: Receives events from main worker after each execution
-- **Data Captured**: HTTP requests, console logs, exceptions, diagnostic events
-- **Analytics**: Can store request analytics in D1 database
-- **External Integration**: Supports sending exceptions to external error tracking services
 
-### Tail Worker Configuration
-- **Wrangler Config**: `apps/tail-worker/wrangler.jsonc` with D1 database binding
-- **Package Name**: `logosophe-tail-worker` in workspace
-- **Build Script**: TypeScript type checking (`tsc --noEmit`)
-- **Deploy Script**: `wrangler deploy` for Cloudflare deployment
-
-### Main Worker Integration
-- **Tail Consumers**: Added to main worker's `wrangler.jsonc`:
-  ```json
-  "tail_consumers": [
-    {
-      "service": "logosophe-tail"
-    }
-  ]
-  ```
-- **Observability**: Enabled logs in main worker configuration
-- **Automatic Connection**: Events automatically sent to Tail Worker after deployment
-
-### Deployment Commands
-- **Local Deploy**: `yarn workspace logosophe-tail-worker deploy`
-- **Root Script**: `yarn deploy:tail` (from project root)
-- **GitHub Actions**: Automatic deployment on push to repository
-- **Workspace Integration**: Properly integrated into Yarn workspace structure
-
-### Tail Worker Features
-- **Event Logging**: Processes all events from main worker
-- **Exception Tracking**: Captures and logs uncaught exceptions
-- **Request Analytics**: Tracks HTTP requests with method, URL, headers
-- **Database Storage**: Can store analytics in D1 database (commented code ready)
-- **External Services**: Ready for integration with error tracking services
-- **Debugging Support**: Comprehensive logging for development and production
-
-### Usage Patterns
-- **Development**: `yarn workspace logosophe-tail-worker dev`
-- **Type Checking**: `yarn workspace logosophe-tail-worker build`
-- **Production Deploy**: Automatic via GitHub Actions
-- **Monitoring**: Check Cloudflare Workers dashboard for Tail Worker logs
 
 ## User Authentication & Roles
 - There are two types of users:
