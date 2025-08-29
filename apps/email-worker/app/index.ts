@@ -10,6 +10,22 @@ interface EmailData {
   purpose?: string;
 }
 
+interface SubscriberEmailData {
+  type: 'newsletter' | 'announcement' | 'role_update' | 'tenant_update' | 'workflow_update' | 'handle_update' | 'blog_update' | 'content_update' | 'welcome';
+  subject: string;
+  content: string;
+  recipients: string[];
+  tenantId?: string;
+  roleFilter?: string;
+  handleId?: number;
+}
+
+interface VerificationEmailData {
+  email: string;
+  name: string;
+  type: 'subscription_verification';
+}
+
 // Helper function to validate CORS origin
 function getCorsOrigin(request: Request): string {
   const origin = request.headers.get('origin');
@@ -28,13 +44,94 @@ function getCorsOrigin(request: Request): string {
 }
 
 // Helper function to get sender name based on email type
-function getSenderName(emailType: 'tenant_application' | 'contact_form'): string {
+function getSenderName(emailType: 'tenant_application' | 'contact_form' | 'newsletter' | 'verification' | 'announcement' | 'system'): string {
   const senderNames = {
     tenant_application: 'Logosophe Tenant Application',
-    contact_form: 'Logosophe Contact Submission'
+    contact_form: 'Logosophe Contact Submission',
+    newsletter: 'Logosophe Newsletters',
+    verification: 'Logosophe Email Verification',
+    announcement: 'Logosophe Announcements',
+    system: 'Logosophe System Notifications'
   };
   
   return senderNames[emailType];
+}
+
+// Helper function to get sender email address based on email type
+function getSenderEmail(emailType: 'tenant_application' | 'contact_form' | 'newsletter' | 'verification' | 'announcement' | 'system'): string {
+  const senderEmails = {
+    tenant_application: 'info@logosophe.com',
+    contact_form: 'info@logosophe.com',
+    newsletter: 'newsletters@logosophe.com',
+    verification: 'verification@logosophe.com',
+    announcement: 'announcements@logosophe.com',
+    system: 'system@logosophe.com'
+  };
+  
+  return senderEmails[emailType];
+}
+
+// Helper function to generate secure tokens
+function generateSecureToken(): string {
+  return crypto.randomUUID();
+}
+
+// Helper function to create email verification record
+async function createEmailVerification(email: string, env: CloudflareEnv): Promise<string> {
+  const token = generateSecureToken();
+  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours from now
+  
+  try {
+    const stmt = env.DB.prepare(`
+      INSERT INTO EmailVerifications (Email, Token, ExpiresAt) 
+      VALUES (?, ?, ?)
+    `);
+    await stmt.bind(email, token, expiresAt.toISOString()).run();
+    return token;
+  } catch (error) {
+    console.error("Error creating email verification:", error);
+    throw new Error("Failed to create verification token");
+  }
+}
+
+// Helper function to create unsubscribe token
+async function createUnsubscribeToken(email: string, emailType: string, env: CloudflareEnv): Promise<string> {
+  const token = generateSecureToken();
+  const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days from now
+  
+  try {
+    const stmt = env.DB.prepare(`
+      INSERT INTO UnsubscribeTokens (Email, Token, EmailType, ExpiresAt) 
+      VALUES (?, ?, ?, ?)
+    `);
+    await stmt.bind(email, token, emailType, expiresAt.toISOString()).run();
+    return token;
+  } catch (error) {
+    console.error("Error creating unsubscribe token:", error);
+    throw new Error("Failed to create unsubscribe token");
+  }
+}
+
+// Helper function to log subscriber email
+async function logSubscriberEmail(emailData: SubscriberEmailData, env: CloudflareEnv): Promise<void> {
+  try {
+    const stmt = env.DB.prepare(`
+      INSERT INTO SubscriberEmails (EmailType, Subject, Content, SentTo, TenantId, RoleFilter, HandleId) 
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `);
+    await stmt.bind(
+      emailData.type,
+      emailData.subject,
+      emailData.content,
+      JSON.stringify(emailData.recipients),
+      emailData.tenantId || null,
+      emailData.roleFilter || null,
+      emailData.handleId || null
+    ).run();
+  } catch (error) {
+    console.error("Error logging subscriber email:", error);
+    // Don't fail the email sending if logging fails
+  }
 }
 
 async function handleRequest(request: Request, env: CloudflareEnv): Promise<Response> {
@@ -61,6 +158,322 @@ async function handleRequest(request: Request, env: CloudflareEnv): Promise<Resp
     });
   }
 
+  const url = new URL(request.url);
+  const path = url.pathname;
+
+  try {
+    // Handle different endpoints based on path
+    if (path === '/api/verification-email') {
+      return await handleVerificationEmail(request, env);
+    } else if (path === '/api/subscriber-email') {
+      return await handleSubscriberEmail(request, env);
+    } else if (path === '/api/handle-newsletter') {
+      return await handleHandleNewsletter(request, env);
+    } else {
+      // Default: handle contact form and tenant applications
+      return await handleContactForm(request, env);
+    }
+  } catch (error) {
+    console.error("Error processing request:", error);
+    return new Response(
+      JSON.stringify({
+        error: "Failed to process request",
+        details: error instanceof Error ? error.message : "Unknown error",
+      }),
+      {
+        status: 500,
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": getCorsOrigin(request),
+        },
+      }
+    );
+  }
+}
+
+// Handle verification email requests
+async function handleVerificationEmail(request: Request, env: CloudflareEnv): Promise<Response> {
+  try {
+    const data = await request.json() as VerificationEmailData;
+    console.log("Received verification email request:", data);
+
+    if (!data.email || !data.name) {
+      return new Response(
+        JSON.stringify({ error: "Missing required fields" }),
+        {
+          status: 400,
+          headers: {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": getCorsOrigin(request),
+          },
+        }
+      );
+    }
+
+    // Create verification token
+    const token = await createEmailVerification(data.email, env);
+    
+    // Create verification email
+    const verificationUrl = `https://logosophe.com/verify-email/${token}`;
+    const emailContent = `
+Hello ${data.name},
+
+Thank you for subscribing to Logosophe! To complete your subscription, please verify your email address by clicking the link below:
+
+${verificationUrl}
+
+This link will expire in 24 hours for security reasons.
+
+If you didn't request this subscription, you can safely ignore this email.
+
+Best regards,
+The Logosophe Team
+    `;
+
+    // Send verification email
+    const msg = createMimeMessage();
+    const senderName = getSenderName('verification');
+    const senderEmail = getSenderEmail('verification');
+    
+    msg.setSender({ name: senderName, addr: senderEmail });
+    msg.setRecipient(data.email);
+    msg.setSubject("Verify Your Email Address - Logosophe");
+    msg.addMessage({
+      contentType: 'text/plain',
+      data: emailContent
+    });
+
+    const message = new EmailMessage(
+      senderEmail,
+      data.email,
+      msg.asRaw()
+    );
+    
+    await env.EMAIL.send(message);
+    console.log("Verification email sent successfully");
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        message: "Verification email sent successfully",
+      }),
+      {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": getCorsOrigin(request),
+        },
+      }
+    );
+  } catch (error) {
+    console.error("Error sending verification email:", error);
+    return new Response(
+      JSON.stringify({
+        error: "Failed to send verification email",
+        details: error instanceof Error ? error.message : "Unknown error",
+      }),
+      {
+        status: 500,
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": getCorsOrigin(request),
+        },
+      }
+    );
+  }
+}
+
+// Handle subscriber email requests
+async function handleSubscriberEmail(request: Request, env: CloudflareEnv): Promise<Response> {
+  try {
+    const data = await request.json() as SubscriberEmailData;
+    console.log("Received subscriber email request:", data);
+
+    if (!data.type || !data.subject || !data.content || !data.recipients || data.recipients.length === 0) {
+      return new Response(
+        JSON.stringify({ error: "Missing required fields" }),
+        {
+          status: 400,
+          headers: {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": getCorsOrigin(request),
+          },
+        }
+      );
+    }
+
+    // Log the email for tracking
+    await logSubscriberEmail(data, env);
+
+    // Send email to each recipient
+    const senderName = getSenderName(data.type as any);
+    const senderEmail = getSenderEmail(data.type as any);
+    
+    for (const recipient of data.recipients) {
+      // Create unsubscribe token for this recipient
+      const unsubscribeToken = await createUnsubscribeToken(recipient, data.type, env);
+      const unsubscribeUrl = `https://logosophe.com/unsubscribe/${unsubscribeToken}?type=${data.type}`;
+      
+      // Add unsubscribe footer to content
+      const emailContent = `${data.content}
+
+---
+You're receiving this email because you're a subscriber to Logosophe.
+To unsubscribe from ${data.type} emails, click here: ${unsubscribeUrl}
+To manage all email preferences, visit: https://logosophe.com/harbor/preferences`;
+
+      const msg = createMimeMessage();
+      msg.setSender({ name: senderName, addr: senderEmail });
+      msg.setRecipient(recipient);
+      msg.setSubject(data.subject);
+      msg.addMessage({
+        contentType: 'text/plain',
+        data: emailContent
+      });
+
+      const message = new EmailMessage(
+        senderEmail,
+        recipient,
+        msg.asRaw()
+      );
+      
+      await env.EMAIL.send(message);
+      console.log(`Subscriber email sent to ${recipient}`);
+    }
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        message: `Email sent to ${data.recipients.length} recipients successfully`,
+      }),
+      {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": getCorsOrigin(request),
+        },
+      }
+    );
+  } catch (error) {
+    console.error("Error sending subscriber email:", error);
+    return new Response(
+      JSON.stringify({
+        error: "Failed to send subscriber email",
+        details: error instanceof Error ? error.message : "Unknown error",
+      }),
+      {
+        status: 500,
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": getCorsOrigin(request),
+        },
+      }
+    );
+  }
+}
+
+// Handle handle-specific newsletter requests
+async function handleHandleNewsletter(request: Request, env: CloudflareEnv): Promise<Response> {
+  try {
+    const data = await request.json() as SubscriberEmailData & { handleId: number; handleName?: string; handleDescription?: string };
+    console.log("Received handle newsletter request:", data);
+
+    if (!data.handleId || !data.subject || !data.content || !data.recipients || data.recipients.length === 0) {
+      return new Response(
+        JSON.stringify({ error: "Missing required fields" }),
+        {
+          status: 400,
+          headers: {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": getCorsOrigin(request),
+          },
+        }
+      );
+    }
+
+    // Log the email for tracking
+    await logSubscriberEmail(data, env);
+
+    // Send email to each recipient
+    const senderName = getSenderName('newsletter');
+    const senderEmail = getSenderEmail('newsletter');
+    
+    for (const recipient of data.recipients) {
+      // Create unsubscribe token for this recipient
+      const unsubscribeToken = await createUnsubscribeToken(recipient, 'handle_updates', env);
+      const unsubscribeUrl = `https://logosophe.com/unsubscribe/${unsubscribeToken}?type=handle_updates&handle=${data.handleId}`;
+      
+      // Create handle-specific content
+      const handleName = data.handleName || `Handle ${data.handleId}`;
+      const handleDescription = data.handleDescription || '';
+      const handleUrl = `https://logosophe.com/pages/${data.handleId}`;
+      
+      const emailContent = `${data.subject}
+
+${data.content}
+
+---
+Latest from ${handleName}
+${handleDescription}
+View ${handleName} Page: ${handleUrl}
+
+---
+You're receiving this email because you're subscribed to ${handleName} updates from Logosophe.
+To unsubscribe from ${handleName} updates, click here: ${unsubscribeUrl}
+To manage all email preferences, visit: https://logosophe.com/harbor/preferences`;
+
+      const msg = createMimeMessage();
+      msg.setSender({ name: senderName, addr: senderEmail });
+      msg.setRecipient(recipient);
+      msg.setSubject(`${handleName} - ${data.subject}`);
+      msg.addMessage({
+        contentType: 'text/plain',
+        data: emailContent
+      });
+
+      const message = new EmailMessage(
+        senderEmail,
+        recipient,
+        msg.asRaw()
+      );
+      
+      await env.EMAIL.send(message);
+      console.log(`Handle newsletter sent to ${recipient}`);
+    }
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        message: `Handle newsletter sent to ${data.recipients.length} recipients successfully`,
+      }),
+      {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": getCorsOrigin(request),
+        },
+      }
+    );
+  } catch (error) {
+    console.error("Error sending handle newsletter:", error);
+    return new Response(
+      JSON.stringify({
+        error: "Failed to send handle newsletter",
+        details: error instanceof Error ? error.message : "Unknown error",
+      }),
+      {
+        status: 500,
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": getCorsOrigin(request),
+        },
+      }
+    );
+  }
+}
+
+// Handle contact form and tenant application requests (existing functionality)
+async function handleContactForm(request: Request, env: CloudflareEnv): Promise<Response> {
   try {
     const data = await request.json() as EmailData;
     console.log("Received data:", data);
@@ -227,7 +640,7 @@ async function handleRequest(request: Request, env: CloudflareEnv): Promise<Resp
       );
     }
   } catch (error) {
-    console.error("Error processing request:", error);
+    console.error("Error processing contact form:", error);
     return new Response(
       JSON.stringify({
         error: "Failed to process contact form",
