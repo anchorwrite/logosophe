@@ -1023,6 +1023,41 @@
       "allPasswordFieldsRequired": "Alle Passwortfelder sind erforderlich",
       "passwordTooShort": "Neues Passwort muss mindestens 8 Zeichen lang sein",
       "passwordsDoNotMatch": "Neue Passwörter stimmen nicht überein"
+    },
+    "emailPreferences": {
+      "title": "E-Mail-Einstellungen",
+      "description": "Wähle aus, welche Arten von E-Mails du von Logosophe erhalten möchtest:",
+      "handleTitle": "Handle-spezifische E-Mail-Einstellungen",
+      "handleDescription": "Wähle aus, welche Updates du für jeden deiner öffentlichen Handles erhalten möchtest:",
+      "handle": "Handle",
+      "noHandles": "Du hast noch keine öffentlichen Handles. Erstelle einen Handle, um handle-spezifische E-Mail-Updates zu erhalten.",
+      "loadError": "E-Mail-Einstellungen konnten nicht geladen werden",
+      "updateSuccess": "E-Mail-Einstellungen erfolgreich aktualisiert",
+      "updateError": "E-Mail-Einstellungen konnten nicht aktualisiert werden",
+      "handleUpdateSuccess": "Handle-Einstellungen erfolgreich aktualisiert",
+      "handleUpdateError": "Handle-Einstellungen konnten nicht aktualisiert werden",
+      "types": {
+        "newsletters": "Newsletter",
+        "announcements": "Ankündigungen",
+        "roleUpdates": "Rollen-Updates",
+        "tenantUpdates": "Mieter-Updates",
+        "workflowUpdates": "Workflow-Updates",
+        "handleUpdates": "Handle-Updates",
+        "blogUpdates": "Blog-Updates",
+        "contentUpdates": "Inhalts-Updates",
+        "welcome": "Willkommens-E-Mails"
+      },
+      "descriptions": {
+        "newsletters": "Regelmäßige Newsletter-Inhalte",
+        "announcements": "Systemankündigungen und Updates",
+        "role_updates": "Rollen-Zuweisungen und Berechtigungsänderungen",
+        "tenant_updates": "Mieter-spezifische Nachrichten und Updates",
+        "workflow_updates": "Workflow-bezogene Benachrichtigungen",
+        "handle_updates": "Handle-spezifische Inhalts-Updates",
+        "blog_updates": "Blog-Beitrag-Benachrichtigungen",
+        "content_updates": "Neue Inhalte veröffentlicht Benachrichtigungen",
+        "welcome": "Willkommens-E-Mails für neue Abonnenten"
+      }
     }
   },
   "fileInput": {
@@ -1076,9 +1111,7 @@
       "biography": "Biografie",
       "biography_description": "Erstelle und verwalte öffentliche Biografien",
       "contact": "Kontakt",
-      "contact_description": "Erstelle und verwalte öffentliche Kontaktinformationen",
-      "emailPreferences": "E-Mail-Einstellungen",
-      "emailPreferences_description": "Verwalte deine E-Mail-Benachrichtigungseinstellungen"
+      "contact_description": "Erstelle und verwalte öffentliche Kontaktinformationen"
     },
     "handles": {
       "title": "Handles verwalten",
@@ -1236,6 +1269,39 @@
       "back_to_handles": "Zurück zu Handles",
       "go_back": "Zurück",
       "help_text": "Wenn du glaubst, dass dies ein Fehler ist, kontaktiere bitte den Site-Administrator."
+    },
+    "content_linker": {
+      "title": "Veröffentlichte Inhalte verlinken",
+      "search_placeholder": "Suche nach veröffentlichten Inhalten nach Titel, Autor oder Beschreibung...",
+      "link_content": "Inhalt verlinken",
+      "published_by": "Veröffentlicht von",
+      "published_on": "Veröffentlicht am",
+      "no_results": "Keine Inhalte gefunden, die deiner Suche entsprechen."
+    },
+    "directory": {
+      "title": "Abonnenten-Seiten entdecken",
+      "description": "Entdecke öffentliche Seiten von Content-Erstellern, Autoren und Fachleuten",
+      "search_placeholder": "Suche nach Handles, Namen oder Beschreibungen...",
+      "filter_by_focus": "Nach Fokus filtern",
+      "all_focus_areas": "Alle Fokusbereiche",
+      "sort_by": "Sortieren nach",
+      "most_recent": "Neueste",
+      "name_az": "Name A-Z",
+      "most_active": "Aktivste",
+      "quick_filters": "Schnellfilter:",
+      "all": "Alle",
+      "poetry": "Poesie",
+      "novels": "Romane",
+      "short_stories": "Kurzgeschichten",
+      "academic": "Akademisch",
+      "professional": "Professionell",
+      "technical": "Technisch",
+      "showing_results": "Zeige {{count}} von {{total}} öffentlichen Seiten",
+      "no_results": "Keine Abonnenten-Seiten gefunden, die deinen Kriterien entsprechen",
+      "no_results_help": "Versuche deine Suchbegriffe oder Filter anzupassen",
+      "view_page": "Seite anzeigen",
+      "no_description": "Keine Beschreibung verfügbar",
+      "try_again": "Erneut versuchen"
     }
   },
   "verifyEmail": {

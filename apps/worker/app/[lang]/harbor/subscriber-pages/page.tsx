@@ -10,9 +10,9 @@ import BlogManager from '@/components/harbor/subscriber-pages/BlogManager';
 import AnnouncementManager from '@/components/harbor/subscriber-pages/AnnouncementManager';
 import BiographyManager from '@/components/harbor/subscriber-pages/BiographyManager';
 import ContactInfoManager from '@/components/harbor/subscriber-pages/ContactInfoManager';
-import EmailPreferencesManager from '@/components/harbor/EmailPreferencesManager';
 
-type TabType = 'handles' | 'blog' | 'announcements' | 'biography' | 'contact' | 'email-preferences';
+
+type TabType = 'handles' | 'blog' | 'announcements' | 'biography' | 'contact';
 
 export default function SubscriberPagesPage() {
   const { t } = useTranslation();
@@ -76,9 +76,7 @@ export default function SubscriberPagesPage() {
             <Tabs.Trigger value="contact">
               {t('subscriber_pages.tabs.contact')}
             </Tabs.Trigger>
-            <Tabs.Trigger value="email-preferences">
-              {t('subscriber_pages.tabs.emailPreferences')}
-            </Tabs.Trigger>
+            
           </Tabs.List>
 
           <Tabs.Content value="handles">
@@ -97,9 +95,7 @@ export default function SubscriberPagesPage() {
           <Tabs.Content value="contact">
             <ContactInfoManager subscriberEmail={session.user.email} />
           </Tabs.Content>
-          <Tabs.Content value="email-preferences">
-            <EmailPreferencesManager subscriberEmail={session.user.email} />
-          </Tabs.Content>
+          
         </Tabs.Root>
       </Container>
     </Box>

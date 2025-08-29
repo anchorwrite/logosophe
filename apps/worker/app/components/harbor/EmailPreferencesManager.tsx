@@ -81,7 +81,7 @@ export default function EmailPreferencesManager({ subscriberEmail }: EmailPrefer
       console.error('Error loading email preferences:', error);
       setMessage({
         type: 'error',
-        text: t('harbor.media.emailPreferences.loadError', { defaultValue: 'Failed to load email preferences' })
+        text: t('profile.emailPreferences.loadError', { defaultValue: 'Failed to load email preferences' })
       });
     }
   };
@@ -144,17 +144,17 @@ export default function EmailPreferencesManager({ subscriberEmail }: EmailPrefer
         setPreferences(updatedPreferences);
         setMessage({
           type: 'success',
-          text: t('harbor.media.emailPreferences.updateSuccess', { defaultValue: 'Email preferences updated successfully' })
+          text: t('profile.emailPreferences.updateSuccess', { defaultValue: 'Email preferences updated successfully' })
         });
       } else {
         throw new Error('Failed to update preferences');
       }
     } catch (error) {
       console.error('Error updating email preferences:', error);
-      setMessage({
-        type: 'error',
-        text: t('harbor.media.emailPreferences.updateError', { defaultValue: 'Failed to update email preferences' })
-      });
+              setMessage({
+          type: 'error',
+          text: t('profile.emailPreferences.updateError', { defaultValue: 'Failed to update email preferences' })
+        });
     } finally {
       setIsLoading(false);
     }
@@ -195,10 +195,10 @@ export default function EmailPreferencesManager({ subscriberEmail }: EmailPrefer
       }
     } catch (error) {
       console.error('Error updating handle preferences:', error);
-      setMessage({
-        type: 'error',
-        text: t('harbor.media.emailPreferences.handleUpdateError', { defaultValue: 'Failed to update handle preferences' })
-      });
+              setMessage({
+          type: 'error',
+          text: t('profile.emailPreferences.handleUpdateError', { defaultValue: 'Failed to update handle preferences' })
+        });
     } finally {
       setIsLoading(false);
     }
@@ -206,25 +206,25 @@ export default function EmailPreferencesManager({ subscriberEmail }: EmailPrefer
 
   const formatEmailType = (type: string): string => {
     const typeMap: Record<string, string> = {
-      newsletters: t('harbor.media.emailPreferences.types.newsletters'),
-      announcements: t('harbor.media.emailPreferences.types.announcements'),
-      role_updates: t('harbor.media.emailPreferences.types.roleUpdates'),
-      tenant_updates: t('harbor.media.emailPreferences.types.tenantUpdates'),
-      workflow_updates: t('harbor.media.emailPreferences.types.workflowUpdates'),
-      handle_updates: t('harbor.media.emailPreferences.types.handleUpdates'),
-      blog_updates: t('harbor.media.emailPreferences.types.blogUpdates'),
-      content_updates: t('harbor.media.emailPreferences.types.contentUpdates'),
-      welcome: t('harbor.media.emailPreferences.types.welcome')
+      newsletters: t('profile.emailPreferences.types.newsletters'),
+      announcements: t('profile.emailPreferences.types.announcements'),
+      role_updates: t('profile.emailPreferences.types.roleUpdates'),
+      tenant_updates: t('profile.emailPreferences.types.tenantUpdates'),
+      workflow_updates: t('profile.emailPreferences.types.workflowUpdates'),
+      handle_updates: t('profile.emailPreferences.types.handleUpdates'),
+      blog_updates: t('profile.emailPreferences.types.blogUpdates'),
+      content_updates: t('profile.emailPreferences.types.contentUpdates'),
+      welcome: t('profile.emailPreferences.types.welcome')
     };
     return typeMap[type] || type;
   };
 
   const formatHandleEmailType = (type: string): string => {
     const typeMap: Record<string, string> = {
-      handle_updates: t('harbor.media.emailPreferences.types.handleUpdates'),
-      blog_updates: t('harbor.media.emailPreferences.types.blogUpdates'),
-      content_updates: t('harbor.media.emailPreferences.types.contentUpdates'),
-      announcements: t('harbor.media.emailPreferences.types.announcements')
+      handle_updates: t('profile.emailPreferences.types.handleUpdates'),
+      blog_updates: t('profile.emailPreferences.types.blogUpdates'),
+      content_updates: t('profile.emailPreferences.types.contentUpdates'),
+      announcements: t('profile.emailPreferences.types.announcements')
     };
     return typeMap[type] || type;
   };
@@ -254,21 +254,21 @@ export default function EmailPreferencesManager({ subscriberEmail }: EmailPrefer
       <Card style={{ marginBottom: '2rem' }}>
         <Box style={{ padding: '1.5rem' }}>
           <Heading size="4" style={{ marginBottom: '1rem' }}>
-            {t('harbor.media.emailPreferences.title', { defaultValue: 'Email Preferences' })}
+            {t('profile.emailPreferences.title', { defaultValue: 'Email Preferences' })}
           </Heading>
           <Text color="gray" size="2" style={{ marginBottom: '1.5rem', display: 'block' }}>
-            {t('harbor.media.emailPreferences.description', { defaultValue: 'Choose which types of emails you\'d like to receive from Logosophe:' })}
+            {t('profile.emailPreferences.description', { defaultValue: 'Choose which types of emails you\'d like to receive from Logosophe:' })}
           </Text>
           
           <Flex direction="column" gap="3">
             {Object.entries(preferences).map(([type, enabled]) => (
-              <Flex key={type} justify="between" align="center" style={{ padding: '0.75rem', border: '1px solid var(--gray-6)', borderRadius: '6px' }}>
-                <Box>
-                  <Text size="3" weight="medium">
-                    {formatEmailType(type)}
+              <Flex key={type} justify="between" align="start" style={{ padding: '0.75rem', border: '1px solid var(--gray-6)', borderRadius: '6px' }}>
+                <Box style={{ flex: 1 }}>
+                  <Text size="3" weight="medium" style={{ marginBottom: '0.5rem' }}>
+                    {formatEmailType(type)}: 
                   </Text>
                   <Text size="2" color="gray">
-                    {t(`harbor.media.emailPreferences.descriptions.${type}`, { 
+                    {t(`profile.emailPreferences.descriptions.${type}`, { 
                       defaultValue: type === 'newsletters' ? 'Regular newsletter content' :
                       type === 'announcements' ? 'System announcements and updates' :
                       type === 'role_updates' ? 'Role assignment and permission changes' :
@@ -286,6 +286,7 @@ export default function EmailPreferencesManager({ subscriberEmail }: EmailPrefer
                   checked={enabled} 
                   onCheckedChange={(checked) => handlePreferenceToggle(type as keyof EmailPreferences, checked)}
                   disabled={isLoading}
+                  style={{ marginLeft: '1rem' }}
                 />
               </Flex>
             ))}
@@ -298,10 +299,10 @@ export default function EmailPreferencesManager({ subscriberEmail }: EmailPrefer
         <Card>
           <Box style={{ padding: '1.5rem' }}>
             <Heading size="4" style={{ marginBottom: '1rem' }}>
-              {t('harbor.media.emailPreferences.handleTitle', { defaultValue: 'Handle-Specific Email Preferences' })}
+              {t('profile.emailPreferences.handleTitle', { defaultValue: 'Handle-Specific Email Preferences' })}
             </Heading>
             <Text color="gray" size="2" style={{ marginBottom: '1.5rem', display: 'block' }}>
-                              {t('harbor.media.emailPreferences.handleDescription', { defaultValue: 'Choose which updates you\'d like to receive for each of your public handles:' })}
+                              {t('profile.emailPreferences.handleDescription', { defaultValue: 'Choose which updates you\'d like to receive for each of your public handles:' })}
             </Text>
             
             {isLoadingHandles ? (
@@ -323,7 +324,7 @@ export default function EmailPreferencesManager({ subscriberEmail }: EmailPrefer
                           </Text>
                         )}
                         <Badge variant="soft" color="blue">
-                          {t('harbor.media.emailPreferences.handle', { defaultValue: 'Handle' })}
+                          {t('profile.emailPreferences.handle', { defaultValue: 'Handle' })}
                         </Badge>
                       </Box>
                     </Flex>
@@ -332,14 +333,24 @@ export default function EmailPreferencesManager({ subscriberEmail }: EmailPrefer
                     
                     <Flex direction="column" gap="3">
                       {Object.entries(handlePref).filter(([key]) => !['handleId', 'handleName', 'handleDescription'].includes(key)).map(([type, enabled]) => (
-                        <Flex key={type} justify="between" align="center">
-                          <Text size="2">
-                            {formatHandleEmailType(type)}
-                          </Text>
+                        <Flex key={type} justify="between" align="start" style={{ padding: '0.5rem', border: '1px solid var(--gray-6)', borderRadius: '4px' }}>
+                          <Box style={{ flex: 1 }}>
+                            <Text size="2" weight="medium" style={{ marginBottom: '0.25rem' }}>
+                              {formatHandleEmailType(type)}: 
+                            </Text>
+                            <Text size="1" color="gray">
+                              {type === 'handle_updates' ? 'Updates about this handle\'s content and settings' :
+                               type === 'blog_updates' ? 'New blog posts and blog-related notifications' :
+                               type === 'content_updates' ? 'New content published to this handle' :
+                               type === 'announcements' ? 'Handle-specific announcements and news' :
+                               'Handle updates'}
+                            </Text>
+                          </Box>
                           <Switch 
                             checked={enabled} 
                             onCheckedChange={(checked) => handleHandlePreferenceToggle(handlePref.handleId, type as any, checked)}
                             disabled={isLoading}
+                            style={{ marginLeft: '1rem' }}
                           />
                         </Flex>
                       ))}
@@ -357,7 +368,7 @@ export default function EmailPreferencesManager({ subscriberEmail }: EmailPrefer
         <Card>
           <Box style={{ padding: '1.5rem', textAlign: 'center' }}>
             <Text color="gray" size="2">
-                              {t('harbor.media.emailPreferences.noHandles', { defaultValue: 'You don\'t have any public handles yet. Create a handle to receive handle-specific email updates.' })}
+                              {t('profile.emailPreferences.noHandles', { defaultValue: 'You don\'t have any public handles yet. Create a handle to receive handle-specific email updates.' })}
             </Text>
           </Box>
         </Card>

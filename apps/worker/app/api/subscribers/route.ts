@@ -238,7 +238,7 @@ export async function POST(request: Request) {
           // If subscriber exists but is inactive, reactivate them
           await db.prepare(`
             UPDATE Subscribers 
-            SET Active = TRUE, Left = NULL, UpdatedAt = CURRENT_TIMESTAMP
+            SET Active = 1, Left = NULL, UpdatedAt = CURRENT_TIMESTAMP
             WHERE Email = ?
           `).bind(body.Id).run();
 

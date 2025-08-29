@@ -5,6 +5,7 @@ import { Button, TextField, Text, Box, Card, Flex, Grid, Tabs, Avatar, Dialog } 
 import type { Session } from 'next-auth';
 import { useToast } from '@/components/Toast';
 import { useTranslation } from 'react-i18next';
+import EmailPreferencesManager from './harbor/EmailPreferencesManager';
 
 interface UserAvatar {
   Id: number;
@@ -57,12 +58,22 @@ export default function ProfileForm({ session, updateName, updateEmail, isAdminU
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
+  // Fetch data when session changes
   useEffect(() => {
-    fetchPresetAvatars();
-    fetchCustomAvatars();
-    fetchCurrentAvatar();
-    fetchUserName();
+    if (session?.user?.email) {
+      fetchPresetAvatars();
+      fetchCustomAvatars();
+      fetchCurrentAvatar();
+      fetchUserName();
+    }
   }, [session?.user?.email]);
+
+  // Also fetch name when component mounts if session is already available
+  useEffect(() => {
+    if (session?.user?.email && !formData.name) {
+      fetchUserName();
+    }
+  }, []);
 
   const fetchCurrentAvatar = async () => {
     try {
@@ -119,13 +130,11 @@ export default function ProfileForm({ session, updateName, updateEmail, isAdminU
       const response = await fetch('/api/user/profile');
       if (response.ok) {
         const data = await response.json() as { name?: string; email?: string; image?: string };
-        // Handle both null/undefined and empty string cases
-        if (data.name && data.name.trim() !== '') {
-          setFormData(prev => ({
-            ...prev,
-            name: data.name as string
-          }));
-        }
+        // Always set the name, even if it's empty, so the user can see and edit it
+        setFormData(prev => ({
+          ...prev,
+          name: data.name || ''
+        }));
       } else {
         setNameError('Failed to fetch profile information');
       }
@@ -456,6 +465,7 @@ export default function ProfileForm({ session, updateName, updateEmail, isAdminU
       <Tabs.Root defaultValue="profile">
         <Tabs.List>
           <Tabs.Trigger value="profile">{t('profile.title')}</Tabs.Trigger>
+          <Tabs.Trigger value="emailPreferences">{t('profile.emailPreferences.title')}</Tabs.Trigger>
           {isAdminUser && (
             <Tabs.Trigger value="password">{t('profile.password')}</Tabs.Trigger>
           )}
@@ -820,6 +830,14 @@ export default function ProfileForm({ session, updateName, updateEmail, isAdminU
                 </Box>
               </Box>
             </form>
+          </Tabs.Content>
+
+          <Tabs.Content value="emailPreferences">
+            <Card>
+              <Box p="4">
+                <EmailPreferencesManager subscriberEmail={session?.user?.email || ''} />
+              </Box>
+            </Card>
           </Tabs.Content>
 
           {isAdminUser && (
