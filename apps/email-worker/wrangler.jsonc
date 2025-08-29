@@ -7,20 +7,20 @@
     "nodejs_compat"
   ],
   "vars": {
-    "EMAIL_FROM_ADDRESS": "info@anchorwrite.net",
-    "EMAIL_TO_ADDRESS": "info@anchorwrite.net"
+    "EMAIL_FROM_ADDRESS": "info@logosophe.com",
+    "EMAIL_TO_ADDRESS": "info@logosophe.com"
   },
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "contact_submissions",
-      "database_id": "b8c70fef-f207-4216-9215-cb3b886938b5"
+      "database_name": "logosophe",
+      "database_id": "fd7b2b89-eedd-4111-ba68-fdb05cdf2995"
     }
   ],
   "send_email": [
     {
       "name": "EMAIL",
-      "destination_address": "info@anchorwrite.net"
+      "destination_address": "info@logosophe.com"
     }
   ],
   "observability": {
