@@ -117,27 +117,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get the WorkflowDurableObject and notify it about the new message
-    const workflowIdObj = env.WORKFLOW_DO.idFromName(body.workflowId);
-    const workflowObj = env.WORKFLOW_DO.get(workflowIdObj);
-
-    await workflowObj.fetch('http://localhost/workflow/notification', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        type: 'message_sent',
-        data: {
-          workflowId: body.workflowId,
-          messageId: messageId.toString(),
-          senderEmail: body.senderEmail,
-          content: body.content,
-          messageType: body.messageType || 'message',
-          mediaFileId: body.mediaFileId,
-          shareToken: body.shareToken
-        }
-      })
-    });
-
     return NextResponse.json({
       success: true,
       messageId,
