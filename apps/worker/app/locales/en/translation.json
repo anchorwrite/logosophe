@@ -28,6 +28,8 @@
         "submitting": "Submitting...",
         "sending": "Sending..."
       },
+    "error": "Error",
+    "success": "Success",
     "loading": "Loading...",
     "search": "Search",
     "searching": "Searching...",
@@ -403,6 +405,41 @@
       "noFilesFound": "No files found",
       "deleteFile": "Delete File",
       "shareWithTenants": "Share with Tenants",
+      "emailPreferences": {
+        "title": "Email Preferences",
+        "description": "Choose which types of emails you'd like to receive from Logosophe:",
+        "handleTitle": "Handle-Specific Email Preferences",
+        "handleDescription": "Choose which updates you'd like to receive for each of your public handles:",
+        "handle": "Handle",
+        "noHandles": "You don't have any public handles yet. Create a handle to receive handle-specific email updates.",
+        "loadError": "Failed to load email preferences",
+        "updateSuccess": "Email preferences updated successfully",
+        "updateError": "Failed to update email preferences",
+        "handleUpdateSuccess": "Handle preferences updated successfully",
+        "handleUpdateError": "Failed to update handle preferences",
+        "types": {
+          "newsletters": "Newsletters",
+          "announcements": "Announcements",
+          "roleUpdates": "Role Updates",
+          "tenantUpdates": "Tenant Updates",
+          "workflowUpdates": "Workflow Updates",
+          "handleUpdates": "Handle Updates",
+          "blogUpdates": "Blog Updates",
+          "contentUpdates": "Content Updates",
+          "welcome": "Welcome Emails"
+        },
+        "descriptions": {
+          "newsletters": "Regular newsletter content",
+          "announcements": "System announcements and updates",
+          "role_updates": "Role assignment and permission changes",
+          "tenant_updates": "Tenant-specific news and updates",
+          "workflow_updates": "Workflow-related notifications",
+          "handle_updates": "Handle-specific content updates",
+          "blog_updates": "Blog post notifications",
+          "content_updates": "New content published notifications",
+          "welcome": "Welcome emails for new subscribers"
+        }
+      },
       "selectAdditionalTenants": "Select additional tenants that should have access to this file.",
       "configureShareLink": "Configure the settings for your share link.",
       "expiration": "Expiration",
@@ -1015,6 +1052,42 @@
     "pleaseDescribeIntendedUse": "Please describe your intended use",
     "pleaseProvideAdditionalDetails": "Please provide additional details"
   },
+  "verifyEmail": {
+    "verifying": "Verifying Email...",
+    "success": "Email Verified!",
+    "alreadyVerified": "Already Verified",
+    "failed": "Verification Failed",
+    "pleaseWait": "Please wait while we verify your email address...",
+    "email": "Email",
+    "verifiedAt": "Verified at",
+    "goHome": "Go to Homepage",
+    "goToHarbor": "Go to Harbor"
+  },
+  "unsubscribe": {
+    "processing": "Processing Unsubscribe...",
+    "success": "Successfully Unsubscribed!",
+    "failed": "Unsubscribe Failed",
+    "pleaseWait": "Please wait while we process your unsubscribe request...",
+    "email": "Email",
+    "unsubscribedFrom": "Unsubscribed from",
+    "handleSpecific": "Handle-specific emails",
+    "unsubscribedAt": "Unsubscribed at",
+    "info": "You can always manage your email preferences or resubscribe by visiting your Harbor dashboard.",
+    "goHome": "Go to Homepage",
+    "managePreferences": "Manage Preferences",
+    "types": {
+      "all": "all emails",
+      "newsletters": "newsletters",
+      "announcements": "announcements",
+      "roleUpdates": "role updates",
+      "tenantUpdates": "tenant updates",
+      "workflowUpdates": "workflow updates",
+      "handleUpdates": "handle updates",
+      "blogUpdates": "blog updates",
+      "contentUpdates": "content updates",
+      "welcome": "welcome emails"
+    }
+  },
   "subscriber_pages": {
     "title": "Subscriber Pages",
     "subtitle": "Create and manage your public pages and blog posts",
@@ -1043,7 +1116,9 @@
       "biography": "Biography",
       "biography_description": "Create and manage public biographies",
       "contact": "Contact",
-      "contact_description": "Create and manage public contact information"
+      "contact_description": "Create and manage public contact information",
+      "emailPreferences": "Email Preferences",
+      "emailPreferences_description": "Manage your email notification preferences"
     },
     "handles": {
       "title": "Manage Handles",

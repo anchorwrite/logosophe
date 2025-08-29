@@ -59,8 +59,8 @@ export default function SubscriberOptOut({ email }: SubscriberOptOutProps) {
       size="2"
     >
       {isLoading 
-        ? t('harbor.unsubscribing', { defaultValue: t('unsubscribing') })
-        : t('harbor.unsubscribe', { defaultValue: t('unsubscribe') })}
+        ? t('harbor.unsubscribing', { defaultValue: 'Unsubscribing...' })
+        : t('harbor.unsubscribe', { defaultValue: 'Unsubscribe' })}
     </Button>
   );
 } 

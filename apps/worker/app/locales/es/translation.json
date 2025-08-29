@@ -26,7 +26,9 @@
       "success": "Éxito",
       "warning": "Advertencia",
       "submitting": "Enviando...",
-      "sending": "Enviando..."
+      "sending": "Enviando...",
+      "error": "Error",
+      "success": "Éxito"
     },
     "loading": "Cargando...",
     "cancel": "Cancelar",
@@ -481,7 +483,42 @@
       "tenantLoadError": "Error al cargar inquilinos",
       "selectTenantError": "Por favor selecciona al menos un inquilino",
       "uploadError": "Error al subir archivo",
-      "uploadSuccess": "Archivo subido exitosamente"
+      "uploadSuccess": "Archivo subido exitosamente",
+      "emailPreferences": {
+        "title": "Preferencias de Correo Electrónico",
+        "description": "Elige qué tipos de correos electrónicos quieres recibir de Logosophe:",
+        "handleTitle": "Preferencias de Correo Electrónico Específicas del Handle",
+        "handleDescription": "Elige qué actualizaciones quieres recibir para cada uno de tus handles públicos:",
+        "handle": "Handle",
+        "noHandles": "Aún no tienes handles públicos. Crea un handle para recibir actualizaciones de correo electrónico específicas del handle.",
+        "loadError": "Error al cargar preferencias de correo electrónico",
+        "updateSuccess": "Preferencias de correo electrónico actualizadas exitosamente",
+        "updateError": "Error al actualizar preferencias de correo electrónico",
+        "handleUpdateSuccess": "Preferencias de handle actualizadas exitosamente",
+        "handleUpdateError": "Error al actualizar preferencias de handle",
+        "types": {
+          "newsletters": "Boletines",
+          "announcements": "Anuncios",
+          "roleUpdates": "Actualizaciones de Rol",
+          "tenantUpdates": "Actualizaciones de Inquilino",
+          "workflowUpdates": "Actualizaciones de Flujo de Trabajo",
+          "handleUpdates": "Actualizaciones de Handle",
+          "blogUpdates": "Actualizaciones de Blog",
+          "contentUpdates": "Actualizaciones de Contenido",
+          "welcome": "Correos Electrónicos de Bienvenida"
+        },
+        "descriptions": {
+          "newsletters": "Contenido regular de boletín",
+          "announcements": "Anuncios del sistema y actualizaciones",
+          "role_updates": "Asignación de rol y cambios de permisos",
+          "tenant_updates": "Noticias y actualizaciones específicas del inquilino",
+          "workflow_updates": "Notificaciones relacionadas con el flujo de trabajo",
+          "handle_updates": "Actualizaciones de contenido específicas del handle",
+          "blog_updates": "Notificaciones de entradas de blog",
+          "content_updates": "Notificaciones de nuevo contenido publicado",
+          "welcome": "Correos electrónicos de bienvenida para nuevos suscriptores"
+        }
+      }
     }
   },
   "content": {
@@ -1034,7 +1071,15 @@
       "handles": "Identificadores",
       "handles_description": "Gestiona tus URLs de páginas públicas",
       "blog": "Blog",
-      "blog_description": "Crea y gestiona entradas de blog"
+      "blog_description": "Crea y gestiona entradas de blog",
+      "announcements": "Anuncios",
+      "announcements_description": "Crea y gestiona anuncios públicos",
+      "biography": "Biografía",
+      "biography_description": "Crea y gestiona biografías públicas",
+      "contact": "Contacto",
+      "contact_description": "Crea y gestiona información de contacto pública",
+      "emailPreferences": "Preferencias de Correo Electrónico",
+      "emailPreferences_description": "Gestiona tus preferencias de notificaciones por correo electrónico"
     },
     "handles": {
       "title": "Gestionar Identificadores",
@@ -1192,6 +1237,42 @@
       "back_to_handles": "Volver a Identificadores",
       "go_back": "Volver",
       "help_text": "Si crees que esto es un error, por favor contacta al administrador del sitio."
+    }
+  },
+  "verifyEmail": {
+    "verifying": "Verificando Correo Electrónico...",
+    "success": "¡Correo Electrónico Verificado!",
+    "alreadyVerified": "Ya Verificado",
+    "failed": "Verificación Fallida",
+    "pleaseWait": "Por favor espera mientras verificamos tu dirección de correo electrónico...",
+    "email": "Correo Electrónico",
+    "verifiedAt": "Verificado en",
+    "goHome": "Ir a la Página Principal",
+    "goToHarbor": "Ir a Harbor"
+  },
+  "unsubscribe": {
+    "processing": "Procesando Desuscripción...",
+    "success": "¡Desuscripción Exitosa!",
+    "failed": "Desuscripción Fallida",
+    "pleaseWait": "Por favor espera mientras procesamos tu solicitud de desuscripción...",
+    "email": "Correo Electrónico",
+    "unsubscribedFrom": "Desuscrito de",
+    "handleSpecific": "Correos electrónicos específicos del handle",
+    "unsubscribedAt": "Desuscrito en",
+    "info": "Siempre puedes gestionar tus preferencias de correo electrónico o volver a suscribirte visitando tu panel de Harbor.",
+    "goHome": "Ir a la Página Principal",
+    "managePreferences": "Gestionar Preferencias",
+    "types": {
+      "all": "todos los correos electrónicos",
+      "newsletters": "boletines",
+      "announcements": "anuncios",
+      "roleUpdates": "actualizaciones de rol",
+      "tenantUpdates": "actualizaciones de inquilino",
+      "workflowUpdates": "actualizaciones de flujo de trabajo",
+      "handleUpdates": "actualizaciones de handle",
+      "blogUpdates": "actualizaciones de blog",
+      "contentUpdates": "actualizaciones de contenido",
+      "welcome": "correos electrónicos de bienvenida"
     }
   }
 }
