@@ -344,19 +344,32 @@ export const { handlers, auth, signIn, signOut } = NextAuth(async () => {
           }
         }
         
-        // Check if there's a redirectTo parameter
-        const urlObj = new URL(url);
-        const redirectTo = urlObj.searchParams.get('redirectTo');
-        
-        if (redirectTo && redirectTo.startsWith('/')) {
-          // Redirect to the specified page
-          return `${fallbackBaseUrl}${redirectTo}`;
+        // Validate url parameter before processing
+        if (!url || typeof url !== 'string') {
+          return fallbackBaseUrl;
         }
         
-        // Handle redirects for different authentication flows
-        if (url.startsWith('/')) return `${fallbackBaseUrl}${url}`
-        else if (new URL(url).origin === fallbackBaseUrl) return url
-        return fallbackBaseUrl
+        // Check if there's a redirectTo parameter
+        try {
+          const urlObj = new URL(url);
+          const redirectTo = urlObj.searchParams.get('redirectTo');
+          
+          if (redirectTo && redirectTo.startsWith('/')) {
+            // Redirect to the specified page
+            return `${fallbackBaseUrl}${redirectTo}`;
+          }
+          
+          // Handle redirects for different authentication flows
+          if (url.startsWith('/')) return `${fallbackBaseUrl}${url}`;
+          else if (urlObj.origin === fallbackBaseUrl) return url;
+          return fallbackBaseUrl;
+        } catch (error) {
+          // If URL parsing fails, treat as relative path
+          if (url.startsWith('/')) {
+            return `${fallbackBaseUrl}${url}`;
+          }
+          return fallbackBaseUrl;
+        }
       }
     },
     jwt: {
