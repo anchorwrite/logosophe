@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { NormalizedLogging, extractRequestContext } from "@/lib/normalized-logging";
+import { getCloudflareContext } from "@opennextjs/cloudflare";
 
 interface TenantApplicationRequestBody {
   name: string;
@@ -27,6 +29,37 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Get database context for logging
+    const { env } = await getCloudflareContext({async: true});
+    const db = env.DB;
+
+    // Log the tenant application submission to SystemLogs
+    try {
+      const normalizedLogging = new NormalizedLogging(db);
+      const { ipAddress, userAgent } = extractRequestContext(request);
+
+      await normalizedLogging.logUserManagement({
+        userEmail: email,
+        tenantId: 'system',
+        activityType: 'submit_tenant_application',
+        accessType: 'write',
+        targetId: email,
+        targetName: `Tenant application from ${name}`,
+        ipAddress,
+        userAgent,
+        metadata: {
+          formType: 'tenant_application',
+          organization,
+          purpose,
+          messageLength: message.length,
+          source: 'api_route'
+        }
+      });
+    } catch (loggingError) {
+      console.error('Failed to log tenant application submission:', loggingError);
+      // Continue with email sending even if logging fails
+    }
+
     const workerUrl = process.env.EMAIL_WORKER_URL;
     if (!workerUrl) {
       throw new Error('EMAIL_WORKER_URL environment variable is not set');
@@ -45,7 +78,9 @@ export async function POST(request: NextRequest) {
         name, 
         email, 
         subject: 'New Tenant Application Submission', 
-        message: `Organization: ${organization}\nPurpose: ${purpose}\n\nAdditional Details:\n${message}` 
+        message: `Organization: ${organization}\nPurpose: ${purpose}\n\nAdditional Details:\n${message}`,
+        organization,
+        purpose
       }),
     });
 
