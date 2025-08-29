@@ -153,24 +153,6 @@ export async function POST(request: NextRequest) {
       metadata: workflowMetadata
     });
 
-    // Get the WorkflowDurableObject and notify it about the new workflow
-    const workflowIdObj = env.WORKFLOW_DO.idFromName(workflowId.toString());
-    const workflowObj = env.WORKFLOW_DO.get(workflowIdObj);
-
-    await workflowObj.fetch('http://localhost/workflow/notification', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        type: 'workflow_created',
-        data: {
-          workflowId: workflowId.toString(),
-          tenantId,
-          initiatorEmail,
-          participants: allParticipants
-        }
-      })
-    });
-
     return NextResponse.json({
       success: true,
       workflowId,

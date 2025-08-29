@@ -130,30 +130,6 @@ export async function POST(request: NextRequest) {
       .bind(messageId, workflowId, access.email, messageType, content, mediaFileId, shareToken, createdAt)
       .run();
 
-    // Get the WorkflowDurableObject for this workflow
-    const workflowDO = env.WORKFLOW_DO;
-    const workflowDurableObjectId = workflowDO.idFromName(workflowId);
-    const workflowStub = workflowDO.get(workflowDurableObjectId);
-
-    // Notify the Durable Object about the new message
-    await workflowStub.fetch('http://localhost/notification', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        type: 'new_message',
-        data: {
-          messageId,
-          workflowId,
-          senderEmail: access.email,
-          messageType,
-          content,
-          mediaFileId,
-          shareToken,
-          createdAt
-        }
-      })
-    });
-
     return NextResponse.json({
       id: messageId,
       workflowId,
