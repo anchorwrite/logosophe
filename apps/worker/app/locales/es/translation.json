@@ -1024,6 +1024,41 @@
       "allPasswordFieldsRequired": "Todos los campos de contraseña son requeridos",
       "passwordTooShort": "La nueva contraseña debe tener al menos 8 caracteres",
       "passwordsDoNotMatch": "Las nuevas contraseñas no coinciden"
+    },
+    "emailPreferences": {
+      "title": "Preferencias de Correo Electrónico",
+      "description": "Elige qué tipos de correos electrónicos te gustaría recibir de Logosophe:",
+      "handleTitle": "Preferencias de Correo Electrónico Específicas del Handle",
+      "handleDescription": "Elige qué actualizaciones te gustaría recibir para cada uno de tus handles públicos:",
+      "handle": "Handle",
+      "noHandles": "Aún no tienes handles públicos. Crea un handle para recibir actualizaciones de correo electrónico específicas del handle.",
+      "loadError": "Error al cargar las preferencias de correo electrónico",
+      "updateSuccess": "Preferencias de correo electrónico actualizadas exitosamente",
+      "updateError": "Error al actualizar las preferencias de correo electrónico",
+      "handleUpdateSuccess": "Preferencias del handle actualizadas exitosamente",
+      "handleUpdateError": "Error al actualizar las preferencias del handle",
+      "types": {
+        "newsletters": "Boletines",
+        "announcements": "Anuncios",
+        "roleUpdates": "Actualizaciones de Rol",
+        "tenantUpdates": "Actualizaciones de Inquilino",
+        "workflowUpdates": "Actualizaciones de Flujo de Trabajo",
+        "handleUpdates": "Actualizaciones de Handle",
+        "blogUpdates": "Actualizaciones de Blog",
+        "contentUpdates": "Actualizaciones de Contenido",
+        "welcome": "Correos de Bienvenida"
+      },
+      "descriptions": {
+        "newsletters": "Contenido regular del boletín",
+        "announcements": "Anuncios del sistema y actualizaciones",
+        "role_updates": "Cambios de asignación de roles y permisos",
+        "tenant_updates": "Noticias y actualizaciones específicas del inquilino",
+        "workflow_updates": "Notificaciones relacionadas con flujos de trabajo",
+        "handle_updates": "Actualizaciones de contenido específicas del handle",
+        "blog_updates": "Notificaciones de entradas de blog",
+        "content_updates": "Notificaciones de nuevo contenido publicado",
+        "welcome": "Correos de bienvenida para nuevos suscriptores"
+      }
     }
   },
   "fileInput": {
@@ -1077,9 +1112,7 @@
       "biography": "Biografía",
       "biography_description": "Crea y gestiona biografías públicas",
       "contact": "Contacto",
-      "contact_description": "Crea y gestiona información de contacto pública",
-      "emailPreferences": "Preferencias de Correo Electrónico",
-      "emailPreferences_description": "Gestiona tus preferencias de notificaciones por correo electrónico"
+      "contact_description": "Crea y gestiona información de contacto pública"
     },
     "handles": {
       "title": "Gestionar Identificadores",
@@ -1237,6 +1270,39 @@
       "back_to_handles": "Volver a Identificadores",
       "go_back": "Volver",
       "help_text": "Si crees que esto es un error, por favor contacta al administrador del sitio."
+    },
+    "content_linker": {
+      "title": "Enlazar Contenido Publicado",
+      "search_placeholder": "Buscar contenido publicado por título, autor o descripción...",
+      "link_content": "Enlazar Contenido",
+      "published_by": "Publicado por",
+      "published_on": "Publicado el",
+      "no_results": "No se encontró contenido que coincida con tu búsqueda."
+    },
+    "directory": {
+      "title": "Descubrir Páginas de Suscriptores",
+      "description": "Explora páginas públicas de creadores de contenido, autores y profesionales",
+      "search_placeholder": "Buscar handles, nombres o descripciones...",
+      "filter_by_focus": "Filtrar por enfoque",
+      "all_focus_areas": "Todas las Áreas de Enfoque",
+      "sort_by": "Ordenar por",
+      "most_recent": "Más Reciente",
+      "name_az": "Nombre A-Z",
+      "most_active": "Más Activo",
+      "quick_filters": "Filtros Rápidos:",
+      "all": "Todos",
+      "poetry": "Poesía",
+      "novels": "Novelas",
+      "short_stories": "Cuentos Cortos",
+      "academic": "Académico",
+      "professional": "Profesional",
+      "technical": "Técnico",
+      "showing_results": "Mostrando {{count}} de {{total}} páginas públicas",
+      "no_results": "No se encontraron páginas de suscriptores que coincidan con tus criterios",
+      "no_results_help": "Intenta ajustar tus términos de búsqueda o filtros",
+      "view_page": "Ver Página",
+      "no_description": "No hay descripción disponible",
+      "try_again": "Intentar de Nuevo"
     }
   },
   "verifyEmail": {

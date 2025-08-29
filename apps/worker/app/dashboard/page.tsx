@@ -23,12 +23,10 @@ export default async function DashboardPage() {
   const isAdmin = session?.user?.email ? await isSystemAdmin(session.user.email, db) : false;
 
   const contentManagementLinks = [
-
     { href: '/dashboard/media', label: 'Media Library', roles: ['admin', 'tenant'] },
     { href: '/dashboard/media/shares', label: 'Media Share Links', roles: ['admin', 'tenant'] },
     { href: '/dashboard/media/upload', label: 'Upload Media', roles: ['admin', 'tenant'] },
     { href: '/dashboard/soft-deleted-files', label: 'Soft-Deleted Files', roles: ['admin', 'tenant'] },
-
   ].sort((a, b) => a.label.localeCompare(b.label));
 
   const analyticsLinks = [
@@ -235,6 +233,8 @@ export default async function DashboardPage() {
               </Box>
             </Card>
           )}
+
+
         </>
       )}
     </Flex>

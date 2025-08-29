@@ -24,8 +24,10 @@ export async function GET(request: Request) {
     let currentUser = await db.prepare(`
       SELECT Name as name, Email as email, NULL as image
       FROM Subscribers 
-      WHERE Email = ? AND Active = TRUE
+      WHERE Email = ? AND Active = 1
     `).bind(session.user.email).first();
+
+    console.log('Subscribers table result:', currentUser);
 
     if (!currentUser) {
       // Fall back to users table if not found in Subscribers
@@ -34,17 +36,23 @@ export async function GET(request: Request) {
         FROM users 
         WHERE id = ?
       `).bind(session.user.id).first();
+      
+      console.log('Users table fallback result:', currentUser);
     }
 
     if (!currentUser) {
       return new Response('User not found', { status: 404 });
     }
 
-    return Response.json({
+    const response = {
       name: currentUser.name,
       email: currentUser.email,
       image: currentUser.image
-    });
+    };
+    
+    console.log('Profile API response:', response);
+    
+    return Response.json(response);
   } catch (error) {
     console.error('Error fetching profile:', error);
     return new Response('Internal server error', { status: 500 });

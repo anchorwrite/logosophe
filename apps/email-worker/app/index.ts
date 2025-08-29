@@ -134,6 +134,78 @@ async function logSubscriberEmail(emailData: SubscriberEmailData, env: Cloudflar
   }
 }
 
+// Helper function to check if a recipient wants to receive a specific type of email
+async function shouldSendEmailToRecipient(recipient: string, emailType: string, env: CloudflareEnv, handleId?: number): Promise<boolean> {
+  try {
+    // Get subscriber's email preferences
+    const subscriber = await env.DB.prepare(`
+      SELECT EmailPreferences FROM Subscribers WHERE Email = ? AND Active = 1
+    `).bind(recipient).first() as { EmailPreferences: string } | undefined;
+
+    if (!subscriber) {
+      console.log(`Recipient ${recipient} not found in Subscribers table or not active`);
+      return false;
+    }
+
+    let preferences;
+    try {
+      preferences = JSON.parse(subscriber.EmailPreferences || '{}');
+    } catch (error) {
+      console.log(`Invalid preferences JSON for ${recipient}, using defaults`);
+      // Default to allowing emails if preferences are invalid
+      preferences = {
+        newsletters: true,
+        announcements: true,
+        role_updates: true,
+        tenant_updates: true,
+        workflow_updates: true,
+        handle_updates: true,
+        blog_updates: true,
+        content_updates: true,
+        welcome: true
+      };
+    }
+
+    // Check general email type preference
+    if (!preferences[emailType]) {
+      console.log(`Recipient ${recipient} has disabled ${emailType} emails`);
+      return false;
+    }
+
+    // If this is a handle-specific email, check handle-specific preferences
+    if (handleId && (emailType === 'handle_updates' || emailType === 'blog_updates' || emailType === 'content_updates' || emailType === 'announcements')) {
+      const handleKey = `handle_${handleId}`;
+      if (preferences[handleKey]) {
+        const handlePreferences = preferences[handleKey];
+        if (!handlePreferences[emailType]) {
+          console.log(`Recipient ${recipient} has disabled ${emailType} emails for handle ${handleId}`);
+          return false;
+        }
+      }
+    }
+
+    return true;
+  } catch (error) {
+    console.error(`Error checking email preferences for ${recipient}:`, error);
+    // Default to allowing emails if there's an error checking preferences
+    return true;
+  }
+}
+
+// Helper function to filter recipients based on email preferences
+async function filterRecipientsByPreferences(recipients: string[], emailType: string, env: CloudflareEnv, handleId?: number): Promise<string[]> {
+  const filteredRecipients: string[] = [];
+  
+  for (const recipient of recipients) {
+    if (await shouldSendEmailToRecipient(recipient, emailType, env, handleId)) {
+      filteredRecipients.push(recipient);
+    }
+  }
+  
+  console.log(`Filtered recipients: ${recipients.length} → ${filteredRecipients.length} (${recipients.length - filteredRecipients.length} filtered out by preferences)`);
+  return filteredRecipients;
+}
+
 async function handleRequest(request: Request, env: CloudflareEnv): Promise<Response> {
   console.log("Received request:", {
     method: request.method,
@@ -302,6 +374,25 @@ async function handleSubscriberEmail(request: Request, env: CloudflareEnv): Prom
       );
     }
 
+    // Filter recipients based on preferences
+    const filteredRecipients = await filterRecipientsByPreferences(data.recipients, data.type, env, data.handleId);
+    if (filteredRecipients.length === 0) {
+      console.log("No recipients left after filtering by preferences.");
+      return new Response(
+        JSON.stringify({
+          success: true,
+          message: `No recipients left after filtering by preferences for type: ${data.type}`,
+        }),
+        {
+          status: 200,
+          headers: {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": getCorsOrigin(request),
+          },
+        }
+      );
+    }
+
     // Log the email for tracking
     await logSubscriberEmail(data, env);
 
@@ -309,7 +400,7 @@ async function handleSubscriberEmail(request: Request, env: CloudflareEnv): Prom
     const senderName = getSenderName(data.type as any);
     const senderEmail = getSenderEmail(data.type as any);
     
-    for (const recipient of data.recipients) {
+    for (const recipient of filteredRecipients) {
       // Create unsubscribe token for this recipient
       const unsubscribeToken = await createUnsubscribeToken(recipient, data.type, env);
       const unsubscribeUrl = `https://logosophe.com/unsubscribe/${unsubscribeToken}?type=${data.type}`;
@@ -344,7 +435,7 @@ To manage all email preferences, visit: https://logosophe.com/harbor/preferences
     return new Response(
       JSON.stringify({
         success: true,
-        message: `Email sent to ${data.recipients.length} recipients successfully`,
+        message: `Email sent to ${filteredRecipients.length} recipients successfully`,
       }),
       {
         status: 200,
@@ -391,6 +482,25 @@ async function handleHandleNewsletter(request: Request, env: CloudflareEnv): Pro
       );
     }
 
+    // Filter recipients based on preferences
+    const filteredRecipients = await filterRecipientsByPreferences(data.recipients, 'handle_updates', env, data.handleId);
+    if (filteredRecipients.length === 0) {
+      console.log("No recipients left after filtering by preferences.");
+      return new Response(
+        JSON.stringify({
+          success: true,
+          message: `No recipients left after filtering by preferences for handle updates for handle ${data.handleId}`,
+        }),
+        {
+          status: 200,
+          headers: {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": getCorsOrigin(request),
+          },
+        }
+      );
+    }
+
     // Log the email for tracking
     await logSubscriberEmail(data, env);
 
@@ -398,7 +508,7 @@ async function handleHandleNewsletter(request: Request, env: CloudflareEnv): Pro
     const senderName = getSenderName('newsletter');
     const senderEmail = getSenderEmail('newsletter');
     
-    for (const recipient of data.recipients) {
+    for (const recipient of filteredRecipients) {
       // Create unsubscribe token for this recipient
       const unsubscribeToken = await createUnsubscribeToken(recipient, 'handle_updates', env);
       const unsubscribeUrl = `https://logosophe.com/unsubscribe/${unsubscribeToken}?type=handle_updates&handle=${data.handleId}`;
@@ -444,7 +554,7 @@ To manage all email preferences, visit: https://logosophe.com/harbor/preferences
     return new Response(
       JSON.stringify({
         success: true,
-        message: `Handle newsletter sent to ${data.recipients.length} recipients successfully`,
+        message: `Handle newsletter sent to ${filteredRecipients.length} recipients successfully`,
       }),
       {
         status: 200,

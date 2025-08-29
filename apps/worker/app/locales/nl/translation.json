@@ -1022,6 +1022,41 @@
       "allPasswordFieldsRequired": "Alle wachtwoordvelden zijn vereist",
       "passwordTooShort": "Nieuw wachtwoord moet minimaal 8 tekens lang zijn",
       "passwordsDoNotMatch": "Nieuwe wachtwoorden komen niet overeen"
+    },
+    "emailPreferences": {
+      "title": "E-mail Voorkeuren",
+      "description": "Kies welke soorten e-mails je van Logosophe wilt ontvangen:",
+      "handleTitle": "Handle-specifieke E-mail Voorkeuren",
+      "handleDescription": "Kies welke updates je wilt ontvangen voor elk van je openbare handles:",
+      "handle": "Handle",
+      "noHandles": "Je hebt nog geen openbare handles. Maak een handle aan om handle-specifieke e-mail updates te ontvangen.",
+      "loadError": "E-mail voorkeuren laden mislukt",
+      "updateSuccess": "E-mail voorkeuren succesvol bijgewerkt",
+      "updateError": "E-mail voorkeuren bijwerken mislukt",
+      "handleUpdateSuccess": "Handle voorkeuren succesvol bijgewerkt",
+      "handleUpdateError": "Handle voorkeuren bijwerken mislukt",
+      "types": {
+        "newsletters": "Nieuwsbrieven",
+        "announcements": "Aankondigingen",
+        "roleUpdates": "Rol Updates",
+        "tenantUpdates": "Huurder Updates",
+        "workflowUpdates": "Workflow Updates",
+        "handleUpdates": "Handle Updates",
+        "blogUpdates": "Blog Updates",
+        "contentUpdates": "Inhoud Updates",
+        "welcome": "Welkom E-mails"
+      },
+      "descriptions": {
+        "newsletters": "Regelmatige nieuwsbrief inhoud",
+        "announcements": "Systeem aankondigingen en updates",
+        "role_updates": "Rol toewijzing en machtigingswijzigingen",
+        "tenant_updates": "Huurder-specifieke nieuws en updates",
+        "workflow_updates": "Workflow-gerelateerde meldingen",
+        "handle_updates": "Handle-specifieke inhoud updates",
+        "blog_updates": "Blog bericht meldingen",
+        "content_updates": "Nieuwe inhoud gepubliceerd meldingen",
+        "welcome": "Welkom e-mails voor nieuwe abonnees"
+      }
     }
   },
   "fileInput": {
@@ -1075,9 +1110,7 @@
         "biography": "Biografie",
         "biography_description": "Maak en beheer openbare biografieën",
         "contact": "Contact",
-        "contact_description": "Maak en beheer openbare contactinformatie",
-        "emailPreferences": "E-mail Voorkeuren",
-        "emailPreferences_description": "Beheer je e-mail notificatie voorkeuren"
+        "contact_description": "Maak en beheer openbare contactinformatie"
       },
     "handles": {
       "title": "Handles Beheren",
@@ -1235,6 +1268,39 @@
       "back_to_handles": "Terug naar Handles",
       "go_back": "Ga Terug",
       "help_text": "Als je denkt dat dit een fout is, neem dan contact op met de site beheerder."
+    },
+    "content_linker": {
+      "title": "Gepubliceerde Inhoud Koppelen",
+      "search_placeholder": "Zoek naar gepubliceerde inhoud op titel, auteur of beschrijving...",
+      "link_content": "Inhoud Koppelen",
+      "published_by": "Gepubliceerd door",
+      "published_on": "Gepubliceerd op",
+      "no_results": "Geen inhoud gevonden die overeenkomt met je zoekopdracht."
+    },
+    "directory": {
+      "title": "Abonnee Pagina's Ontdekken",
+      "description": "Verken openbare pagina's van content makers, auteurs en professionals",
+      "search_placeholder": "Zoek naar handles, namen of beschrijvingen...",
+      "filter_by_focus": "Filter op focus",
+      "all_focus_areas": "Alle Focusgebieden",
+      "sort_by": "Sorteren op",
+      "most_recent": "Meest Recent",
+      "name_az": "Naam A-Z",
+      "most_active": "Meest Actief",
+      "quick_filters": "Snelle Filters:",
+      "all": "Alle",
+      "poetry": "Poëzie",
+      "novels": "Romans",
+      "short_stories": "Korte Verhalen",
+      "academic": "Academisch",
+      "professional": "Professioneel",
+      "technical": "Technisch",
+      "showing_results": "Toon {{count}} van {{total}} openbare pagina's",
+      "no_results": "Geen abonnee pagina's gevonden die overeenkomen met je criteria",
+      "no_results_help": "Probeer je zoektermen of filters aan te passen",
+      "view_page": "Pagina Bekijken",
+      "no_description": "Geen beschrijving beschikbaar",
+      "try_again": "Opnieuw Proberen"
     }
   },
   "verifyEmail": {
