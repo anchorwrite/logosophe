@@ -410,27 +410,29 @@ Best regards,
 The Logosophe Team
     `;
 
-    // Send welcome email
-    const msg = createMimeMessage();
-    const senderName = getSenderName('welcome');
-    const senderEmail = getSenderEmail('welcome');
-    
-    msg.setSender({ name: senderName, addr: senderEmail });
-    msg.setRecipient(data.email);
-    msg.setSubject("Welcome to Logosophe! 🎉");
-    msg.addMessage({
-      contentType: 'text/plain',
-      data: welcomeContent
+    // Send welcome email via Resend
+    const resendResponse = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${env.AUTH_RESEND_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: 'info@logosophe.com',
+        to: data.email,
+        subject: 'Welcome to Logosophe! 🎉',
+        html: welcomeContent.replace(/\n/g, '<br>'),
+        text: welcomeContent
+      }),
     });
 
-    const message = new EmailMessage(
-      senderEmail,
-      data.email,
-      msg.asRaw()
-    );
+    if (!resendResponse.ok) {
+      const errorText = await resendResponse.text();
+      console.error('Failed to send welcome email via Resend:', errorText);
+      throw new Error(`Resend API error: ${resendResponse.status}`);
+    }
     
-    await env.EMAIL.send(message);
-    console.log("Welcome email sent successfully");
+    console.log("Welcome email sent successfully via Resend");
 
     return new Response(
       JSON.stringify({

@@ -53,26 +53,60 @@ export async function GET(
       return NextResponse.json({ error: 'Failed to verify email' }, { status: 500 });
     }
 
-    // Send welcome email after successful verification
+    // Send welcome email after successful verification via Resend
     try {
-      const emailWorkerUrl = env.EMAIL_WORKER_URL || 'https://email-worker.logosophe.workers.dev';
-      const welcomeResponse = await fetch(`${emailWorkerUrl}/api/welcome-email`, {
+      const welcomeContent = `
+Hello ${subscriber.Email.split('@')[0].charAt(0).toUpperCase() + subscriber.Email.split('@')[0].slice(1)},
+
+Welcome to Logosophe! 🎉
+
+Your email address has been successfully verified, and you're now a confirmed subscriber. Here's what you can do next:
+
+**Explore Harbor**
+- Access your personalized workspace
+- Manage your email preferences
+- Connect with other subscribers
+
+**Email Preferences**
+You can manage which types of emails you receive by going to your Harbor profile:
+- Newsletters: Regular updates and content
+- Announcements: Important system updates
+- Tenant Updates: Updates about your tenant activities
+
+**Getting Started**
+- Visit https://www.logosophe.com/harbor to access your workspace
+- Customize your email preferences in your profile
+- Explore the platform and discover new features
+
+If you have any questions or need assistance, feel free to reach out to our support team.
+
+Welcome aboard!
+
+Best regards,
+The Logosophe Team
+      `;
+
+      const resendResponse = await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: {
+          'Authorization': `Bearer ${env.AUTH_RESEND_KEY}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          email: subscriber.Email,
-          name: subscriber.Email.split('@')[0], // Use email prefix as name
-          type: 'welcome'
+          from: 'info@logosophe.com',
+          to: subscriber.Email,
+          subject: 'Welcome to Logosophe! 🎉',
+          html: welcomeContent.replace(/\n/g, '<br>'),
+          text: welcomeContent
         }),
       });
 
-      if (!welcomeResponse.ok) {
-        console.error('Failed to send welcome email:', await welcomeResponse.text());
+      if (!resendResponse.ok) {
+        const errorText = await resendResponse.text();
+        console.error('Failed to send welcome email via Resend:', errorText);
         // Don't fail verification if welcome email fails
       } else {
-        console.log('Welcome email sent successfully');
+        console.log('Welcome email sent successfully via Resend');
       }
     } catch (welcomeError) {
       console.error('Error sending welcome email:', welcomeError);
