@@ -15,6 +15,7 @@ interface ProviderResponse {
 
 export default function SubscriberOptIn({ email }: SubscriberOptInProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const [verificationSent, setVerificationSent] = useState(false);
   const [provider, setProvider] = useState<string>('');
   const { showToast } = useToast();
   const { t } = useTranslation('translations');
@@ -89,12 +90,31 @@ export default function SubscriberOptIn({ email }: SubscriberOptInProps) {
         throw new Error(message || 'Failed to subscribe');
       }
 
+      // Now send verification email
+      const verificationResponse = await fetch('/api/verification-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          name: email.split('@')[0] // Use email prefix as name
+        }),
+      });
+
+      if (!verificationResponse.ok) {
+        const message = await verificationResponse.text();
+        throw new Error(message || 'Failed to send verification email');
+      }
+
       showToast({
-        title: 'Success',
-        content: 'Successfully subscribed!',
+        title: 'Verification Email Sent',
+        content: 'Please check your email and click the verification link to complete your subscription.',
         type: 'success'
       });
-      window.location.reload();
+      
+      // Don't reload, show verification message instead
+      setVerificationSent(true);
     } catch (error) {
       console.error('Subscription error:', error);
       showToast({
@@ -108,6 +128,35 @@ export default function SubscriberOptIn({ email }: SubscriberOptInProps) {
   };
 
   const capitalizedProvider = provider.charAt(0).toUpperCase() + provider.slice(1).toLowerCase();
+
+  if (verificationSent) {
+    return (
+      <Container style={{ maxWidth: '600px', margin: '0 auto' }}>
+        <Flex direction="column" gap="4" align="center">
+          <Flex direction="column" gap="2" align="center">
+            <Text size="5" weight="medium" align="center" color="green">
+              Verification Email Sent! 📧
+            </Text>
+            <Text size="4" align="center" color="gray" mb="4">
+              Please check your email and click the verification link to complete your subscription.
+            </Text>
+            <Text size="3" align="center" color="gray">
+              If you don't see the email, check your spam folder.
+            </Text>
+          </Flex>
+          <Flex justify="center" style={{ width: '100%' }}>
+            <Button 
+              onClick={() => setVerificationSent(false)}
+              variant="outline"
+              style={{ width: '100%' }}
+            >
+              Send Another Verification Email
+            </Button>
+          </Flex>
+        </Flex>
+      </Container>
+    );
+  }
 
   return (
     <Container style={{ maxWidth: '600px', margin: '0 auto' }}>

@@ -44,28 +44,30 @@ function getCorsOrigin(request: Request): string {
 }
 
 // Helper function to get sender name based on email type
-function getSenderName(emailType: 'tenant_application' | 'contact_form' | 'newsletter' | 'verification' | 'announcement' | 'system'): string {
+function getSenderName(emailType: 'tenant_application' | 'contact_form' | 'newsletter' | 'verification' | 'announcement' | 'system' | 'welcome'): string {
   const senderNames = {
     tenant_application: 'Logosophe Tenant Application',
     contact_form: 'Logosophe Contact Submission',
     newsletter: 'Logosophe Newsletters',
     verification: 'Logosophe Email Verification',
     announcement: 'Logosophe Announcements',
-    system: 'Logosophe System Notifications'
+    system: 'Logosophe System Notifications',
+    welcome: 'Logosophe Welcome'
   };
   
   return senderNames[emailType];
 }
 
 // Helper function to get sender email address based on email type
-function getSenderEmail(emailType: 'tenant_application' | 'contact_form' | 'newsletter' | 'verification' | 'announcement' | 'system'): string {
+function getSenderEmail(emailType: 'tenant_application' | 'contact_form' | 'newsletter' | 'verification' | 'announcement' | 'system' | 'welcome'): string {
   const senderEmails = {
     tenant_application: 'info@logosophe.com',
     contact_form: 'info@logosophe.com',
     newsletter: 'newsletters@logosophe.com',
     verification: 'verification@logosophe.com',
     announcement: 'announcements@logosophe.com',
-    system: 'system@logosophe.com'
+    system: 'system@logosophe.com',
+    welcome: 'verification@logosophe.com'
   };
   
   return senderEmails[emailType];
@@ -237,6 +239,8 @@ async function handleRequest(request: Request, env: CloudflareEnv): Promise<Resp
     // Handle different endpoints based on path
     if (path === '/api/verification-email') {
       return await handleVerificationEmail(request, env);
+    } else if (path === '/api/welcome-email') {
+      return await handleWelcomeEmail(request, env);
     } else if (path === '/api/subscriber-email') {
       return await handleSubscriberEmail(request, env);
     } else if (path === '/api/handle-newsletter') {
@@ -342,6 +346,110 @@ The Logosophe Team
     return new Response(
       JSON.stringify({
         error: "Failed to send verification email",
+        details: error instanceof Error ? error.message : "Unknown error",
+      }),
+      {
+        status: 500,
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": getCorsOrigin(request),
+        },
+      }
+    );
+  }
+}
+
+// Handle welcome email requests
+async function handleWelcomeEmail(request: Request, env: CloudflareEnv): Promise<Response> {
+  try {
+    const data = await request.json() as { email: string; name: string; type: string };
+    console.log("Received welcome email request:", data);
+
+    if (!data.email || !data.name) {
+      return new Response(
+        JSON.stringify({ error: "Missing required fields" }),
+        {
+          status: 400,
+          headers: {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": getCorsOrigin(request),
+          },
+        }
+      );
+    }
+
+    // Create welcome email content
+    const welcomeContent = `
+Hello ${data.name},
+
+Welcome to Logosophe! 🎉
+
+Your email address has been successfully verified, and you're now a confirmed subscriber. Here's what you can do next:
+
+**Explore Harbor**
+- Access your personalized workspace
+- Manage your email preferences
+- Connect with other subscribers
+
+**Email Preferences**
+You can manage which types of emails you receive by going to your Harbor profile:
+- Newsletters: Regular updates and content
+- Announcements: Important system updates
+- Tenant Updates: Updates about your tenant activities
+
+**Getting Started**
+- Visit https://logosophe.com/harbor to access your workspace
+- Customize your email preferences in your profile
+- Explore the platform and discover new features
+
+If you have any questions or need assistance, feel free to reach out to our support team.
+
+Welcome aboard!
+
+Best regards,
+The Logosophe Team
+    `;
+
+    // Send welcome email
+    const msg = createMimeMessage();
+    const senderName = getSenderName('welcome');
+    const senderEmail = getSenderEmail('welcome');
+    
+    msg.setSender({ name: senderName, addr: senderEmail });
+    msg.setRecipient(data.email);
+    msg.setSubject("Welcome to Logosophe! 🎉");
+    msg.addMessage({
+      contentType: 'text/plain',
+      data: welcomeContent
+    });
+
+    const message = new EmailMessage(
+      senderEmail,
+      data.email,
+      msg.asRaw()
+    );
+    
+    await env.EMAIL.send(message);
+    console.log("Welcome email sent successfully");
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        message: "Welcome email sent successfully",
+      }),
+      {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": getCorsOrigin(request),
+        },
+      }
+    );
+  } catch (error) {
+    console.error("Error sending welcome email:", error);
+    return new Response(
+      JSON.stringify({
+        error: "Failed to send welcome email",
         details: error instanceof Error ? error.message : "Unknown error",
       }),
       {

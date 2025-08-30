@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document outlines the design and implementation of a comprehensive subscriber email system for Logosophe, built on top of the existing Cloudflare email-worker infrastructure. The system provides email verification, preference management, secure unsubscribe functionality, and deep integration with the Subscriber Pages system.
+some tThis document outlines the design and implementation of a comprehensive subscriber email system for Logosophe, built on top of the existing Cloudflare email-worker infrastructure. The system provides email verification, preference management, secure unsubscribe functionality, and deep integration with the Subscriber Pages system.
 
 ## System Architecture
 

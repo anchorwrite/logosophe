@@ -69,6 +69,32 @@ export async function GET(
     if ((subscriberResult as any).changes === 0) {
       // Log warning but don't fail the verification
       console.warn(`Subscriber not found for verified email: ${verification.Email}`);
+    } else {
+      // Send welcome email after successful verification
+      try {
+        const emailWorkerUrl = env.EMAIL_WORKER_URL || 'https://email-worker.logosophe.workers.dev';
+        const welcomeResponse = await fetch(`${emailWorkerUrl}/api/welcome-email`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email: verification.Email,
+            name: verification.Email.split('@')[0], // Use email prefix as name
+            type: 'welcome'
+          }),
+        });
+
+        if (!welcomeResponse.ok) {
+          console.error('Failed to send welcome email:', await welcomeResponse.text());
+          // Don't fail verification if welcome email fails
+        } else {
+          console.log('Welcome email sent successfully');
+        }
+      } catch (welcomeError) {
+        console.error('Error sending welcome email:', welcomeError);
+        // Don't fail verification if welcome email fails
+      }
     }
 
     return NextResponse.json({ 
