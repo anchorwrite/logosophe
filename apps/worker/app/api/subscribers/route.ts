@@ -372,8 +372,9 @@ export async function POST(request: Request) {
         // The user should retain their basic 'user' role for basic access
 
         // Soft delete the subscriber record instead of hard deleting
+        // Also reset verification fields so user can re-verify if they resubscribe
         await db.prepare(
-          'UPDATE Subscribers SET Active = FALSE, Left = CURRENT_TIMESTAMP WHERE Email = ?'
+          'UPDATE Subscribers SET Active = FALSE, Left = CURRENT_TIMESTAMP, EmailVerified = NULL, VerificationToken = NULL, VerificationExpires = NULL WHERE Email = ?'
         ).bind(body.Id).run();
 
         return NextResponse.json("Record deleted successfully");

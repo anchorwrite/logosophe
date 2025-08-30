@@ -48,22 +48,42 @@ export async function POST(request: NextRequest) {
       }, { status: 404 });
     }
 
-    // Send verification email via email worker
-    const emailWorkerUrl = env.EMAIL_WORKER_URL || 'https://email-worker.logosophe.workers.dev';
-    const verificationResponse = await fetch(`${emailWorkerUrl}/api/verification-email`, {
+    // Send verification email via Resend
+    const verificationUrl = `https://logosophe.com/verify-email/${token}`;
+    const emailContent = `
+Hello ${name},
+
+Thank you for subscribing to Logosophe! To complete your subscription, please verify your email address by clicking the link below:
+
+${verificationUrl}
+
+This link will expire in 24 hours for security reasons.
+
+If you didn't request this subscription, you can safely ignore this email.
+
+Best regards,
+The Logosophe Team
+    `;
+
+    // Use Resend to send the verification email
+    const resendResponse = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
+        'Authorization': `Bearer ${env.AUTH_RESEND_KEY}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        email,
-        name,
-        type: 'subscription_verification'
-      }),
+              body: JSON.stringify({
+          from: 'info@logosophe.com',
+          to: email,
+          subject: 'Verify Your Email Address - Logosophe',
+          html: emailContent.replace(/\n/g, '<br>'),
+          text: emailContent
+        }),
     });
 
-    if (!verificationResponse.ok) {
-      console.error('Failed to send verification email:', await verificationResponse.text());
+    if (!resendResponse.ok) {
+      const errorText = await resendResponse.text();
+      console.error('Failed to send verification email via Resend:', errorText);
       return NextResponse.json({ 
         error: 'Failed to send verification email' 
       }, { status: 500 });
