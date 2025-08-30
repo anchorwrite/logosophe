@@ -195,11 +195,16 @@ User subscribes → Main worker creates subscriber record → Verification email
 7. **Name capitalization** in emails
 8. **Error handling** and user feedback
 
+### ✅ Phase 2.1: Email Preferences Management - COMPLETED!
+- **UI Component**: Full email preferences manager with handle-specific controls
+- **API Endpoints**: General and handle-specific preferences working
+- **Database Integration**: Seamless integration with existing Subscribers table
+- **User Experience**: Clean tabbed interface in Harbor profile
+
 ### 🔄 Next Steps (Phase 2)
-1. **Email preferences management** in Harbor profile
-2. **Per-handle contact forms** for Subscriber Pages
-3. **Unsubscribe functionality** for future email types
-4. **Email templates** for newsletters and announcements
+1. **Per-handle contact forms** for Subscriber Pages
+2. **Unsubscribe functionality** for future email types
+3. **Email templates** for newsletters and announcements
 
 ### 🚫 Abandoned Features
 - Complex email marketing platform
