@@ -103,8 +103,9 @@ export default function SubscriberOptIn({ email }: SubscriberOptInProps) {
       });
 
       if (!verificationResponse.ok) {
-        const message = await verificationResponse.text();
-        throw new Error(message || 'Failed to send verification email');
+        const errorData = await verificationResponse.json() as { error?: string };
+        const errorMessage = errorData.error || 'Failed to send verification email';
+        throw new Error(errorMessage);
       }
 
       showToast({
