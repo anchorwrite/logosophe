@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
 
     // Verify the handle exists and is public
     const handle = await db.prepare(`
-      SELECT Id, DisplayName, Description, IsPublic, ContactFormEnabled, ContactEmail
+      SELECT Id, DisplayName, Description, IsPublic
       FROM SubscriberHandles 
       WHERE Id = ? AND IsPublic = TRUE
     `).bind(handleId).first() as {
@@ -45,8 +45,6 @@ export async function POST(request: NextRequest) {
       DisplayName: string;
       Description?: string;
       IsPublic: boolean;
-      ContactFormEnabled: boolean;
-      ContactEmail?: string;
     } | undefined;
 
     if (!handle) {
@@ -56,21 +54,39 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!handle.ContactFormEnabled) {
+    // Check if contact form is enabled for this handle
+    const contactInfo = await db.prepare(`
+      SELECT Id, Email, ContactFormEnabled
+      FROM SubscriberContactInfo 
+      WHERE HandleId = ? AND IsActive = TRUE
+    `).bind(handleId).first() as {
+      Id: number;
+      Email: string;
+      ContactFormEnabled: boolean;
+    } | undefined;
+
+    if (!contactInfo) {
+      return NextResponse.json(
+        { error: 'No contact info found for this handle' },
+        { status: 400 }
+      );
+    }
+
+    if (!contactInfo.ContactFormEnabled) {
       return NextResponse.json(
         { error: 'Contact form is disabled for this handle' },
         { status: 403 }
       );
     }
 
-    // Use handle-specific contact email if available, otherwise use the provided handleEmail
-    const targetEmail = handle.ContactEmail || handleEmail;
-    if (!targetEmail) {
+    if (!contactInfo.Email) {
       return NextResponse.json(
         { error: 'No contact email configured for this handle' },
         { status: 400 }
       );
     }
+
+    const targetEmail = contactInfo.Email;
 
     // Log the handle contact form submission to SystemLogs
     try {

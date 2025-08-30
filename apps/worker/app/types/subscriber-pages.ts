@@ -200,6 +200,7 @@ export interface SubscriberContactInfo {
   SocialLinks?: string;
   IsActive: boolean;
   IsPublic: boolean;
+  ContactFormEnabled?: boolean;
   Language: string;
   CreatedAt: string;
   UpdatedAt: string;
@@ -262,6 +263,7 @@ export interface CreateHandleRequest {
   handle: string;
   displayName: string;
   description?: string;
+  isPublic?: boolean;
 }
 
 export interface UpdateHandleRequest {

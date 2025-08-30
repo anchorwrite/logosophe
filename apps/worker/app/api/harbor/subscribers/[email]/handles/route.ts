@@ -237,13 +237,14 @@ async function createSubscriberHandle(db: D1Database, subscriberEmail: string, d
   
   const result = await db.prepare(`
     INSERT INTO SubscriberHandles (SubscriberEmail, Handle, DisplayName, Description, IsActive, IsPublic)
-    VALUES (?, ?, ?, ?, TRUE, FALSE)
+    VALUES (?, ?, ?, ?, TRUE, ?)
     RETURNING Id, SubscriberEmail, Handle, DisplayName, Description, IsActive, IsPublic, CreatedAt, UpdatedAt
   `).bind(
     subscriberEmail,
     data.handle.toLowerCase(),
     data.displayName,
-    data.description || null
+    data.description || null,
+    data.isPublic ?? false
   ).first();
   
   return result as unknown as SubscriberHandle;

@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Box, Button, Card, Flex, Heading, Text, TextField, Badge, Dialog } from '@radix-ui/themes';
-import { Plus, Edit, Trash2, Eye, Globe, Lock, Mail, Phone, Globe as GlobeIcon, MapPin, Share2 } from 'lucide-react';
+import { Box, Button, Card, Flex, Heading, Text, TextField, Badge, Dialog, Switch } from '@radix-ui/themes';
+import { Plus, Edit, Trash2, Eye, Globe, Lock, Mail, Phone, Globe as GlobeIcon, MapPin, Share2, MessageSquare } from 'lucide-react';
 import { SubscriberContactInfo, SubscriberHandle } from '@/types/subscriber-pages';
 
 interface ContactInfoManagerProps {
@@ -184,6 +184,39 @@ export default function ContactInfoManager({ subscriberEmail }: ContactInfoManag
       }
     } catch (error) {
       console.error('Error deleting contact info:', error);
+    }
+  };
+
+  const handleContactFormToggle = async (handleId: number, enabled: boolean) => {
+    try {
+      const contactInfo = contactInfos.find(ci => ci.HandleId === handleId);
+      if (!contactInfo) {
+        setError('Contact info not found for this handle');
+        return;
+      }
+
+      const response = await fetch(`/api/harbor/subscribers/${encodeURIComponent(subscriberEmail)}/contact-info/${contactInfo.Id}`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          ...contactInfo,
+          contactFormEnabled: enabled
+        }),
+      });
+
+      if (response.ok) {
+        // Update local state
+        setContactInfos(prev => prev.map(ci => 
+          ci.Id === contactInfo.Id 
+            ? { ...ci, ContactFormEnabled: enabled }
+            : ci
+        ));
+        setError(null);
+      } else {
+        setError('Failed to update contact form setting');
+      }
+    } catch (error) {
+      console.error('Error updating contact form setting:', error);
+      setError('Failed to update contact form setting');
     }
   };
 
@@ -456,6 +489,91 @@ export default function ContactInfoManager({ subscriberEmail }: ContactInfoManag
           </Dialog.Content>
         )}
       </Dialog.Root>
+
+      {/* Contact Form Settings */}
+      <Card style={{ marginTop: '2rem' }}>
+        <Box p="4">
+          <Heading size="4" style={{ marginBottom: '1rem' }}>
+            <Flex gap="2" align="center">
+              <MessageSquare size={20} />
+              {t('subscriber_pages.contact_form.title', { defaultValue: 'Contact Form Settings' })}
+            </Flex>
+          </Heading>
+          
+          <Text color="gray" size="2" style={{ marginBottom: '1.5rem', display: 'block' }}>
+            {t('subscriber_pages.contact_form.description', { defaultValue: 'Enable or disable contact forms for your handles. Contact forms will use the email address from your contact info.' })}
+          </Text>
+          
+          {handlesLoading ? (
+            <Text color="gray" size="2">
+              {t('common.loading', { defaultValue: 'Loading...' })}
+            </Text>
+          ) : (
+            <Flex direction="column" gap="3">
+              {handles.map((handle) => {
+                const contactInfo = contactInfos.find(ci => ci.HandleId === handle.Id);
+                const hasContactInfo = !!contactInfo?.Email;
+                
+                return (
+                  <Box key={handle.Id} style={{ border: '1px solid var(--gray-6)', borderRadius: '8px', padding: '1rem' }}>
+                    <Flex justify="between" align="center" style={{ marginBottom: '1rem' }}>
+                      <Box>
+                        <Heading size="3" style={{ marginBottom: '0.5rem' }}>
+                          {handle.DisplayName}
+                        </Heading>
+                        <Text size="2" color="gray" style={{ marginBottom: '0.5rem' }}>
+                          @{handle.Handle}
+                        </Text>
+                        {hasContactInfo ? (
+                          <Text size="2" color="green">
+                            {t('subscriber_pages.contact_form.contact_email_available', { defaultValue: 'Contact email available' })}
+                          </Text>
+                        ) : (
+                          <Text size="2" color="orange">
+                            {t('subscriber_pages.contact_form.no_contact_email', { defaultValue: 'No contact email set' })}
+                          </Text>
+                        )}
+                      </Box>
+                      
+                      <Flex align="center" gap="2">
+                        {hasContactInfo ? (
+                          <Switch 
+                            checked={contactInfo?.ContactFormEnabled ?? false}
+                            onCheckedChange={(enabled) => handleContactFormToggle(handle.Id, enabled)}
+                            disabled={!hasContactInfo}
+                          />
+                        ) : (
+                          <Switch 
+                            checked={false}
+                            disabled={true}
+                          />
+                        )}
+                        <Text size="2" color="gray">
+                          {hasContactInfo ? 
+                            (contactInfo?.ContactFormEnabled ? 
+                              t('subscriber_pages.contact_form.enabled', { defaultValue: 'Enabled' }) : 
+                              t('subscriber_pages.contact_form.disabled', { defaultValue: 'Disabled' })
+                            ) : 
+                            t('subscriber_pages.contact_form.unavailable', { defaultValue: 'Unavailable' })
+                          }
+                        </Text>
+                      </Flex>
+                    </Flex>
+                    
+                    {!hasContactInfo && (
+                      <Box style={{ backgroundColor: 'var(--orange-3)', padding: '0.75rem', borderRadius: '6px', border: '1px solid var(--orange-6)' }}>
+                        <Text size="2" color="orange">
+                          {t('subscriber_pages.contact_form.add_contact_info_prompt', { defaultValue: 'Add contact info with an email address to enable the contact form for this handle.' })}
+                        </Text>
+                      </Box>
+                    )}
+                  </Box>
+                );
+              })}
+            </Flex>
+          )}
+        </Box>
+      </Card>
 
       {/* Preview Dialog */}
       <Dialog.Root open={showPreviewDialog} onOpenChange={setShowPreviewDialog}>
