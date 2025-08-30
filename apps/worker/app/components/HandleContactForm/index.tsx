@@ -52,7 +52,7 @@ const HandleContactForm: React.FC<HandleContactFormProps> = ({
     }
   }, [i18n]);
   
-  const { values, errors, handleChange, handleSubmit } = useForm(
+  const { values, errors, handleChange, handleSubmit, resetForm } = useForm(
     {
       name: "",
       email: "",
@@ -113,10 +113,7 @@ const HandleContactForm: React.FC<HandleContactFormProps> = ({
       });
       
       // Reset form
-      handleChange({ target: { name: 'name', value: '' } });
-      handleChange({ target: { name: 'email', value: '' } });
-      handleChange({ target: { name: 'subject', value: '' } });
-      handleChange({ target: { name: 'message', value: '' } });
+      resetForm();
       
       setTimeout(() => {
         setSuccess(false);
@@ -188,7 +185,7 @@ const HandleContactForm: React.FC<HandleContactFormProps> = ({
           </Text>
         </Box>
       ) : (
-        <form onSubmit={handleSubmit(onSubmit)}>
+        <form onSubmit={(e) => handleSubmit(e, onSubmit)}>
           <Flex direction="column" gap="3">
             <TextField.Root>
               <TextField.Input
