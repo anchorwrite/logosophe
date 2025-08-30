@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Send verification email via Resend
-    const verificationUrl = `https://logosophe.com/verify-email/${token}`;
+    const verificationUrl = `https://www.logosophe.com/verify-email/${token}`;
     const emailContent = `
 Hello ${name},
 

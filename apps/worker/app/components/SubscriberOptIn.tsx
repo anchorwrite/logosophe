@@ -98,7 +98,7 @@ export default function SubscriberOptIn({ email }: SubscriberOptInProps) {
         },
         body: JSON.stringify({
           email,
-          name: email.split('@')[0] // Use email prefix as name
+          name: email.split('@')[0].charAt(0).toUpperCase() + email.split('@')[0].slice(1) // Capitalize first letter
         }),
       });
 
