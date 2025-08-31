@@ -287,7 +287,7 @@ export async function POST(request: Request) {
             Signin,
             Active,
             Provider
-          ) VALUES (?, CURRENT_TIMESTAMP, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, true, ?)
+          ) VALUES (?, NULL, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, true, ?)
         `).bind(
           body.Id,
           session.user.name || null,

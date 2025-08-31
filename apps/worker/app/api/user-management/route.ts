@@ -103,6 +103,11 @@ export async function GET(request: NextRequest) {
         SELECT c.Email as user_email, NULL as TenantId
         FROM Credentials c
         WHERE c.Email NOT IN (SELECT Email FROM TenantUsers)
+        UNION
+        SELECT u.email as user_email, NULL as TenantId
+        FROM users u
+        WHERE u.email NOT IN (SELECT Email FROM TenantUsers)
+        AND u.email NOT IN (SELECT Email FROM Credentials)
       ) combined_users
       LEFT JOIN users u ON combined_users.user_email = u.email
       LEFT JOIN accounts a ON u.id = a.userId
