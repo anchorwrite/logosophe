@@ -130,40 +130,48 @@ export async function POST(request: NextRequest) {
       // Continue with email sending even if database storage fails
     }
 
-    const workerUrl = process.env.EMAIL_WORKER_URL;
-    if (!workerUrl) {
-      throw new Error('EMAIL_WORKER_URL environment variable is not set');
-    }
-
-    // Ensure the URL has https:// prefix
-    const formattedUrl = workerUrl.startsWith('http') ? workerUrl : `https://${workerUrl}`;
-
     // Add handle-specific prefix to subject
     const formattedSubject = `Handle Contact: ${handleName} - ${subject}`;
 
-    // Send to email worker with handle-specific information
-    const response = await fetch(formattedUrl, {
+    // Send email directly via Resend
+    const emailContent = `
+Hello,
+
+You have received a new contact form submission from your handle "${handleName}" on Logosophe.
+
+**From:** ${name} (${email})
+**Subject:** ${subject}
+
+**Message:**
+${message}
+
+---
+This message was sent via the contact form on your subscriber page.
+You can manage your contact form settings in your Harbor profile.
+    `;
+
+    const resendResponse = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
+        'Authorization': `Bearer ${env.AUTH_RESEND_KEY}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ 
-        name, 
-        email, 
-        subject: formattedSubject, 
-        message: `Handle: ${handleName}\n\n${message}`,
-        type: 'handle_contact_form',
-        handleId,
-        handleName,
-        handleEmail: targetEmail
+      body: JSON.stringify({
+        from: 'info@logosophe.com',
+        to: targetEmail,
+        subject: formattedSubject,
+        html: emailContent.replace(/\n/g, '<br>'),
+        text: emailContent
       }),
     });
 
-    const responseData = await response.json() as WorkerResponse;
-
-    if (!response.ok) {
-      throw new Error(responseData.error || 'Failed to send message');
+    if (!resendResponse.ok) {
+      const errorText = await resendResponse.text();
+      console.error('Failed to send handle contact email via Resend:', errorText);
+      throw new Error('Failed to send email via Resend');
     }
+
+    const responseData = { message: 'Email sent successfully via Resend' };
 
     return NextResponse.json({ 
       message: 'Message sent successfully',
