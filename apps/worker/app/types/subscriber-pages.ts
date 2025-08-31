@@ -26,6 +26,19 @@ export interface SubscriberHandleLimit {
   UpdatedAt: string;
 }
 
+export interface IndividualSubscriberHandleLimit {
+  Id: number;
+  SubscriberEmail: string;
+  LimitType: 'default' | 'premium' | 'enterprise';
+  Description?: string;
+  SetBy: string;
+  SetAt: string;
+  ExpiresAt?: string;
+  IsActive: boolean;
+  CreatedAt: string;
+  UpdatedAt: string;
+}
+
 export interface SubscriberHandle {
   Id: number;
   SubscriberEmail: string;

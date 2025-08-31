@@ -223,14 +223,34 @@ async function getSubscriberHandles(db: D1Database, subscriberEmail: string, inc
 
 async function getSubscriberHandleLimit(db: D1Database, subscriberEmail: string) {
   
-  // For now, return default limit. In the future, this could be based on subscriber tier
+  // First check for individual subscriber limit
+  const individualLimit = await db.prepare(`
+    SELECT Id, MaxHandles, LimitType, Description, IsActive, ExpiresAt
+    FROM IndividualSubscriberHandleLimits 
+    WHERE SubscriberEmail = ? AND IsActive = TRUE 
+    AND (ExpiresAt IS NULL OR ExpiresAt > datetime('now'))
+  `).first();
+  
+  if (individualLimit) {
+    return {
+      ...individualLimit,
+      Source: 'individual',
+      Description: individualLimit.Description || `Custom limit: ${individualLimit.MaxHandles} handles`
+    };
+  }
+  
+  // Fall back to global tier limits (for now, return default)
+  // In the future, this could be based on subscriber tier or other criteria
   const result = await db.prepare(`
     SELECT Id, LimitType, MaxHandles, Description, IsActive
     FROM SubscriberHandleLimits 
     WHERE LimitType = 'default' AND IsActive = TRUE
   `).first();
   
-  return result as any;
+  return {
+    ...result,
+    Source: 'global_tier'
+  } as any;
 }
 
 async function createSubscriberHandle(db: D1Database, subscriberEmail: string, data: CreateHandleRequest): Promise<SubscriberHandle> {
