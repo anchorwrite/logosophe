@@ -376,7 +376,7 @@ export default function HandleManager({ subscriberEmail }: { subscriberEmail: st
                   {t('subscriber_pages.handles.create_form.handle')}
                 </Text>
                 <Flex align="center">
-                  <Text color="gray" mr="2" size="3">logosophe.com/</Text>
+                  <Text color="gray" mr="2" size="3">www.logosophe.com/</Text>
                   <TextField.Root style={{ flex: 1 }}>
                     <TextField.Input
                       value={formData.handle}
@@ -506,7 +506,7 @@ export default function HandleManager({ subscriberEmail }: { subscriberEmail: st
                   {t('subscriber_pages.handles.edit_form.page_url')}
                 </Text>
                 <Flex align="center">
-                  <Text color="gray" mr="2" size="3">logosophe.com/</Text>
+                  <Text color="gray" mr="2" size="3">www.logosophe.com/</Text>
                   <Text size="3" style={{ fontFamily: 'monospace', backgroundColor: 'var(--gray-3)', padding: '0.5rem', borderRadius: '4px' }}>
                     {editingHandle.Handle}
                   </Text>
@@ -631,7 +631,7 @@ export default function HandleManager({ subscriberEmail }: { subscriberEmail: st
                         </Flex>
                         <Box mb="3">
                           <Text color="gray" size="3">
-                            <strong>URL:</strong> logosophe.com/{handle.Handle}
+                            <strong>URL:</strong> www.logosophe.com/{handle.Handle}
                           </Text>
                         </Box>
                         {handle.Description ? (
