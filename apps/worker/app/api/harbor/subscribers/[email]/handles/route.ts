@@ -225,17 +225,21 @@ async function getSubscriberHandleLimit(db: D1Database, subscriberEmail: string)
   
   // First check for individual subscriber limit
   const individualLimit = await db.prepare(`
-    SELECT Id, MaxHandles, LimitType, Description, IsActive, ExpiresAt
+    SELECT Id, LimitType, Description, IsActive, ExpiresAt
     FROM IndividualSubscriberHandleLimits 
     WHERE SubscriberEmail = ? AND IsActive = TRUE 
     AND (ExpiresAt IS NULL OR ExpiresAt > datetime('now'))
   `).first();
   
   if (individualLimit) {
+    // Calculate MaxHandles based on LimitType
+    const limit = individualLimit as { LimitType: string; Description?: string };
+    const maxHandles = getMaxHandlesForType(limit.LimitType);
     return {
       ...individualLimit,
+      MaxHandles: maxHandles,
       Source: 'individual',
-      Description: individualLimit.Description || `Custom limit: ${individualLimit.MaxHandles} handles`
+      Description: limit.Description || `${limit.LimitType} tier: ${maxHandles} handles`
     };
   }
   
@@ -310,6 +314,19 @@ async function generateHandleSuggestions(baseHandle: string): Promise<string[]> 
   }
   
   return suggestions.slice(0, 10); // Limit to 10 suggestions
+}
+
+// =============================================================================
+// HELPER FUNCTIONS
+// =============================================================================
+
+function getMaxHandlesForType(limitType: string): number {
+  switch (limitType) {
+    case 'default': return 1;
+    case 'premium': return 3;
+    case 'enterprise': return 10;
+    default: return 1;
+  }
 }
 
 // =============================================================================

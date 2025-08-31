@@ -56,7 +56,6 @@ export async function GET(request: NextRequest) {
       SELECT 
         ishl.Id,
         ishl.SubscriberEmail,
-        ishl.MaxHandles,
         ishl.LimitType,
         ishl.Description,
         ishl.SetBy,
