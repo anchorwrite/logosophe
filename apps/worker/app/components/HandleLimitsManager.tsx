@@ -251,11 +251,24 @@ export default function HandleLimitsManager({ isSystemAdmin, accessibleTenants }
     try {
       setError(null);
       
+      // Ensure the expiration date is properly formatted as YYYY-MM-DD
+      let formattedExpiresAt = formData.expiresAt;
+      if (formData.expiresAt) {
+        // If the date is in a different format, convert it to YYYY-MM-DD
+        const date = new Date(formData.expiresAt);
+        if (!isNaN(date.getTime())) {
+          const year = date.getFullYear();
+          const month = String(date.getMonth() + 1).padStart(2, '0');
+          const day = String(date.getDate()).padStart(2, '0');
+          formattedExpiresAt = `${year}-${month}-${day}`;
+        }
+      }
+      
       const payload = {
         subscriberEmail: formData.subscriberEmail,
         limitType: formData.limitType,
         description: formData.description,
-        expiresAt: formData.expiresAt,
+        expiresAt: formattedExpiresAt,
         tenantId: selectedTenant || undefined
       };
       
@@ -463,8 +476,20 @@ export default function HandleLimitsManager({ isSystemAdmin, accessibleTenants }
 
   const formatDate = (dateString: string) => {
     if (!dateString) return 'Never';
-    // Parse the date and format it to show the correct date without timezone issues
+    
+    // Handle dates stored as YYYY-MM-DD format (common in databases)
+    if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      // Parse YYYY-MM-DD format directly to avoid timezone issues
+      const [year, month, day] = dateString.split('-').map(Number);
+      return `${month}/${day}/${year}`;
+    }
+    
+    // For other date formats, use the Date constructor
     const date = new Date(dateString);
+    if (isNaN(date.getTime())) {
+      return 'Invalid Date';
+    }
+    
     return date.toLocaleDateString('en-US', { 
       year: 'numeric', 
       month: 'numeric', 

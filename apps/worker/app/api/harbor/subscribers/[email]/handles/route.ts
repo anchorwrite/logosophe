@@ -229,7 +229,7 @@ async function getSubscriberHandleLimit(db: D1Database, subscriberEmail: string)
     FROM IndividualSubscriberHandleLimits 
     WHERE SubscriberEmail = ? AND IsActive = TRUE 
     AND (ExpiresAt IS NULL OR ExpiresAt > datetime('now'))
-  `).first();
+  `).bind(subscriberEmail).first();
   
   if (individualLimit) {
     // Calculate MaxHandles based on LimitType
