@@ -51,9 +51,19 @@ export default async function HandleLimitsPage() {
     redirect('/dashboard');
   }
 
-  // Get user's accessible tenants if tenant admin
+  // Get user's accessible tenants
   let accessibleTenants: Array<{ Id: string; Name: string }> = [];
-  if (!isAdmin && isTenantAdmin) {
+  if (isAdmin) {
+    // System admins can see all tenants
+    const tenantsResult = await db.prepare(`
+      SELECT Id, Name
+      FROM Tenants
+      ORDER BY Name
+    `).all();
+    
+    accessibleTenants = (tenantsResult.results || []) as Array<{ Id: string; Name: string }>;
+  } else if (isTenantAdmin) {
+    // Tenant admins can only see their assigned tenants
     const tenantsResult = await db.prepare(`
       SELECT DISTINCT t.Id, t.Name
       FROM Tenants t
