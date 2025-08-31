@@ -27,8 +27,6 @@ export async function GET(request: Request) {
       WHERE Email = ? AND Active = 1
     `).bind(session.user.email).first();
 
-    console.log('Subscribers table result:', currentUser);
-
     if (!currentUser) {
       // Fall back to users table if not found in Subscribers
       currentUser = await db.prepare(`
@@ -49,8 +47,6 @@ export async function GET(request: Request) {
       email: currentUser.email,
       image: currentUser.image
     };
-    
-    console.log('Profile API response:', response);
     
     return Response.json(response);
   } catch (error) {

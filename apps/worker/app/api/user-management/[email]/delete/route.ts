@@ -46,11 +46,9 @@ export async function POST(
       return NextResponse.json({ error: 'Cannot delete Credentials provider users from this endpoint. Use the admin users page instead.' }, { status: 400 });
     }
 
-    // Force delete approach - disable foreign key constraints temporarily
-    await db.prepare('PRAGMA foreign_keys = OFF').run();
-    
+    // Manual deletion approach - delete all related records and then the user
     try {
-      // Delete all related records in any order since constraints are disabled
+      // Delete all related records in the correct order
       
       // Auth.js v5 tables
       await db.prepare('DELETE FROM accounts WHERE userId = ?').bind(user.id).run();
@@ -71,23 +69,23 @@ export async function POST(
       await db.prepare('DELETE FROM Workflows WHERE InitiatorEmail = ?').bind(email).run();
       await db.prepare('DELETE FROM WorkflowParticipants WHERE ParticipantEmail = ?').bind(email).run();
       
-      // User management tables
-              await db.prepare('UPDATE Subscribers SET Active = FALSE, Left = CURRENT_TIMESTAMP WHERE Email = ?').bind(email).run();
+      // User management tables - soft delete if exists
+      await db.prepare('UPDATE Subscribers SET Active = FALSE, Left = CURRENT_TIMESTAMP, EmailVerified = NULL, VerificationToken = NULL, VerificationExpires = NULL WHERE Email = ?').bind(email).run();
       await db.prepare('DELETE FROM TenantUsers WHERE Email = ?').bind(email).run();
       
       // Content tables (after TenantUsers is deleted)
       await db.prepare('DELETE FROM PublishedContent WHERE PublisherId = ?').bind(email).run();
       
-    } finally {
-      // Re-enable foreign key constraints
-      await db.prepare('PRAGMA foreign_keys = ON').run();
+      // Finally, delete the user from the users table
+      await db.prepare('DELETE FROM users WHERE id = ?').bind(user.id).run();
+      
+    } catch (cleanupError) {
+      console.error('Error during manual deletion:', cleanupError);
+      throw new Error(`Failed to delete user: ${cleanupError}`);
     }
 
     // Note: SystemLogs are intentionally NOT deleted to preserve audit trail
     // SystemLogs records will remain for historical purposes
-
-    // Now delete from Users table using the adapter
-    await customAdapter?.deleteUser?.(user.id);
 
     // Log the action
     const { ipAddress, userAgent } = extractRequestContext(request);

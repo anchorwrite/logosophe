@@ -14,9 +14,9 @@ This document outlines the current implementation status of the subscriber email
 - **Database Integration**: Uses existing `Subscribers` table with verification fields
 
 #### 2. Email Infrastructure
-- **Main Worker**: Handles verification and welcome emails via Resend API
-- **Email Worker**: Handles system emails (contact forms, tenant applications) via Cloudflare Email API
-- **Resend Integration**: Reliable email delivery for verification and welcome emails
+- **Main Worker**: Handles verification, welcome emails, and handle contact forms via Resend API
+- **Email Worker**: Handles system emails (main contact form, tenant applications) via Cloudflare Email API
+- **Resend Integration**: Reliable email delivery for verification, welcome emails, and handle contact forms
 - **Domain Configuration**: Uses `www.logosophe.com` for verification links
 
 #### 3. Database Schema
@@ -36,11 +36,16 @@ ALTER TABLE ContactSubmissions ADD COLUMN HandleEmail TEXT;
 - **POST `/api/verification-email`**: Send verification email via Resend
 - **GET `/api/verify-email/[token]`**: Verify email and send welcome email
 - **POST `/api/welcome-email`**: Send welcome email via email-worker (legacy, now handled directly)
+- **POST `/api/handle-contact`**: Handle per-handle contact form submissions via Resend
+- **GET `/api/pages/[handle]`**: Get public handle information
+- **GET `/api/pages/[handle]/contact`**: Get handle contact information
 
 #### 5. User Interface
 - **SubscriberOptIn Component**: Subscription form with verification flow
 - **Verification UI**: Shows verification status and resend options
-- **Name Capitalization**: Properly capitalizes user names in emailswhe
+- **Name Capitalization**: Properly capitalizes user names in emails
+- **HandleContactForm Component**: Per-handle contact form for public pages
+- **ContactInfoManager Component**: Harbor interface for managing contact form settings
 
 ## System Architecture
 
@@ -48,6 +53,7 @@ ALTER TABLE ContactSubmissions ADD COLUMN HandleEmail TEXT;
 ```
 User subscribes → Main Worker → Resend API → Verification Email
 User clicks link → Main Worker → Database Update → Welcome Email via Resend
+Handle contact form → Main Worker → Resend API → Handle Owner Email
 ```
 
 ### Email Worker Usage
@@ -56,9 +62,9 @@ User clicks link → Main Worker → Database Update → Welcome Email via Resen
 - **Email Types**: `tenant_application`, `contact_form`
 
 ### Main Worker Usage
-- **Purpose**: All other emails via Resend (verification, welcome, future subscriber emails)
+- **Purpose**: All other emails via Resend (verification, welcome, handle contact forms, future subscriber emails)
 - **Technology**: Resend API for reliable delivery
-- **Email Types**: `verification`, `welcome`
+- **Email Types**: `verification`, `welcome`, `handle_contact_form`
 
 ## Database Schema
 
@@ -147,6 +153,11 @@ User enters email → Verification email sent via Resend → User clicks verific
 User subscribes → Main worker creates subscriber record → Verification email sent via Resend → User clicks link → Main worker verifies email → Welcome email sent via Resend
 ```
 
+### 3. Handle Contact Form Process
+```
+User submits contact form → Main worker validates request → Email sent via Resend to handle owner → Contact submission logged to database
+```
+
 ## API Implementation Details
 
 ### Verification Email Endpoint
@@ -166,6 +177,16 @@ User subscribes → Main worker creates subscriber record → Verification email
 - Updates EmailVerified field
 - Clears verification token
 - Sends welcome email via Resend
+- Handles errors gracefully
+```
+
+### Handle Contact Form Endpoint
+```typescript
+// POST /api/handle-contact
+- Validates handle existence and contact form status
+- Ensures target email comes from SubscriberContactInfo
+- Sends email directly via Resend API
+- Logs submission to ContactSubmissions table
 - Handles errors gracefully
 ```
 
@@ -194,6 +215,8 @@ User subscribes → Main worker creates subscriber record → Verification email
 6. **Proper domain configuration** (www.logosophe.com)
 7. **Name capitalization** in emails
 8. **Error handling** and user feedback
+9. **Per-handle contact forms** with Resend email delivery
+10. **Contact form management** in Harbor Contact tab
 
 ### ✅ Phase 2.1: Email Preferences Management - COMPLETED!
 - **UI Component**: Full email preferences manager with handle-specific controls
@@ -201,10 +224,17 @@ User subscribes → Main worker creates subscriber record → Verification email
 - **Database Integration**: Seamless integration with existing Subscribers table
 - **User Experience**: Clean tabbed interface in Harbor profile
 
+### ✅ Phase 2.2: Per-Handle Contact Forms - COMPLETED!
+- **UI Component**: HandleContactForm component for public pages
+- **Management Interface**: ContactInfoManager in Harbor Contact tab
+- **API Endpoints**: Handle contact form submission and management
+- **Email Delivery**: Direct Resend integration for reliable delivery
+- **Database Integration**: ContactFormEnabled field in SubscriberContactInfo
+
 ### 🔄 Next Steps (Phase 2)
-1. **Per-handle contact forms** for Subscriber Pages
-2. **Unsubscribe functionality** for future email types
-3. **Email templates** for newsletters and announcements
+1. **Per-handle contact forms** for Subscriber Pages - ✅ COMPLETED!
+2. **Unsubscribe functionality** for future email types (Phase 2.3)
+3. **Email templates** for newsletters and announcements (Phase 2.4)
 
 ### 🚫 Abandoned Features
 - Complex email marketing platform
@@ -253,6 +283,13 @@ EMAIL_TO_ADDRESS=info@anchorwrite.net
 - ✅ **Welcome email**: Delivered via Resend
 - ✅ **Error handling**: Graceful fallbacks working
 
+### Handle Contact Form Test
+- ✅ **Contact form display**: Visible on public pages when enabled
+- ✅ **Contact form submission**: Working via Resend API
+- ✅ **Email delivery**: Reliable delivery to handle owners
+- ✅ **Management interface**: Contact tab in Harbor working
+- ✅ **Database integration**: ContactFormEnabled field working
+
 ## Conclusion
 
 The subscriber email system is now fully functional for the core verification flow. The system successfully:
@@ -272,3 +309,5 @@ The architecture is clean, maintainable, and ready for future enhancements. The 
 - ✅ **Minimal database changes** leveraging existing infrastructure
 - ✅ **Professional user experience** with proper error handling
 - ✅ **Scalable foundation** for future subscriber features
+- ✅ **Per-handle contact forms** with reliable email delivery
+- ✅ **Unified contact management** in Harbor interface
