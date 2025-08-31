@@ -16,7 +16,7 @@ export async function GET(
       SELECT 
         sci.Id, sci.HandleId, sci.Email, sci.Phone, sci.Website, sci.Location, 
         sci.SocialLinks, sci.IsActive, sci.IsPublic, sci.Language,
-        sci.CreatedAt, sci.UpdatedAt
+        sci.CreatedAt, sci.UpdatedAt, sci.ContactFormEnabled
       FROM SubscriberContactInfo sci
       INNER JOIN SubscriberHandles sh ON sci.HandleId = sh.Id
       WHERE sh.Handle = ? 

@@ -10,6 +10,7 @@ import SubscriberPagesAppBar from '@/components/SubscriberPagesAppBar';
 import Footer from '@/components/Footer';
 import BlogComments from '@/components/harbor/subscriber-pages/BlogComments';
 import SubscriberOptIn from '@/components/SubscriberOptIn';
+import HandleContactForm from '@/components/HandleContactForm';
 
 interface PublicHandlePageProps {
   params: Promise<{ lang: string; handle: string }>;
@@ -639,6 +640,24 @@ export default function PublicHandlePage({ params }: PublicHandlePageProps) {
               )}
             </Box>
           </Card>
+
+          {/* Contact Form Section */}
+          {contactInfo && contactInfo.ContactFormEnabled && (
+            <Card>
+              <Box p="6">
+                <Heading size="6" mb="4">
+                  {t('subscriber_pages.contact_form.title', { defaultValue: 'Contact Form' })}
+                </Heading>
+                <HandleContactForm
+                  handleId={handle?.Id || 0}
+                  handleName={handle?.DisplayName || ''}
+                  handleDescription={handle?.Description || ''}
+                  handleEmail={contactInfo.Email || ''}
+                  isEnabled={contactInfo.ContactFormEnabled}
+                />
+              </Box>
+            </Card>
+          )}
 
           {/* Bio Section - Moved to bottom */}
           <Card>

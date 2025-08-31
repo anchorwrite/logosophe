@@ -18,9 +18,13 @@ export async function PUT(
       location?: string; 
       socialLinks?: string; 
       isPublic: boolean; 
-      language: string 
+      language: string;
+      contactFormEnabled?: boolean;
     };
-    const { handleId, contactEmail, phone, website, location, socialLinks, isPublic, language } = body;
+    const { handleId, contactEmail, phone, website, location, socialLinks, isPublic, language, contactFormEnabled } = body;
+    
+    console.log('PUT Debug - Request body:', body);
+    console.log('PUT Debug - Parsed fields:', { handleId, contactEmail, phone, website, location, socialLinks, isPublic, language, contactFormEnabled });
 
     if (!handleId) {
       return Response.json(
@@ -63,7 +67,7 @@ export async function PUT(
     // Update the contact info
     const updateResult = await db.prepare(`
       UPDATE SubscriberContactInfo 
-      SET HandleId = ?, Email = ?, Phone = ?, Website = ?, Location = ?, SocialLinks = ?, IsPublic = ?, Language = ?, UpdatedAt = ?
+      SET HandleId = ?, Email = ?, Phone = ?, Website = ?, Location = ?, SocialLinks = ?, IsPublic = ?, Language = ?, UpdatedAt = ?, ContactFormEnabled = ?
       WHERE Id = ?
     `).bind(
       handleId,
@@ -75,6 +79,7 @@ export async function PUT(
       isPublic ? 1 : 0,
       language || 'en',
       new Date().toISOString(),
+      contactFormEnabled !== undefined ? (contactFormEnabled ? 1 : 0) : null,
       contactInfoId
     ).run();
 

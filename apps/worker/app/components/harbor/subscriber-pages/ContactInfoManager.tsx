@@ -198,7 +198,14 @@ export default function ContactInfoManager({ subscriberEmail }: ContactInfoManag
       const response = await fetch(`/api/harbor/subscribers/${encodeURIComponent(subscriberEmail)}/contact-info/${contactInfo.Id}`, {
         method: 'PUT',
         body: JSON.stringify({
-          ...contactInfo,
+          handleId: contactInfo.HandleId,
+          contactEmail: contactInfo.Email,
+          phone: contactInfo.Phone,
+          website: contactInfo.Website,
+          location: contactInfo.Location,
+          socialLinks: contactInfo.SocialLinks,
+          isPublic: contactInfo.IsPublic,
+          language: contactInfo.Language,
           contactFormEnabled: enabled
         }),
       });
