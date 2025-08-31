@@ -19,6 +19,7 @@ import {
   Separator
 } from '@radix-ui/themes';
 import { PlusIcon, Pencil1Icon, TrashIcon, CheckIcon } from '@radix-ui/react-icons';
+import { useToast } from '@/components/Toast';
 
 interface IndividualSubscriberHandleLimit {
   Id: number;
@@ -61,6 +62,7 @@ interface HandleLimitsManagerProps {
 }
 
 export default function HandleLimitsManager({ isSystemAdmin, accessibleTenants }: HandleLimitsManagerProps) {
+  const { showToast } = useToast();
   const [limits, setLimits] = useState<IndividualSubscriberHandleLimit[]>([]);
   const [subscribers, setSubscribers] = useState<Subscriber[]>([]);
   const [handleCounts, setHandleCounts] = useState<SubscriberHandleCount[]>([]);
@@ -96,19 +98,30 @@ export default function HandleLimitsManager({ isSystemAdmin, accessibleTenants }
         params.append('tenantId', selectedTenant);
       }
       
-      const response = await fetch(`/api/dashboard/handle-limits?${params}`);
+      const response = await fetch(`/api/dashboard/handle-limits?${params}`, {
+        credentials: 'include' // Include cookies for authentication
+      });
       if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error('Authentication required. Please sign in again.');
+        }
         throw new Error('Failed to load handle limits');
       }
       
       const data = await response.json() as { data: IndividualSubscriberHandleLimit[] };
       setLimits(data.data || []);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load handle limits');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load handle limits';
+      setError(errorMessage);
+      showToast({
+        title: 'Error',
+        content: errorMessage,
+        type: 'error'
+      });
     } finally {
       setLoading(false);
     }
-  }, [selectedTenant]);
+  }, [selectedTenant, showToast]);
 
   const loadSubscribers = useCallback(async () => {
     try {
@@ -117,8 +130,13 @@ export default function HandleLimitsManager({ isSystemAdmin, accessibleTenants }
         params.append('tenantId', selectedTenant);
       }
       
-      const response = await fetch(`/api/dashboard/handle-limits/subscribers?${params}`);
+      const response = await fetch(`/api/dashboard/handle-limits/subscribers?${params}`, {
+        credentials: 'include' // Include cookies for authentication
+      });
       if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error('Authentication required. Please sign in again.');
+        }
         throw new Error('Failed to load subscribers');
       }
       
@@ -126,8 +144,14 @@ export default function HandleLimitsManager({ isSystemAdmin, accessibleTenants }
       setSubscribers(data.data || []);
     } catch (err) {
       console.error('Failed to load subscribers:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load subscribers';
+      showToast({
+        title: 'Error',
+        content: errorMessage,
+        type: 'error'
+      });
     }
-  }, [selectedTenant]);
+  }, [selectedTenant, showToast]);
 
   const loadHandleCounts = useCallback(async () => {
     try {
@@ -136,17 +160,70 @@ export default function HandleLimitsManager({ isSystemAdmin, accessibleTenants }
         params.append('tenantId', selectedTenant);
       }
       
-      const response = await fetch(`/api/dashboard/handle-limits/subscriber-handle-counts?${params}`);
+      const response = await fetch(`/api/dashboard/handle-limits/subscriber-handle-counts?${params}`, {
+        credentials: 'include' // Include cookies for authentication
+      });
       if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error('Authentication required. Please sign in again.');
+        }
         throw new Error('Failed to load handle counts');
       }
       
       const data = await response.json() as { data: SubscriberHandleCount[] };
-      setHandleCounts(data.data || []);
+      
+      // Get the current individual limits to properly calculate handle counts
+      const limitsResponse = await fetch(`/api/dashboard/handle-limits?${params}`, {
+        credentials: 'include'
+      });
+      let currentLimits: IndividualSubscriberHandleLimit[] = [];
+      if (limitsResponse.ok) {
+        const limitsData = await limitsResponse.json() as { data: IndividualSubscriberHandleLimit[] };
+        currentLimits = limitsData.data || [];
+      }
+      
+      // Merge handle counts with individual limits
+      const enhancedHandleCounts = data.data.map(handleCount => {
+        const individualLimit = currentLimits.find(limit => 
+          limit.SubscriberEmail === handleCount.Email && limit.IsActive
+        );
+        
+        if (individualLimit) {
+          // Use the individual limit type to determine max handles
+          let maxHandles = 1; // default
+          switch (individualLimit.LimitType) {
+            case 'premium':
+              maxHandles = 3;
+              break;
+            case 'enterprise':
+              maxHandles = 10;
+              break;
+            case 'default':
+            default:
+              maxHandles = 1;
+              break;
+          }
+          
+          return {
+            ...handleCount,
+            HandleCount: maxHandles // Override with the individual limit
+          };
+        }
+        
+        return handleCount;
+      });
+      
+      setHandleCounts(enhancedHandleCounts);
     } catch (err) {
       console.error('Failed to load handle counts:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load handle counts';
+      showToast({
+        title: 'Error',
+        content: errorMessage,
+        type: 'error'
+      });
     }
-  }, [selectedTenant]);
+  }, [selectedTenant, showToast]);
 
   useEffect(() => {
     if (accessibleTenants.length > 0) {
@@ -185,23 +262,38 @@ export default function HandleLimitsManager({ isSystemAdmin, accessibleTenants }
       const response = await fetch('/api/dashboard/handle-limits', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include', // Include cookies for authentication
         body: JSON.stringify(payload)
       });
       
       if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error('Authentication required. Please sign in again.');
+        }
         const errorData = await response.json() as { error: string };
         throw new Error(errorData.error || 'Failed to save handle limit');
       }
       
       const data = await response.json() as { message: string };
       await loadLimits();
+      await loadHandleCounts(); // Refresh handle counts after limit change
       setShowForm(false);
       setEditingLimit(null);
       resetForm();
-      alert(data.message);
+      showToast({
+        title: 'Success',
+        content: data.message || 'Handle limit saved successfully',
+        type: 'success'
+      });
       
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save handle limit');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to save handle limit';
+      setError(errorMessage);
+      showToast({
+        title: 'Error',
+        content: errorMessage,
+        type: 'error'
+      });
     }
   };
 
@@ -213,6 +305,11 @@ export default function HandleLimitsManager({ isSystemAdmin, accessibleTenants }
       
       if (selectedSubscribers.size === 0 && selectedTenants.size === 0) {
         setError('Please select at least one subscriber or tenant');
+        showToast({
+          title: 'Error',
+          content: 'Please select at least one subscriber or tenant',
+          type: 'error'
+        });
         return;
       }
       
@@ -222,6 +319,7 @@ export default function HandleLimitsManager({ isSystemAdmin, accessibleTenants }
           fetch('/api/dashboard/handle-limits', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
+            credentials: 'include', // Include cookies for authentication
             body: JSON.stringify({
               subscriberEmail: email,
               limitType: bulkLimitType,
@@ -239,7 +337,9 @@ export default function HandleLimitsManager({ isSystemAdmin, accessibleTenants }
       if (isSystemAdmin && selectedTenants.size > 0) {
         // Get all subscribers from selected tenants
         const tenantSubscriberPromises = Array.from(selectedTenants).map(async (tenantId) => {
-          const response = await fetch(`/api/dashboard/handle-limits/subscribers?tenantId=${tenantId}`);
+          const response = await fetch(`/api/dashboard/handle-limits/subscribers?tenantId=${tenantId}`, {
+            credentials: 'include' // Include cookies for authentication
+          });
           if (response.ok) {
             const data = await response.json() as { data: Subscriber[] };
             return data.data || [];
@@ -255,6 +355,7 @@ export default function HandleLimitsManager({ isSystemAdmin, accessibleTenants }
           fetch('/api/dashboard/handle-limits', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
+            credentials: 'include', // Include cookies for authentication
             body: JSON.stringify({
               subscriberEmail: subscriber.Email,
               limitType: bulkLimitType,
@@ -269,16 +370,27 @@ export default function HandleLimitsManager({ isSystemAdmin, accessibleTenants }
       }
       
       await loadLimits();
+      await loadHandleCounts(); // Refresh handle counts after bulk changes
       setShowBulkForm(false);
       setSelectedSubscribers(new Set());
       setSelectedTenants(new Set());
       setBulkLimitType('default');
       setBulkDescription('');
       setBulkExpiresAt('');
-      alert('Bulk handle limits updated successfully');
+      showToast({
+        title: 'Success',
+        content: 'Bulk handle limits updated successfully',
+        type: 'success'
+      });
       
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update bulk handle limits');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to update bulk handle limits';
+      setError(errorMessage);
+      showToast({
+        title: 'Error',
+        content: errorMessage,
+        type: 'error'
+      });
     }
   };
 
@@ -297,20 +409,35 @@ export default function HandleLimitsManager({ isSystemAdmin, accessibleTenants }
       }
       
       const response = await fetch(`/api/dashboard/handle-limits?${params}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        credentials: 'include' // Include cookies for authentication
       });
       
       if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error('Authentication required. Please sign in again.');
+        }
         const errorData = await response.json() as { error: string };
         throw new Error(errorData.error || 'Failed to delete handle limit');
       }
       
       await loadLimits();
+      await loadHandleCounts(); // Refresh handle counts after deletion
       setDeletingLimit(null);
-      alert('Handle limit removed successfully');
+      showToast({
+        title: 'Success',
+        content: 'Handle limit removed successfully',
+        type: 'success'
+      });
       
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete handle limit');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to delete handle limit';
+      setError(errorMessage);
+      showToast({
+        title: 'Error',
+        content: errorMessage,
+        type: 'error'
+      });
     }
   };
 
@@ -336,7 +463,20 @@ export default function HandleLimitsManager({ isSystemAdmin, accessibleTenants }
 
   const formatDate = (dateString: string) => {
     if (!dateString) return 'Never';
-    return new Date(dateString).toLocaleDateString();
+    // Parse the date and format it to show the correct date without timezone issues
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'numeric', 
+      day: 'numeric' 
+    });
+  };
+
+  const formatSubscriberName = (name: string | undefined, email: string) => {
+    if (name && name.trim()) {
+      return `${name} (${email})`;
+    }
+    return email;
   };
 
   const getLimitTypeColor = (type: string) => {
@@ -569,10 +709,9 @@ export default function HandleLimitsManager({ isSystemAdmin, accessibleTenants }
                 {limits.map(limit => (
                   <Table.Row key={limit.Id}>
                     <Table.Cell>
-                      <Box>
-                        <Text weight="medium">{limit.SubscriberName || limit.SubscriberEmail}</Text>
-                        <Text size="2" color="gray">{limit.SubscriberEmail}</Text>
-                      </Box>
+                      <Text weight="medium">
+                        {formatSubscriberName(limit.SubscriberName, limit.SubscriberEmail)}
+                      </Text>
                     </Table.Cell>
                     <Table.Cell>
                       <Badge color={getLimitTypeColor(limit.LimitType)}>
@@ -798,7 +937,7 @@ export default function HandleLimitsManager({ isSystemAdmin, accessibleTenants }
           <AlertDialog.Title>Remove Handle Limit</AlertDialog.Title>
           <AlertDialog.Description>
             Are you sure you want to remove the handle limit for{' '}
-            <strong>{deletingLimit?.SubscriberName || deletingLimit?.SubscriberEmail}</strong>?
+            <strong>{formatSubscriberName(deletingLimit?.SubscriberName, deletingLimit?.SubscriberEmail || '')}</strong>?
             This will revert them to the default limit.
           </AlertDialog.Description>
           <Flex gap="3" mt="4" justify="end">
