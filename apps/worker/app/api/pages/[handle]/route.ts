@@ -41,9 +41,8 @@ export async function GET(
         sh.IsActive,
         sh.IsPublic,
         sh.CreatedAt,
-        sp.Email as SubscriberEmail
+        sh.SubscriberEmail
       FROM SubscriberHandles sh
-      JOIN SubscriberProfiles sp ON sh.SubscriberEmail = sp.Email
       WHERE sh.Handle = ? AND sh.IsActive = 1 AND sh.IsPublic = 1
     `).bind(handleName).first();
     

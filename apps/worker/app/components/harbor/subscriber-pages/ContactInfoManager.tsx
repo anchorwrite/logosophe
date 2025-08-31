@@ -525,11 +525,11 @@ export default function ContactInfoManager({ subscriberEmail }: ContactInfoManag
                           @{handle.Handle}
                         </Text>
                         {hasContactInfo ? (
-                          <Text size="2" color="green">
+                          <Text size="2" color="green" style={{ marginBottom: '0.5rem' }}>
                             {t('subscriber_pages.contact_form.contact_email_available', { defaultValue: 'Contact email available' })}
                           </Text>
                         ) : (
-                          <Text size="2" color="orange">
+                          <Text size="2" color="orange" style={{ marginBottom: '0.5rem' }}>
                             {t('subscriber_pages.contact_form.no_contact_email', { defaultValue: 'No contact email set' })}
                           </Text>
                         )}
