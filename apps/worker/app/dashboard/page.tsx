@@ -45,6 +45,7 @@ export default async function DashboardPage() {
     { href: '/dashboard/subscriber-delete', label: 'Subscriber Delete', roles: ['admin', 'tenant'] },
     { href: '/dashboard/tenant', label: 'Tenant Management', roles: ['admin', 'tenant'] },
     { href: '/dashboard/user-management', label: 'User Management', roles: ['admin', 'tenant'] },
+    { href: '/dashboard/handle-limits', label: 'Handle Limits Management', roles: ['admin', 'tenant'] },
     { href: '/dashboard/avatars', label: 'Preset Avatars', roles: ['admin', 'tenant'] },
     { href: '/dashboard/admin-users', label: 'Administrative Users', roles: ['admin'] }
   ].sort((a, b) => a.label.localeCompare(b.label));
