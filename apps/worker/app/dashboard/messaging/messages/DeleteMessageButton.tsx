@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Button, Flex, AlertDialog, Text } from '@radix-ui/themes';
+import { useToast } from '@/components/Toast';
 
 interface DeleteMessageButtonProps {
   messageId: number;
@@ -10,6 +11,7 @@ interface DeleteMessageButtonProps {
 }
 
 export default function DeleteMessageButton({ messageId, tenantId, showHardDelete = false }: DeleteMessageButtonProps) {
+  const { showToast } = useToast();
   const [isDeleting, setIsDeleting] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [deleteType, setDeleteType] = useState<'soft' | 'hard'>('soft');
@@ -31,11 +33,19 @@ export default function DeleteMessageButton({ messageId, tenantId, showHardDelet
         window.location.reload();
       } else {
         const errorData = await response.json() as { error?: string };
-        alert(`Error deleting message: ${errorData.error || 'Unknown error'}`);
+        showToast({
+          type: 'error',
+          title: 'Error',
+          content: `Error deleting message: ${errorData.error || 'Unknown error'}`
+        });
       }
     } catch (error) {
       console.error('Error deleting message:', error);
-      alert('Error deleting message. Please try again.');
+      showToast({
+        type: 'error',
+        title: 'Error',
+        content: 'Error deleting message. Please try again.'
+      });
     } finally {
       setIsDeleting(false);
       setShowConfirmDialog(false);

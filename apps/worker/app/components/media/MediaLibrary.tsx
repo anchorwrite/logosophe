@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Table, Box, Flex, Text, TextField, Select, Button, Grid, Dialog, Checkbox } from '@radix-ui/themes';
 import { Search, Download, Eye, Trash2, Share2, Users, Minus } from 'lucide-react';
 import { MediaPreview } from './MediaPreview';
+import { useToast } from '@/components/Toast';
 
 interface MediaResponse {
   files: MediaFile[];
@@ -84,6 +85,7 @@ function formatBytes(bytes: number): string {
 }
 
 export function MediaLibrary() {
+  const { showToast } = useToast();
   const [files, setFiles] = useState<MediaFile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -384,7 +386,11 @@ export function MediaLibrary() {
       setPagination(updatedData.pagination);
     } catch (err) {
       console.error('Error removing file from tenant:', err);
-      alert(err instanceof Error ? err.message : 'Failed to remove file from tenant');
+      showToast({
+        type: 'error',
+        title: 'Error',
+        content: err instanceof Error ? err.message : 'Failed to remove file from tenant'
+      });
     }
   };
 

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Box, Flex, Heading, Text, Button, Card, Badge, TextField, Select, Dialog } from '@radix-ui/themes';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
+import { useToast } from '@/components/Toast';
 
 interface BlockedUser {
   Id: number;
@@ -24,6 +25,7 @@ interface UserToBlock {
 
 export function HarborBlocksClient({ lang }: { lang: string }) {
   const { t } = useTranslation('translations');
+  const { showToast } = useToast();
   const router = useRouter();
   const [blockedUsers, setBlockedUsers] = useState<BlockedUser[]>([]);
   const [availableUsers, setAvailableUsers] = useState<UserToBlock[]>([]);
@@ -126,11 +128,19 @@ export function HarborBlocksClient({ lang }: { lang: string }) {
         setSelectedUser('');
       } else {
         const errorData = await response.json() as { error: string };
-        alert(`Error blocking user: ${errorData.error}`);
+        showToast({
+          type: 'error',
+          title: 'Error',
+          content: `Error blocking user: ${errorData.error}`
+        });
       }
     } catch (error) {
       console.error('Error blocking user:', error);
-      alert('Error blocking user');
+      showToast({
+        type: 'error',
+        title: 'Error',
+        content: 'Error blocking user'
+      });
     } finally {
       setIsBlocking(false);
     }
@@ -148,11 +158,19 @@ export function HarborBlocksClient({ lang }: { lang: string }) {
         await fetchAvailableUsers();
       } else {
         const errorData = await response.json() as { error: string };
-        alert(`Error unblocking user: ${errorData.error}`);
+        showToast({
+          type: 'error',
+          title: 'Error',
+          content: `Error unblocking user: ${errorData.error}`
+        });
       }
     } catch (error) {
       console.error('Error unblocking user:', error);
-      alert('Error unblocking user');
+      showToast({
+        type: 'error',
+        title: 'Error',
+        content: 'Error unblocking user'
+      });
     }
   };
 

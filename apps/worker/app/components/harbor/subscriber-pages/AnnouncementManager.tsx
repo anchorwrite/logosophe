@@ -19,6 +19,7 @@ import * as Dialog from '@radix-ui/react-dialog';
 import { Plus, Edit3, Eye, Archive, Trash2, Globe, Lock, Calendar, Link, X, RefreshCw } from 'lucide-react';
 import { SubscriberAnnouncement } from '@/types/subscriber-pages';
 import ContentSelector from './ContentSelector';
+import { useToast } from '@/components/Toast';
 
 interface AnnouncementManagerProps {
   subscriberEmail: string;
@@ -30,6 +31,7 @@ const AnnouncementManager: React.FC<AnnouncementManagerProps> = ({
   onAnnouncementAdded 
 }) => {
   const { t } = useTranslation('translations');
+  const { showToast } = useToast();
   const { data: session } = useSession();
   const [announcements, setAnnouncements] = useState<SubscriberAnnouncement[]>([]);
   const [loading, setLoading] = useState(false);
@@ -164,7 +166,11 @@ const AnnouncementManager: React.FC<AnnouncementManagerProps> = ({
 
     try {
       if (!selectedHandleId) {
-        alert('Please select a handle for this announcement');
+        showToast({
+          type: 'warning',
+          title: 'Warning',
+          content: 'Please select a handle for this announcement'
+        });
         return;
       }
 
