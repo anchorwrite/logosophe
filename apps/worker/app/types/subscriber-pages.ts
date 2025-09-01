@@ -5,16 +5,7 @@
 // DATABASE ENTITIES
 // =============================================================================
 
-export interface SubscriberProfile {
-  Email: string;
-  Bio?: string;
-  PhotoUrl?: string;
-  Website?: string;
-  SocialLinks?: string; // JSON array of social media links
-  Language: string;
-  CreatedAt: string;
-  UpdatedAt: string;
-}
+
 
 export interface SubscriberHandleLimit {
   Id: number;

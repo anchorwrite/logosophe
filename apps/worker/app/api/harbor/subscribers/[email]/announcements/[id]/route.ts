@@ -80,7 +80,7 @@ export async function PUT(
     // Verify the announcement exists and belongs to this user
     const existingAnnouncement = await db.prepare(`
       SELECT sa.Id, sa.HandleId, sa.Title, sa.Content, sa.Link, sa.LinkText,
-             sa.PublishedAt, sa.ExpiresAt, sa.IsActive, sa.IsPublic, sa.Language,
+             sa.PublishedAt, sa.ExpiresAt, sa.IsActive, sa.Language,
              sa.CreatedAt, sa.UpdatedAt,
              sh.Handle, sh.DisplayName as HandleDisplayName
       FROM SubscriberAnnouncements sa
@@ -200,7 +200,7 @@ export async function DELETE(
     // Verify the announcement exists and belongs to this user
     const existingAnnouncement = await db.prepare(`
       SELECT sa.Id, sa.HandleId, sa.Title, sa.Content, sa.Link, sa.LinkText,
-             sa.PublishedAt, sa.ExpiresAt, sa.IsActive, sa.IsPublic, sa.Language,
+             sa.PublishedAt, sa.ExpiresAt, sa.IsActive, sa.Language,
              sa.CreatedAt, sa.UpdatedAt,
              sh.Handle, sh.DisplayName as HandleDisplayName
       FROM SubscriberAnnouncements sa

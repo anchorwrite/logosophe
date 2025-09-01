@@ -16,8 +16,8 @@ export async function GET(
     const announcementsResult = await db.prepare(`
       SELECT 
         sa.Id, sa.HandleId, sa.Title, sa.Content, sa.Link, sa.LinkText,
-        sa.PublishedAt, sa.ExpiresAt, sa.IsActive, sa.Language,
-        sa.IsPublic, sa.CreatedAt, sa.UpdatedAt
+        sa.PublishedAt, sa.ExpiresAt, sa.IsActive, sa.Language, sa.IsPublic,
+        sa.CreatedAt, sa.UpdatedAt
       FROM SubscriberAnnouncements sa
       INNER JOIN SubscriberHandles sh ON sa.HandleId = sh.Id
       WHERE sh.Handle = ? 
