@@ -139,15 +139,16 @@ Hello,
 
 You have received a new contact form submission from your handle "${handleName}" on Logosophe.
 
-**From:** ${name} (${email})
-**Subject:** ${subject}
+From: ${name} (${email})
 
-**Message:**
+Subject: ${subject}
+
+Message:
+
 ${message}
 
 ---
-This message was sent via the contact form on your subscriber page.
-You can manage your contact form settings in your Harbor profile.
+This message was sent via the contact form on your subscriber page. You can manage your contact form settings in your Harbor profile.
     `;
 
     const resendResponse = await fetch('https://api.resend.com/emails', {
