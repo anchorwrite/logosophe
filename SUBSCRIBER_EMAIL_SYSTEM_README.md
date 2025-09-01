@@ -12,6 +12,7 @@ This document outlines the current implementation status of the subscriber email
 - **Verification Flow**: User subscribes → verification email sent → user clicks link → email verified → welcome email sent
 - **Token Security**: 24-hour expiration, one-time use, cryptographic strength
 - **Database Integration**: Uses existing `Subscribers` table with verification fields
+- **🌍 Internationalization**: Verification and welcome emails sent in user's browser language (en, es, fr, de, nl) with English fallback
 
 #### 2. Email Infrastructure
 - **Main Worker**: Handles verification, welcome emails, and handle contact forms via Resend API
@@ -41,8 +42,8 @@ ALTER TABLE ContactSubmissions ADD COLUMN HandleEmail TEXT;
 - **GET `/api/pages/[handle]/contact`**: Get handle contact information
 
 #### 5. User Interface
-- **SubscriberOptIn Component**: Subscription form with verification flow
-- **Verification UI**: Shows verification status and resend options
+- **SubscriberOptIn Component**: Subscription form with verification flow and **🌍 fully internationalized UI**
+- **Verification UI**: Shows verification status and resend options in user's language
 - **Name Capitalization**: Properly capitalizes user names in emails
 - **HandleContactForm Component**: Per-handle contact form for public pages
 - **ContactInfoManager Component**: Harbor interface for managing contact form settings
@@ -51,10 +52,23 @@ ALTER TABLE ContactSubmissions ADD COLUMN HandleEmail TEXT;
 
 ### Current Working Architecture
 ```
-User subscribes → Main Worker → Resend API → Verification Email
-User clicks link → Main Worker → Database Update → Welcome Email via Resend
+User subscribes → Main Worker → Language Detection → Resend API → Internationalized Verification Email
+User clicks link → Main Worker → Language Detection → Database Update → Internationalized Welcome Email via Resend
 Handle contact form → Main Worker → Resend API → Handle Owner Email
 ```
+
+### 🌍 Internationalization Architecture
+```
+Browser Language Detection → Accept-Language Header → Language Selection → Translation Loading → Email Template Rendering
+```
+
+**Language Detection Flow:**
+1. **Header Parsing**: Extract `Accept-Language` header from request
+2. **Quality Sorting**: Parse language preferences with quality values (e.g., "en-US,en;q=0.9,es;q=0.8")
+3. **Language Selection**: Choose first supported language from user's preferences
+4. **Fallback**: Default to English if no supported language found
+5. **Translation Loading**: Dynamically load translation file with caching
+6. **Template Rendering**: Generate email content in selected language
 
 ### Email Worker Usage
 - **Purpose**: System emails to predictable addresses (contact forms, tenant applications)
@@ -93,6 +107,14 @@ CREATE TABLE ContactSubmissions (
 
 ## Email Templates
 
+### 🌍 Internationalized Email System
+
+**Supported Languages:** English (en), Spanish (es), French (fr), German (de), Dutch (nl)
+
+**Language Detection:** Automatic detection from browser `Accept-Language` header with English fallback
+
+**Translation Files:** All email content and UI elements stored in language-specific JSON files
+
 ### Verification Email
 ```
 Hello {Name},
@@ -108,6 +130,8 @@ If you didn't request this subscription, you can safely ignore this email.
 Best regards,
 The Logosophe Team
 ```
+
+**Available in all 5 languages with proper localization**
 
 ### Welcome Email
 ```
@@ -140,6 +164,42 @@ Welcome aboard!
 Best regards,
 The Logosophe Team
 ```
+
+### 🔑 New Translation Keys Added
+
+**Email Templates (`emails`):**
+- `verification.*` - Complete verification email templates
+- `welcome.*` - Complete welcome email templates
+
+**Subscriber Opt-In UI (`subscriber_opt_in`):**
+- `verification_sent_title` - "Verification Email Sent! 📧"
+- `verification_sent_message` - Main verification success message
+- `verification_sent_spam_notice` - Spam folder check notice
+- `send_another_button` - "Send Another Verification Email" button
+- `verification_email_sent` - Toast notification title
+- `verification_email_sent_content` - Toast notification content
+- `error_title` - Error toast title
+- `failed_to_subscribe` - Subscription failure message
+- `failed_to_send_verification` - Verification email failure message
+
+**Subscriber API Messages (`subscriber_messages`):**
+- `already_subscriber` - "Already a subscriber" (for active users)
+- `subscriber_created` - "Subscriber created successfully" (for new users)
+- `subscriber_reactivated` - "Subscriber reactivated successfully" (for returning users)
+- `please_verify_reactivate` - "Please verify your email to reactivate your subscription"
+
+**Email Verification Page (`verifyEmail`):**
+- `verifying` - "Verifying Email..." (loading state)
+- `success` - "Email Verified!" (success state)
+- `alreadyVerified` - "Already Verified" (already verified state)
+- `failed` - "Verification Failed" (error state)
+- `pleaseWait` - "Please wait while we verify your email address..." (loading message)
+- `email` - "Email" (label for email display)
+- `verifiedAt` - "Verified at" (label for verification timestamp)
+- `goHome` - "Go to Homepage" (button text)
+- `goToHarbor` - "Go to Harbor" (button text for successful verification)
+
+**All keys available in:** English, Spanish, French, German, Dutch
 
 ## User Experience Flow
 
@@ -204,6 +264,32 @@ User submits contact form → Main worker validates request → Email sent via R
 - **Already Verified**: Prevents duplicate verification
 - **Database Errors**: Graceful fallbacks and logging
 
+### 🚨 Security Fix Applied (2025-01-27)
+
+**Issue Identified**: Users were becoming active subscribers immediately upon subscription, bypassing email verification.
+
+**Root Cause**: The `/api/subscribers` endpoint was setting `Active = true` when creating new subscribers, making them active before verification.
+
+**🔄 Additional Reactivation Vulnerability**: The system had a second security flaw where inactive users could bypass verification by resubscribing. When a user subscribed again, if they already existed in the database (even as inactive), the system would immediately reactivate them by setting `Active = 1` without requiring email verification.
+
+**🔒 Role Assignment Vulnerability**: Users were getting the `subscriber` role immediately upon subscription, allowing them to access Harbor before email verification. This was a critical security flaw that has now been fixed.
+
+**Fix Applied**:
+1. **New subscribers created with `Active = false`** - They remain inactive until email verification
+2. **Email verification sets `Active = true`** - Only after clicking verification link
+3. **Verification endpoint updated** - Removed `Active = TRUE` requirement that prevented verification
+4. **Dynamic URL generation** - Verification links now use current domain (fixes local-dev vs production issue)
+5. **🔄 Reactivation vulnerability fixed** - Users can no longer bypass verification by resubscribing
+6. **🔒 Role assignment fixed** - Users only get `subscriber` role AFTER email verification
+
+**Verification Flow (Fixed)**:
+```
+User subscribes → Active = false, EmailVerified = NULL, NO subscriber role
+Verification email sent → User remains inactive, NO access to Harbor
+User clicks verification link → Active = true, EmailVerified = CURRENT_TIMESTAMP, subscriber role assigned
+User becomes active subscriber with Harbor access
+```
+
 ## Current Status Summary
 
 ### ✅ Working Features
@@ -212,11 +298,12 @@ User submits contact form → Main worker validates request → Email sent via R
 3. **Email verification** via secure tokens
 4. **Welcome email** delivery via Resend
 5. **Database integration** with existing Subscribers table
-6. **Proper domain configuration** (www.logosophe.com)
-7. **Name capitalization** in emails
-8. **Error handling** and user feedback
-9. **Per-handle contact forms** with Resend email delivery
-10. **Contact form management** in Harbor Contact tab
+6. **🔒 Secure verification flow** (users inactive until email verification)
+7. **Dynamic domain configuration** (works for both local-dev and production)
+8. **Name capitalization** in emails
+9. **Error handling** and user feedback
+10. **Per-handle contact forms** with Resend email delivery
+11. **Contact form management** in Harbor Contact tab
 
 ### ✅ Phase 2.1: Email Preferences Management - COMPLETED!
 - **UI Component**: Full email preferences manager with handle-specific controls

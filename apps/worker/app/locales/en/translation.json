@@ -1387,6 +1387,75 @@
       "view_page": "View Page",
       "no_description": "No description available",
       "try_again": "Try Again"
+    },
+    "emails": {
+      "verification": {
+        "subject": "Verify Your Email Address - Logosophe",
+        "greeting": "Hello {{name}},",
+        "body": "Thank you for subscribing to Logosophe! To complete your subscription, please verify your email address by clicking the link below:",
+        "verification_link": "{{verificationUrl}}",
+        "expiration_notice": "This link will expire in 24 hours for security reasons.",
+        "ignore_notice": "If you didn't request this subscription, you can safely ignore this email.",
+        "signature": "Best regards,\nThe Logosophe Team"
+      },
+      "welcome": {
+        "subject": "Welcome to Logosophe! 🎉",
+        "greeting": "Hello {{name}},",
+        "welcome_message": "Welcome to Logosophe! 🎉",
+        "verification_success": "Your email address has been successfully verified, and you're now a confirmed subscriber. Here's what you can do next:",
+        "explore_harbor_title": "Explore Harbor",
+        "explore_harbor_items": [
+          "Access your personalized workspace",
+          "Manage your email preferences",
+          "Connect with other subscribers"
+        ],
+        "email_preferences_title": "Email Preferences",
+        "email_preferences_description": "You can manage which types of emails you receive by going to your Harbor profile:",
+        "email_preferences_items": [
+          "Newsletters: Regular updates and content",
+          "Announcements: Important system updates",
+          "Tenant Updates: Updates about your tenant activities"
+        ],
+        "getting_started_title": "Getting Started",
+        "getting_started_items": [
+          "Visit https://www.logosophe.com/harbor to access your workspace",
+          "Customize your email preferences in your profile",
+          "Explore the platform and discover new features"
+        ],
+        "support_message": "If you have any questions or need assistance, feel free to reach out to our support team.",
+        "welcome_aboard": "Welcome aboard!",
+        "signature": "Best regards,\nThe Logosophe Team"
+      }
+    },
+    "subscriber_opt_in": {
+      "verification_sent_title": "Verification Email Sent! 📧",
+      "verification_sent_message": "Please check your email and click the verification link to complete your subscription.",
+      "verification_sent_spam_notice": "If you don't see the email, check your spam folder.",
+      "send_another_button": "Send Another Verification Email",
+      "verification_email_sent": "Verification Email Sent",
+      "verification_email_sent_content": "Please check your email and click the verification link to complete your subscription.",
+      "error_title": "Error",
+      "failed_to_subscribe": "Failed to subscribe. Please try again.",
+      "failed_to_send_verification": "Failed to send verification email"
+    },
+    "subscriber_messages": {
+      "already_subscriber": "Already a subscriber",
+      "subscriber_created": "Subscriber created successfully",
+      "subscriber_reactivated": "Subscriber reactivated successfully",
+      "please_verify_reactivate": "Please verify your email to reactivate your subscription"
+    },
+    "verifyEmail": {
+      "verifying": "Verifying Email...",
+      "success": "Email Verified!",
+      "alreadyVerified": "Already Verified",
+      "failed": "Verification Failed",
+      "pleaseWait": "Please wait while we verify your email address...",
+      "email": "Email",
+      "verifiedAt": "Verified at",
+      "goHome": "Go to Homepage",
+      "goToHarbor": "Go to Harbor",
+      "invalidToken": "This verification link is invalid or has expired. Please request a new verification email.",
+      "alreadyVerifiedMessage": "This email has already been verified."
     }
   }
 }

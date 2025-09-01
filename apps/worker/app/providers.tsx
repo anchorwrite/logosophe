@@ -24,12 +24,7 @@ function Providers({ children, lang }: ProvidersProps) {
       : 'en'
   })()
 
-  // Synchronously set the language to prevent hydration mismatch
-  if (detectedLang && i18n.language !== detectedLang) {
-    i18n.changeLanguage(detectedLang)
-  }
-
-  // Also use useEffect for any subsequent language changes
+  // Use useEffect to change language after component mounts
   useEffect(() => {
     if (detectedLang && i18n.language !== detectedLang) {
       i18n.changeLanguage(detectedLang)

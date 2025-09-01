@@ -1411,5 +1411,74 @@
       "contentUpdates": "inhoud updates",
       "welcome": "welkomst e-mails"
     }
-  }
+  },
+  "emails": {
+    "verification": {
+      "subject": "Verifieer je E-mailadres - Logosophe",
+      "greeting": "Hallo {{name}},",
+      "body": "Bedankt voor je aanmelding bij Logosophe! Om je aanmelding te voltooien, verifieer je e-mailadres door op de onderstaande link te klikken:",
+      "verification_link": "{{verificationUrl}}",
+      "expiration_notice": "Deze link verloopt over 24 uur om veiligheidsredenen.",
+      "ignore_notice": "Als je deze aanmelding niet hebt aangevraagd, kun je deze e-mail veilig negeren.",
+      "signature": "Met vriendelijke groet,\nHet Logosophe Team"
+    },
+    "welcome": {
+      "subject": "Welkom bij Logosophe! 🎉",
+      "greeting": "Hallo {{name}},",
+      "welcome_message": "Welkom bij Logosophe! 🎉",
+      "verification_success": "Je e-mailadres is succesvol geverifieerd en je bent nu een bevestigde abonnee. Hier is wat je vervolgens kunt doen:",
+      "explore_harbor_title": "Verken Harbor",
+      "explore_harbor_items": [
+        "Toegang tot je gepersonaliseerde werkruimte",
+        "Beheer je e-mailvoorkeuren",
+        "Maak verbinding met andere abonnees"
+      ],
+      "email_preferences_title": "E-mailvoorkeuren",
+      "email_preferences_description": "Je kunt beheren welke soorten e-mails je ontvangt door naar je Harbor profiel te gaan:",
+      "email_preferences_items": [
+        "Nieuwsbrieven: Regelmatige updates en inhoud",
+        "Aankondigingen: Belangrijke systeemupdates",
+        "Huurder Updates: Updates over je huurder activiteiten"
+      ],
+      "getting_started_title": "Aan de Slag",
+      "getting_started_items": [
+        "Bezoek https://www.logosophe.com/harbor om toegang te krijgen tot je werkruimte",
+        "Pas je e-mailvoorkeuren aan in je profiel",
+        "Verken het platform en ontdek nieuwe functies"
+      ],
+      "support_message": "Als je vragen hebt of hulp nodig hebt, aarzel dan niet om contact op te nemen met ons ondersteuningsteam.",
+      "welcome_aboard": "Welkom aan boord!",
+      "signature": "Met vriendelijke groet,\nHet Logosophe Team"
+    }
+  },
+      "subscriber_opt_in": {
+      "verification_sent_title": "Verificatie E-mail Verzonden! 📧",
+      "verification_sent_message": "Controleer je e-mail en klik op de verificatielink om je aanmelding te voltooien.",
+      "verification_sent_spam_notice": "Als je de e-mail niet ziet, controleer dan je spam-map.",
+      "send_another_button": "Nog Een Verificatie E-mail Verzenden",
+      "verification_email_sent": "Verificatie E-mail Verzonden",
+      "verification_email_sent_content": "Controleer je e-mail en klik op de verificatielink om je aanmelding te voltooien.",
+      "error_title": "Fout",
+      "failed_to_subscribe": "Aanmelding mislukt. Probeer het opnieuw.",
+      "failed_to_send_verification": "Verificatie e-mail kon niet worden verzonden"
+    },
+    "verifyEmail": {
+      "verifying": "E-mail Verificeren...",
+      "success": "E-mail Geverifieerd!",
+      "alreadyVerified": "Al Geverifieerd",
+      "failed": "Verificatie Mislukt",
+      "pleaseWait": "Even geduld terwijl we je e-mailadres verifiëren...",
+      "email": "E-mail",
+      "verifiedAt": "Geverifieerd op",
+      "goHome": "Ga naar Startpagina",
+      "goToHarbor": "Go naar Harbor",
+      "invalidToken": "Deze verificatielink is ongeldig of verlopen. Vraag een nieuwe verificatie-e-mail aan.",
+      "alreadyVerifiedMessage": "Deze e-mail is al geverifieerd."
+    },
+    "subscriber_messages": {
+      "already_subscriber": "Al een abonnee",
+      "subscriber_created": "Abonnee succesvol aangemaakt",
+      "subscriber_reactivated": "Abonnee succesvol gereactiveerd",
+      "please_verify_reactivate": "Verifieer je e-mail om je abonnement te reactiveren"
+    }
 } 

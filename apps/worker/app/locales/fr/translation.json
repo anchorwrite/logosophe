@@ -1335,5 +1335,74 @@
       "no_description": "Aucune description disponible",
       "try_again": "Réessayer"
     }
-  }
+  },
+  "emails": {
+    "verification": {
+      "subject": "Vérifie ton Adresse E-mail - Logosophe",
+      "greeting": "Bonjour {{name}},",
+      "body": "Merci de t'être abonné à Logosophe ! Pour compléter ton abonnement, veuille vérifier ton adresse e-mail en cliquant sur le lien ci-dessous :",
+      "verification_link": "{{verificationUrl}}",
+      "expiration_notice": "Ce lien expirera dans 24 heures pour des raisons de sécurité.",
+      "ignore_notice": "Si tu n'as pas demandé cet abonnement, tu peux ignorer cet e-mail en toute sécurité.",
+      "signature": "Cordialement,\nL'Équipe Logosophe"
+    },
+    "welcome": {
+      "subject": "Bienvenue sur Logosophe ! 🎉",
+      "greeting": "Bonjour {{name}},",
+      "welcome_message": "Bienvenue sur Logosophe ! 🎉",
+      "verification_success": "Ton adresse e-mail a été vérifiée avec succès, et tu es maintenant un abonné confirmé. Voici ce que tu peux faire ensuite :",
+      "explore_harbor_title": "Explore Harbor",
+      "explore_harbor_items": [
+        "Accède à ton espace de travail personnalisé",
+        "Gère tes préférences e-mail",
+        "Connecte-toi avec d'autres abonnés"
+      ],
+      "email_preferences_title": "Préférences E-mail",
+      "email_preferences_description": "Tu peux gérer quels types d'e-mails tu reçois en allant dans ton profil Harbor :",
+      "email_preferences_items": [
+        "Newsletters : Mises à jour régulières et contenu",
+        "Annonces : Mises à jour système importantes",
+        "Mises à jour Locataire : Mises à jour sur les activités de ton locataire"
+      ],
+      "getting_started_title": "Commencer",
+      "getting_started_items": [
+        "Visite https://www.logosophe.com/harbor pour accéder à ton espace de travail",
+        "Personnalise tes préférences e-mail dans ton profil",
+        "Explore la plateforme et découvre de nouvelles fonctionnalités"
+      ],
+      "support_message": "Si tu as des questions ou besoin d'aide, n'hésite pas à contacter notre équipe de support.",
+      "welcome_aboard": "Bienvenue à bord !",
+      "signature": "Cordialement,\nL'Équipe Logosophe"
+    }
+  },
+      "subscriber_opt_in": {
+      "verification_sent_title": "E-mail de Vérification Envoyé ! 📧",
+      "verification_sent_message": "Veuille vérifier ton e-mail et cliquer sur le lien de vérification pour compléter ton abonnement.",
+      "verification_sent_spam_notice": "Si tu ne vois pas l'e-mail, vérifie ton dossier spam.",
+      "send_another_button": "Envoyer un Autre E-mail de Vérification",
+      "verification_email_sent": "E-mail de Vérification Envoyé",
+      "verification_email_sent_content": "Veuille vérifier ton e-mail et cliquer sur le lien de vérification pour compléter ton abonnement.",
+      "error_title": "Erreur",
+      "failed_to_subscribe": "Échec de l'abonnement. Veuille réessayer.",
+      "failed_to_send_verification": "Échec de l'envoi de l'e-mail de vérification"
+    },
+    "verifyEmail": {
+      "verifying": "Vérification de l'E-mail...",
+      "success": "E-mail Vérifié !",
+      "alreadyVerified": "Déjà Vérifié",
+      "failed": "Échec de la Vérification",
+      "pleaseWait": "Veuille patienter pendant que nous vérifions ton adresse e-mail...",
+      "email": "E-mail",
+      "verifiedAt": "Vérifié le",
+      "goHome": "Aller à la Page d'Accueil",
+      "goToHarbor": "Aller à Harbor",
+      "invalidToken": "Ce lien de vérification n'est pas valide ou a expiré. Veuille demander un nouvel e-mail de vérification.",
+      "alreadyVerifiedMessage": "Cet e-mail a déjà été vérifié."
+    },
+    "subscriber_messages": {
+      "already_subscriber": "Déjà un abonné",
+      "subscriber_created": "Abonné créé avec succès",
+      "subscriber_reactivated": "Abonné réactivé avec succès",
+      "please_verify_reactivate": "Veuille vérifier ton e-mail pour réactiver ton abonnement"
+    }
 } 

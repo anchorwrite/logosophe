@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
+import { detectLanguageFromHeaders, getEmailTemplate, renderWelcomeEmail } from '@/lib/email-templates';
+import { loadTranslation } from '@/lib/translation-loader';
 
 // GET /api/verify-email/[token] - Verify email with token
 export async function GET(
@@ -15,7 +17,7 @@ export async function GET(
     const subscriber = await db.prepare(`
       SELECT Email, VerificationToken, VerificationExpires, EmailVerified, Active
       FROM Subscribers 
-      WHERE VerificationToken = ? AND VerificationExpires > CURRENT_TIMESTAMP AND Active = TRUE
+      WHERE VerificationToken = ? AND VerificationExpires > CURRENT_TIMESTAMP
     `).bind(token).first() as {
       Email: string;
       VerificationToken: string;
@@ -25,24 +27,41 @@ export async function GET(
     } | undefined;
 
     if (!subscriber) {
+      // Detect language from Accept-Language header for error messages
+      const acceptLanguage = request.headers.get('accept-language');
+      const detectedLanguage = detectLanguageFromHeaders(acceptLanguage);
+      
+      // Load translations for the detected language
+      const translations = await loadTranslation(detectedLanguage);
+      
       return NextResponse.json({ 
-        error: 'Invalid or expired verification token',
-        message: 'This verification link is invalid or has expired. Please request a new verification email.'
+        error: 'invalid_or_expired_token',
+        message: translations.verifyEmail?.invalidToken || 'This verification link is invalid or has expired. Please request a new verification email.',
+        language: detectedLanguage
       }, { status: 400 });
     }
 
     if (subscriber.EmailVerified) {
+      // Detect language from Accept-Language header for error messages
+      const acceptLanguage = request.headers.get('accept-language');
+      const detectedLanguage = detectLanguageFromHeaders(acceptLanguage);
+      
+      // Load translations for the detected language
+      const translations = await loadTranslation(detectedLanguage);
+      
       return NextResponse.json({ 
-        error: 'Email already verified',
-        message: 'This email has already been verified.',
-        email: subscriber.Email
+        error: 'email_already_verified',
+        message: translations.verifyEmail?.alreadyVerifiedMessage || 'This email has already been verified.',
+        email: subscriber.Email,
+        language: detectedLanguage
       }, { status: 400 });
     }
 
-    // Mark email as verified and clear verification token
+    // Mark email as verified, activate subscriber, and clear verification token
     const updateResult = await db.prepare(`
       UPDATE Subscribers 
       SET EmailVerified = CURRENT_TIMESTAMP, 
+          Active = true,
           VerificationToken = NULL, 
           VerificationExpires = NULL,
           UpdatedAt = CURRENT_TIMESTAMP 
@@ -53,38 +72,46 @@ export async function GET(
       return NextResponse.json({ error: 'Failed to verify email' }, { status: 500 });
     }
 
+    // NOW add the subscriber role after successful verification
+    try {
+      // Get the user's tenant from TenantUsers
+      const userTenant = await db.prepare(`
+        SELECT TenantId FROM TenantUsers WHERE Email = ?
+      `).bind(subscriber.Email).first() as { TenantId: string } | undefined;
+
+      if (userTenant) {
+        // Add subscriber role for the user's tenant
+        await db.prepare(`
+          INSERT OR IGNORE INTO UserRoles (TenantId, Email, RoleId)
+          VALUES (?, ?, 'subscriber')
+        `).bind(userTenant.TenantId, subscriber.Email).run();
+      } else {
+        // If no tenant found, add to default tenant
+        await db.prepare(`
+          INSERT OR IGNORE INTO UserRoles (TenantId, Email, RoleId)
+          VALUES ('default', ?, 'subscriber')
+        `).bind(subscriber.Email).run();
+      }
+    } catch (roleError) {
+      console.error('Error adding subscriber role:', roleError);
+      // Don't fail verification if role assignment fails
+    }
+
     // Send welcome email after successful verification via Resend
     try {
-      const welcomeContent = `
-Hello ${subscriber.Email.split('@')[0].charAt(0).toUpperCase() + subscriber.Email.split('@')[0].slice(1)},
-
-Welcome to Logosophe! 🎉
-
-Your email address has been successfully verified, and you're now a confirmed subscriber. Here's what you can do next:
-
-**Explore Harbor**
-- Access your personalized workspace
-- Manage your email preferences
-- Connect with other subscribers
-
-**Email Preferences**
-You can manage which types of emails you receive by going to your Harbor profile:
-- Newsletters: Regular updates and content
-- Announcements: Important system updates
-- Tenant Updates: Updates about your tenant activities
-
-**Getting Started**
-- Visit https://www.logosophe.com/harbor to access your workspace
-- Customize your email preferences in your profile
-- Explore the platform and discover new features
-
-If you have any questions or need assistance, feel free to reach out to our support team.
-
-Welcome aboard!
-
-Best regards,
-The Logosophe Team
-      `;
+      // Detect language from Accept-Language header
+      const acceptLanguage = request.headers.get('accept-language');
+      const detectedLanguage = detectLanguageFromHeaders(acceptLanguage);
+      
+      // Load translations for the detected language
+      const translations = await loadTranslation(detectedLanguage);
+      
+      // Get email template for the detected language
+      const emailTemplate = getEmailTemplate('welcome', detectedLanguage, translations);
+      
+      // Render the welcome email content
+      const name = subscriber.Email.split('@')[0].charAt(0).toUpperCase() + subscriber.Email.split('@')[0].slice(1);
+      const { subject, html, text } = renderWelcomeEmail(emailTemplate, name);
 
       const resendResponse = await fetch('https://api.resend.com/emails', {
         method: 'POST',
@@ -95,9 +122,9 @@ The Logosophe Team
         body: JSON.stringify({
           from: 'info@logosophe.com',
           to: subscriber.Email,
-          subject: 'Welcome to Logosophe! 🎉',
-          html: welcomeContent.replace(/\n/g, '<br>'),
-          text: welcomeContent
+          subject,
+          html,
+          text
         }),
       });
 

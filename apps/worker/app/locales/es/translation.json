@@ -1413,5 +1413,74 @@
       "contentUpdates": "actualizaciones de contenido",
       "welcome": "correos electrónicos de bienvenida"
     }
-  }
+  },
+  "emails": {
+    "verification": {
+      "subject": "Verifica tu Dirección de Correo Electrónico - Logosophe",
+      "greeting": "Hola {{name}},",
+      "body": "¡Gracias por suscribirte a Logosophe! Para completar tu suscripción, por favor verifica tu dirección de correo electrónico haciendo clic en el enlace de abajo:",
+      "verification_link": "{{verificationUrl}}",
+      "expiration_notice": "Este enlace expirará en 24 horas por razones de seguridad.",
+      "ignore_notice": "Si no solicitaste esta suscripción, puedes ignorar este correo electrónico de forma segura.",
+      "signature": "Saludos cordiales,\nEl Equipo de Logosophe"
+    },
+    "welcome": {
+      "subject": "¡Bienvenido a Logosophe! 🎉",
+      "greeting": "Hola {{name}},",
+      "welcome_message": "¡Bienvenido a Logosophe! 🎉",
+      "verification_success": "Tu dirección de correo electrónico ha sido verificada exitosamente, y ahora eres un suscriptor confirmado. Aquí tienes lo que puedes hacer a continuación:",
+      "explore_harbor_title": "Explora Harbor",
+      "explore_harbor_items": [
+        "Accede a tu espacio de trabajo personalizado",
+        "Gestiona tus preferencias de correo electrónico",
+        "Conéctate con otros suscriptores"
+      ],
+      "email_preferences_title": "Preferencias de Correo Electrónico",
+      "email_preferences_description": "Puedes gestionar qué tipos de correos electrónicos recibes yendo a tu perfil de Harbor:",
+      "email_preferences_items": [
+        "Boletines: Actualizaciones regulares y contenido",
+        "Anuncios: Actualizaciones importantes del sistema",
+        "Actualizaciones de Inquilino: Actualizaciones sobre las actividades de tu inquilino"
+      ],
+      "getting_started_title": "Comenzar",
+      "getting_started_items": [
+        "Visita https://www.logosophe.com/harbor para acceder a tu espacio de trabajo",
+        "Personaliza tus preferencias de correo electrónico en tu perfil",
+        "Explora la plataforma y descubre nuevas funciones"
+      ],
+      "support_message": "Si tienes alguna pregunta o necesitas ayuda, no dudes en contactar a nuestro equipo de soporte.",
+      "welcome_aboard": "¡Bienvenido a bordo!",
+      "signature": "Saludos cordiales,\nEl Equipo de Logosophe"
+    }
+  },
+      "subscriber_opt_in": {
+      "verification_sent_title": "¡Correo de Verificación Enviado! 📧",
+      "verification_sent_message": "Por favor revisa tu correo electrónico y haz clic en el enlace de verificación para completar tu suscripción.",
+      "verification_sent_spam_notice": "Si no ves el correo, revisa tu carpeta de spam.",
+      "send_another_button": "Enviar Otro Correo de Verificación",
+      "verification_email_sent": "Correo de Verificación Enviado",
+      "verification_email_sent_content": "Por favor revisa tu correo electrónico y haz clic en el enlace de verificación para completar tu suscripción.",
+      "error_title": "Error",
+      "failed_to_subscribe": "Error al suscribirse. Por favor intenta de nuevo.",
+      "failed_to_send_verification": "Error al enviar correo de verificación"
+    },
+    "verifyEmail": {
+      "verifying": "Verificando Correo Electrónico...",
+      "success": "¡Correo Electrónico Verificado!",
+      "alreadyVerified": "Ya Verificado",
+      "failed": "Verificación Fallida",
+      "pleaseWait": "Por favor espera mientras verificamos tu dirección de correo electrónico...",
+      "email": "Correo Electrónico",
+      "verifiedAt": "Verificado el",
+      "goHome": "Ir a la Página Principal",
+      "goToHarbor": "Ir a Harbor",
+      "invalidToken": "Este enlace de verificación no es válido o ha expirado. Por favor solicita un nuevo correo de verificación.",
+      "alreadyVerifiedMessage": "Este correo electrónico ya ha sido verificado."
+    },
+    "subscriber_messages": {
+      "already_subscriber": "Ya es un suscriptor",
+      "subscriber_created": "Suscriptor creado exitosamente",
+      "subscriber_reactivated": "Suscriptor reactivado exitosamente",
+      "please_verify_reactivate": "Por favor verifica tu correo electrónico para reactivar tu suscripción"
+    }
 }
