@@ -2,9 +2,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Box, Button, Card, Flex, Heading, Text, TextArea, Badge, Dialog } from '@radix-ui/themes';
+import { Box, Button, Card, Flex, Heading, Text, TextArea, Badge, Dialog, Select, TextField } from '@radix-ui/themes';
 import { Plus, Edit, Trash2, Eye, EyeOff, Globe, Lock } from 'lucide-react';
 import { SubscriberBiography, SubscriberHandle } from '@/types/subscriber-pages';
+import { useToast } from '@/components/Toast';
 
 interface BiographyManagerProps {
   subscriberEmail: string;
@@ -12,6 +13,7 @@ interface BiographyManagerProps {
 
 export default function BiographyManager({ subscriberEmail }: BiographyManagerProps) {
   const { t } = useTranslation('translations');
+  const { showToast } = useToast();
   const [biographies, setBiographies] = useState<SubscriberBiography[]>([]);
   const [handles, setHandles] = useState<Array<{ Id: number; Handle: string; DisplayName: string; IsActive: boolean }>>([]);
   const [handlesLoading, setHandlesLoading] = useState(true);
@@ -29,10 +31,18 @@ export default function BiographyManager({ subscriberEmail }: BiographyManagerPr
   const [isPublic, setIsPublic] = useState(true);
   const [language, setLanguage] = useState('en');
 
+  // Filters
+  const [filters, setFilters] = useState({
+    status: 'all',
+    language: 'all',
+    handleId: 'all',
+    search: ''
+  });
+
   useEffect(() => {
     fetchBiographies();
     fetchHandles();
-  }, [subscriberEmail]);
+  }, [subscriberEmail, filters]);
 
   const fetchHandles = async () => {
     try {
@@ -67,7 +77,23 @@ export default function BiographyManager({ subscriberEmail }: BiographyManagerPr
     try {
       console.log('📖 Fetching biographies for:', subscriberEmail);
       setLoading(true);
-      const response = await fetch(`/api/harbor/subscribers/${subscriberEmail}/biographies`);
+      
+      const params = new URLSearchParams();
+      
+      if (filters.status !== 'all') {
+        params.append('status', filters.status);
+      }
+      if (filters.language !== 'all') {
+        params.append('language', filters.language);
+      }
+      if (filters.handleId !== 'all') {
+        params.append('handleId', filters.handleId);
+      }
+      if (filters.search) {
+        params.append('search', filters.search);
+      }
+      
+      const response = await fetch(`/api/harbor/subscribers/${subscriberEmail}/biographies?${params}`);
       if (response.ok) {
         const data = await response.json() as { success: boolean; data: SubscriberBiography[] };
         console.log('📖 Biographies response:', data);
@@ -83,7 +109,19 @@ export default function BiographyManager({ subscriberEmail }: BiographyManagerPr
     }
   };
 
+  const handleFilterChange = (field: keyof typeof filters, value: string) => {
+    setFilters(prev => ({ ...prev, [field]: value }));
+  };
 
+  const getStatusColor = (isPublic: boolean, isActive: boolean) => {
+    if (!isActive) return 'gray'; // archived
+    return isPublic ? 'green' : 'orange';
+  };
+
+  const getStatusText = (isPublic: boolean, isActive: boolean) => {
+    if (!isActive) return t('common.archived');
+    return isPublic ? t('common.public') : t('common.private');
+  };
 
   const resetForm = () => {
     setSelectedHandleId(null);
@@ -168,8 +206,52 @@ export default function BiographyManager({ subscriberEmail }: BiographyManagerPr
     }
   };
 
+  const handleArchive = async (biographyId: number) => {
+    if (!confirm(t('subscriber_pages.biography.confirm.archive'))) return;
+
+    try {
+      const response = await fetch(`/api/harbor/subscribers/${subscriberEmail}/biographies/${biographyId}/archive`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isActive: false })
+      });
+
+      if (response.ok) {
+        await reloadData();
+        showToast({
+          type: 'success',
+          title: 'Success',
+          content: t('subscriber_pages.biography.success.archived')
+        });
+      }
+    } catch (error) {
+      console.error('Error archiving biography:', error);
+    }
+  };
+
+  const handleRestore = async (biographyId: number) => {
+    try {
+      const response = await fetch(`/api/harbor/subscribers/${subscriberEmail}/biographies/${biographyId}/archive`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isActive: true })
+      });
+
+      if (response.ok) {
+        await reloadData();
+        showToast({
+          type: 'success',
+          title: 'Success',
+          content: t('subscriber_pages.biography.success.restored')
+        });
+      }
+    } catch (error) {
+      console.error('Error restoring biography:', error);
+    }
+  };
+
   const handleDelete = async (biographyId: number) => {
-    if (!confirm('Are you sure you want to delete this biography?')) return;
+    if (!confirm(t('subscriber_pages.biography.confirm.delete'))) return;
 
     try {
       const response = await fetch(`/api/harbor/subscribers/${subscriberEmail}/biographies/${biographyId}`, {
@@ -178,6 +260,11 @@ export default function BiographyManager({ subscriberEmail }: BiographyManagerPr
 
       if (response.ok) {
         await reloadData();
+        showToast({
+          type: 'success',
+          title: 'Success',
+          content: t('subscriber_pages.biography.success.deleted')
+        });
       }
     } catch (error) {
       console.error('Error deleting biography:', error);
@@ -208,6 +295,79 @@ export default function BiographyManager({ subscriberEmail }: BiographyManagerPr
         </Box>
       )}
 
+      {/* Filters Section */}
+      <Card mb="4">
+        <Box p="6">
+          <Heading size="5" mb="4">
+            {t('subscriber_pages.biography.filters.title')}
+          </Heading>
+          
+          <Box style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+            <Box>
+              <Text weight="medium" size="2" mb="2">
+                {t('subscriber_pages.biography.filters.status')}
+              </Text>
+              <Select.Root value={filters.status} onValueChange={(value) => handleFilterChange('status', value)}>
+                <Select.Trigger />
+                <Select.Content>
+                  <Select.Item value="all">{t('common.all')}</Select.Item>
+                  <Select.Item value="public">{t('common.public')}</Select.Item>
+                  <Select.Item value="private">{t('common.private')}</Select.Item>
+                  <Select.Item value="archived">{t('common.archived')}</Select.Item>
+                </Select.Content>
+              </Select.Root>
+            </Box>
+
+            <Box>
+              <Text weight="medium" size="2" mb="2">
+                {t('subscriber_pages.biography.filters.language')}
+              </Text>
+              <Select.Root value={filters.language} onValueChange={(value) => handleFilterChange('language', value)}>
+                <Select.Trigger />
+                <Select.Content>
+                  <Select.Item value="all">{t('common.all')}</Select.Item>
+                  <Select.Item value="en">{t('subscriber_pages.biography.language_names.en')}</Select.Item>
+                  <Select.Item value="es">{t('subscriber_pages.biography.language_names.es')}</Select.Item>
+                  <Select.Item value="fr">{t('subscriber_pages.biography.language_names.fr')}</Select.Item>
+                  <Select.Item value="de">{t('subscriber_pages.biography.language_names.de')}</Select.Item>
+                  <Select.Item value="nl">{t('subscriber_pages.biography.language_names.nl')}</Select.Item>
+                </Select.Content>
+              </Select.Root>
+            </Box>
+
+            <Box>
+              <Text weight="medium" size="2" mb="2">
+                {t('subscriber_pages.biography.filters.handle')}
+              </Text>
+              <Select.Root value={filters.handleId} onValueChange={(value) => handleFilterChange('handleId', value)}>
+                <Select.Trigger />
+                <Select.Content>
+                  <Select.Item value="all">{t('common.all')}</Select.Item>
+                  {handles.map(handle => (
+                    <Select.Item key={handle.Id} value={handle.Id.toString()}>
+                      {handle.DisplayName}
+                    </Select.Item>
+                  ))}
+                </Select.Content>
+              </Select.Root>
+            </Box>
+
+            <Box>
+              <Text weight="medium" size="2" mb="2">
+                {t('subscriber_pages.biography.filters.search')}
+              </Text>
+              <TextField.Root>
+                <TextField.Input
+                  value={filters.search}
+                  onChange={(e) => handleFilterChange('search', e.target.value)}
+                  placeholder={t('subscriber_pages.biography.filters.search_placeholder')}
+                />
+              </TextField.Root>
+            </Box>
+          </Box>
+        </Box>
+      </Card>
+
       {loading ? (
         <Card>
           <Box p="6" style={{ textAlign: 'center' }}>
@@ -237,8 +397,8 @@ export default function BiographyManager({ subscriberEmail }: BiographyManagerPr
                       }
                     </Text>
                     <Flex gap="2" align="center">
-                      <Badge color={biography.IsPublic ? 'green' : 'orange'}>
-                        {biography.IsPublic ? t('common.public') : t('common.private')}
+                      <Badge color={getStatusColor(biography.IsPublic, biography.IsActive)}>
+                        {getStatusText(biography.IsPublic, biography.IsActive)}
                       </Badge>
                       <Badge color="blue">
                         {biography.Language.toUpperCase()}
@@ -257,6 +417,17 @@ export default function BiographyManager({ subscriberEmail }: BiographyManagerPr
                       <Edit size={14} />
                       {t('common.edit')}
                     </Button>
+                    {biography.IsActive ? (
+                      <Button size="1" variant="soft" color="orange" onClick={() => handleArchive(biography.Id)}>
+                        <EyeOff size={14} />
+                        {t('common.archive')}
+                      </Button>
+                    ) : (
+                      <Button size="1" variant="soft" color="green" onClick={() => handleRestore(biography.Id)}>
+                        <Eye size={14} />
+                        {t('common.restore')}
+                      </Button>
+                    )}
                     <Button size="1" variant="soft" color="red" onClick={() => handleDelete(biography.Id)}>
                       <Trash2 size={14} />
                       {t('common.delete')}

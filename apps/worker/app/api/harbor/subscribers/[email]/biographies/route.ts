@@ -12,7 +12,45 @@ export async function GET(
     const context = await getCloudflareContext({ async: true });
     const db = context.env.DB;
 
-    // Get all biographies for this subscriber across all handles
+    // Get query parameters for filtering
+    const { searchParams } = new URL(request.url);
+    const status = searchParams.get('status');
+    const language = searchParams.get('language');
+    const handleId = searchParams.get('handleId');
+    const search = searchParams.get('search');
+
+    // Build the WHERE clause dynamically
+    let whereConditions = ['sh.SubscriberEmail = ?'];
+    let bindParams: any[] = [email];
+
+    if (status && status !== 'all') {
+      if (status === 'public') {
+        whereConditions.push('sb.IsPublic = 1 AND sb.IsActive = 1');
+      } else if (status === 'private') {
+        whereConditions.push('sb.IsPublic = 0 AND sb.IsActive = 1');
+      } else if (status === 'archived') {
+        whereConditions.push('sb.IsActive = 0');
+      }
+    }
+
+    if (language && language !== 'all') {
+      whereConditions.push('sb.Language = ?');
+      bindParams.push(language);
+    }
+
+    if (handleId && handleId !== 'all') {
+      whereConditions.push('sb.HandleId = ?');
+      bindParams.push(parseInt(handleId));
+    }
+
+    if (search) {
+      whereConditions.push('(sb.Bio LIKE ? OR sh.DisplayName LIKE ?)');
+      bindParams.push(`%${search}%`, `%${search}%`);
+    }
+
+    const whereClause = whereConditions.join(' AND ');
+
+    // Get filtered biographies for this subscriber
     const biographiesResult = await db.prepare(`
       SELECT 
         sb.Id, sb.HandleId, sb.Bio, sb.IsActive, sb.IsPublic, sb.Language,
@@ -20,9 +58,9 @@ export async function GET(
         sh.Handle, sh.DisplayName as HandleDisplayName
       FROM SubscriberBiographies sb
       INNER JOIN SubscriberHandles sh ON sb.HandleId = sh.Id
-      WHERE sh.SubscriberEmail = ?
+      WHERE ${whereClause}
       ORDER BY sh.DisplayName, sb.CreatedAt DESC
-    `).bind(email).all();
+    `).bind(...bindParams).all();
 
     if (!biographiesResult.success) {
       console.error('Database error fetching biographies:', biographiesResult.error);
