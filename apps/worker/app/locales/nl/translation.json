@@ -1203,6 +1203,79 @@
         "nl": "Nederlands"
       }
     },
+    "announcements": {
+      "title": "Aankondigingen Beheren",
+      "description": "Maak en beheer openbare aankondigingen voor je pagina's",
+      "create": "Aankondiging Maken",
+      "no_announcements": "Nog geen aankondigingen. Maak je eerste aankondiging om te beginnen.",
+      "loading": "Aankondigingen laden...",
+      "create_announcement": "Nieuwe Aankondiging Maken",
+      "edit_announcement": "Aankondiging Bewerken",
+      "preview": "Voorvertoning",
+      "title_label": "Titel",
+      "title_placeholder": "Voer aankondigingstitel in",
+      "handle_label": "Handle",
+      "content_label": "Inhoud",
+      "content_placeholder": "Schrijf je aankondigingsinhoud hier...",
+      "link_label": "Link (Optioneel)",
+      "link_placeholder": "https://voorbeeld.com",
+      "link_text_placeholder": "Linktekst (optioneel)",
+      "linked_content_label": "Gekoppelde Harbor Inhoud",
+      "link_harbor_content": "Harbor Inhoud Koppelen",
+      "language_label": "Taal",
+      "published_on": "Gepubliceerd op",
+      "expires": "Verloopt",
+      "confirm": {
+        "delete": "Weet je zeker dat je deze aankondiging wilt archiveren? Dit zal het verbergen van de openbare weergave maar alle inhoud en gegevens behouden.",
+        "hard_delete": "Weet je zeker dat je deze aankondiging VOLLEDIG WILT VERWIJDEREN? Deze actie kan niet ongedaan worden gemaakt en zal alle inhoud en gekoppelde inhoud voor altijd verwijderen."
+      },
+      "success": {
+        "created": "Aankondiging succesvol gemaakt",
+        "updated": "Aankondiging succesvol bijgewerkt",
+        "deleted": "Aankondiging succesvol verwijderd",
+        "hard_deleted": "Aankondiging succesvol volledig verwijderd"
+      }
+    },
+    "biography": {
+      "title": "Biografieën Beheren",
+      "description": "Maak en beheer openbare biografieën voor je pagina's",
+      "create": "Biografie Maken",
+      "no_biographies": "Nog geen biografieën. Maak je eerste biografie om te beginnen.",
+      "loading": "Biografieën laden...",
+      "create_biography": "Nieuwe Biografie Maken",
+      "edit_biography": "Biografie Bewerken",
+      "preview": "Voorvertoning",
+      "handle_label": "Handle",
+      "content_label": "Biografie Inhoud",
+      "content_placeholder": "Schrijf je biografie-inhoud hier...",
+      "language_label": "Taal",
+      "filters": {
+        "title": "Biografieën Filteren",
+        "status": "Status",
+        "language": "Taal",
+        "handle": "Handle",
+        "search": "Zoeken",
+        "search_placeholder": "Biografieën zoeken..."
+      },
+      "language_names": {
+        "en": "Engels",
+        "es": "Spaans",
+        "fr": "Frans",
+        "de": "Duits",
+        "nl": "Nederlands"
+      },
+      "confirm": {
+        "archive": "Weet je zeker dat je deze biografie wilt archiveren? Dit zal het verbergen van de openbare weergave maar alle inhoud en gegevens behouden.",
+        "delete": "Weet je zeker dat je deze biografie wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt en zal alle inhoud voor altijd verwijderen."
+      },
+      "success": {
+        "created": "Biografie succesvol gemaakt",
+        "updated": "Biografie succesvol bijgewerkt",
+        "deleted": "Biografie succesvol verwijderd",
+        "archived": "Biografie succesvol gearchiveerd",
+        "restored": "Biografie succesvol hersteld"
+      }
+    },
     "comments": {
       "title": "Reacties",
       "loading": "Reacties laden...",

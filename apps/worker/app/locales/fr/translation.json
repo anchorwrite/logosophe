@@ -1163,6 +1163,79 @@
         "nl": "Néerlandais"
       }
     },
+    "announcements": {
+      "title": "Gérer les Annonces",
+      "description": "Crée et gère des annonces publiques pour tes pages",
+      "create": "Créer une Annonce",
+      "no_announcements": "Aucune annonce encore. Crée ta première annonce pour commencer.",
+      "loading": "Chargement des annonces...",
+      "create_announcement": "Créer une Nouvelle Annonce",
+      "edit_announcement": "Modifier l'Annonce",
+      "preview": "Aperçu",
+      "title_label": "Titre",
+      "title_placeholder": "Entrer le titre de l'annonce",
+      "handle_label": "Identifiant",
+      "content_label": "Contenu",
+      "content_placeholder": "Écris le contenu de ton annonce ici...",
+      "link_label": "Lien (Optionnel)",
+      "link_placeholder": "https://exemple.com",
+      "link_text_placeholder": "Texte du lien (optionnel)",
+      "linked_content_label": "Contenu Harbor Lié",
+      "link_harbor_content": "Lier le Contenu Harbor",
+      "language_label": "Langue",
+      "published_on": "Publié le",
+      "expires": "Expire",
+      "confirm": {
+        "delete": "Es-tu sûr de vouloir archiver cette annonce ? Cela la masquera de la vue publique mais préservera tout le contenu et les données.",
+        "hard_delete": "Es-tu sûr de vouloir SUPPRIMER DÉFINITIVEMENT cette annonce ? Cette action ne peut pas être annulée et supprimera tout le contenu et le contenu lié pour toujours."
+      },
+      "success": {
+        "created": "Annonce créée avec succès",
+        "updated": "Annonce mise à jour avec succès",
+        "deleted": "Annonce supprimée avec succès",
+        "hard_deleted": "Annonce supprimée définitivement avec succès"
+      }
+    },
+    "biography": {
+      "title": "Gérer les Biographies",
+      "description": "Crée et gère des biographies publiques pour tes pages",
+      "create": "Créer une Biographie",
+      "no_biographies": "Aucune biographie encore. Crée ta première biographie pour commencer.",
+      "loading": "Chargement des biographies...",
+      "create_biography": "Créer une Nouvelle Biographie",
+      "edit_biography": "Modifier la Biographie",
+      "preview": "Aperçu",
+      "handle_label": "Identifiant",
+      "content_label": "Contenu de la Biographie",
+      "content_placeholder": "Écris le contenu de ta biographie ici...",
+      "language_label": "Langue",
+      "filters": {
+        "title": "Filtrer les Biographies",
+        "status": "Statut",
+        "language": "Langue",
+        "handle": "Identifiant",
+        "search": "Rechercher",
+        "search_placeholder": "Rechercher des biographies..."
+      },
+      "language_names": {
+        "en": "Anglais",
+        "es": "Espagnol",
+        "fr": "Français",
+        "de": "Allemand",
+        "nl": "Néerlandais"
+      },
+      "confirm": {
+        "archive": "Es-tu sûr de vouloir archiver cette biographie ? Cela la masquera de la vue publique mais préservera tout le contenu et les données.",
+        "delete": "Es-tu sûr de vouloir supprimer cette biographie ? Cette action ne peut pas être annulée et supprimera tout le contenu pour toujours."
+      },
+      "success": {
+        "created": "Biographie créée avec succès",
+        "updated": "Biographie mise à jour avec succès",
+        "deleted": "Biographie supprimée avec succès",
+        "archived": "Biographie archivée avec succès",
+        "restored": "Biographie restaurée avec succès"
+      }
+    },
     "comments": {
       "title": "Commentaires",
       "loading": "Chargement des commentaires...",

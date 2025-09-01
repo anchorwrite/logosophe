@@ -1204,6 +1204,79 @@
         "nl": "Niederländisch"
       }
     },
+    "announcements": {
+      "title": "Ankündigungen verwalten",
+      "description": "Erstelle und verwalte öffentliche Ankündigungen für deine Seiten",
+      "create": "Ankündigung erstellen",
+      "no_announcements": "Noch keine Ankündigungen. Erstelle deine erste Ankündigung, um zu beginnen.",
+      "loading": "Ankündigungen werden geladen...",
+      "create_announcement": "Neue Ankündigung erstellen",
+      "edit_announcement": "Ankündigung bearbeiten",
+      "preview": "Vorschau",
+      "title_label": "Titel",
+      "title_placeholder": "Ankündigungstitel eingeben",
+      "handle_label": "Handle",
+      "content_label": "Inhalt",
+      "content_placeholder": "Schreibe deinen Ankündigungsinhalt hier...",
+      "link_label": "Link (Optional)",
+      "link_placeholder": "https://beispiel.com",
+      "link_text_placeholder": "Linktext (optional)",
+      "linked_content_label": "Verknüpfter Harbor-Inhalt",
+      "link_harbor_content": "Harbor-Inhalt verlinken",
+      "language_label": "Sprache",
+      "published_on": "Veröffentlicht am",
+      "expires": "Läuft ab",
+      "confirm": {
+        "delete": "Bist du sicher, dass du diese Ankündigung archivieren möchtest? Dies wird sie von der öffentlichen Ansicht ausblenden, aber alle Inhalte und Daten bewahren.",
+        "hard_delete": "Bist du sicher, dass du diese Ankündigung ENDGÜLTIG LÖSCHEN möchtest? Diese Aktion kann nicht rückgängig gemacht werden und entfernt alle Inhalte und verknüpften Inhalte für immer."
+      },
+      "success": {
+        "created": "Ankündigung erfolgreich erstellt",
+        "updated": "Ankündigung erfolgreich aktualisiert",
+        "deleted": "Ankündigung erfolgreich gelöscht",
+        "hard_deleted": "Ankündigung erfolgreich endgültig gelöscht"
+      }
+    },
+    "biography": {
+      "title": "Biografien verwalten",
+      "description": "Erstelle und verwalte öffentliche Biografien für deine Seiten",
+      "create": "Biografie erstellen",
+      "no_biographies": "Noch keine Biografien. Erstelle deine erste Biografie, um zu beginnen.",
+      "loading": "Biografien werden geladen...",
+      "create_biography": "Neue Biografie erstellen",
+      "edit_biography": "Biografie bearbeiten",
+      "preview": "Vorschau",
+      "handle_label": "Handle",
+      "content_label": "Biografie-Inhalt",
+      "content_placeholder": "Schreibe deinen Biografie-Inhalt hier...",
+      "language_label": "Sprache",
+      "filters": {
+        "title": "Biografien filtern",
+        "status": "Status",
+        "language": "Sprache",
+        "handle": "Handle",
+        "search": "Suchen",
+        "search_placeholder": "Biografien durchsuchen..."
+      },
+      "language_names": {
+        "en": "Englisch",
+        "es": "Spanisch",
+        "fr": "Französisch",
+        "de": "Deutsch",
+        "nl": "Niederländisch"
+      },
+      "confirm": {
+        "archive": "Bist du sicher, dass du diese Biografie archivieren möchtest? Dies wird sie von der öffentlichen Ansicht ausblenden, aber alle Inhalte und Daten bewahren.",
+        "delete": "Bist du sicher, dass du diese Biografie löschen möchtest? Diese Aktion kann nicht rückgängig gemacht werden und entfernt alle Inhalte für immer."
+      },
+      "success": {
+        "created": "Biografie erfolgreich erstellt",
+        "updated": "Biografie erfolgreich aktualisiert",
+        "deleted": "Biografie erfolgreich gelöscht",
+        "archived": "Biografie erfolgreich archiviert",
+        "restored": "Biografie erfolgreich wiederhergestellt"
+      }
+    },
     "comments": {
       "title": "Kommentare",
       "loading": "Kommentare werden geladen...",
