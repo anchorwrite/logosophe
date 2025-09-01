@@ -21,25 +21,17 @@ export async function GET(request: NextRequest) {
         sh.IsActive,
         sh.IsPublic,
         sh.CreatedAt,
-        sh.SubscriberEmail,
-        sp.Bio,
-        sp.Website,
-        sp.SocialLinks
+        sh.SubscriberEmail
       FROM SubscriberHandles sh
-      LEFT JOIN SubscriberProfiles sp ON sh.SubscriberEmail = sp.Email
       WHERE sh.IsActive = 1 AND sh.IsPublic = 1
       ORDER BY sh.CreatedAt DESC
     `).all();
 
     // Process handles to extract content focus and recent activity
     const processedHandles = handlesResult.results.map((handle: any) => {
-      // Extract content focus from description, bio, or social links
+      // Extract content focus from description
       let contentFocus = '';
-      if (handle.SocialLinks) {
-        contentFocus = handle.SocialLinks;
-      } else if (handle.Bio) {
-        contentFocus = handle.Bio;
-      } else if (handle.Description) {
+      if (handle.Description) {
         // Try to extract focus from description
         const description = handle.Description.toLowerCase();
         if (description.includes('poetry') || description.includes('poem')) {
@@ -66,10 +58,7 @@ export async function GET(request: NextRequest) {
         IsPublic: Boolean(handle.IsPublic),
         CreatedAt: handle.CreatedAt,
         SubscriberEmail: handle.SubscriberEmail,
-        ContentFocus: contentFocus,
-        Bio: handle.Bio,
-        Website: handle.Website,
-        SocialLinks: handle.SocialLinks
+        ContentFocus: contentFocus
       };
     });
 

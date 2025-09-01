@@ -26,9 +26,8 @@ export async function GET(
     
     // Get handle information
     const handleQuery = await db.prepare(`
-      SELECT sh.*, sp.Email as SubscriberEmail 
+      SELECT sh.*, sh.SubscriberEmail 
       FROM SubscriberHandles sh
-      JOIN SubscriberProfiles sp ON sh.SubscriberEmail = sp.Email
       WHERE sh.Handle = ? AND sh.IsActive = 1 AND sh.IsPublic = 1
     `).bind(handleName).first();
     
@@ -113,9 +112,8 @@ export async function POST(
     
     // Get handle information and verify ownership
     const handleQuery = await db.prepare(`
-      SELECT sh.*, sp.Email as SubscriberEmail 
+      SELECT sh.*, sh.SubscriberEmail 
       FROM SubscriberHandles sh
-      JOIN SubscriberProfiles sp ON sh.SubscriberEmail = sp.Email
       WHERE sh.Handle = ? AND sh.IsActive = 1
     `).bind(handleName).first();
     
