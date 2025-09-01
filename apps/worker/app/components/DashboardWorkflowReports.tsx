@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Card, Box, Text, Heading, Flex, Button, Select, TextField, Checkbox } from '@radix-ui/themes';
+import { useToast } from '@/components/Toast';
 
 interface ReportConfig {
   reportType: string;
@@ -26,6 +27,7 @@ export function DashboardWorkflowReports({
   accessibleTenants,
   tenants 
 }: DashboardWorkflowReportsProps) {
+  const { showToast } = useToast();
   const [reportConfig, setReportConfig] = useState<ReportConfig>({
     reportType: 'summary',
     dateFrom: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
@@ -76,7 +78,11 @@ export function DashboardWorkflowReports({
       }
     } catch (error) {
       console.error('Error generating report:', error);
-      alert('Failed to generate report. Please try again.');
+      showToast({
+        type: 'error',
+        title: 'Error',
+        content: 'Failed to generate report. Please try again.'
+      });
     } finally {
       setGenerating(false);
     }

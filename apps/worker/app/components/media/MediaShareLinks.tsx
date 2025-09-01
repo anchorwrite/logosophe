@@ -5,6 +5,7 @@ import { Table, Box, Flex, Text, Button, Dialog } from '@radix-ui/themes';
 import { Copy, Trash2, Eye, Download } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
+import { useToast } from '@/components/Toast';
 
 interface ShareLink {
   Id: string;
@@ -25,6 +26,7 @@ interface MediaShareLinksProps {
 }
 
 export function MediaShareLinks({ initialLinks }: MediaShareLinksProps) {
+  const { showToast } = useToast();
   const [links, setLinks] = useState<ShareLink[]>(initialLinks);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -97,7 +99,11 @@ export function MediaShareLinks({ initialLinks }: MediaShareLinksProps) {
       setSelectedLink(null);
     } catch (err) {
       console.error('Error deleting shared link:', err);
-      alert('Failed to delete shared link');
+      showToast({
+        type: 'error',
+        title: 'Error',
+        content: 'Failed to delete shared link'
+      });
     }
   };
 

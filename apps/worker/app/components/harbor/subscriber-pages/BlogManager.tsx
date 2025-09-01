@@ -7,6 +7,7 @@ import Container from '@/common/Container';
 import TextArea from '@/common/TextArea';
 import ContentSelector from './ContentSelector';
 import { X, Link } from 'lucide-react';
+import { useToast } from '@/components/Toast';
 
 interface SubscriberBlogPost {
   Id: number;
@@ -61,6 +62,7 @@ interface PaginatedResponse<T> extends ApiResponse<T[]> {
 
 export default function BlogManager({ subscriberEmail }: { subscriberEmail: string }) {
   const { t } = useTranslation('translations');
+  const { showToast } = useToast();
   const [posts, setPosts] = useState<SubscriberBlogPost[]>([]);
   const [handles, setHandles] = useState<SubscriberHandle[]>([]);
   const [loading, setLoading] = useState(true);
@@ -327,7 +329,11 @@ export default function BlogManager({ subscriberEmail }: { subscriberEmail: stri
       fetchPosts();
       
       // Show success message
-      alert(t('subscriber_pages.blog.success.updated'));
+      showToast({
+        type: 'success',
+        title: 'Success',
+        content: t('subscriber_pages.blog.success.updated')
+      });
       
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update blog post');
@@ -357,7 +363,11 @@ export default function BlogManager({ subscriberEmail }: { subscriberEmail: stri
       fetchPosts();
       
       // Show success message
-      alert(t('subscriber_pages.blog.success.hard_deleted'));
+      showToast({
+        type: 'success',
+        title: 'Success',
+        content: t('subscriber_pages.blog.success.hard_deleted')
+      });
       
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to permanently delete blog post');
@@ -385,7 +395,11 @@ export default function BlogManager({ subscriberEmail }: { subscriberEmail: stri
       fetchPosts();
       
       // Show success message
-      alert(t('subscriber_pages.blog.success.archived'));
+      showToast({
+        type: 'success',
+        title: 'Success',
+        content: t('subscriber_pages.blog.success.archived')
+      });
       
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to archive blog post');

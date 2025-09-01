@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Card, Text, Flex, Badge, Button, Box, Heading, Table, Separator } from '@radix-ui/themes';
 import { ArrowLeftIcon } from '@radix-ui/react-icons';
 import Link from 'next/link';
+import { useToast } from '@/components/Toast';
 
 
 interface WorkflowHistoryDetail {
@@ -61,6 +62,7 @@ export default function WorkflowHistoryDetailClient({
   userEmail, 
   userRole 
 }: WorkflowHistoryDetailClientProps) {
+  const { showToast } = useToast();
   const [workflow, setWorkflow] = useState<WorkflowHistoryDetail | null>(null);
   const [participants, setParticipants] = useState<WorkflowParticipant[]>([]);
   const [loading, setLoading] = useState(true);
@@ -188,13 +190,25 @@ export default function WorkflowHistoryDetailClient({
           UpdatedAt: new Date().toISOString()
         } : null);
         
-        alert('Workflow reactivated successfully');
+        showToast({
+          type: 'success',
+          title: 'Success',
+          content: 'Workflow reactivated successfully'
+        });
       } else {
-        alert(`Error: ${result.error || 'Failed to reactivate workflow'}`);
+        showToast({
+          type: 'error',
+          title: 'Error',
+          content: `Error: ${result.error || 'Failed to reactivate workflow'}`
+        });
       }
     } catch (error) {
       console.error('Error reactivating workflow:', error);
-      alert('Failed to reactivate workflow');
+      showToast({
+        type: 'error',
+        title: 'Error',
+        content: 'Failed to reactivate workflow'
+      });
     } finally {
       setIsReactivating(false);
     }

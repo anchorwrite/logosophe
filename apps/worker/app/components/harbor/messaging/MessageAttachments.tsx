@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/common/Button';
 import { MessageAttachment } from '@/types/messaging';
+import { useToast } from '@/components/Toast';
 
 interface MessageAttachmentsProps {
   attachments: MessageAttachment[];
@@ -19,6 +20,7 @@ export const MessageAttachments: React.FC<MessageAttachmentsProps> = ({
   canDelete = false
 }) => {
   const { t } = useTranslation('translations');
+  const { showToast } = useToast();
   const [downloading, setDownloading] = useState<Record<number, boolean>>({});
   const [previewing, setPreviewing] = useState<Record<number, boolean>>({});
 
@@ -47,11 +49,19 @@ export const MessageAttachments: React.FC<MessageAttachmentsProps> = ({
         document.body.removeChild(a);
       } else {
         console.error('Failed to download file');
-        alert(t('messaging.downloadFailed'));
+        showToast({
+          type: 'error',
+          title: 'Error',
+          content: t('messaging.downloadFailed')
+        });
       }
     } catch (error) {
       console.error('Download error:', error);
-      alert(t('messaging.downloadFailed'));
+      showToast({
+        type: 'error',
+        title: 'Error',
+        content: t('messaging.downloadFailed')
+      });
     } finally {
       setDownloading(prev => ({ ...prev, [attachment.Id]: false }));
     }

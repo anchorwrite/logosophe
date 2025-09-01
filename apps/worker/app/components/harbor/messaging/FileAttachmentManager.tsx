@@ -5,6 +5,7 @@ import { Box, Button, Text, Flex, Checkbox, Select, Card } from '@radix-ui/theme
 import { useTranslation } from 'react-i18next';
 import { Upload, X, Check, Paperclip } from 'lucide-react';
 import { MessageAttachment, CreateAttachmentRequest } from '@/types/messaging';
+import { useToast } from '@/components/Toast';
 
 interface FileAttachmentManagerProps {
   tenantId: string;
@@ -28,6 +29,7 @@ export const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
   allowedTypes = ['image/*', 'application/pdf', 'text/*', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']
 }) => {
   const { t } = useTranslation('translations');
+  const { showToast } = useToast();
   const [attachments, setAttachments] = useState<CreateAttachmentRequest[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
@@ -41,7 +43,11 @@ export const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
 
     // Check file count limit
     if (attachments.length + files.length > maxFiles) {
-      alert(t('messaging.maxFilesExceeded').replace('{max}', maxFiles.toString()));
+      showToast({
+        type: 'warning',
+        title: 'Warning',
+        content: t('messaging.maxFilesExceeded').replace('{max}', maxFiles.toString())
+      });
       return;
     }
 
@@ -52,15 +58,23 @@ export const FileAttachmentManager: React.FC<FileAttachmentManagerProps> = ({
     for (const file of files) {
       // Check file size
       if (file.size > maxFileSize) {
-        alert(t('messaging.fileTooLarge')
-          .replace('{fileName}', file.name)
-          .replace('{maxSize}', formatFileSize(maxFileSize)));
+        showToast({
+          type: 'warning',
+          title: 'Warning',
+          content: t('messaging.fileTooLarge')
+            .replace('{fileName}', file.name)
+            .replace('{maxSize}', formatFileSize(maxFileSize))
+        });
         continue;
       }
 
       // Check file type
       if (!isFileTypeAllowed(file.type, allowedTypes)) {
-        alert(t('messaging.fileTypeNotAllowed').replace('{fileType}', file.type));
+        showToast({
+          type: 'warning',
+          title: 'Warning',
+          content: t('messaging.fileTypeNotAllowed').replace('{fileType}', file.type)
+        });
         continue;
       }
 
