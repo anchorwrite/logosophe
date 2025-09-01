@@ -109,8 +109,8 @@ export default function SubscriberOptIn({ email }: SubscriberOptInProps) {
       }
 
       showToast({
-        title: 'Verification Email Sent',
-        content: 'Please check your email and click the verification link to complete your subscription.',
+        title: t('subscriber_opt_in.verification_email_sent'),
+        content: t('subscriber_opt_in.verification_email_sent_content'),
         type: 'success'
       });
       
@@ -119,8 +119,8 @@ export default function SubscriberOptIn({ email }: SubscriberOptInProps) {
     } catch (error) {
       console.error('Subscription error:', error);
       showToast({
-        title: 'Error',
-        content: error instanceof Error ? error.message : 'Failed to subscribe. Please try again.',
+        title: t('subscriber_opt_in.error_title'),
+        content: error instanceof Error ? error.message : t('subscriber_opt_in.failed_to_subscribe'),
         type: 'error'
       });
     } finally {
@@ -136,13 +136,13 @@ export default function SubscriberOptIn({ email }: SubscriberOptInProps) {
         <Flex direction="column" gap="4" align="center">
           <Flex direction="column" gap="2" align="center">
             <Text size="5" weight="medium" align="center" color="green">
-              Verification Email Sent! 📧
+              {t('subscriber_opt_in.verification_sent_title')}
             </Text>
             <Text size="4" align="center" color="gray" mb="4">
-              Please check your email and click the verification link to complete your subscription.
+              {t('subscriber_opt_in.verification_sent_message')}
             </Text>
             <Text size="3" align="center" color="gray">
-              If you don't see the email, check your spam folder.
+              {t('subscriber_opt_in.verification_sent_spam_notice')}
             </Text>
           </Flex>
           <Flex justify="center" style={{ width: '100%' }}>
@@ -151,7 +151,7 @@ export default function SubscriberOptIn({ email }: SubscriberOptInProps) {
               variant="outline"
               style={{ width: '100%' }}
             >
-              Send Another Verification Email
+              {t('subscriber_opt_in.send_another_button')}
             </Button>
           </Flex>
         </Flex>

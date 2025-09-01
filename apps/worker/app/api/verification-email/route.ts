@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { NormalizedLogging, extractRequestContext } from '@/lib/normalized-logging';
+import { detectLanguageFromHeaders, getEmailTemplate, renderVerificationEmail } from '@/lib/email-templates';
+import { loadTranslation } from '@/lib/translation-loader';
 
 interface VerificationEmailRequest {
   email: string;
@@ -48,22 +50,21 @@ export async function POST(request: NextRequest) {
       }, { status: 404 });
     }
 
-    // Send verification email via Resend
-    const verificationUrl = `https://www.logosophe.com/verify-email/${token}`;
-    const emailContent = `
-Hello ${name},
-
-Thank you for subscribing to Logosophe! To complete your subscription, please verify your email address by clicking the link below:
-
-${verificationUrl}
-
-This link will expire in 24 hours for security reasons.
-
-If you didn't request this subscription, you can safely ignore this email.
-
-Best regards,
-The Logosophe Team
-    `;
+    // Detect language from Accept-Language header
+    const acceptLanguage = request.headers.get('accept-language');
+    const detectedLanguage = detectLanguageFromHeaders(acceptLanguage);
+    
+    // Load translations for the detected language
+    const translations = await loadTranslation(detectedLanguage);
+    
+    // Get email template for the detected language
+    const emailTemplate = getEmailTemplate('verification', detectedLanguage, translations);
+    
+    // Render the email content - use current domain for development
+    const host = request.headers.get('host') || 'www.logosophe.com';
+    const protocol = host.includes('localhost') || host.includes('local-dev') ? 'http' : 'https';
+    const verificationUrl = `${protocol}://${host}/verify-email/${token}`;
+    const { subject, html, text } = renderVerificationEmail(emailTemplate, name, verificationUrl);
 
     // Use Resend to send the verification email
     const resendResponse = await fetch('https://api.resend.com/emails', {
@@ -72,13 +73,13 @@ The Logosophe Team
         'Authorization': `Bearer ${env.AUTH_RESEND_KEY}`,
         'Content-Type': 'application/json',
       },
-              body: JSON.stringify({
-          from: 'info@logosophe.com',
-          to: email,
-          subject: 'Verify Your Email Address - Logosophe',
-          html: emailContent.replace(/\n/g, '<br>'),
-          text: emailContent
-        }),
+      body: JSON.stringify({
+        from: 'info@logosophe.com',
+        to: email,
+        subject,
+        html,
+        text
+      }),
     });
 
     if (!resendResponse.ok) {

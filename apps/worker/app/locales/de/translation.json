@@ -1412,5 +1412,74 @@
       "contentUpdates": "Inhalts-Updates",
       "welcome": "Willkommens-E-Mails"
     }
-  }
+  },
+  "emails": {
+    "verification": {
+      "subject": "Bestätige deine E-Mail-Adresse - Logosophe",
+      "greeting": "Hallo {{name}},",
+      "body": "Vielen Dank für deine Anmeldung bei Logosophe! Um deine Anmeldung abzuschließen, bestätige bitte deine E-Mail-Adresse, indem du auf den folgenden Link klickst:",
+      "verification_link": "{{verificationUrl}}",
+      "expiration_notice": "Dieser Link läuft aus Sicherheitsgründen in 24 Stunden ab.",
+      "ignore_notice": "Falls du diese Anmeldung nicht angefordert hast, kannst du diese E-Mail sicher ignorieren.",
+      "signature": "Mit freundlichen Grüßen,\nDas Logosophe-Team"
+    },
+    "welcome": {
+      "subject": "Willkommen bei Logosophe! 🎉",
+      "greeting": "Hallo {{name}},",
+      "welcome_message": "Willkommen bei Logosophe! 🎉",
+      "verification_success": "Deine E-Mail-Adresse wurde erfolgreich bestätigt und du bist jetzt ein bestätigter Abonnent. Hier ist, was du als nächstes tun kannst:",
+      "explore_harbor_title": "Entdecke Harbor",
+      "explore_harbor_items": [
+        "Greife auf deinen personalisierten Arbeitsbereich zu",
+        "Verwalte deine E-Mail-Einstellungen",
+        "Vernetze dich mit anderen Abonnenten"
+      ],
+      "email_preferences_title": "E-Mail-Einstellungen",
+      "email_preferences_description": "Du kannst verwalten, welche Arten von E-Mails du erhältst, indem du zu deinem Harbor-Profil gehst:",
+      "email_preferences_items": [
+        "Newsletter: Regelmäßige Updates und Inhalte",
+        "Ankündigungen: Wichtige System-Updates",
+        "Mandanten-Updates: Updates über deine Mandanten-Aktivitäten"
+      ],
+      "getting_started_title": "Erste Schritte",
+      "getting_started_items": [
+        "Besuche https://www.logosophe.com/harbor, um auf deinen Arbeitsbereich zuzugreifen",
+        "Passe deine E-Mail-Einstellungen in deinem Profil an",
+        "Entdecke die Plattform und neue Funktionen"
+      ],
+      "support_message": "Falls du Fragen hast oder Hilfe benötigst, zögere nicht, unser Support-Team zu kontaktieren.",
+      "welcome_aboard": "Willkommen an Bord!",
+      "signature": "Mit freundlichen Grüßen,\nDas Logosophe-Team"
+    }
+  },
+      "subscriber_opt_in": {
+      "verification_sent_title": "Verifikations-E-Mail Gesendet! 📧",
+      "verification_sent_message": "Bitte überprüfe deine E-Mail und klicke auf den Verifikationslink, um deine Anmeldung abzuschließen.",
+      "verification_sent_spam_notice": "Falls du die E-Mail nicht siehst, überprüfe deinen Spam-Ordner.",
+      "send_another_button": "Weitere Verifikations-E-Mail Senden",
+      "verification_email_sent": "Verifikations-E-Mail Gesendet",
+      "verification_email_sent_content": "Bitte überprüfe deine E-Mail und klicke auf den Verifikationslink, um deine Anmeldung abzuschließen.",
+      "error_title": "Fehler",
+      "failed_to_subscribe": "Anmeldung fehlgeschlagen. Bitte versuche es erneut.",
+      "failed_to_send_verification": "Verifikations-E-Mail konnte nicht gesendet werden"
+    },
+    "verifyEmail": {
+      "verifying": "E-Mail wird Verifiziert...",
+      "success": "E-Mail Verifiziert!",
+      "alreadyVerified": "Bereits Verifiziert",
+      "failed": "Verifikation Fehlgeschlagen",
+      "pleaseWait": "Bitte warte, während wir deine E-Mail-Adresse verifizieren...",
+      "email": "E-Mail",
+      "verifiedAt": "Verifiziert am",
+      "goHome": "Zur Startseite",
+      "goToHarbor": "Zu Harbor",
+      "invalidToken": "Dieser Verifizierungslink ist ungültig oder abgelaufen. Bitte fordere eine neue Verifizierungs-E-Mail an.",
+      "alreadyVerifiedMessage": "Diese E-Mail wurde bereits verifiziert."
+    },
+    "subscriber_messages": {
+      "already_subscriber": "Bereits ein Abonnent",
+      "subscriber_created": "Abonnent erfolgreich erstellt",
+      "subscriber_reactivated": "Abonnent erfolgreich reaktiviert",
+      "please_verify_reactivate": "Bitte verifiziere deine E-Mail, um dein Abonnement zu reaktivieren"
+    }
 } 

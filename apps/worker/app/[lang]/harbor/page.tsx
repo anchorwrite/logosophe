@@ -32,19 +32,27 @@ export default function HarborPage({ params }: { params: Params }) {
     const init = async () => {
       const { lang: resolvedLang } = await params;
       setLang(resolvedLang);
-      if (i18n.isInitialized) {
-        setIsLoading(false);
+      
+      // Ensure i18n is initialized and language is set
+      if (i18n.isInitialized && i18n.language !== resolvedLang) {
+        await i18n.changeLanguage(resolvedLang);
       }
+      
+      setIsLoading(false);
     };
     init();
-  }, [params, i18n.isInitialized]);
+  }, [params, i18n.isInitialized, i18n]);
 
   if (isLoading || status === "loading") {
     return (
       <Flex direction="column" align="center" gap="6">
         <Box p="6">
-          <Heading size="7" align="center" mb="4">{t('harbor.setupAccount')}</Heading>
-          <Text size="5" align="center" color="gray">{t('common.loading')}</Text>
+          <Heading size="7" align="center" mb="4">
+            {i18n.isInitialized && i18n.language === lang ? t('harbor.setupAccount') : 'Setting up your account. Please wait.'}
+          </Heading>
+          <Text size="5" align="center" color="gray">
+            {i18n.isInitialized && i18n.language === lang ? t('common.loading') : 'Loading...'}
+          </Text>
         </Box>
       </Flex>
     );
@@ -58,8 +66,12 @@ export default function HarborPage({ params }: { params: Params }) {
     return (
       <Flex direction="column" align="center" gap="6">
         <Box p="6">
-          <Heading size="7" align="center" mb="4">{t('harbor.accessDenied')}</Heading>
-          <Text size="5" align="center" color="gray">{t('harbor.needRole')}</Text>
+          <Heading size="7" align="center" mb="4">
+            {i18n.isInitialized && i18n.language === lang ? t('harbor.accessDenied') : 'Access Denied'}
+          </Heading>
+          <Text size="5" align="center" color="gray">
+            {i18n.isInitialized && i18n.language === lang ? t('harbor.needRole') : 'You need a role to access this area.'}
+          </Text>
         </Box>
       </Flex>
     );
@@ -69,7 +81,9 @@ export default function HarborPage({ params }: { params: Params }) {
     return (
       <Flex direction="column" align="center" gap="6">
         <Box p="6">
-          <Heading size="7" align="center" mb="4">{t('harbor.welcome')}</Heading>
+          <Heading size="7" align="center" mb="4">
+            {i18n.isInitialized && i18n.language === lang ? t('harbor.welcome') : 'Welcome to Harbor'}
+          </Heading>
           <SubscriberOptIn email={session.user.email as string} />
         </Box>
       </Flex>
@@ -79,10 +93,14 @@ export default function HarborPage({ params }: { params: Params }) {
   return (
     <Flex direction="column" align="center" gap="6">
       <Box p="6">
-        <Heading size="7" align="center" mb="4">{t('harbor.welcome')}</Heading>
+        <Heading size="7" align="center" mb="4">
+          {i18n.isInitialized && i18n.language === lang ? t('harbor.welcome') : 'Welcome to Harbor'}
+        </Heading>
         <Flex direction="column" gap="4" align="center">
           <AuthenticationMessage email={session.user.email as string} />
-          <Text size="5" align="center" color="gray">{t('harbor.subscriberMessage')}</Text>
+          <Text size="5" align="center" color="gray">
+            {i18n.isInitialized && i18n.language === lang ? t('harbor.subscriberMessage') : 'You are now a subscriber.'}
+          </Text>
         </Flex>
         <HarborLinks lang={lang} />
       </Box>

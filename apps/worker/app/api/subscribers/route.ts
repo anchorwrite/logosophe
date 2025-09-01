@@ -232,34 +232,15 @@ export async function POST(request: Request) {
         if (existingSubscriber) {
           // If subscriber exists and is active, they're already subscribed
           if (existingSubscriber.Active) {
-            return NextResponse.json("Already a subscriber", { status: 400 });
+            return NextResponse.json({ 
+              error: "already_subscriber",
+              message: "Already a subscriber" 
+            }, { status: 400 });
           }
           
-          // If subscriber exists but is inactive, reactivate them
-          await db.prepare(`
-            UPDATE Subscribers 
-            SET Active = 1, Left = NULL, UpdatedAt = CURRENT_TIMESTAMP
-            WHERE Email = ?
-          `).bind(body.Id).run();
-
-          // Ensure subscriber role exists
-          const userTenant = await db.prepare(`
-            SELECT TenantId FROM TenantUsers WHERE Email = ?
-          `).bind(body.Id).first() as { TenantId: string } | undefined;
-
-          if (userTenant) {
-            await db.prepare(`
-              INSERT OR IGNORE INTO UserRoles (TenantId, Email, RoleId)
-              VALUES (?, ?, 'subscriber')
-            `).bind(userTenant.TenantId, body.Id).run();
-          } else {
-            await db.prepare(`
-              INSERT OR IGNORE INTO UserRoles (TenantId, Email, RoleId)
-              VALUES ('default', ?, 'subscriber')
-            `).bind(body.Id).run();
-          }
-
-          return NextResponse.json("Subscriber reactivated successfully");
+          // If subscriber exists but is inactive, allow them to resubscribe
+          // This will create a new verification email and update their record
+          // We'll continue with the normal flow below
         }
 
         // Validate provider
@@ -277,44 +258,49 @@ export async function POST(request: Request) {
           return NextResponse.json({ error: "Only system admins can add other users' emails" }, { status: 401 });
         }
 
-        // Create new subscriber record
-        await db.prepare(`
-          INSERT INTO Subscribers (
-            Email,
-            EmailVerified,
-            Name,
-            Joined,
-            Signin,
-            Active,
-            Provider
-          ) VALUES (?, NULL, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, true, ?)
-        `).bind(
-          body.Id,
-          session.user.name || null,
-          body.provider
-        ).run();
-
-        // Add subscriber role to UserRoles table
-        // First, get the user's tenant from TenantUsers
-        const userTenant = await db.prepare(`
-          SELECT TenantId FROM TenantUsers WHERE Email = ?
-        `).bind(body.Id).first() as { TenantId: string } | undefined;
-
-        if (userTenant) {
-          // Add subscriber role for the user's tenant
+        if (existingSubscriber) {
+          // Update existing inactive subscriber record
           await db.prepare(`
-            INSERT OR IGNORE INTO UserRoles (TenantId, Email, RoleId)
-            VALUES (?, ?, 'subscriber')
-          `).bind(userTenant.TenantId, body.Id).run();
+            UPDATE Subscribers 
+            SET EmailVerified = NULL,
+                Name = ?,
+                Signin = CURRENT_TIMESTAMP,
+                Active = false,
+                Provider = ?,
+                UpdatedAt = CURRENT_TIMESTAMP
+            WHERE Email = ?
+          `).bind(
+            session.user.name || null,
+            body.provider,
+            body.Id
+          ).run();
         } else {
-          // If no tenant found, add to default tenant
+          // Create new subscriber record - INACTIVE until email verification
           await db.prepare(`
-            INSERT OR IGNORE INTO UserRoles (TenantId, Email, RoleId)
-            VALUES ('default', ?, 'subscriber')
-          `).bind(body.Id).run();
+            INSERT INTO Subscribers (
+              Email,
+              EmailVerified,
+              Name,
+              Joined,
+              Signin,
+              Active,
+              Provider
+            ) VALUES (?, NULL, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, false, ?)
+          `).bind(
+            body.Id,
+            session.user.name || null,
+            body.provider
+          ).run();
         }
 
-        return NextResponse.json("Subscriber created successfully");
+        // DON'T add subscriber role yet - wait until email verification
+        // The role will be added in the verify-email endpoint after successful verification
+
+        return NextResponse.json({ 
+          success: true,
+          action: existingSubscriber ? "reactivated" : "created",
+          message: existingSubscriber ? "Subscriber reactivated successfully" : "Subscriber created successfully"
+        });
       }
 
       case 'update': {
