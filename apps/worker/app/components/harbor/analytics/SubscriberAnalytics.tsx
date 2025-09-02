@@ -382,7 +382,7 @@ export function SubscriberAnalytics({ lang, dict }: SubscriberAnalyticsProps) {
                     <Text weight="bold">{item.TotalOperations.toLocaleString()}</Text>
                   </Flex>
                   <Flex justify="between">
-                    <Text>{dict.harbor.uniqueFiles}:</Text>
+                    <Text>{dict.harbor.uniqueFilesUC}:</Text>
                     <Text weight="bold">{item.UniqueFiles}</Text>
                   </Flex>
                   <Flex justify="between">

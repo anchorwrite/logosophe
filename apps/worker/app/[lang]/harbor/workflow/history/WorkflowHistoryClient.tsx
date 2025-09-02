@@ -162,7 +162,7 @@ export function WorkflowHistoryClient({ userEmail, userTenantId, lang }: Workflo
         showToast({
           type: 'success',
           title: t('common.success'),
-          content: t('workflow.messages.deletedSuccessfully')
+          content: t('workflow.message.deletedSuccessfully')
         });
       } else {
         showToast({
@@ -427,10 +427,10 @@ export function WorkflowHistoryClient({ userEmail, userTenantId, lang }: Workflo
                 <Select.Trigger placeholder={t('workflow.history.filterByStatus')} />
                 <Select.Content>
                   <Select.Item value="all">{t('workflow.history.allStatuses')}</Select.Item>
-                  <Select.Item value="active">{t('workflow.status.active')}</Select.Item>
-                  <Select.Item value="completed">{t('workflow.status.completed')}</Select.Item>
-                  <Select.Item value="terminated">{t('workflow.status.terminated')}</Select.Item>
-                  <Select.Item value="deleted">{t('workflow.status.deleted')}</Select.Item>
+                  <Select.Item value="active">{t('workflow.statuses.active')}</Select.Item>
+                  <Select.Item value="completed">{t('workflow.statuses.completed')}</Select.Item>
+                  <Select.Item value="terminated">{t('workflow.statuses.terminated')}</Select.Item>
+                  <Select.Item value="deleted">{t('workflow.statuses.deleted')}</Select.Item>
                 </Select.Content>
               </Select.Root>
 
@@ -537,7 +537,7 @@ export function WorkflowHistoryClient({ userEmail, userTenantId, lang }: Workflo
                   </Table.Cell>
                   <Table.Cell>
                     <Badge color={getStatusColor(workflow.Status)}>
-                      {t(`workflow.status.${workflow.Status}`)}
+                      {t(`workflow.statuses.${workflow.Status}`)}
                     </Badge>
                   </Table.Cell>
                   <Table.Cell>

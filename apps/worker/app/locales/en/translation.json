@@ -337,7 +337,7 @@
     "files": "files",
     "operations": "operations",
     "totalOperations": "Total Operations",
-    "uniqueFiles": "Unique Files",
+    "uniqueFilesUC": "Unique Files",
     "views": "Views",
     "downloads": "Downloads",
     "content": "Content",
@@ -375,7 +375,6 @@
     "language": "Language",
     "selectLanguage": "Select Language",
     "selectFileFirst": "Please select a file first",
-    "selectAtLeastOneTenant": "Please select at least one tenant",
     "selectLanguageRequired": "Please select a language",
     "fileSelected": "File Selected",
     "languageEnglish": "English",
@@ -420,7 +419,6 @@
       "createLink": "Create Link",
       "shareLinkCreated": "Your share link has been created. Copy it to share with others.",
       "copy": "Copy",
-      "deleteFile": "Delete File",
       "deleteFileConfirm": "Are you sure you want to delete {fileName}? If there are no more tenants with this file, this action cannot be undone.",
       "delete": "Delete",
       "close": "Close",
@@ -663,7 +661,7 @@
       "completeFailed": "Failed to complete workflow",
       "terminateFailed": "Failed to terminate workflow"
     },
-    "messages": {
+    "message": {
       "deletedSuccessfully": "Workflow deleted successfully!",
       "createdSuccessfully": "Workflow created successfully!",
       "updatedSuccessfully": "Workflow updated successfully!",
@@ -676,9 +674,6 @@
       "viewHistory": "View History",
       "noWorkflows": "No Workflows",
       "noWorkflowsDescription": "You don't have any workflows yet. Start collaborating to see your history here!",
-      "detail": {
-        "title": "Workflow History Detail"
-      },
       "events": "Event History",
       "searchPlaceholder": "Search workflows...",
       "filterByStatus": "Filter by status",
@@ -786,7 +781,7 @@
       "deleted": "Deleted",
       "performedBy": "Performed by"
     },
-    "status": {
+    "statuses": {
       "active": "Active",
       "completed": "Completed",
       "terminated": "Terminated",
@@ -880,7 +875,6 @@
     "uploadFailedInvalidResponse": "Failed to upload {fileName}: Invalid response format",
     "links": "Links",
     "downloadFailed": "Failed to download file",
-    "composeMessage": "Compose Message",
     "addLink": "Add Link",
     "clickToAttachFiles": "Click to attach files",
     "supportsFileTypes": "Supports images, documents, and other file types",
@@ -908,8 +902,6 @@
     "cancel": "Cancel",
     "sendMessage": "Send Message",
     "blocked": "Blocked",
-    "recipientRequired": "At least one recipient is required",
-    "maxRecipientsExceeded": "Maximum {max} recipients allowed",
     "blockedUsers": "Blocked Users"
   },
 
@@ -1148,7 +1140,7 @@
         "title": "Create New Blog Post",
         "handle": "Handle",
         "select_handle": "Select a handle",
-        "title": "Title",
+        "blog_title": "Title",
         "title_placeholder": "Enter post title",
         "content": "Content",
         "content_placeholder": "Write your blog post content here...",

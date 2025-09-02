@@ -438,7 +438,7 @@ export function WorkflowDetailClient({ workflowId, userEmail, userTenantId, lang
         showToast({
           type: 'success',
           title: t('common.success'),
-          content: t('workflow.messages.completedSuccessfully')
+          content: t('workflow.message.completedSuccessfully')
         });
       } else {
         showToast({
@@ -478,7 +478,7 @@ export function WorkflowDetailClient({ workflowId, userEmail, userTenantId, lang
         showToast({
           type: 'success',
           title: t('common.success'),
-          content: t('workflow.messages.terminatedSuccessfully')
+          content: t('workflow.message.terminatedSuccessfully')
         });
       } else {
         showToast({
@@ -511,7 +511,7 @@ export function WorkflowDetailClient({ workflowId, userEmail, userTenantId, lang
         showToast({
           type: 'success',
           title: t('common.success'),
-          content: t('workflow.messages.deletedSuccessfully')
+          content: t('workflow.message.deletedSuccessfully')
         });
         // Redirect to active workflows page after a short delay
         setTimeout(() => {
@@ -736,7 +736,7 @@ export function WorkflowDetailClient({ workflowId, userEmail, userTenantId, lang
                 <Box>
                   <Text weight="bold">{(dict as any).workflow.history.detail.status}</Text>
                   <Badge color={getStatusColor(workflow.Status)}>
-                    {t(`workflow.status.${workflow.Status}`)}
+                    {t(`workflow.statuses.${workflow.Status}`)}
                   </Badge>
                 </Box>
                 <Box>
