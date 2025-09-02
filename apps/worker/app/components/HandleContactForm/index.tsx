@@ -60,13 +60,13 @@ const HandleContactForm: React.FC<HandleContactFormProps> = ({
       message: "",
     },
     {
-      name: { required: true, message: t("Please enter your name") },
+      name: { required: true, message: t("common.forms.validation.invalidName") },
       email: {
         required: true,
         pattern: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-        message: t("Please enter a valid email address") },
-      subject: { required: true, message: t("Please enter a subject") },
-      message: { required: true, message: t("Please enter a message") },
+        message: t("common.forms.validation.invalidEmail") },
+      subject: { required: true, message: t("common.forms.validation.subjectRequired") },
+      message: { required: true, message: t("common.forms.validation.messageRequired") },
     }
   );
 
@@ -107,8 +107,8 @@ const HandleContactForm: React.FC<HandleContactFormProps> = ({
       // Show success message
       setSuccess(true);
       showToast({
-        title: 'Success',
-        content: t("Message sent successfully!"),
+        title: t("common.status.success"),
+        content: t("messaging.messageSent"),
         type: 'success'
       });
       
@@ -121,8 +121,8 @@ const HandleContactForm: React.FC<HandleContactFormProps> = ({
     } catch (error) {
       console.error('Error sending message:', error);
       showToast({
-        title: 'Error',
-        content: t("Failed to send message. Please try again."),
+        title: t("common.status.error"),
+        content: t("messaging.sendError"),
         type: 'error'
       });
     } finally {
