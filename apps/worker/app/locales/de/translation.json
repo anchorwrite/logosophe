@@ -1082,22 +1082,22 @@
       "verification_success": "Deine E-Mail-Adresse wurde erfolgreich bestätigt und du bist jetzt ein bestätigter Abonnent. Das kannst du jetzt machen:",
       "explore_harbor_title": "Harbor entdecken",
       "explore_harbor_items": [
-        "Access your personalized workspace",
-        "Manage your email preferences",
-        "Connect with other subscribers"
+        "Greife auf deinen personalisierten Arbeitsbereich zu",
+        "Verwalte deine E-Mail-Einstellungen",
+        "Verbinde dich mit anderen Abonnenten"
       ],
       "email_preferences_title": "E-Mail-Einstellungen",
       "email_preferences_description": "Du kannst einstellen, welche E-Mails du bekommst, indem du in dein Harbor-Profil gehst:",
       "email_preferences_items": [
-        "Newsletters: Regular updates and content",
-        "Announcements: Important system updates",
-        "Tenant Updates: Updates about your tenant activities"
+        "Newsletter: Regelmäßige Updates und Inhalte",
+        "Ankündigungen: Wichtige Systemaktualisierungen",
+        "Mieter-Updates: Neuigkeiten zu den Aktivitäten deiner Mieter"
       ],
       "getting_started_title": "Los geht's",
       "getting_started_items": [
-        "Visit https:\/\/www.logosophe.com\/harbor to access your workspace",
-        "Customize your email preferences in your profile",
-        "Explore the platform and discover new features"
+        "Nieuwsbrieven: Regelmatige updates en inhoud",
+        "Aankondigingen: Belangrijke systeemupdates",
+        "Huurderupdates: Updates over de activiteiten van je huurders"
       ],
       "support_message": "Wenn du Fragen hast oder Hilfe brauchst, melde dich einfach bei unserem Support-Team.",
       "welcome_aboard": "Willkommen an Bord!",
