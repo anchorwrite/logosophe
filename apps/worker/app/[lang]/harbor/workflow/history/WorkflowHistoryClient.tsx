@@ -161,7 +161,7 @@ export function WorkflowHistoryClient({ userEmail, userTenantId, lang }: Workflo
         
         showToast({
           type: 'success',
-          title: t('common.success'),
+          title: t('common.status.success'),
           content: t('workflow.message.deletedSuccessfully')
         });
       } else {

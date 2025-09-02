@@ -437,7 +437,7 @@ export function WorkflowDetailClient({ workflowId, userEmail, userTenantId, lang
         
         showToast({
           type: 'success',
-          title: t('common.success'),
+          title: t('common.status.success'),
           content: t('workflow.message.completedSuccessfully')
         });
       } else {
@@ -477,7 +477,7 @@ export function WorkflowDetailClient({ workflowId, userEmail, userTenantId, lang
         
         showToast({
           type: 'success',
-          title: t('common.success'),
+          title: t('common.status.success'),
           content: t('workflow.message.terminatedSuccessfully')
         });
       } else {
@@ -510,7 +510,7 @@ export function WorkflowDetailClient({ workflowId, userEmail, userTenantId, lang
       if (result.success) {
         showToast({
           type: 'success',
-          title: t('common.success'),
+          title: t('common.status.success'),
           content: t('workflow.message.deletedSuccessfully')
         });
         // Redirect to active workflows page after a short delay
@@ -566,7 +566,7 @@ export function WorkflowDetailClient({ workflowId, userEmail, userTenantId, lang
         
         showToast({
           type: 'success',
-          title: t('common.success'),
+          title: t('common.status.success'),
           content: 'Workflow reactivated successfully'
         });
       } else {

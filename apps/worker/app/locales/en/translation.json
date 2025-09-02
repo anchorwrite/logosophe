@@ -1042,6 +1042,30 @@
     "pleaseDescribeIntendedUse": "Please describe your intended use",
     "pleaseProvideAdditionalDetails": "Please provide additional details"
   },
+  "subscriber_opt_in": {
+    "verification_sent_title": "Verification Email Sent! 📧",
+    "verification_sent_message": "Please check your email and click the verification link to complete your subscription.",
+    "verification_sent_spam_notice": "If you don't see the email, check your spam folder.",
+    "send_another_button": "Send Another Verification Email",
+    "verification_email_sent": "Verification Email Sent",
+    "verification_email_sent_content": "Please check your email and click the verification link to complete your subscription.",
+    "error_title": "Error",
+    "failed_to_subscribe": "Failed to subscribe. Please try again.",
+    "failed_to_send_verification": "Failed to send verification email"
+  },
+  "verifyEmail": {
+    "verifying": "Verifying Email...",
+    "success": "Email Verified!",
+    "alreadyVerified": "Already Verified",
+    "failed": "Verification Failed",
+    "pleaseWait": "Please wait while we verify your email address...",
+    "email": "Email",
+    "verifiedAt": "Verified at",
+    "goHome": "Go to Homepage",
+    "goToHarbor": "Go to Harbor",
+    "invalidToken": "This verification link is invalid or has expired. Please request a new verification email.",
+    "alreadyVerifiedMessage": "This email has already been verified."
+  },
   "subscriber_pages": {
     "title": "Subscriber Pages",
     "subtitle": "Create and manage your public pages and blog posts",
@@ -1419,35 +1443,11 @@
         "signature": "Best regards,\nThe Logosophe Team"
       }
     },
-    "subscriber_opt_in": {
-      "verification_sent_title": "Verification Email Sent! 📧",
-      "verification_sent_message": "Please check your email and click the verification link to complete your subscription.",
-      "verification_sent_spam_notice": "If you don't see the email, check your spam folder.",
-      "send_another_button": "Send Another Verification Email",
-      "verification_email_sent": "Verification Email Sent",
-      "verification_email_sent_content": "Please check your email and click the verification link to complete your subscription.",
-      "error_title": "Error",
-      "failed_to_subscribe": "Failed to subscribe. Please try again.",
-      "failed_to_send_verification": "Failed to send verification email"
-    },
     "subscriber_messages": {
       "already_subscriber": "Already a subscriber",
       "subscriber_created": "Subscriber created successfully",
       "subscriber_reactivated": "Subscriber reactivated successfully",
       "please_verify_reactivate": "Please verify your email to reactivate your subscription"
-    },
-    "verifyEmail": {
-      "verifying": "Verifying Email...",
-      "success": "Email Verified!",
-      "alreadyVerified": "Already Verified",
-      "failed": "Verification Failed",
-      "pleaseWait": "Please wait while we verify your email address...",
-      "email": "Email",
-      "verifiedAt": "Verified at",
-      "goHome": "Go to Homepage",
-      "goToHarbor": "Go to Harbor",
-      "invalidToken": "This verification link is invalid or has expired. Please request a new verification email.",
-      "alreadyVerifiedMessage": "This email has already been verified."
     }
   }
 }

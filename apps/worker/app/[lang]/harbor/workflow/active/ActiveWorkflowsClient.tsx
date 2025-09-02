@@ -111,7 +111,7 @@ export function ActiveWorkflowsClient({ userEmail, userTenantId, lang, dict }: A
         
         showToast({
           type: 'success',
-          title: t('common.success'),
+          title: t('common.status.success'),
           content: t('workflow.message.completedSuccessfully')
         });
       } else {
@@ -157,7 +157,7 @@ export function ActiveWorkflowsClient({ userEmail, userTenantId, lang, dict }: A
         
         showToast({
           type: 'success',
-          title: t('common.success'),
+          title: t('common.status.success'),
           content: t('workflow.message.terminatedSuccessfully')
         });
       } else {
@@ -195,7 +195,7 @@ export function ActiveWorkflowsClient({ userEmail, userTenantId, lang, dict }: A
         
         showToast({
           type: 'success',
-          title: t('common.success'),
+          title: t('common.status.success'),
           content: t('workflow.message.deletedSuccessfully')
         });
       } else {

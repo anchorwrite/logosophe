@@ -34,7 +34,7 @@ export default function SubscriberOptOut({ email }: SubscriberOptOutProps) {
       }
 
       showToast({
-        title: t('common.success'),
+        title: t('common.status.success'),
         content: t('harbor.unsubscribeSuccess', { defaultValue: t('unsubscribeSuccess') }),
         type: 'success'
       });
@@ -59,8 +59,8 @@ export default function SubscriberOptOut({ email }: SubscriberOptOutProps) {
       size="2"
     >
       {isLoading 
-        ? t('harbor.unsubscribing', { defaultValue: 'Unsubscribing...' })
-        : t('harbor.unsubscribe', { defaultValue: 'Unsubscribe' })}
+        ? t('unsubscribing', { defaultValue: 'Unsubscribing...' })
+        : t('unsubscribe', { defaultValue: 'Unsubscribe' })}
     </Button>
   );
 } 

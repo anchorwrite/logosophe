@@ -1041,6 +1041,17 @@
     "pleaseDescribeIntendedUse": "Por favor, describe tu uso previsto",
     "pleaseProvideAdditionalDetails": "Por favor, danos más detalles"
   },
+  "subscriber_opt_in": {
+    "verification_sent_title": "¡Correo de verificación enviado! ��",
+    "verification_sent_message": "Por favor revisa tu correo y haz clic en el enlace de verificación para completar tu suscripción.",
+    "verification_sent_spam_notice": "Si no ves el correo, revisa tu carpeta de spam.",
+    "send_another_button": "Enviar otro correo de verificación",
+    "verification_email_sent": "Correo de verificación enviado",
+    "verification_email_sent_content": "Por favor revisa tu correo y haz clic en el enlace de verificación para completar tu suscripción.",
+    "error_title": "Error",
+    "failed_to_subscribe": "No se pudo suscribir. Por favor intenta de nuevo.",
+    "failed_to_send_verification": "No se pudo enviar el correo de verificación"
+  },
   "subscriber_pages": {
     "title": "Páginas de suscriptores",
     "subtitle": "Crea y administra tus páginas públicas y publicaciones del blog",
@@ -1053,6 +1064,19 @@
       "showcase": "Vitrina",
       "published_media": "Medios publicados",
       "contact": "Contacto"
+    },
+    "verifyEmail": {
+      "verifying": "Verificando correo...",
+      "success": "¡Correo verificado!",
+      "alreadyVerified": "Ya verificado",
+      "failed": "Verificación fallida",
+      "pleaseWait": "Por favor espera mientras verificamos tu correo...",
+      "email": "Correo electrónico",
+      "verifiedAt": "Verificado en",
+      "goHome": "Ir a la página principal",
+      "goToHarbor": "Ir a Harbor",
+      "invalidToken": "Este enlace de verificación no es válido o ha caducado. Por favor solicita un nuevo correo de verificación.",
+      "alreadyVerifiedMessage": "Este correo ya ha sido verificado."
     },
     "content": {
       "noContent": "No hay contenido disponible",
@@ -1418,35 +1442,11 @@
         "signature": "Saludos,\nEl equipo de Logosophe"
       }
     },
-    "subscriber_opt_in": {
-      "verification_sent_title": "¡Correo de verificación enviado! ��",
-      "verification_sent_message": "Por favor revisa tu correo y haz clic en el enlace de verificación para completar tu suscripción.",
-      "verification_sent_spam_notice": "Si no ves el correo, revisa tu carpeta de spam.",
-      "send_another_button": "Enviar otro correo de verificación",
-      "verification_email_sent": "Correo de verificación enviado",
-      "verification_email_sent_content": "Por favor revisa tu correo y haz clic en el enlace de verificación para completar tu suscripción.",
-      "error_title": "Error",
-      "failed_to_subscribe": "No se pudo suscribir. Por favor intenta de nuevo.",
-      "failed_to_send_verification": "No se pudo enviar el correo de verificación"
-    },
     "subscriber_messages": {
       "already_subscriber": "Ya eres suscriptor",
       "subscriber_created": "Suscriptor creado con éxito",
       "subscriber_reactivated": "Suscriptor reactivado con éxito",
       "please_verify_reactivate": "Por favor verifica tu correo para reactivar tu suscripción"
-    },
-    "verifyEmail": {
-      "verifying": "Verificando correo...",
-      "success": "¡Correo verificado!",
-      "alreadyVerified": "Ya verificado",
-      "failed": "Verificación fallida",
-      "pleaseWait": "Por favor espera mientras verificamos tu correo...",
-      "email": "Correo electrónico",
-      "verifiedAt": "Verificado en",
-      "goHome": "Ir a la página principal",
-      "goToHarbor": "Ir a Harbor",
-      "invalidToken": "Este enlace de verificación no es válido o ha caducado. Por favor solicita un nuevo correo de verificación.",
-      "alreadyVerifiedMessage": "Este correo ya ha sido verificado."
     }
   }
 }

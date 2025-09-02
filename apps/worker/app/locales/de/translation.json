@@ -1041,6 +1041,30 @@
     "pleaseDescribeIntendedUse": "Bitte beschreibe, wie du es nutzen möchtest",
     "pleaseProvideAdditionalDetails": "Bitte gib noch ein paar weitere Details an"
   },
+  "subscriber_opt_in": {
+    "verification_sent_title": "Bestätigungs-E-Mail gesendet! ��",
+    "verification_sent_message": "Schau bitte in dein E-Mail-Postfach und klick auf den Bestätigungslink, um dein Abo abzuschließen.",
+    "verification_sent_spam_notice": "Falls du die E-Mail nicht findest, schau mal im Spam-Ordner nach.",
+    "send_another_button": "Noch eine Bestätigungs-E-Mail senden",
+    "verification_email_sent": "Bestätigungs-E-Mail gesendet",
+    "verification_email_sent_content": "Schau bitte in dein E-Mail-Postfach und klick auf den Bestätigungslink, um dein Abo abzuschließen.",
+    "error_title": "Fehler",
+    "failed_to_subscribe": "Abonnement fehlgeschlagen. Versuch's bitte nochmal.",
+    "failed_to_send_verification": "Bestätigungs-E-Mail konnte nicht gesendet werden"
+  },
+  "verifyEmail": {
+    "verifying": "E-Mail wird überprüft...",
+    "success": "E-Mail bestätigt!",
+    "alreadyVerified": "Schon bestätigt",
+    "failed": "Bestätigung fehlgeschlagen",
+    "pleaseWait": "Bitte warte, während wir deine E-Mail-Adresse überprüfen...",
+    "email": "E-Mail",
+    "verifiedAt": "Bestätigt am",
+    "goHome": "Zur Startseite",
+    "goToHarbor": "Zu Harbor",
+    "invalidToken": "Dieser Bestätigungslink ist ungültig oder abgelaufen. Bitte fordere eine neue Bestätigungs-E-Mail an.",
+    "alreadyVerifiedMessage": "Diese E-Mail wurde schon bestätigt."
+  },
   "subscriber_pages": {
     "title": "Abonnentenseiten",
     "subtitle": "Erstelle und verwalte deine öffentlichen Seiten und Blogposts",
@@ -1418,35 +1442,11 @@
         "signature": "Viele Grüße,\ndein Logosophe-Team"
       }
     },
-    "subscriber_opt_in": {
-      "verification_sent_title": "Bestätigungs-E-Mail gesendet! ��",
-      "verification_sent_message": "Schau bitte in dein E-Mail-Postfach und klick auf den Bestätigungslink, um dein Abo abzuschließen.",
-      "verification_sent_spam_notice": "Falls du die E-Mail nicht findest, schau mal im Spam-Ordner nach.",
-      "send_another_button": "Noch eine Bestätigungs-E-Mail senden",
-      "verification_email_sent": "Bestätigungs-E-Mail gesendet",
-      "verification_email_sent_content": "Schau bitte in dein E-Mail-Postfach und klick auf den Bestätigungslink, um dein Abo abzuschließen.",
-      "error_title": "Fehler",
-      "failed_to_subscribe": "Abonnement fehlgeschlagen. Versuch's bitte nochmal.",
-      "failed_to_send_verification": "Bestätigungs-E-Mail konnte nicht gesendet werden"
-    },
     "subscriber_messages": {
       "already_subscriber": "Schon abonniert",
       "subscriber_created": "Abonnent erfolgreich erstellt",
       "subscriber_reactivated": "Abonnent erfolgreich reaktiviert",
       "please_verify_reactivate": "Bitte bestätige deine E-Mail, um dein Abo wieder zu aktivieren"
-    },
-    "verifyEmail": {
-      "verifying": "E-Mail wird überprüft...",
-      "success": "E-Mail bestätigt!",
-      "alreadyVerified": "Schon bestätigt",
-      "failed": "Bestätigung fehlgeschlagen",
-      "pleaseWait": "Bitte warte, während wir deine E-Mail-Adresse überprüfen...",
-      "email": "E-Mail",
-      "verifiedAt": "Bestätigt am",
-      "goHome": "Zur Startseite",
-      "goToHarbor": "Zu Harbor",
-      "invalidToken": "Dieser Bestätigungslink ist ungültig oder abgelaufen. Bitte fordere eine neue Bestätigungs-E-Mail an.",
-      "alreadyVerifiedMessage": "Diese E-Mail wurde schon bestätigt."
     }
   }
 }

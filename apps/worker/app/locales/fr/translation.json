@@ -1041,6 +1041,30 @@
     "pleaseDescribeIntendedUse": "Merci de décrire ton utilisation prévue",
     "pleaseProvideAdditionalDetails": "Merci de donner plus de détails"
   },
+  "subscriber_opt_in": {
+    "verification_sent_title": "E-mail de vérification envoyé ! ��",
+    "verification_sent_message": "Merci de vérifier ta boîte mail et de cliquer sur le lien de vérification pour finaliser ton abonnement.",
+    "verification_sent_spam_notice": "Si tu ne vois pas l’e-mail, regarde dans tes spams.",
+    "send_another_button": "Envoyer un autre e-mail de vérification",
+    "verification_email_sent": "E-mail de vérification envoyé",
+    "verification_email_sent_content": "Merci de vérifier ta boîte mail et de cliquer sur le lien de vérification pour finaliser ton abonnement.",
+    "error_title": "Erreur",
+    "failed_to_subscribe": "Échec de l’abonnement. Merci de réessayer.",
+    "failed_to_send_verification": "Échec de l’envoi de l’e-mail de vérification"
+  },
+  "verifyEmail": {
+    "verifying": "Vérification de l’e-mail...",
+    "success": "E-mail vérifié !",
+    "alreadyVerified": "Déjà vérifié",
+    "failed": "Échec de la vérification",
+    "pleaseWait": "Merci de patienter pendant qu’on vérifie ton adresse e-mail...",
+    "email": "Email",
+    "verifiedAt": "Vérifié le",
+    "goHome": "Aller à la page d’accueil",
+    "goToHarbor": "Aller sur Harbor",
+    "invalidToken": "Ce lien de vérification est invalide ou a expiré. Merci de demander un nouvel e-mail de vérification.",
+    "alreadyVerifiedMessage": "Ce mail a déjà été vérifié."
+  },
   "subscriber_pages": {
     "title": "Pages des abonnés",
     "subtitle": "Crée et gère tes pages publiques et tes articles de blog",
@@ -1418,35 +1442,11 @@
         "signature": "Bien à toi,\nL’équipe Logosophe"
       }
     },
-    "subscriber_opt_in": {
-      "verification_sent_title": "E-mail de vérification envoyé ! ��",
-      "verification_sent_message": "Merci de vérifier ta boîte mail et de cliquer sur le lien de vérification pour finaliser ton abonnement.",
-      "verification_sent_spam_notice": "Si tu ne vois pas l’e-mail, regarde dans tes spams.",
-      "send_another_button": "Envoyer un autre e-mail de vérification",
-      "verification_email_sent": "E-mail de vérification envoyé",
-      "verification_email_sent_content": "Merci de vérifier ta boîte mail et de cliquer sur le lien de vérification pour finaliser ton abonnement.",
-      "error_title": "Erreur",
-      "failed_to_subscribe": "Échec de l’abonnement. Merci de réessayer.",
-      "failed_to_send_verification": "Échec de l’envoi de l’e-mail de vérification"
-    },
     "subscriber_messages": {
       "already_subscriber": "Déjà abonné",
       "subscriber_created": "Abonné créé avec succès",
       "subscriber_reactivated": "Abonnement réactivé avec succès",
       "please_verify_reactivate": "Merci de vérifier ton e-mail pour réactiver ton abonnement"
-    },
-    "verifyEmail": {
-      "verifying": "Vérification de l’e-mail...",
-      "success": "E-mail vérifié !",
-      "alreadyVerified": "Déjà vérifié",
-      "failed": "Échec de la vérification",
-      "pleaseWait": "Merci de patienter pendant qu’on vérifie ton adresse e-mail...",
-      "email": "Email",
-      "verifiedAt": "Vérifié le",
-      "goHome": "Aller à la page d’accueil",
-      "goToHarbor": "Aller sur Harbor",
-      "invalidToken": "Ce lien de vérification est invalide ou a expiré. Merci de demander un nouvel e-mail de vérification.",
-      "alreadyVerifiedMessage": "Ce mail a déjà été vérifié."
     }
   }
 }
