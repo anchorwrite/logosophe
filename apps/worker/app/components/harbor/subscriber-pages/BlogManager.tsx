@@ -630,7 +630,7 @@ export default function BlogManager({ subscriberEmail }: { subscriberEmail: stri
               {/* Title Input */}
               <Box>
                 <Text weight="medium" size="3" mb="2">
-                  {t('subscriber_pages.blog.create_form.title')}
+                  {t('subscriber_pages.blog.create_form.blog_title')}
                 </Text>
                 <TextField.Root>
                   <TextField.Input
@@ -795,7 +795,7 @@ export default function BlogManager({ subscriberEmail }: { subscriberEmail: stri
               {/* Title Input */}
               <Box>
                 <Text weight="medium" size="3" mb="2">
-                  {t('subscriber_pages.blog.create_form.title')}
+                  {t('subscriber_pages.blog.create_form.blog_title')}
                 </Text>
                 <TextField.Root>
                   <TextField.Input
