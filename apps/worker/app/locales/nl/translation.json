@@ -1082,22 +1082,22 @@
             "verification_success": "Jouw e-mailadres is succesvol geverifieerd en jij bent nu een bevestigde abonnee. Dit kan jij nu doen:",
             "explore_harbor_title": "Ontdek de haven",
             "explore_harbor_items": [
-                "Access your personalized workspace",
-                "Manage your email preferences",
-                "Connect with other subscribers"
+                "Ga naar je gepersonaliseerde werkruimte",
+                "Beheer je e-mailvoorkeuren",
+                "Maak contact met andere abonnees"
             ],
             "email_preferences_title": "E-mailvoorkeuren",
             "email_preferences_description": "Jij kan beheren welke soorten e-mails u ontvangt door naar jouw Harbor-profiel te gaan:",
             "email_preferences_items": [
-                "Newsletters: Regular updates and content",
-                "Announcements: Important system updates",
-                "Tenant Updates: Updates about your tenant activities"
+                "Nieuwsbrieven: Regelmatige updates en inhoud",
+                "Aankondigingen: Belangrijke systeemupdates",
+                "Huurderupdates: Updates over de activiteiten van je huurders"
             ],
             "getting_started_title": "Aan de slag",
             "getting_started_items": [
-                "Visit https:\/\/www.logosophe.com\/harbor to access your workspace",
-                "Customize your email preferences in your profile",
-                "Explore the platform and discover new features"
+                "Bezoek https://www.logosophe.com/harbor om toegang te krijgen tot je werkruimte",
+                "Pas je e-mailvoorkeuren aan in je profiel",
+                "Verken het platform en ontdek nieuwe functies"
             ],
             "support_message": "Als u vragen hebt of hulp nodig hebt, kunt u gerust contact opnemen met ons ondersteuningsteam.",
             "welcome_aboard": "Welkom aan boord!",
