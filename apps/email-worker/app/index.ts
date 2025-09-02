@@ -10,10 +10,6 @@ interface EmailData {
   purpose?: string;
 }
 
-
-
-
-
 // Helper function to validate CORS origin
 function getCorsOrigin(request: Request): string {
   const origin = request.headers.get('origin');
@@ -40,16 +36,6 @@ function getSenderName(emailType: 'tenant_application' | 'contact_form'): string
   
   return senderNames[emailType];
 }
-
-
-
-
-
-
-
-
-
-
 
 async function handleRequest(request: Request, env: CloudflareEnv): Promise<Response> {
   console.log("Received request:", {
@@ -99,14 +85,6 @@ async function handleRequest(request: Request, env: CloudflareEnv): Promise<Resp
     );
   }
 }
-
-
-
-
-
-
-
-
 
 // Handle contact form and tenant application requests (existing functionality)
 async function handleContactForm(request: Request, env: CloudflareEnv): Promise<Response> {
