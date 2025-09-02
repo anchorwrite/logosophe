@@ -1065,6 +1065,51 @@
     "invalidToken": "Dieser Bestätigungslink ist ungültig oder abgelaufen. Bitte fordere eine neue Bestätigungs-E-Mail an.",
     "alreadyVerifiedMessage": "Diese E-Mail wurde schon bestätigt."
   },
+  "emails": {
+    "verification": {
+      "subject": "Bestätige deine E-Mail-Adresse – Logosophe",
+      "greeting": "Hallo {{name}},",
+      "body": "Danke, dass du Logosophe abonniert hast! Um dein Abo abzuschließen, bestätige bitte deine E-Mail-Adresse, indem du auf den Link unten klickst:",
+      "verification_link": "{{verificationUrl}}",
+      "expiration_notice": "Dieser Link läuft aus Sicherheitsgründen in 24 Stunden ab.",
+      "ignore_notice": "Falls du dieses Abo nicht angefordert hast, kannst du diese E-Mail einfach ignorieren.",
+      "signature": "Viele Grüße,\ndein Logosophe-Team"
+    },
+    "welcome": {
+      "subject": "Willkommen bei Logosophe! ��",
+      "greeting": "Hallo {{name}},",
+      "welcome_message": "Willkommen bei Logosophe! ��",
+      "verification_success": "Deine E-Mail-Adresse wurde erfolgreich bestätigt und du bist jetzt ein bestätigter Abonnent. Das kannst du jetzt machen:",
+      "explore_harbor_title": "Harbor entdecken",
+      "explore_harbor_items": [
+        "Access your personalized workspace",
+        "Manage your email preferences",
+        "Connect with other subscribers"
+      ],
+      "email_preferences_title": "E-Mail-Einstellungen",
+      "email_preferences_description": "Du kannst einstellen, welche E-Mails du bekommst, indem du in dein Harbor-Profil gehst:",
+      "email_preferences_items": [
+        "Newsletters: Regular updates and content",
+        "Announcements: Important system updates",
+        "Tenant Updates: Updates about your tenant activities"
+      ],
+      "getting_started_title": "Los geht's",
+      "getting_started_items": [
+        "Visit https:\/\/www.logosophe.com\/harbor to access your workspace",
+        "Customize your email preferences in your profile",
+        "Explore the platform and discover new features"
+      ],
+      "support_message": "Wenn du Fragen hast oder Hilfe brauchst, melde dich einfach bei unserem Support-Team.",
+      "welcome_aboard": "Willkommen an Bord!",
+      "signature": "Viele Grüße,\ndein Logosophe-Team"
+    }
+  },
+  "subscriber_messages": {
+    "already_subscriber": "Schon abonniert",
+    "subscriber_created": "Abonnent erfolgreich erstellt",
+    "subscriber_reactivated": "Abonnent erfolgreich reaktiviert",
+    "please_verify_reactivate": "Bitte bestätige deine E-Mail, um dein Abo wieder zu aktivieren"
+  },
   "subscriber_pages": {
     "title": "Abonnentenseiten",
     "subtitle": "Erstelle und verwalte deine öffentlichen Seiten und Blogposts",
@@ -1402,51 +1447,6 @@
       "view_page": "Seite ansehen",
       "no_description": "Keine Beschreibung verfügbar",
       "try_again": "Nochmal versuchen"
-    },
-    "emails": {
-      "verification": {
-        "subject": "Bestätige deine E-Mail-Adresse – Logosophe",
-        "greeting": "Hallo {{name}},",
-        "body": "Danke, dass du Logosophe abonniert hast! Um dein Abo abzuschließen, bestätige bitte deine E-Mail-Adresse, indem du auf den Link unten klickst:",
-        "verification_link": "{{verificationUrl}}",
-        "expiration_notice": "Dieser Link läuft aus Sicherheitsgründen in 24 Stunden ab.",
-        "ignore_notice": "Falls du dieses Abo nicht angefordert hast, kannst du diese E-Mail einfach ignorieren.",
-        "signature": "Viele Grüße,\ndein Logosophe-Team"
-      },
-      "welcome": {
-        "subject": "Willkommen bei Logosophe! ��",
-        "greeting": "Hallo {{name}},",
-        "welcome_message": "Willkommen bei Logosophe! ��",
-        "verification_success": "Deine E-Mail-Adresse wurde erfolgreich bestätigt und du bist jetzt ein bestätigter Abonnent. Das kannst du jetzt machen:",
-        "explore_harbor_title": "Harbor entdecken",
-        "explore_harbor_items": [
-          "Access your personalized workspace",
-          "Manage your email preferences",
-          "Connect with other subscribers"
-        ],
-        "email_preferences_title": "E-Mail-Einstellungen",
-        "email_preferences_description": "Du kannst einstellen, welche E-Mails du bekommst, indem du in dein Harbor-Profil gehst:",
-        "email_preferences_items": [
-          "Newsletters: Regular updates and content",
-          "Announcements: Important system updates",
-          "Tenant Updates: Updates about your tenant activities"
-        ],
-        "getting_started_title": "Los geht's",
-        "getting_started_items": [
-          "Visit https:\/\/www.logosophe.com\/harbor to access your workspace",
-          "Customize your email preferences in your profile",
-          "Explore the platform and discover new features"
-        ],
-        "support_message": "Wenn du Fragen hast oder Hilfe brauchst, melde dich einfach bei unserem Support-Team.",
-        "welcome_aboard": "Willkommen an Bord!",
-        "signature": "Viele Grüße,\ndein Logosophe-Team"
-      }
-    },
-    "subscriber_messages": {
-      "already_subscriber": "Schon abonniert",
-      "subscriber_created": "Abonnent erfolgreich erstellt",
-      "subscriber_reactivated": "Abonnent erfolgreich reaktiviert",
-      "please_verify_reactivate": "Bitte bestätige deine E-Mail, um dein Abo wieder zu aktivieren"
     }
   }
 }
