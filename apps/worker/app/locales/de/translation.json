@@ -128,6 +128,33 @@
       }
     }
   },
+  "signin": {
+    "title": "Logosophe-Anmeldeseite",
+    "userSignIn": "Benutzeranmeldung",
+    "subscriberNote": "(Abonnenten: Bitte melde dich mit demselben Anbieter an!)",
+    "continueWithGoogle": "Mach weiter mit Google",
+    "continueWithApple": "Mach weiter mit Apple",
+    "continueWithEmail": "Mach weiter mit deiner E-Mail",
+    "enterEmail": "Gib deine E-Mail-Adresse ein",
+    "adminSignIn": "Administrator-Anmeldung",
+    "adminNote": "(Nur System- und Mieter-Admins!)",
+    "email": "E-Mail",
+    "password": "Passwort",
+    "signIn": "Melde dich an",
+    "errors": {
+      "invalidCredentials": "Ungültige E-Mail oder falsches Passwort",
+      "userNotFound": "Kein Konto mit dieser E-Mail gefunden",
+      "incorrectPassword": "Falsches Passwort",
+      "accountNotLinked": "Diese E-Mail ist bereits mit einer anderen Anmeldemethode verknüpft. Bitte verwende denselben Anbieter, den du bei der Erstellung deines Kontos genutzt hast.",
+      "genericError": "Beim Anmelden ist ein Fehler aufgetreten"
+    }
+  },
+  "signout": {
+    "title": "Abmelden",
+    "confirmMessage": "Bist du sicher, dass du dich abmelden willst?",
+    "staySignedIn": "Nein, angemeldet bleiben",
+    "yesSignOut": "Ja, abmelden"
+  },
   "ReadersContent": {
     "title": "Entdecke und stöbere durch veröffentlichte Inhalte",
     "text": "Stöbere durch unsere Sammlung veröffentlichter Werke von Autor:innen und Kreativen. Entdecke neue Geschichten, Artikel und Inhalte aus verschiedenen Genres und Formaten.",

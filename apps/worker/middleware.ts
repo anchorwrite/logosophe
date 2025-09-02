@@ -26,8 +26,6 @@ export function middleware(request: NextRequest) {
 
   // Skip locale redirection for non-translated routes
   if (pathname.startsWith('/dashboard') || 
-      pathname.startsWith('/signin') || 
-      pathname.startsWith('/signout') ||
       pathname.startsWith('/test-signin') ||
       pathname.startsWith('/api/auth') ||
       pathname.startsWith('/share/') ||

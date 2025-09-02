@@ -128,6 +128,33 @@
       }
     }
   },
+  "signin": {
+    "title": "Page de connexion Logosophe",
+    "userSignIn": "Connexion utilisateur",
+    "subscriberNote": "(Abonnés : connecte-toi avec le même fournisseur !)",
+    "continueWithGoogle": "Continue avec Google",
+    "continueWithApple": "Continue avec Apple",
+    "continueWithEmail": "Continue avec ton e-mail",
+    "enterEmail": "Entre ton e-mail",
+    "adminSignIn": "Connexion administrateur",
+    "adminNote": "(Uniquement pour les admins système et locataires !)",
+    "email": "E-mail",
+    "password": "Mot de passe",
+    "signIn": "Connecte-toi",
+    "errors": {
+      "invalidCredentials": "E-mail ou mot de passe invalide",
+      "userNotFound": "Aucun compte trouvé avec cet e-mail",
+      "incorrectPassword": "Mot de passe incorrect",
+      "accountNotLinked": "Cet e-mail est déjà associé à une autre méthode de connexion. Utilise le même fournisseur que lorsque tu as créé ton compte.",
+      "genericError": "Une erreur est survenue lors de la connexion"
+    }
+  },
+  "signout": {
+    "title": "Déconnexion",
+    "confirmMessage": "Es-tu sûr de vouloir te déconnecter ?",
+    "staySignedIn": "Non, rester connecté",
+    "yesSignOut": "Oui, déconnecte-moi"
+  },
   "ReadersContent": {
     "title": "Découvre et explore le contenu publié",
     "text": "Parcours notre collection d’œuvres publiées par des auteurs et créateurs. Découvre de nouvelles histoires, articles et contenus dans plein de genres et formats différents.",

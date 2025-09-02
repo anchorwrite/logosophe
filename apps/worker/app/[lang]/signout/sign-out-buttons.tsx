@@ -3,9 +3,15 @@
 import { Flex, Button } from '@radix-ui/themes'
 import { useRouter } from 'next/navigation'
 import { handleSignOut } from './actions'
+import { useTranslation } from 'react-i18next'
 
-export function SignOutButtons() {
+interface SignOutButtonsProps {
+  lang: string;
+}
+
+export function SignOutButtons({ lang }: SignOutButtonsProps) {
   const router = useRouter()
+  const { t } = useTranslation('translations')
 
   const handleNo = (e: React.MouseEvent) => {
     e.preventDefault()
@@ -17,7 +23,7 @@ export function SignOutButtons() {
     try {
       await handleSignOut()
       // Redirect to home page after successful signout
-      router.push('/')
+      router.push(`/${lang}`)
     } catch (error) {
       console.error('Error during signout:', error)
       console.error('Sign out failed')
@@ -27,10 +33,10 @@ export function SignOutButtons() {
   return (
     <Flex gap="3" mt="4">
       <Button onClick={handleNo} variant="soft" color="gray">
-        No, Stay Signed In
+        {t('signout.staySignedIn')}
       </Button>
       <Button onClick={handleYes} variant="solid" color="red">
-        Yes, Sign Out
+        {t('signout.yesSignOut')}
       </Button>
     </Flex>
   )
