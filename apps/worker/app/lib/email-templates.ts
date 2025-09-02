@@ -70,10 +70,37 @@ export function getEmailTemplate<T extends 'verification' | 'welcome'>(
   const emailTranslations = translations.emails?.[templateType];
   
   if (!emailTranslations) {
-    // Fallback to English if translations not found
-    return getEmailTemplate(templateType, 'en', translations);
+    // Fallback to English if translations not found, but prevent infinite recursion
+    if (language === 'en') {
+      // If we're already trying English and it's not found, return a minimal fallback
+      console.warn(`Email template for ${templateType} not found in English translations`);
+      return getFallbackTemplate(templateType);
+    }
+    
+    // Try to load English translations separately
+    try {
+      const englishTranslations = require(`../locales/en/translation.json`);
+      const englishEmailTranslations = englishTranslations.emails?.[templateType];
+      
+      if (englishEmailTranslations) {
+        return buildTemplate(templateType, englishEmailTranslations);
+      }
+    } catch (error) {
+      console.error('Failed to load English fallback translations:', error);
+    }
+    
+    // Final fallback to hardcoded template
+    return getFallbackTemplate(templateType);
   }
 
+  return buildTemplate(templateType, emailTranslations);
+}
+
+// Helper function to build the template object
+function buildTemplate<T extends 'verification' | 'welcome'>(
+  templateType: T,
+  emailTranslations: any
+): T extends 'verification' ? VerificationEmailTemplate : WelcomeEmailTemplate {
   if (templateType === 'verification') {
     return {
       subject: emailTranslations.subject,
@@ -101,6 +128,53 @@ export function getEmailTemplate<T extends 'verification' | 'welcome'>(
       getting_started_items: emailTranslations.getting_started_items,
       support_message: emailTranslations.support_message,
       welcome_aboard: emailTranslations.welcome_aboard
+    } as any;
+  }
+}
+
+// Fallback template function
+function getFallbackTemplate<T extends 'verification' | 'welcome'>(
+  templateType: T
+): T extends 'verification' ? VerificationEmailTemplate : WelcomeEmailTemplate {
+  if (templateType === 'verification') {
+    return {
+      subject: 'Verify Your Email Address - Logosophe',
+      greeting: 'Hello {{name}},',
+      body: 'Thank you for subscribing to Logosophe! To complete your subscription, please verify your email address by clicking the link below:',
+      verification_link: '{{verificationUrl}}',
+      expiration_notice: 'This link will expire in 24 hours for security reasons.',
+      ignore_notice: 'If you didn\'t request this subscription, you can safely ignore this email.',
+      signature: 'Best regards,\nThe Logosophe Team'
+    } as any;
+  } else {
+    return {
+      subject: 'Welcome to Logosophe! 🎉',
+      greeting: 'Hello {{name}},',
+      body: 'Welcome to Logosophe!',
+      signature: 'Best regards,\nThe Logosophe Team',
+      welcome_message: 'Welcome to Logosophe! 🎉',
+      verification_success: 'Your email address has been successfully verified, and you\'re now a confirmed subscriber. Here\'s what you can do next:',
+      explore_harbor_title: 'Explore Harbor',
+      explore_harbor_items: [
+        'Access your personalized workspace',
+        'Manage your email preferences',
+        'Connect with other subscribers'
+      ],
+      email_preferences_title: 'Email Preferences',
+      email_preferences_description: 'You can manage which types of emails you receive by going to your Harbor profile:',
+      email_preferences_items: [
+        'Newsletters: Regular updates and content',
+        'Announcements: Important system updates',
+        'Tenant Updates: Updates about your tenant activities'
+      ],
+      getting_started_title: 'Getting Started',
+      getting_started_items: [
+        'Visit https://www.logosophe.com/harbor to access your workspace',
+        'Customize your email preferences in your profile',
+        'Explore the platform and discover new features'
+      ],
+      support_message: 'If you have any questions or need assistance, feel free to reach out to our support team.',
+      welcome_aboard: 'Welcome aboard!'
     } as any;
   }
 }

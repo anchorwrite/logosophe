@@ -16,7 +16,7 @@ interface VerificationResult {
 }
 
 export default function VerifyEmailPage() {
-  const { t } = useTranslation('translations');
+  const { t, i18n } = useTranslation('translations');
   const params = useParams();
   const token = params.token as string;
   
@@ -83,10 +83,10 @@ export default function VerifyEmailPage() {
   };
 
   const getStatusTitle = () => {
-    if (isLoading) return t('verifyEmail.verifying', { defaultValue: 'Verifying Email...' });
-    if (result?.success) return t('verifyEmail.success', { defaultValue: 'Email Verified!' });
-    if (result?.error === 'Email already verified') return t('verifyEmail.alreadyVerified', { defaultValue: 'Already Verified' });
-    return t('verifyEmail.failed', { defaultValue: 'Verification Failed' });
+    if (isLoading) return i18n.isInitialized ? t('verifyEmail.verifying') : 'Verifying Email...';
+    if (result?.success) return i18n.isInitialized ? t('verifyEmail.success') : 'Email Verified!';
+    if (result?.error === 'Email already verified') return i18n.isInitialized ? t('verifyEmail.alreadyVerified') : 'Already Verified';
+    return i18n.isInitialized ? t('verifyEmail.failed') : 'Verification Failed';
   };
 
   return (
@@ -102,7 +102,7 @@ export default function VerifyEmailPage() {
 
             {isLoading && (
               <Text size="3" color="gray">
-                {t('verifyEmail.pleaseWait', { defaultValue: 'Please wait while we verify your email address...' })}
+                {i18n.isInitialized ? t('verifyEmail.pleaseWait') : 'Please wait while we verify your email address...'}
               </Text>
             )}
 
@@ -120,15 +120,15 @@ export default function VerifyEmailPage() {
                     border: '1px solid var(--gray-6)'
                   }}>
                     <Text size="2" color="gray" weight="medium">
-                      {t('verifyEmail.email', { defaultValue: 'Email' })}: {result.email}
+                      {i18n.isInitialized ? t('verifyEmail.email') : 'Email'}: {result.email}
                     </Text>
                   </Box>
                 )}
 
                 {result.verifiedAt && (
-                  <Text size="2" color="gray">
-                    {t('verifyEmail.verifiedAt', { defaultValue: 'Verified at' })}: {new Date(result.verifiedAt).toLocaleString()}
-                  </Text>
+                                      <Text size="2" color="gray">
+                      {i18n.isInitialized ? t('verifyEmail.verifiedAt') : 'Verified at'}: {new Date(result.verifiedAt).toLocaleString()}
+                    </Text>
                 )}
 
                 {result.error && result.error !== 'Email already verified' && (
@@ -142,7 +142,7 @@ export default function VerifyEmailPage() {
                     <Flex align="center" gap="2" justify="center">
                       <AlertCircle size={16} color="var(--red-9)" />
                       <Text size="2" color="red">
-                        {result.error}
+                        {result.message || result.error}
                       </Text>
                     </Flex>
                   </Box>
@@ -151,14 +151,14 @@ export default function VerifyEmailPage() {
                 <Flex gap="3" mt="4">
                   <Button asChild variant="solid" color="blue">
                     <Link href="/">
-                      {t('verifyEmail.goHome', { defaultValue: 'Go to Homepage' })}
+                      {i18n.isInitialized ? t('verifyEmail.goHome') : 'Go to Homepage'}
                     </Link>
                   </Button>
                   
                   {result.success && (
                     <Button asChild variant="outline">
                       <Link href="/harbor">
-                        {t('verifyEmail.goToHarbor', { defaultValue: 'Go to Harbor' })}
+                        {i18n.isInitialized ? t('verifyEmail.goToHarbor') : 'Go to Harbor'}
                       </Link>
                     </Button>
                   )}

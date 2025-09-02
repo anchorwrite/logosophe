@@ -317,16 +317,16 @@ export const { handlers, auth, signIn, signOut } = NextAuth(async () => {
             if (credResult?.Role === 'admin' || credResult?.Role === 'tenant') {
               session.user.role = credResult.Role;
             } else {
-              // Check Subscribers table
-              const subscriberResult = await db.prepare(
-                'SELECT 1 FROM Subscribers WHERE Email = ? AND Active = TRUE'
-              ).bind(session.user.email).first();
-              
-              if (subscriberResult) {
-                session.user.role = 'subscriber';
-              } else {
-                session.user.role = 'user';
-              }
+                          // Check Subscribers table - ONLY verified subscribers get the role
+            const subscriberResult = await db.prepare(
+              'SELECT 1 FROM Subscribers WHERE Email = ? AND Active = TRUE AND EmailVerified IS NOT NULL'
+            ).bind(session.user.email).first();
+            
+            if (subscriberResult) {
+              session.user.role = 'subscriber';
+            } else {
+              session.user.role = 'user';
+            }
             }
           }
         }

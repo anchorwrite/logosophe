@@ -27,6 +27,36 @@ export async function GET(
     } | undefined;
 
     if (!subscriber) {
+      // Check if this token was already consumed by looking for any subscriber with this email that's already verified
+      const alreadyVerifiedCheck = await db.prepare(`
+        SELECT Email, EmailVerified, Active
+        FROM Subscribers 
+        WHERE Email IN (
+          SELECT Email FROM Subscribers 
+          WHERE VerificationToken = ? OR VerificationToken IS NULL
+        ) AND EmailVerified IS NOT NULL
+        LIMIT 1
+      `).bind(token).first() as {
+        Email: string;
+        EmailVerified: string | null;
+        Active: boolean;
+      } | undefined;
+
+      if (alreadyVerifiedCheck) {
+        // Token was consumed, email already verified - return success
+        const acceptLanguage = request.headers.get('accept-language');
+        const detectedLanguage = detectLanguageFromHeaders(acceptLanguage);
+        const translations = await loadTranslation(detectedLanguage);
+        
+        return NextResponse.json({ 
+          success: true,
+          message: translations.verifyEmail?.alreadyVerifiedMessage || 'This email has already been verified.',
+          email: alreadyVerifiedCheck.Email,
+          verifiedAt: alreadyVerifiedCheck.EmailVerified,
+          language: detectedLanguage
+        }, { status: 200 });
+      }
+
       // Detect language from Accept-Language header for error messages
       const acceptLanguage = request.headers.get('accept-language');
       const detectedLanguage = detectLanguageFromHeaders(acceptLanguage);
@@ -41,6 +71,7 @@ export async function GET(
       }, { status: 400 });
     }
 
+    // Check if email is already verified (token consumed but email verified)
     if (subscriber.EmailVerified) {
       // Detect language from Accept-Language header for error messages
       const acceptLanguage = request.headers.get('accept-language');
@@ -50,11 +81,12 @@ export async function GET(
       const translations = await loadTranslation(detectedLanguage);
       
       return NextResponse.json({ 
-        error: 'email_already_verified',
+        success: true,
         message: translations.verifyEmail?.alreadyVerifiedMessage || 'This email has already been verified.',
         email: subscriber.Email,
+        verifiedAt: subscriber.EmailVerified,
         language: detectedLanguage
-      }, { status: 400 });
+      }, { status: 200 });
     }
 
     // Mark email as verified, activate subscriber, and clear verification token
