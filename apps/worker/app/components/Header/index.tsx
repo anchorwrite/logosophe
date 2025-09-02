@@ -70,14 +70,36 @@ const Header: React.FC = () => {
     {
       key: "dashboard",
       label: session?.user 
-        ? (i18n.isInitialized ? t("harbor.nav.harbor") : "Harbor")
+        ? (() => {
+            // Check user role to determine what to show
+            if (session.user.role === 'admin' || session.user.role === 'tenant') {
+              // Credentials users see "Dashboard"
+              return i18n.isInitialized ? t("dashboard") : "Dashboard";
+            } else if (session.user.role === 'subscriber') {
+              // Non-Credentials users who are subscribers see "Harbor" in their language
+              return i18n.isInitialized ? t("harbor.nav.harbor") : "Harbor";
+            } else {
+              // Everyone else (including OAuth users without subscriber role) sees "Sign In"
+              return i18n.isInitialized ? t("Sign In") : "Sign In";
+            }
+          })()
         : (i18n.isInitialized ? t("Sign In") : "Sign In"),
       onClick: () => {
         if (session?.user) {
-          const currentLang = window.location.pathname.split('/')[1] || 'en';
-          router.push(`/${currentLang}/harbor`);
+          if (session.user.role === 'admin' || session.user.role === 'tenant') {
+            // Credentials users go to dashboard
+            router.push("/dashboard");
+          } else if (session.user.role === 'subscriber') {
+            // Subscribers go to harbor
+            const currentLang = window.location.pathname.split('/')[1] || 'en';
+            router.push(`/${currentLang}/harbor`);
+          } else {
+            // Everyone else goes to signin
+            router.push("/signin");
+          }
         } else {
-          router.push("/dashboard");
+          // No session - go to signin
+          router.push("/signin");
         }
       },
     },

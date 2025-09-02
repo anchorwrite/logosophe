@@ -60,6 +60,19 @@
 - **Components**: Located in `packages/common/components/`
 - **UI Components**: Radix-UI components in `packages/common/components/ui/`
 
+### Header Component Architecture
+- **Main Header**: Located at `apps/worker/app/components/Header/index.tsx` - used on root page (`/`)
+- **Harbor AppBar**: Located at `apps/worker/app/[lang]/harbor/appbar.tsx` - used in harbor routes
+- **Dashboard AppBar**: Located at `apps/worker/app/dashboard/appbar.tsx` - used in dashboard routes
+- **Subscriber Pages AppBar**: Located at `apps/worker/app/components/SubscriberPagesAppBar.tsx` - used in subscriber page routes
+
+### Header Component Role-Based Navigation
+- **Credentials users (admin/tenant)**: See "Dashboard" → navigate to `/dashboard`
+- **Non-Credentials users who are subscribers**: See "Harbor" (in their language) → navigate to `/[lang]/harbor`
+- **Everyone else** (including OAuth users without subscriber role and unauthenticated users): See "Sign In" → navigate to `/signin`
+- **Role checking**: Uses `session.user.role` from RBAC system to determine display and navigation
+- **Internationalization**: Subscriber users see "Harbor" in their language, others see English fallback text
+
 ## Authentication
 - **Framework**: NextAuth v5 with D1Adapter
 - **Providers**: Google, Apple, Resend, Credentials
