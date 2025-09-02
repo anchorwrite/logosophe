@@ -28,7 +28,8 @@ const MiddleBlock = ({ title, content, button, id }: MiddleBlockProps) => {
       const currentLang = window.location.pathname.split('/')[1] || 'en';
       router.push(`/${currentLang}/pages`);
     } else if (item.title.includes("Tenant")) {
-      router.push('/tenant-application');
+      const currentLang = window.location.pathname.split('/')[1] || 'en';
+      router.push(`/${currentLang}/tenant-application`);
     } else {
       const currentLang = window.location.pathname.split('/')[1] || 'en';
       router.push(`/${currentLang}/harbor`);
