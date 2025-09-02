@@ -54,22 +54,24 @@ const Header: React.FC = () => {
   const menuItems = [
     {
       key: "readers",
-      label: t("For Readers"),
+      label: i18n.isInitialized ? t("For Readers") : "For Readers",
       onClick: () => handleNavigation("readers"),
     },
     {
       key: "creators",
-      label: t("For Creators"),
+      label: i18n.isInitialized ? t("For Creators") : "For Creators",
       onClick: () => handleNavigation("creators"),
     },
     {
       key: "join",
-      label: t("Join Us"),
+      label: i18n.isInitialized ? t("Join Us") : "Join Us",
       onClick: () => handleNavigation("join"),
     },
     {
       key: "dashboard",
-      label: session?.user ? t("harbor.nav.harbor") : t("Sign In"),
+      label: session?.user 
+        ? (i18n.isInitialized ? t("harbor.nav.harbor") : "Harbor")
+        : (i18n.isInitialized ? t("Sign In") : "Sign In"),
       onClick: () => {
         if (session?.user) {
           const currentLang = window.location.pathname.split('/')[1] || 'en';
@@ -81,7 +83,7 @@ const Header: React.FC = () => {
     },
     {
       key: "contact",
-      label: t("Contact"),
+      label: i18n.isInitialized ? t("Contact") : "Contact",
       onClick: () => {
         const currentLang = window.location.pathname.split('/')[1] || 'en';
         router.push(`/${currentLang}/contact`);

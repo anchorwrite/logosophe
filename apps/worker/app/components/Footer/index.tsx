@@ -49,16 +49,24 @@ const Footer: React.FC = () => {
             {/* Navigation Section */}
             <Card variant="ghost">
               <Flex direction="column" gap="3">
-                <Text size="3" weight="bold">{t("Navigation menu")}</Text>
+                <Text size="3" weight="bold">
+                  {i18n.isInitialized ? t("Navigation menu") : "Navigation menu"}
+                </Text>
                 <Flex direction="column" gap="2">
                   <a href={`/${currentLang}`} style={{ textDecoration: 'none', color: 'inherit' }}>
-                    <Text size="2">{t("Home")}</Text>
+                    <Text size="2">
+                      {i18n.isInitialized ? t("Home") : "Home"}
+                    </Text>
                   </a>
                   <a href={`/${currentLang}#about`} style={{ textDecoration: 'none', color: 'inherit' }}>
-                    <Text size="2">{t("About")}</Text>
+                    <Text size="2">
+                      {i18n.isInitialized ? t("About") : "About"}
+                    </Text>
                   </a>
                   <a href={`/${currentLang}/contact`} style={{ textDecoration: 'none', color: 'inherit' }}>
-                    <Text size="2">{t("Contact")}</Text>
+                    <Text size="2">
+                      {i18n.isInitialized ? t("Contact") : "Contact"}
+                    </Text>
                   </a>
                 </Flex>
               </Flex>
@@ -67,7 +75,9 @@ const Footer: React.FC = () => {
             {/* Social Media Section */}
             <Card variant="ghost">
               <Flex direction="column" gap="3">
-                <Text size="3" weight="bold">{t("Connect")}</Text>
+                <Text size="3" weight="bold">
+                  {i18n.isInitialized ? t("Connect") : "Connect"}
+                </Text>
                 <Flex gap="3">
                   <a href="https:/github.com/plowden" target="_blank" rel="noopener noreferrer" aria-label="GitHub">
                     <SvgIcon src="/img/svg/github.svg" width="25px" height="25px" />
@@ -85,7 +95,9 @@ const Footer: React.FC = () => {
             {/* Language Section */}
             <Card variant="ghost">
               <Flex direction="column" gap="3">
-                <Text size="3" weight="bold">{t("Language")}</Text>
+                <Text size="3" weight="bold">
+                  {i18n.isInitialized ? t("Language") : "Language"}
+                </Text>
                 <Select.Root value={currentLang} onValueChange={handleChange}>
                   <Select.Trigger style={{ width: '100%' }} />
                   <Select.Content>
@@ -116,14 +128,18 @@ const Footer: React.FC = () => {
             >
               <Flex gap="4" wrap="wrap" justify="center">
                 <a href={`/${currentLang}/privacy-policy`} style={{ textDecoration: 'none', color: 'inherit' }}>
-                  <Text size="2">{t("Privacy Policy")}</Text>
+                  <Text size="2">
+                    {i18n.isInitialized ? t("Privacy Policy") : "Privacy Policy"}
+                  </Text>
                 </a>
                 <a href={`/${currentLang}/terms-of-service`} style={{ textDecoration: 'none', color: 'inherit' }}>
-                  <Text size="2">{t("Terms of Service")}</Text>
+                  <Text size="2">
+                    {i18n.isInitialized ? t("Terms of Service") : "Terms of Service"}
+                  </Text>
                 </a>
               </Flex>
               <Text size="2" color="gray">
-                © {new Date().getFullYear()} Logosophe. {t("All rights reserved")}
+                © {new Date().getFullYear()} Logosophe. {i18n.isInitialized ? t("All rights reserved") : "All rights reserved"}
               </Text>
             </Flex>
           </Box>
