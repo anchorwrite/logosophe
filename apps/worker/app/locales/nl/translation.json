@@ -1041,6 +1041,30 @@
         "pleaseDescribeIntendedUse": "Beschrijf het beoogde gebruik",
         "pleaseProvideAdditionalDetails": "Geef aanvullende details"
     },
+    "subscriber_opt_in": {
+        "verification_sent_title": "Verificatie-e-mail verzonden! ��",
+        "verification_sent_message": "Controleer jouw e-mail en klik op de verificatielink om jouw aanmelding te voltooien.",
+        "verification_sent_spam_notice": "Als jij de e-mail niet ziet, controleer dan jouw spamfolder.",
+        "send_another_button": "Stuur nog een verificatie-e-mail",
+        "verification_email_sent": "Verificatie-e-mail verzonden",
+        "verification_email_sent_content": "Controleer jouw e-mail en klik op de verificatielink om jouw aanmelding te voltooien.",
+        "error_title": "Fout",
+        "failed_to_subscribe": "Abonneren mislukt. Probeer het opnieuw.",
+        "failed_to_send_verification": "Het is niet gelukt om de verificatie-e-mail te verzenden"
+    },
+    "verifyEmail": {
+        "verifying": "E-mailadres verifiëren...",
+        "success": "E-mail geverifieerd!",
+        "alreadyVerified": "Al geverifieerd",
+        "failed": "Verificatie mislukt",
+        "pleaseWait": "Een ogenblik geduld terwijl wij jouw e-mailadres verifiëren...",
+        "email": "E-mail",
+        "verifiedAt": "Geverifieerd op",
+        "goHome": "Ga naar de startpagina",
+        "goToHarbor": "Ga naar de haven",
+        "invalidToken": "Deze verificatielink is ongeldig of verlopen. Vraag een nieuwe verificatiemail aan.",
+        "alreadyVerifiedMessage": "Dit e-mailadres is al geverifieerd."
+    },
     "subscriber_pages": {
         "title": "Abonneepagina's",
         "subtitle": "Maak en beheer jouw openbare pagina's en blogberichten",
@@ -1418,35 +1442,11 @@
                 "signature": "Hartelijke groeten,\nHet Logosophe-team"
             }
         },
-        "subscriber_opt_in": {
-            "verification_sent_title": "Verificatie-e-mail verzonden! ��",
-            "verification_sent_message": "Controleer jouw e-mail en klik op de verificatielink om jouw aanmelding te voltooien.",
-            "verification_sent_spam_notice": "Als jij de e-mail niet ziet, controleer dan jouw spamfolder.",
-            "send_another_button": "Stuur nog een verificatie-e-mail",
-            "verification_email_sent": "Verificatie-e-mail verzonden",
-            "verification_email_sent_content": "Controleer jouw e-mail en klik op de verificatielink om jouw aanmelding te voltooien.",
-            "error_title": "Fout",
-            "failed_to_subscribe": "Abonneren mislukt. Probeer het opnieuw.",
-            "failed_to_send_verification": "Het is niet gelukt om de verificatie-e-mail te verzenden"
-        },
         "subscriber_messages": {
             "already_subscriber": "Al abonnee",
             "subscriber_created": "Abonnee succesvol aangemaakt",
             "subscriber_reactivated": "Abonnee succesvol gereactiveerd",
             "please_verify_reactivate": "Verifieer jouw e-mailadres om jouw abonnement opnieuw te activeren"
-        },
-        "verifyEmail": {
-            "verifying": "E-mailadres verifiëren...",
-            "success": "E-mail geverifieerd!",
-            "alreadyVerified": "Al geverifieerd",
-            "failed": "Verificatie mislukt",
-            "pleaseWait": "Een ogenblik geduld terwijl wij jouw e-mailadres verifiëren...",
-            "email": "E-mail",
-            "verifiedAt": "Geverifieerd op",
-            "goHome": "Ga naar de startpagina",
-            "goToHarbor": "Ga naar de haven",
-            "invalidToken": "Deze verificatielink is ongeldig of verlopen. Vraag een nieuwe verificatiemail aan.",
-            "alreadyVerifiedMessage": "Dit e-mailadres is al geverifieerd."
         }
     }
 }
