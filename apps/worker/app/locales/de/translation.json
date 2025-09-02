@@ -306,11 +306,11 @@
   },
   "harbor": {
     "nav": {
-      "harbor": "Harbor",
+      "harbor": "Hafen",
       "profile": "Profil"
     },
-    "backToHarbor": "Zurück zu Harbor",
-    "welcome": "Willkommen bei Harbor",
+    "backToHarbor": "Zurück zu Hafen",
+    "welcome": "Willkommen bei Hafen",
     "signedInAs": "Du bist angemeldet als",
     "signedInAsWithProvider": "Du bist als {email} über {provider} angemeldet.",
     "via": "über",
@@ -1061,7 +1061,7 @@
     "email": "E-Mail",
     "verifiedAt": "Bestätigt am",
     "goHome": "Zur Startseite",
-    "goToHarbor": "Zu Harbor",
+    "goToHarbor": "Zu Hafen",
     "invalidToken": "Dieser Bestätigungslink ist ungültig oder abgelaufen. Bitte fordere eine neue Bestätigungs-E-Mail an.",
     "alreadyVerifiedMessage": "Diese E-Mail wurde schon bestätigt."
   },
@@ -1080,14 +1080,14 @@
       "greeting": "Hallo {{name}},",
       "welcome_message": "Willkommen bei Logosophe! ��",
       "verification_success": "Deine E-Mail-Adresse wurde erfolgreich bestätigt und du bist jetzt ein bestätigter Abonnent. Das kannst du jetzt machen:",
-      "explore_harbor_title": "Harbor entdecken",
+      "explore_harbor_title": "Hafen entdecken",
       "explore_harbor_items": [
         "Greife auf deinen personalisierten Arbeitsbereich zu",
         "Verwalte deine E-Mail-Einstellungen",
         "Verbinde dich mit anderen Abonnenten"
       ],
       "email_preferences_title": "E-Mail-Einstellungen",
-      "email_preferences_description": "Du kannst einstellen, welche E-Mails du bekommst, indem du in dein Harbor-Profil gehst:",
+      "email_preferences_description": "Du kannst einstellen, welche E-Mails du bekommst, indem du in dein Hafen-Profil gehst:",
       "email_preferences_items": [
         "Newsletter: Regelmäßige Updates und Inhalte",
         "Ankündigungen: Wichtige Systemaktualisierungen",
@@ -1217,8 +1217,8 @@
         "language": "Sprache",
         "tags": "Tags",
         "tags_placeholder": "Komma, getrennte, Tags",
-        "linked_content": "Verknüpfter Harbor-Inhalt",
-        "link_harbor_content": "Harbor-Inhalt verknüpfen"
+        "linked_content": "Verknüpfter Hafen-Inhalt",
+        "link_harbor_content": "Hafen-Inhalt verknüpfen"
       },
       "edit_form": {
         "title": "Blogbeitrag bearbeiten"
@@ -1246,8 +1246,8 @@
       },
       "tags": "Tags",
       "read_more": "Mehr lesen",
-      "linked_content_title": "Verknüpfter Harbor-Inhalt",
-      "linked_content_label": "Verknüpfter Harbor-Inhalt",
+      "linked_content_title": "Verknüpfter Hafen-Inhalt",
+      "linked_content_label": "Verknüpfter Hafen-Inhalt",
       "published_by": "Veröffentlicht von"
     },
     "announcements": {
@@ -1267,8 +1267,8 @@
       "link_label": "Link (optional)",
       "link_placeholder": "https:\/\/example.com",
       "link_text_placeholder": "Linktext (optional)",
-      "linked_content_label": "Verknüpfter Harbor-Inhalt",
-      "link_harbor_content": "Harbor-Inhalt verknüpfen",
+      "linked_content_label": "Verknüpfter Hafen-Inhalt",
+      "link_harbor_content": "Hafen-Inhalt verknüpfen",
       "language_label": "Sprache",
       "published_on": "Veröffentlicht am",
       "expires": "Läuft ab",

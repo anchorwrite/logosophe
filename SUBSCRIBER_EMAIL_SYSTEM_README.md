@@ -3,6 +3,8 @@
 ## Overview
 This document describes the internationalized email system for Logosophe subscribers, including verification emails, welcome emails, and the infrastructure that supports them.
 
+**Note**: As of the latest updates, all email functionality has been consolidated into the main worker. The email-worker now only handles contact forms and tenant applications.
+
 ## Features
 
 ### 🌍 **Internationalization (i18n)**
@@ -39,6 +41,20 @@ This document describes the internationalized email system for Logosophe subscri
   - ✅ Added proper fallback handling for missing translations
   - ✅ Implemented guard clauses to prevent infinite loops
 
+### **Email Worker Cleanup (Latest Update)**
+- **Status**: ✅ **COMPLETED** - All email functionality consolidated into main worker
+- **Removed Dead Code**: 
+  - ✅ Removed unused `/api/verification-email` endpoint (main worker handles this)
+  - ✅ Removed unused `/api/subscriber-email` endpoint (never called)
+  - ✅ Removed unused `/api/handle-newsletter` endpoint (never called)
+  - ✅ Removed unused `/api/welcome-email` endpoint (main worker handles this)
+- **Current Email-Worker Functionality**: Only handles contact forms and tenant applications
+- **Database Tables No Longer Used by Email-Worker**:
+  - `EmailVerifications` - Now handled by main worker
+  - `UnsubscribeTokens` - Now handled by main worker  
+  - `SubscriberEmails` - Now handled by main worker
+  - `Subscribers` - Now handled by main worker
+
 ### **Translation System**
 - **Location**: `apps/worker/app/locales/[lang]/translation.json`
 - **Structure**: All language files now have complete coverage including:
@@ -54,29 +70,44 @@ This document describes the internationalized email system for Logosophe subscri
 
 ### **API Endpoints**
 
-#### **POST /api/verification-email**
+#### **POST /api/verification-email** (Main Worker)
 - **Purpose**: Send verification email to new subscribers
 - **Security**: Prevents duplicate subscriptions for unverified emails
 - **Language**: Detects user's preferred language from headers
 - **Response**: Success confirmation or error details
+- **Implementation**: Uses Resend API directly with internationalized templates
 
-#### **GET /api/verify-email/[token]**
+#### **GET /api/verify-email/[token]** (Main Worker)
 - **Purpose**: Verify email address using token
 - **Security**: Handles both valid tokens and already-verified emails
 - **Response**: Success page or appropriate error messages
 - **Language**: Supports all supported languages
+- **Implementation**: Sends welcome email directly via Resend after verification
 
-#### **POST /api/welcome-email**
-- **Purpose**: Send welcome email after verification
-- **Language**: Uses verified user's preferred language
-- **Content**: Onboarding information and Harbor access details
+#### **Email-Worker Endpoints** (Simplified)
+- **Default Handler**: Handles contact forms and tenant applications only
+- **Removed Endpoints**: All subscriber email functionality moved to main worker
 
 ### **Database Integration**
-- **Tables**: `Subscribers`, `SubscriberBiographies`, `SubscriberHandles`
+- **Main Worker Tables**: `Subscribers`, `SubscriberBiographies`, `SubscriberHandles`
 - **Fields**: `EmailVerified`, `VerificationToken`, `VerificationExpires`, `Active`
 - **Security**: Role assignment only after `EmailVerified IS NOT NULL`
+- **Email-Worker Tables**: `ContactSubmissions`, `TenantSubmissions` (contact forms and tenant applications only)
 
 ## Recent Fixes and Improvements
+
+### **Email Worker Cleanup (December 2024)**
+1. **Dead Code Removal** ✅ COMPLETED
+   - **Issue**: Email-worker contained unused endpoints and functions
+   - **Root Cause**: Previous implementations left behind unused code
+   - **Solution**: Removed all unused endpoints and consolidated functionality into main worker
+   - **Impact**: Cleaner codebase, reduced complexity, better maintainability
+
+2. **Functionality Consolidation** ✅ COMPLETED
+   - **Issue**: Email functionality was split between main worker and email-worker
+   - **Root Cause**: Inconsistent architecture decisions
+   - **Solution**: Moved all subscriber email functionality to main worker
+   - **Result**: Single source of truth for email handling
 
 ### **Critical Security Fixes**
 1. **Verification Bypass Vulnerability** ✅ FIXED
@@ -227,5 +258,6 @@ For issues related to the subscriber email system:
 ---
 
 **Last Updated**: December 2024  
-**Status**: ✅ Production Ready - All Critical Issues Resolved  
-**Translation Coverage**: 100% Complete for All Supported Languages
+**Status**: ✅ Production Ready - All Critical Issues Resolved + Email Worker Cleanup Complete  
+**Translation Coverage**: 100% Complete for All Supported Languages  
+**Architecture**: ✅ Consolidated - All email functionality now in main worker

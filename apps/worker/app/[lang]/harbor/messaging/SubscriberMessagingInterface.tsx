@@ -592,7 +592,7 @@ export function SubscriberMessagingInterface({
 
   const handleArchiveMessage = async (messageId: number) => {
     try {
-              const response = await fetch(`/api/harbor/messaging/messages/${messageId}/archive`, {
+        const response = await fetch(`/api/harbor/messaging/messages/${messageId}/archive`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

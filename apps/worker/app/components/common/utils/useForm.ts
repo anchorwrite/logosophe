@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useToast } from "@/components/Toast";
 
 interface FormValues {
   name: string;
@@ -23,6 +24,7 @@ export const useForm = (validate: (values: FormValues) => FormErrors) => {
   });
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { showToast } = useToast();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -62,14 +64,26 @@ export const useForm = (validate: (values: FormValues) => FormErrors) => {
             subject: "",
             message: "",
           });
-          alert("Message sent successfully!");
+          showToast({
+            title: 'Success',
+            content: 'Message sent successfully!',
+            type: 'success'
+          });
         }
       } catch (error) {
         console.error("Error sending message:", error);
         if (error instanceof Error) {
-          alert(`Failed to send message: ${error.message}`);
+          showToast({
+            title: 'Error',
+            content: `Failed to send message: ${error.message}`,
+            type: 'error'
+          });
         } else {
-          alert("Failed to send message. Please try again.");
+          showToast({
+            title: 'Error',
+            content: 'Failed to send message. Please try again.',
+            type: 'error'
+          });
         }
       } finally {
         setIsSubmitting(false);

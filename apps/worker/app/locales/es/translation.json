@@ -306,11 +306,11 @@
   },
   "harbor": {
     "nav": {
-      "harbor": "Harbor",
+      "harbor": "Puerto",
       "profile": "Perfil"
     },
-    "backToHarbor": "Volver a Harbor",
-    "welcome": "Bienvenido a Harbor",
+    "backToHarbor": "Volver a Puerto",
+    "welcome": "Bienvenido a Puerto",
     "signedInAs": "Has iniciado sesión como",
     "signedInAsWithProvider": "Has iniciado sesión como {email} a través de {provider}.",
     "via": "por",
@@ -1061,7 +1061,7 @@
     "email": "Correo electrónico",
     "verifiedAt": "Verificado en",
     "goHome": "Ir a la página principal",
-    "goToHarbor": "Ir a Harbor",
+    "goToHarbor": "Ir a Puerto",
     "invalidToken": "Este enlace de verificación no es válido o ha caducado. Por favor solicita un nuevo correo de verificación.",
     "alreadyVerifiedMessage": "Este correo ya ha sido verificado."
   },
@@ -1080,14 +1080,14 @@
       "greeting": "Hola {{name}},",
       "welcome_message": "¡Bienvenido a Logosophe! ��",
       "verification_success": "Tu correo ha sido verificado con éxito y ya eres un suscriptor confirmado. Esto es lo que puedes hacer ahora:",
-      "explore_harbor_title": "Explora Harbor",
+      "explore_harbor_title": "Explora Puerto",
       "explore_harbor_items": [
         "Accede a tu espacio de trabajo personalizado",
         "Administra tus preferencias de correo electrónico",
         "Conéctate con otros suscriptores"
       ],
       "email_preferences_title": "Preferencias de correo",
-      "email_preferences_description": "Puedes gestionar qué tipos de correos recibes yendo a tu perfil de Harbor:",
+      "email_preferences_description": "Puedes gestionar qué tipos de correos recibes yendo a tu perfil de Puerto:",
       "email_preferences_items": [
         "Boletines: Actualizaciones y contenido regulares",
         "Anuncios: Actualizaciones importantes del sistema",
@@ -1217,8 +1217,8 @@
         "language": "Idioma",
         "tags": "Etiquetas",
         "tags_placeholder": "etiquetas, separadas, por comas",
-        "linked_content": "Contenido de Harbor vinculado",
-        "link_harbor_content": "Vincular contenido de Harbor"
+        "linked_content": "Contenido de Puerto vinculado",
+        "link_harbor_content": "Vincular contenido de Puerto"
       },
       "edit_form": {
         "title": "Editar publicación del blog"
@@ -1246,8 +1246,8 @@
       },
       "tags": "Etiquetas",
       "read_more": "Leer más",
-      "linked_content_title": "Contenido de Harbor vinculado",
-      "linked_content_label": "Contenido de Harbor vinculado",
+      "linked_content_title": "Contenido de Puerto vinculado",
+      "linked_content_label": "Contenido de Puerto vinculado",
       "published_by": "Publicado por"
     },
     "announcements": {
@@ -1267,8 +1267,8 @@
       "link_label": "Enlace (opcional)",
       "link_placeholder": "https:\/\/example.com",
       "link_text_placeholder": "Texto del enlace (opcional)",
-      "linked_content_label": "Contenido de Harbor vinculado",
-      "link_harbor_content": "Vincular contenido de Harbor",
+      "linked_content_label": "Contenido de Puerto vinculado",
+      "link_harbor_content": "Vincular contenido de Puerto",
       "language_label": "Idioma",
       "published_on": "Publicado el",
       "expires": "Expira",

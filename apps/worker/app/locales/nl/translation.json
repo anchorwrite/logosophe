@@ -309,8 +309,8 @@
             "harbor": "Haven",
             "profile": "Profiel"
         },
-        "backToHarbor": "Terug naar de haven",
-        "welcome": "Welkom in Harbor",
+        "backToHarbor": "Terug naar Haven",
+        "welcome": "Welkom in Haven",
         "signedInAs": "Jij bent aangemeld als",
         "signedInAsWithProvider": "Jij bent aangemeld als {email} via {provider}.",
         "via": "via",
@@ -1061,7 +1061,7 @@
         "email": "E-mail",
         "verifiedAt": "Geverifieerd op",
         "goHome": "Ga naar de startpagina",
-        "goToHarbor": "Ga naar de haven",
+        "goToHarbor": "Ga naar Haven",
         "invalidToken": "Deze verificatielink is ongeldig of verlopen. Vraag een nieuwe verificatiemail aan.",
         "alreadyVerifiedMessage": "Dit e-mailadres is al geverifieerd."
     },
@@ -1087,7 +1087,7 @@
                 "Maak contact met andere abonnees"
             ],
             "email_preferences_title": "E-mailvoorkeuren",
-            "email_preferences_description": "Jij kan beheren welke soorten e-mails u ontvangt door naar jouw Harbor-profiel te gaan:",
+            "email_preferences_description": "Jij kan beheren welke soorten e-mails u ontvangt door naar jouw Haven-profiel te gaan:",
             "email_preferences_items": [
                 "Nieuwsbrieven: Regelmatige updates en inhoud",
                 "Aankondigingen: Belangrijke systeemupdates",
@@ -1218,7 +1218,7 @@
                 "tags": "Labels",
                 "tags_placeholder": "komma, gescheiden, tags",
                 "linked_content": "Gekoppelde haveninhoud",
-                "link_harbor_content": "Link Harbor-inhoud"
+                "link_harbor_content": "Link Haven-inhoud"
             },
             "edit_form": {
                 "title": "Blogbericht bewerken"
@@ -1268,7 +1268,7 @@
             "link_placeholder": "https:\/\/example.com",
             "link_text_placeholder": "Linktekst (optioneel)",
             "linked_content_label": "Gekoppelde haveninhoud",
-            "link_harbor_content": "Link Harbor-inhoud",
+            "link_harbor_content": "Link Haven-inhoud",
             "language_label": "Taal",
             "published_on": "Gepubliceerd op",
             "expires": "Verloopt",
