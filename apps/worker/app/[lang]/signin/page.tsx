@@ -5,20 +5,33 @@ import { redirect } from 'next/navigation'
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { auth, signIn, signOut } from '@/auth'
 import { AuthError } from 'next-auth'
-import { handleSignOut } from '@/signout/actions'
+import { handleSignOut } from '@/[lang]/signout/actions'
+import { getDictionary } from '@/lib/dictionary'
+import type { Locale } from '@/types/i18n'
 
-export const metadata: Metadata = {
-  title: 'Logosophe Sign In Page',
+export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
+  const { lang } = await params;
+  const dict = await getDictionary(lang as Locale) as any;
+  
+  return {
+    title: dict.signin.title,
+  }
 }
 
 export default async function SignInPage({
+  params,
   searchParams,
 }: {
+  params: Promise<{ lang: string }>
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }) {
+  // Get language and translations
+  const { lang } = await params;
+  const dict = await getDictionary(lang as Locale) as any;
+  
   // Get error from URL search params
-  const params = await searchParams;
-  const errorParam = params?.error;
+  const searchParamsData = await searchParams;
+  const errorParam = searchParamsData?.error;
   const error = Array.isArray(errorParam) ? errorParam[0] : errorParam;
 
   // Map error codes to user-friendly messages
@@ -27,21 +40,21 @@ export default async function SignInPage({
     
     // Handle Auth.js error format
     if (error.startsWith('Read more at https:/errors.authjs.dev')) {
-      return 'Invalid email or password';
+      return dict.signin.errors.invalidCredentials;
     }
     
     // Handle specific error types
     switch (error) {
       case 'CredentialsSignin':
-        return 'Invalid email or password';
+        return dict.signin.errors.invalidCredentials;
       case 'UserNotFound':
-        return 'No account found with this email';
+        return dict.signin.errors.userNotFound;
       case 'IncorrectPassword':
-        return 'Incorrect password';
+        return dict.signin.errors.incorrectPassword;
       case 'OAuthAccountNotLinked':
-        return 'This email is already associated with a different sign-in method. Please use the same provider you used when you first created your account.';
+        return dict.signin.errors.accountNotLinked;
       default:
-        return 'An error occurred during sign in';
+        return dict.signin.errors.genericError;
     }
   };
 
@@ -59,11 +72,11 @@ export default async function SignInPage({
       if (isAdmin) {
         redirect('/dashboard');
       } else {
-        redirect('/harbor');
+        redirect(`/${lang}/harbor`);
       }
     } catch (error) {
       // If we can't determine user type, default to harbor
-      redirect('/harbor');
+      redirect(`/${lang}/harbor`);
     }
   }
 
@@ -75,11 +88,11 @@ export default async function SignInPage({
                          error.trim() !== '' && 
                          validErrors.includes(error) &&
                          // Only show if we have other indicators this was a real sign-in attempt
-                         (params?.callbackUrl || params?.error_description || params?.state);
+                         (searchParamsData?.callbackUrl || searchParamsData?.error_description || searchParamsData?.state);
 
   // If we have an error parameter but no legitimate sign-in context, redirect to clean signin page
   if (error && !shouldShowError) {
-    redirect('/signin');
+    redirect(`/${lang}/signin`);
   }
 
   return (
@@ -91,12 +104,12 @@ export default async function SignInPage({
             <Flex direction="column" gap="3">
               <Box style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
                 <Heading>
-                  User Sign In
+                  {dict.signin.userSignIn}
                 </Heading>
               </Box>
               <Box style={{ display: 'flex', justifyContent: 'center', width: '100%', paddingBottom: '1rem' }}>
                 <Text color="gray">
-                  (Subscribers: Please sign in with same provider!)
+                  {dict.signin.subscriberNote}
                 </Text>
               </Box>
             </Flex>
@@ -118,7 +131,7 @@ export default async function SignInPage({
             <form
               action={async () => {
                 'use server'
-                await signIn('google', { callbackUrl: '/harbor' })
+                await signIn('google', { callbackUrl: `/${lang}/harbor` })
               }}
               style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1rem' }}
             >
@@ -129,7 +142,7 @@ export default async function SignInPage({
                   <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
                   <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
                 </svg>
-                Continue with Google
+                {dict.signin.continueWithGoogle}
               </Button>
             </form>
 
@@ -144,7 +157,7 @@ export default async function SignInPage({
                 <svg width="20" height="20" viewBox="0 0 24 24" style={{ marginRight: '0.5rem' }}>
                   <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
                 </svg>
-                Continue with Apple
+                {dict.signin.continueWithApple}
               </Button>
             </form>
 
@@ -154,7 +167,7 @@ export default async function SignInPage({
                 const email = formData.get('email') as string
                 await signIn('resend', { 
                   email,
-                  callbackUrl: '/harbor' 
+                  callbackUrl: `/${lang}/harbor` 
                 })
               }}
               style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}
@@ -162,7 +175,7 @@ export default async function SignInPage({
                              <input
                  type="email"
                  name="email"
-                 placeholder="Enter your email"
+                 placeholder={dict.signin.enterEmail}
                  autoComplete="email"
                  autoCapitalize="none"
                  autoCorrect="off"
@@ -175,7 +188,7 @@ export default async function SignInPage({
                  }}
                />
               <Button type="submit" variant="outline" style={{ width: '100%' }}>
-                Continue with Email
+                {dict.signin.continueWithEmail}
               </Button>
             </form>
           </Box>
@@ -187,12 +200,12 @@ export default async function SignInPage({
             <Flex direction="column" gap="3">
               <Box style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
                 <Heading>
-                  Administrator Sign In
+                  {dict.signin.adminSignIn}
                 </Heading>
               </Box>
               <Box style={{ display: 'flex', justifyContent: 'center', width: '100%', paddingBottom: '1rem' }}>
                 <Text color="gray">
-                  (System and tenant admins only!)
+                  {dict.signin.adminNote}
                 </Text>
               </Box>
             </Flex>
@@ -215,7 +228,7 @@ export default async function SignInPage({
                   await signIn('credentials', {
                     email: formData.get('email'),
                     password: formData.get('password'),
-                    redirectTo: isAdmin ? '/dashboard' : '/harbor'
+                    redirectTo: isAdmin ? '/dashboard' : `/${lang}/harbor`
                   })
                 } catch (error) {
                   // Don't catch NEXT_REDIRECT errors from signIn - let them bubble up
@@ -233,7 +246,7 @@ export default async function SignInPage({
                 
                 // Handle redirects outside of try/catch to avoid NEXT_REDIRECT issues
                 if (errorMessage) {
-                  redirect(`/signin?error=${errorMessage}`)
+                  redirect(`/${lang}/signin?error=${errorMessage}`)
                 }
               }}
               style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}
@@ -241,7 +254,7 @@ export default async function SignInPage({
                                      <input
                      type="email"
                      name="email"
-                     placeholder="Email"
+                     placeholder={dict.signin.email}
                      autoComplete="email"
                      autoCapitalize="none"
                      autoCorrect="off"
@@ -256,7 +269,7 @@ export default async function SignInPage({
                    <input
                      type="password"
                      name="password"
-                     placeholder="Password"
+                     placeholder={dict.signin.password}
                      autoComplete="current-password"
                      required
                      style={{
@@ -267,7 +280,7 @@ export default async function SignInPage({
                      }}
                    />
                   <Button type="submit" style={{ width: '100%' }}>
-                    Sign In
+                    {dict.signin.signIn}
                   </Button>
                 </form>
           </Box>

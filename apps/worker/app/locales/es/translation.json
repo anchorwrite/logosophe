@@ -128,6 +128,33 @@
       }
     }
   },
+  "signin": {
+    "title": "Página de inicio de sesión de Logosophe",
+    "userSignIn": "Inicio de sesión de usuario",
+    "subscriberNote": "(Suscriptores: ¡Inicia sesión con el mismo proveedor!)",
+    "continueWithGoogle": "Continúa con Google",
+    "continueWithApple": "Continúa con Apple",
+    "continueWithEmail": "Continúa con tu correo electrónico",
+    "enterEmail": "Introduce tu correo electrónico",
+    "adminSignIn": "Inicio de sesión de administrador",
+    "adminNote": "(¡Solo administradores del sistema e inquilinos!)",
+    "email": "Correo electrónico",
+    "password": "Contraseña",
+    "signIn": "Inicia sesión",
+    "errors": {
+      "invalidCredentials": "Correo electrónico o contraseña no válidos",
+      "userNotFound": "No se encontró ninguna cuenta con este correo",
+      "incorrectPassword": "Contraseña incorrecta",
+      "accountNotLinked": "Este correo ya está asociado con un método de inicio de sesión diferente. Usa el mismo proveedor que usaste cuando creaste tu cuenta.",
+      "genericError": "Ocurrió un error durante el inicio de sesión"
+    }
+  },
+  "signout": {
+    "title": "Cerrar sesión",
+    "confirmMessage": "¿Seguro que quieres cerrar sesión?",
+    "staySignedIn": "No, mantener la sesión iniciada",
+    "yesSignOut": "Sí, cerrar sesión"
+  },
   "ReadersContent": {
     "title": "Descubre y explora contenido publicado",
     "text": "Explora nuestra colección de obras publicadas de autores y creadores. Encuentra nuevas historias, artículos y contenido de diferentes géneros y formatos.",

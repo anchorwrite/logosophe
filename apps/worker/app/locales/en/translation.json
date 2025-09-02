@@ -128,6 +128,33 @@
       }
     }
   },
+  "signin": {
+    "title": "Logosophe Sign In Page",
+    "userSignIn": "User Sign In",
+    "subscriberNote": "(Subscribers: Please sign in with same provider!)",
+    "continueWithGoogle": "Continue with Google",
+    "continueWithApple": "Continue with Apple", 
+    "continueWithEmail": "Continue with Email",
+    "enterEmail": "Enter your email",
+    "adminSignIn": "Administrator Sign In",
+    "adminNote": "(System and tenant admins only!)",
+    "email": "Email",
+    "password": "Password",
+    "signIn": "Sign In",
+    "errors": {
+      "invalidCredentials": "Invalid email or password",
+      "userNotFound": "No account found with this email",
+      "incorrectPassword": "Incorrect password",
+      "accountNotLinked": "This email is already associated with a different sign-in method. Please use the same provider you used when you first created your account.",
+      "genericError": "An error occurred during sign in"
+    }
+  },
+  "signout": {
+    "title": "Sign Out",
+    "confirmMessage": "Are you sure you want to sign out?",
+    "staySignedIn": "No, Stay Signed In",
+    "yesSignOut": "Yes, Sign Out"
+  }, 
   "ReadersContent": {
     "title": "Discover and explore published content",
     "text": "Browse our collection of published works from authors and creators. Find new stories, articles, and content across various genres and formats.",

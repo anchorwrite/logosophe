@@ -128,6 +128,33 @@
             }
         }
     },
+    "signin": {
+        "title": "Logosophe inlogpagina",
+        "userSignIn": "Gebruikersinlog",
+        "subscriberNote": "(Abonnees: log in met dezelfde provider!)",
+        "continueWithGoogle": "Ga verder met Google",
+        "continueWithApple": "Ga verder met Apple",
+        "continueWithEmail": "Ga verder met je e-mail",
+        "enterEmail": "Vul je e-mailadres in",
+        "adminSignIn": "Beheerder inloggen",
+        "adminNote": "(Alleen systeem- en huurderbeheerders!)",
+        "email": "E-mail",
+        "password": "Wachtwoord",
+        "signIn": "Log in",
+        "errors": {
+            "invalidCredentials": "Ongeldig e-mailadres of wachtwoord",
+            "userNotFound": "Geen account gevonden met dit e-mailadres",
+            "incorrectPassword": "Onjuist wachtwoord",
+            "accountNotLinked": "Dit e-mailadres is al gekoppeld aan een andere inlogmethode. Gebruik dezelfde provider die je gebruikte toen je je account aanmaakte.",
+            "genericError": "Er is een fout opgetreden tijdens het inloggen"
+        }
+    },
+    "signout": {
+        "title": "Uitloggen",
+        "confirmMessage": "Weet je zeker dat je wilt uitloggen?",
+        "staySignedIn": "Nee, ingelogd blijven",
+        "yesSignOut": "Ja, uitloggen"
+    },
     "ReadersContent": {
         "title": "Ontdek en verken gepubliceerde content",
         "text": "Blader door onze collectie gepubliceerde werken van auteurs en makers. Ontdek nieuwe verhalen, artikelen en content in verschillende genres en formaten.",
