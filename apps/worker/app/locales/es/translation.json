@@ -1052,6 +1052,64 @@
     "failed_to_subscribe": "No se pudo suscribir. Por favor intenta de nuevo.",
     "failed_to_send_verification": "No se pudo enviar el correo de verificación"
   },
+  "verifyEmail": {
+    "verifying": "Verificando correo...",
+    "success": "¡Correo verificado!",
+    "alreadyVerified": "Ya verificado",
+    "failed": "Verificación fallida",
+    "pleaseWait": "Por favor espera mientras verificamos tu correo...",
+    "email": "Correo electrónico",
+    "verifiedAt": "Verificado en",
+    "goHome": "Ir a la página principal",
+    "goToHarbor": "Ir a Harbor",
+    "invalidToken": "Este enlace de verificación no es válido o ha caducado. Por favor solicita un nuevo correo de verificación.",
+    "alreadyVerifiedMessage": "Este correo ya ha sido verificado."
+  },
+  "emails": {
+    "verification": {
+      "subject": "Verifica tu dirección de correo - Logosophe",
+      "greeting": "Hola {{name}},",
+      "body": "¡Gracias por suscribirte a Logosophe! Para completar tu suscripción, por favor verifica tu correo haciendo clic en el enlace de abajo:",
+      "verification_link": "{{verificationUrl}}",
+      "expiration_notice": "Este enlace caduca en 24 horas por motivos de seguridad.",
+      "ignore_notice": "Si no solicitaste esta suscripción, puedes ignorar este correo sin problema.",
+      "signature": "Saludos,\nEl equipo de Logosophe"
+    },
+    "welcome": {
+      "subject": "¡Bienvenido a Logosophe! ��",
+      "greeting": "Hola {{name}},",
+      "welcome_message": "¡Bienvenido a Logosophe! ��",
+      "verification_success": "Tu correo ha sido verificado con éxito y ya eres un suscriptor confirmado. Esto es lo que puedes hacer ahora:",
+      "explore_harbor_title": "Explora Harbor",
+      "explore_harbor_items": [
+        "Access your personalized workspace",
+        "Manage your email preferences",
+        "Connect with other subscribers"
+      ],
+      "email_preferences_title": "Preferencias de correo",
+      "email_preferences_description": "Puedes gestionar qué tipos de correos recibes yendo a tu perfil de Harbor:",
+      "email_preferences_items": [
+        "Newsletters: Regular updates and content",
+        "Announcements: Important system updates",
+        "Tenant Updates: Updates about your tenant activities"
+      ],
+      "getting_started_title": "Primeros pasos",
+      "getting_started_items": [
+        "Visit https:\/\/www.logosophe.com\/harbor to access your workspace",
+        "Customize your email preferences in your profile",
+        "Explore the platform and discover new features"
+      ],
+      "support_message": "Si tienes alguna pregunta o necesitas ayuda, no dudes en contactar a nuestro equipo de soporte.",
+      "welcome_aboard": "¡Bienvenido a bordo!",
+      "signature": "Saludos,\nEl equipo de Logosophe"
+    }
+  },
+  "subscriber_messages": {
+    "already_subscriber": "Ya eres suscriptor",
+    "subscriber_created": "Suscriptor creado con éxito",
+    "subscriber_reactivated": "Suscriptor reactivado con éxito",
+    "please_verify_reactivate": "Por favor verifica tu correo para reactivar tu suscripción"
+  },
   "subscriber_pages": {
     "title": "Páginas de suscriptores",
     "subtitle": "Crea y administra tus páginas públicas y publicaciones del blog",
@@ -1064,19 +1122,6 @@
       "showcase": "Vitrina",
       "published_media": "Medios publicados",
       "contact": "Contacto"
-    },
-    "verifyEmail": {
-      "verifying": "Verificando correo...",
-      "success": "¡Correo verificado!",
-      "alreadyVerified": "Ya verificado",
-      "failed": "Verificación fallida",
-      "pleaseWait": "Por favor espera mientras verificamos tu correo...",
-      "email": "Correo electrónico",
-      "verifiedAt": "Verificado en",
-      "goHome": "Ir a la página principal",
-      "goToHarbor": "Ir a Harbor",
-      "invalidToken": "Este enlace de verificación no es válido o ha caducado. Por favor solicita un nuevo correo de verificación.",
-      "alreadyVerifiedMessage": "Este correo ya ha sido verificado."
     },
     "content": {
       "noContent": "No hay contenido disponible",
@@ -1402,51 +1447,6 @@
       "view_page": "Ver página",
       "no_description": "No hay descripción disponible",
       "try_again": "Intenta de nuevo"
-    },
-    "emails": {
-      "verification": {
-        "subject": "Verifica tu dirección de correo - Logosophe",
-        "greeting": "Hola {{name}},",
-        "body": "¡Gracias por suscribirte a Logosophe! Para completar tu suscripción, por favor verifica tu correo haciendo clic en el enlace de abajo:",
-        "verification_link": "{{verificationUrl}}",
-        "expiration_notice": "Este enlace caduca en 24 horas por motivos de seguridad.",
-        "ignore_notice": "Si no solicitaste esta suscripción, puedes ignorar este correo sin problema.",
-        "signature": "Saludos,\nEl equipo de Logosophe"
-      },
-      "welcome": {
-        "subject": "¡Bienvenido a Logosophe! ��",
-        "greeting": "Hola {{name}},",
-        "welcome_message": "¡Bienvenido a Logosophe! ��",
-        "verification_success": "Tu correo ha sido verificado con éxito y ya eres un suscriptor confirmado. Esto es lo que puedes hacer ahora:",
-        "explore_harbor_title": "Explora Harbor",
-        "explore_harbor_items": [
-          "Access your personalized workspace",
-          "Manage your email preferences",
-          "Connect with other subscribers"
-        ],
-        "email_preferences_title": "Preferencias de correo",
-        "email_preferences_description": "Puedes gestionar qué tipos de correos recibes yendo a tu perfil de Harbor:",
-        "email_preferences_items": [
-          "Newsletters: Regular updates and content",
-          "Announcements: Important system updates",
-          "Tenant Updates: Updates about your tenant activities"
-        ],
-        "getting_started_title": "Primeros pasos",
-        "getting_started_items": [
-          "Visit https:\/\/www.logosophe.com\/harbor to access your workspace",
-          "Customize your email preferences in your profile",
-          "Explore the platform and discover new features"
-        ],
-        "support_message": "Si tienes alguna pregunta o necesitas ayuda, no dudes en contactar a nuestro equipo de soporte.",
-        "welcome_aboard": "¡Bienvenido a bordo!",
-        "signature": "Saludos,\nEl equipo de Logosophe"
-      }
-    },
-    "subscriber_messages": {
-      "already_subscriber": "Ya eres suscriptor",
-      "subscriber_created": "Suscriptor creado con éxito",
-      "subscriber_reactivated": "Suscriptor reactivado con éxito",
-      "please_verify_reactivate": "Por favor verifica tu correo para reactivar tu suscripción"
     }
   }
 }

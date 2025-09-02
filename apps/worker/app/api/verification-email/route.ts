@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
     
     // Render the email content - use current domain for development
     const host = request.headers.get('host') || 'www.logosophe.com';
-    const protocol = host.includes('localhost') || host.includes('local-dev') ? 'http' : 'https';
+    const protocol = host.includes('localhost') ? 'http' : 'https';
     const verificationUrl = `${protocol}://${host}/verify-email/${token}`;
     const { subject, html, text } = renderVerificationEmail(emailTemplate, name, verificationUrl);
 
