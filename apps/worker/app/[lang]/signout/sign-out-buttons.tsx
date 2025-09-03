@@ -2,6 +2,7 @@
 
 import { Flex, Button } from '@radix-ui/themes'
 import { useRouter } from 'next/navigation'
+import { signOut } from 'next-auth/react'
 import { handleSignOut } from './actions'
 import { useTranslation } from 'react-i18next'
 
@@ -21,8 +22,13 @@ export function SignOutButtons({ lang }: SignOutButtonsProps) {
   const handleYes = async (e: React.MouseEvent) => {
     e.preventDefault()
     try {
+      // First, call the server action for logging and cleanup
       await handleSignOut()
-      // Redirect to home page after successful signout
+      
+      // Then, use NextAuth's client-side signOut to properly invalidate the session
+      await signOut({ redirect: false })
+      
+      // Finally, redirect to home page
       router.push(`/${lang}`)
     } catch (error) {
       console.error('Error during signout:', error)
