@@ -134,6 +134,8 @@
     "subscriberNote": "(Suscriptores: ¡Inicia sesión con el mismo proveedor!)",
     "continueWithGoogle": "Continúa con Google",
     "continueWithApple": "Continúa con Apple",
+    "continueWithLinkedIn": "Continúa con LinkedIn",
+    "continueWithMicrosoft": "Continúa con Microsoft", 
     "continueWithEmail": "Continúa con tu correo electrónico",
     "enterEmail": "Introduce tu correo electrónico",
     "adminSignIn": "Inicio de sesión de administrador",
@@ -146,6 +148,13 @@
       "userNotFound": "No se encontró ninguna cuenta con este correo",
       "incorrectPassword": "Contraseña incorrecta",
       "accountNotLinked": "Este correo ya está asociado con un método de inicio de sesión diferente. Usa el mismo proveedor que usaste cuando creaste tu cuenta.",
+      "accountNotLinkedDescription": "Por ejemplo, si te registraste con Google, por favor continúa usando Google para iniciar sesión.",
+      "configurationError": "Error de configuración de autenticación",
+      "configurationErrorDescription": "Hay un problema con la configuración de autenticación. Por favor, inténtalo de nuevo más tarde.",
+      "accessDenied": "Acceso denegado",
+      "accessDeniedDescription": "Denegaste el permiso para iniciar sesión. Por favor, inténtalo de nuevo y otorga los permisos necesarios.",
+      "verificationError": "Error de verificación de correo electrónico",
+      "verificationErrorDescription": "Hubo un problema verificando tu dirección de correo electrónico. Por favor, inténtalo de nuevo.",
       "genericError": "Ocurrió un error durante el inicio de sesión"
     }
   },

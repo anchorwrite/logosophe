@@ -7,6 +7,8 @@ import { validateCredentials } from '@/lib/credentials';
 import Resend from "next-auth/providers/resend";
 import Google from "next-auth/providers/google";
 import Apple from "next-auth/providers/apple";
+import LinkedIn from "next-auth/providers/linkedin";
+import MicrosoftEntraID from "next-auth/providers/microsoft-entra-id"
 import { TestProvider } from '@/lib/test-provider';
 import { v4 as uuid } from "uuid";
 import { NormalizedLogging, createNormalizedMetadata } from "@/lib/normalized-logging";
@@ -252,6 +254,25 @@ export const { handlers, auth, signIn, signOut } = NextAuth(async () => {
           }
         }
       }),
+      LinkedIn({
+        clientId: getEnvVar('AUTH_LINKEDIN_ID'),
+        clientSecret: getEnvVar('AUTH_LINKEDIN_SECRET'),
+        authorization: {
+          params: {
+            scope: 'openid profile email'
+          }
+        }
+      }),
+      MicrosoftEntraID({
+        clientId: getEnvVar('AUTH_MICROSOFT_ENTRA_ID_ID'),
+        clientSecret: getEnvVar('AUTH_MICROSOFT_ENTRA_ID_SECRET'),
+        issuer: getEnvVar('AUTH_MICROSOFT_ENTRA_ID_ISSUER'),
+        authorization: {
+          params: {
+            scope: 'openid profile email'
+          }
+        }
+      }),
     ],
     adapter: await createCustomAdapter(),
     session: {
@@ -262,7 +283,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth(async () => {
     experimental: { enableWebAuthn: true },
     pages: {
       signIn: '/signin',
-      error: '/error',
     },
     debug: false,
     trustHost: true,

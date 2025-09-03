@@ -39,6 +39,15 @@ const Header: React.FC = () => {
     }
   }, [i18n.isInitialized]);
 
+  // Listen for session changes to update the header immediately
+  useEffect(() => {
+    // Force a re-render when session status changes
+    if (status === 'unauthenticated' && session === null) {
+      // Session has been cleared, force component update
+      setIsLoading(false);
+    }
+  }, [status, session]);
+
   const handleNavigation = (id: string) => {
     const currentLang = window.location.pathname.split('/')[1] || 'en';
     if (currentPath === '/') {
@@ -79,12 +88,9 @@ const Header: React.FC = () => {
               if (session.user.role === 'admin' || session.user.role === 'tenant') {
                 // Credentials users see "Dashboard"
                 return i18n.isInitialized ? t("dashboard") : "Dashboard";
-              } else if (session.user.role === 'subscriber') {
-                // Non-Credentials users who are subscribers see "Harbor" in their language
-                return i18n.isInitialized ? t("harbor.nav.harbor") : "Harbor";
               } else {
-                // Everyone else (including OAuth users without subscriber role) sees "Sign In"
-                return i18n.isInitialized ? t("Sign In") : "Sign In";
+                // All authenticated users (including OAuth users without subscriber role) see "Harbor"
+                return i18n.isInitialized ? t("harbor.nav.harbor") : "Harbor";
               }
             })()
           : (i18n.isInitialized ? t("Sign In") : "Sign In"),

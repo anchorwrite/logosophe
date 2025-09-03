@@ -134,6 +134,8 @@
     "subscriberNote": "(Abonnenten: Bitte melde dich mit demselben Anbieter an!)",
     "continueWithGoogle": "Mach weiter mit Google",
     "continueWithApple": "Mach weiter mit Apple",
+    "continueWithLinkedIn": "Mach weiter mit LinkedIn",
+    "continueWithMicrosoft": "Mach weiter mit Apple",
     "continueWithEmail": "Mach weiter mit deiner E-Mail",
     "enterEmail": "Gib deine E-Mail-Adresse ein",
     "adminSignIn": "Administrator-Anmeldung",
@@ -146,6 +148,13 @@
       "userNotFound": "Kein Konto mit dieser E-Mail gefunden",
       "incorrectPassword": "Falsches Passwort",
       "accountNotLinked": "Diese E-Mail ist bereits mit einer anderen Anmeldemethode verknüpft. Bitte verwende denselben Anbieter, den du bei der Erstellung deines Kontos genutzt hast.",
+      "accountNotLinkedDescription": "Zum Beispiel, wenn du dich mit Google registriert hast, verwende bitte weiterhin Google zum Anmelden.",
+      "configurationError": "Authentifizierungskonfigurationsfehler",
+      "configurationErrorDescription": "Es gibt ein Problem mit der Authentifizierungskonfiguration. Bitte versuche es später erneut.",
+      "accessDenied": "Zugriff verweigert",
+      "accessDeniedDescription": "Du hast die Berechtigung zur Anmeldung verweigert. Bitte versuche es erneut und gewähre die notwendigen Berechtigungen.",
+      "verificationError": "E-Mail-Verifizierungsfehler",
+      "verificationErrorDescription": "Es gab ein Problem bei der Verifizierung deiner E-Mail-Adresse. Bitte versuche es erneut.",
       "genericError": "Beim Anmelden ist ein Fehler aufgetreten"
     }
   },

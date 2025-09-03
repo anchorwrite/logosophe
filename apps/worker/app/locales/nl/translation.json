@@ -134,6 +134,8 @@
         "subscriberNote": "(Abonnees: log in met dezelfde provider!)",
         "continueWithGoogle": "Ga verder met Google",
         "continueWithApple": "Ga verder met Apple",
+        "continueWithLinkedIn": "Ga verder met LinkedIn",
+        "continueWithMicrosoft": "Ga verder met Microsoft", 
         "continueWithEmail": "Ga verder met je e-mail",
         "enterEmail": "Vul je e-mailadres in",
         "adminSignIn": "Beheerder inloggen",
@@ -146,6 +148,13 @@
             "userNotFound": "Geen account gevonden met dit e-mailadres",
             "incorrectPassword": "Onjuist wachtwoord",
             "accountNotLinked": "Dit e-mailadres is al gekoppeld aan een andere inlogmethode. Gebruik dezelfde provider die je gebruikte toen je je account aanmaakte.",
+            "accountNotLinkedDescription": "Bijvoorbeeld, als je je hebt geregistreerd met Google, gebruik dan ook Google om in te loggen.",
+            "configurationError": "Authenticatieconfiguratiefout",
+            "configurationErrorDescription": "Er is een probleem met de authenticatieconfiguratie. Probeer het later opnieuw.",
+            "accessDenied": "Toegang geweigerd",
+            "accessDeniedDescription": "Je hebt toestemming om in te loggen geweigerd. Probeer het opnieuw en verleen de benodigde toestemmingen.",
+            "verificationError": "E-mailverificatiefout",
+            "verificationErrorDescription": "Er was een probleem bij het verifiëren van je e-mailadres. Probeer het opnieuw.",
             "genericError": "Er is een fout opgetreden tijdens het inloggen"
         }
     },
