@@ -14,7 +14,7 @@ import { useSession } from "next-auth/react";
 const Header: React.FC = () => {
   const { t, i18n } = useTranslation('translations');
   const router = useRouter();
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const [isOpen, setIsOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -51,67 +51,74 @@ const Header: React.FC = () => {
     setIsOpen(false);
   };
 
-  const menuItems = [
-    {
-      key: "readers",
-      label: i18n.isInitialized ? t("For Readers") : "For Readers",
-      onClick: () => handleNavigation("readers"),
-    },
-    {
-      key: "creators",
-      label: i18n.isInitialized ? t("For Creators") : "For Creators",
-      onClick: () => handleNavigation("creators"),
-    },
-    {
-      key: "join",
-      label: i18n.isInitialized ? t("Join Us") : "Join Us",
-      onClick: () => handleNavigation("join"),
-    },
-    {
-      key: "dashboard",
-      label: session?.user 
-        ? (() => {
-            // Check user role to determine what to show
+  // Create menu items with proper session handling
+  const getMenuItems = () => {
+    const isAuthenticated = status === 'authenticated' && session?.user;
+    
+    return [
+      {
+        key: "readers",
+        label: i18n.isInitialized ? t("For Readers") : "For Readers",
+        onClick: () => handleNavigation("readers"),
+      },
+      {
+        key: "creators",
+        label: i18n.isInitialized ? t("For Creators") : "For Creators",
+        onClick: () => handleNavigation("creators"),
+      },
+      {
+        key: "join",
+        label: i18n.isInitialized ? t("Join Us") : "Join Us",
+        onClick: () => handleNavigation("join"),
+      },
+      {
+        key: "dashboard",
+        label: isAuthenticated
+          ? (() => {
+              // Check user role to determine what to show
+              if (session.user.role === 'admin' || session.user.role === 'tenant') {
+                // Credentials users see "Dashboard"
+                return i18n.isInitialized ? t("dashboard") : "Dashboard";
+              } else if (session.user.role === 'subscriber') {
+                // Non-Credentials users who are subscribers see "Harbor" in their language
+                return i18n.isInitialized ? t("harbor.nav.harbor") : "Harbor";
+              } else {
+                // Everyone else (including OAuth users without subscriber role) sees "Sign In"
+                return i18n.isInitialized ? t("Sign In") : "Sign In";
+              }
+            })()
+          : (i18n.isInitialized ? t("Sign In") : "Sign In"),
+        onClick: () => {
+          if (isAuthenticated) {
             if (session.user.role === 'admin' || session.user.role === 'tenant') {
-              // Credentials users see "Dashboard"
-              return i18n.isInitialized ? t("dashboard") : "Dashboard";
+              // Credentials users go to dashboard
+              router.push("/dashboard");
             } else if (session.user.role === 'subscriber') {
-              // Non-Credentials users who are subscribers see "Harbor" in their language
-              return i18n.isInitialized ? t("harbor.nav.harbor") : "Harbor";
+              // Subscribers go to harbor
+              const currentLang = window.location.pathname.split('/')[1] || 'en';
+              router.push(`/${currentLang}/harbor`);
             } else {
-              // Everyone else (including OAuth users without subscriber role) sees "Sign In"
-              return i18n.isInitialized ? t("Sign In") : "Sign In";
+              // Everyone else goes to signin
+              router.push("/signin");
             }
-          })()
-        : (i18n.isInitialized ? t("Sign In") : "Sign In"),
-      onClick: () => {
-        if (session?.user) {
-          if (session.user.role === 'admin' || session.user.role === 'tenant') {
-            // Credentials users go to dashboard
-            router.push("/dashboard");
-          } else if (session.user.role === 'subscriber') {
-            // Subscribers go to harbor
-            const currentLang = window.location.pathname.split('/')[1] || 'en';
-            router.push(`/${currentLang}/harbor`);
           } else {
-            // Everyone else goes to signin
+            // No session - go to signin
             router.push("/signin");
           }
-        } else {
-          // No session - go to signin
-          router.push("/signin");
-        }
+        },
       },
-    },
-    {
-      key: "contact",
-      label: i18n.isInitialized ? t("Contact") : "Contact",
-      onClick: () => {
-        const currentLang = window.location.pathname.split('/')[1] || 'en';
-        router.push(`/${currentLang}/contact`);
+      {
+        key: "contact",
+        label: i18n.isInitialized ? t("Contact") : "Contact",
+        onClick: () => {
+          const currentLang = window.location.pathname.split('/')[1] || 'en';
+          router.push(`/${currentLang}/contact`);
+        },
       },
-    },
-  ];
+    ];
+  };
+
+  const menuItems = getMenuItems();
 
   const scrollTo = (id: string) => {
     const element = document.getElementById(id) as HTMLDivElement;
@@ -154,7 +161,10 @@ const Header: React.FC = () => {
           <Box>
             <Button 
               variant="ghost" 
-              onClick={() => router.push('/')} 
+              onClick={() => {
+                const currentLang = window.location.pathname.split('/')[1] || 'en';
+                router.push(`/${currentLang}`);
+              }} 
               style={{ padding: 0 }}
             >
               <SvgIcon src="/img/svg/logo.svg" width="101px" height="64px" />

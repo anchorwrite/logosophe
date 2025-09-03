@@ -18,7 +18,7 @@ interface MiddleBlockProps {
 const MiddleBlock = ({ title, content, button, id }: MiddleBlockProps) => {
   const router = useRouter();
 
-  const handleButtonClick = (item: ButtonItem) => {
+  const handleButtonClick = (item: ButtonItem, buttonIndex: number) => {
     if (item.title === "Browse Content") {
       router.push('/content');
     } else if (item.title === "Browse Subscriber Pages") {
@@ -27,7 +27,8 @@ const MiddleBlock = ({ title, content, button, id }: MiddleBlockProps) => {
     } else if (item.title === "Browse Authors") {
       const currentLang = window.location.pathname.split('/')[1] || 'en';
       router.push(`/${currentLang}/pages`);
-    } else if (item.title.includes("Tenant")) {
+    } else if (buttonIndex === 1) {
+      // Second button (index 1) is always the tenant application button
       const currentLang = window.location.pathname.split('/')[1] || 'en';
       router.push(`/${currentLang}/tenant-application`);
     } else {
@@ -60,7 +61,7 @@ const MiddleBlock = ({ title, content, button, id }: MiddleBlockProps) => {
                       <Button
                         key={index}
                         color={item.color}
-                        onClick={() => handleButtonClick(item)}
+                        onClick={() => handleButtonClick(item, index)}
                       >
                         {item.title}
                       </Button>
