@@ -97,8 +97,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     // Store in localStorage for all users
     localStorage.setItem(THEME_STORAGE_KEY, newTheme);
     
-    // Update database for authenticated users
-    if (isAuthenticated) {
+    // Update database for authenticated users only if session is loaded and user is authenticated
+    if (status === 'authenticated' && isAuthenticated) {
       try {
         const response = await fetch('/api/user/preferences', {
           method: 'PUT',
@@ -123,8 +123,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     // Store in localStorage for all users
     localStorage.setItem('logosophe-language', newLanguage);
     
-    // Update database for authenticated users
-    if (isAuthenticated) {
+    // Update database for authenticated users only if session is loaded and user is authenticated
+    if (status === 'authenticated' && isAuthenticated) {
       try {
         const response = await fetch('/api/user/preferences', {
           method: 'PUT',
