@@ -29,7 +29,6 @@ export function middleware(request: NextRequest) {
       pathname.startsWith('/test-signin') ||
       pathname.startsWith('/api/auth') ||
       pathname.startsWith('/share/') ||
-      pathname.startsWith('/.well-known/') ||
       pathname.startsWith('/error')) return
 
   // Check if there is any supported locale in the pathname
