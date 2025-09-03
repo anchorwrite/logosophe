@@ -134,6 +134,8 @@
     "subscriberNote": "(Abonnés : connecte-toi avec le même fournisseur !)",
     "continueWithGoogle": "Continue avec Google",
     "continueWithApple": "Continue avec Apple",
+    "continueWithLinkedIn": "Continue avec LinkedIn",
+    "continueWithMicrosoft": "Continue avec Microsoft", 
     "continueWithEmail": "Continue avec ton e-mail",
     "enterEmail": "Entre ton e-mail",
     "adminSignIn": "Connexion administrateur",
@@ -146,6 +148,13 @@
       "userNotFound": "Aucun compte trouvé avec cet e-mail",
       "incorrectPassword": "Mot de passe incorrect",
       "accountNotLinked": "Cet e-mail est déjà associé à une autre méthode de connexion. Utilise le même fournisseur que lorsque tu as créé ton compte.",
+      "accountNotLinkedDescription": "Par exemple, si tu t'es inscrit avec Google, continue d'utiliser Google pour te connecter.",
+      "configurationError": "Erreur de configuration d'authentification",
+      "configurationErrorDescription": "Il y a un problème avec la configuration d'authentification. Réessaie plus tard.",
+      "accessDenied": "Accès refusé",
+      "accessDeniedDescription": "Tu as refusé l'autorisation de te connecter. Réessaie et accorde les permissions nécessaires.",
+      "verificationError": "Erreur de vérification d'e-mail",
+      "verificationErrorDescription": "Il y a eu un problème lors de la vérification de ton adresse e-mail. Réessaie.",
       "genericError": "Une erreur est survenue lors de la connexion"
     }
   },

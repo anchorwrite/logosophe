@@ -91,7 +91,7 @@ export async function GET(request: NextRequest) {
         COALESCE(latest_session.expires, latest_signin.timestamp) as lastLogin,
         CASE WHEN latest_session.expires > datetime('now') THEN 1 ELSE 0 END as hasActiveSession,
         sub.Banned as isBlocked,
-        CASE WHEN sub.Email IS NOT NULL THEN 1 ELSE 0 END as isSubscriber,
+        CASE WHEN sub.Email IS NOT NULL AND sub.Active = TRUE AND sub.EmailVerified IS NOT NULL THEN 1 ELSE 0 END as isSubscriber,
         CASE WHEN u.email IS NOT NULL THEN 1 ELSE 0 END as hasSignedIn,
         GROUP_CONCAT(DISTINCT t.Id) as tenantIds,
         GROUP_CONCAT(DISTINCT COALESCE(t.Name, t.Id)) as tenantNames,
@@ -187,9 +187,9 @@ export async function GET(request: NextRequest) {
 
     // Add subscriber status filter
     if (params.subscriberStatus === 'subscribers') {
-      whereConditions.push('sub.Email IS NOT NULL');
+      whereConditions.push('sub.Email IS NOT NULL AND sub.Active = TRUE AND sub.EmailVerified IS NOT NULL');
     } else if (params.subscriberStatus === 'non-subscribers') {
-      whereConditions.push('sub.Email IS NULL');
+      whereConditions.push('(sub.Email IS NULL OR sub.Active = FALSE OR sub.EmailVerified IS NULL)');
     }
 
     // Add signed-in status filter

@@ -28,8 +28,8 @@ export function SignOutButtons({ lang }: SignOutButtonsProps) {
       // Then, use NextAuth's client-side signOut to properly invalidate the session
       await signOut({ redirect: false })
       
-      // Finally, redirect to home page
-      router.push(`/${lang}`)
+      // Force a page refresh to ensure all components update their session state
+      window.location.href = `/${lang}`
     } catch (error) {
       console.error('Error during signout:', error)
       console.error('Sign out failed')
