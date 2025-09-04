@@ -96,6 +96,31 @@ This document describes the internationalized email system for Logosophe subscri
 
 ## Recent Fixes and Improvements
 
+### **OAuth Provider Integration (January 2025)**
+1. **LinkedIn OAuth Provider** ✅ COMPLETED
+   - **Issue**: Need for additional OAuth providers beyond Google and Apple
+   - **Solution**: Added LinkedIn provider with proper email scope configuration
+   - **Implementation**: Full integration with Auth.js v5 and custom error handling
+   - **Result**: Users can now sign in with LinkedIn accounts
+
+2. **Microsoft Entra ID OAuth Provider** ✅ COMPLETED
+   - **Issue**: Need for Microsoft account integration
+   - **Solution**: Added Microsoft Entra ID provider with domain verification
+   - **Implementation**: Created domain verification file at `/.well-known/microsoft-identity-association.json`
+   - **Result**: Users can now sign in with Microsoft accounts
+
+3. **OAuth Error Handling Enhancement** ✅ COMPLETED
+   - **Issue**: OAuth errors (like `OAuthAccountNotLinked`) showed technical error messages
+   - **Solution**: Created `OAuthErrorHandler` component with user-friendly toast notifications
+   - **Implementation**: Graceful error handling with internationalized error messages
+   - **Result**: Users see helpful messages instead of technical errors
+
+4. **Domain Verification System** ✅ COMPLETED
+   - **Issue**: Microsoft Entra ID requires domain verification for OAuth
+   - **Solution**: Created domain verification file and updated middleware
+   - **Implementation**: Proper handling of `/.well-known/` paths in Next.js middleware
+   - **Result**: Microsoft OAuth works correctly with domain verification
+
 ### **Email Worker Cleanup (December 2024)**
 1. **Dead Code Removal** ✅ COMPLETED
    - **Issue**: Email-worker contained unused endpoints and functions
@@ -257,7 +282,8 @@ For issues related to the subscriber email system:
 
 ---
 
-**Last Updated**: December 2024  
+**Last Updated**: January 2025  
 **Status**: ✅ Production Ready - All Critical Issues Resolved + Email Worker Cleanup Complete  
 **Translation Coverage**: 100% Complete for All Supported Languages  
-**Architecture**: ✅ Consolidated - All email functionality now in main worker
+**Architecture**: ✅ Consolidated - All email functionality now in main worker  
+**OAuth Integration**: ✅ Complete - LinkedIn and Microsoft Entra ID providers added with proper error handling
