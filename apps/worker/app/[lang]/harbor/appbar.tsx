@@ -93,7 +93,7 @@ function HarborAppBar({ lang }: { lang: Locale }) {
             </Button>
             <PreferencesButton />
             <Button variant="ghost" asChild>
-              <Link href="/signout">
+              <Link href={`/${lang}/signout`}>
                 {t('auth.signOut')}
               </Link>
             </Button>
