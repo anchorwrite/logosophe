@@ -19,7 +19,7 @@ export default async function SignOutPage({
             <Text as="p" size="3" mb="4" align="center">
               {dict.signout.confirmMessage}
             </Text>
-            <SignOutButtons lang={lang} />
+            <SignOutButtons lang={lang} translations={dict.signout} />
           </Box>
         </Card>
       </Flex>
