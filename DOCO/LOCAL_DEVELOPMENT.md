@@ -59,4 +59,4 @@ CLOUDFLARE_ACCOUNT_ID=911edf2379732c1038a6a894cae9bee5
 
 ## URLs
 - **Local Development**: https://local-dev.logosophe.com
-- **Production**: https://logosophe.com 
+- **Production**: https://www.logosophe.com 

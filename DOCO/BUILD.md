@@ -1,17 +1,18 @@
-# Build and Deployment Troubleshooting Guide - As Of Aug 6, 2025, 11:35 EDT
+# Build and Deployment Troubleshooting Guide - As Of Jan 2025
 
 ## Overview
 
-This document covers common build and deployment issues for the logosophe project, particularly when deploying to Cloudflare Workers using OpenNext.
+This document covers common build and deployment issues for the logosophe project, particularly when deploying to Cloudflare Workers using OpenNext. The project features comprehensive RBAC, real-time messaging, enterprise-grade analytics, and multi-tenant architecture.
 
 ## Email Worker Deployment and Configuration
 
 ### Email Worker Architecture
 
-The project includes a separate email worker (`apps/email-worker`) that handles contact form submissions:
+The project includes a separate email worker (`apps/email-worker`) that handles email processing:
 
-- **Email Worker**: `logosophe-email` - Handles contact form processing, database storage, and email sending
-- **Main Worker**: `logosophe` - Serves the Next.js application and calls the email worker via API
+- **Email Worker**: `logosophe-email` - Handles email processing and sending
+- **Main Worker**: `logosophe` - Serves the Next.js application with 214 API endpoints
+- **Deployment**: Email worker is deployed via GitHub Actions [[memory:7636784]]
 
 ### Email Worker Environment Setup
 
@@ -33,11 +34,12 @@ The email worker is deployed automatically via GitHub Actions when changes are p
 
 ### Email Worker Database
 
-The email worker uses a separate D1 database (`contact_submissions`) for storing contact form submissions:
+The email worker uses the main D1 database (`logosophe`) for storing email-related data:
 
-- **Database ID**: `b8c70fef-f207-4216-9215-cb3b886938b5`
-- **Table**: `contact_submissions` with columns: `id`, `name`, `email`, `subject`, `message`, `created_at`
-- **Local Development**: Database is created automatically when running `yarn wrangler d1 execute contact_submissions --file=migrations/0000_initial.sql`
+- **Database Name**: `logosophe`
+- **Database ID**: `fd7b2b89-eedd-4111-ba68-fdb05cdf2995`
+- **Tables**: Uses existing database tables for email processing
+- **Local Development**: Database commands must be run from `apps/worker/` directory
 
 ### Email Worker Testing
 
@@ -73,33 +75,17 @@ The contact form (`apps/worker/app/components/ContactForm/index.tsx`) submits to
 ### Email Worker Configuration Files
 
 **wrangler.jsonc (Email Worker):**
-```json
+```jsonc
 {
   "name": "logosophe-email",
-  "vars": {
-    "EMAIL_FROM_ADDRESS": "info@logosophe.com",
-    "EMAIL_TO_ADDRESS": "info@logosophe.com"
-  },
-  "d1_databases": [
-    {
-      "binding": "DB",
-      "database_name": "contact_submissions",
-      "database_id": "b8c70fef-f207-4216-9215-cb3b886938b5"
-    }
-  ],
-  "send_email": [
-    {
-      "name": "EMAIL",
-      "destination_address": "info@logosophe.com"
-    }
-  ]
+  "main": "app/index.ts",
+  "compatibility_date": "2024-01-01"
 }
 ```
 
 **Environment Variables:**
 - `EMAIL_WORKER_URL`: Set as Cloudflare secret for production, `.dev.vars` for development
-- `EMAIL_FROM_ADDRESS`: Configured in email worker wrangler.jsonc
-- `EMAIL_TO_ADDRESS`: Configured in email worker wrangler.jsonc
+- Email configuration handled through the main worker's email system
 
 ### Troubleshooting Email Worker Issues
 
@@ -116,9 +102,10 @@ The contact form (`apps/worker/app/components/ContactForm/index.tsx`) submits to
    - Test email worker directly to isolate issues
 
 3. **Database Connection Issues:**
-   - Verify D1 database is accessible: `yarn wrangler d1 execute contact_submissions --command "SELECT 1"`
+   - Verify D1 database is accessible: `yarn wrangler d1 execute logosophe --command "SELECT 1"`
    - Check database binding in email worker configuration
    - Ensure local database is created for development
+   - **Note**: All wrangler commands must be run from `apps/worker/` directory
 
 4. **Email Not Sending:**
    - Check Cloudflare Email configuration in dashboard
@@ -131,7 +118,7 @@ The contact form (`apps/worker/app/components/ContactForm/index.tsx`) submits to
 wrangler tail logosophe-email
 
 # Test database connection
-yarn wrangler d1 execute contact_submissions --command "SELECT COUNT(*) FROM contact_submissions"
+yarn wrangler d1 execute logosophe --command "SELECT COUNT(*) FROM SystemLogs"
 
 # Test email worker directly
 curl -X POST https://logosophe-email.logosophe.com \
@@ -141,7 +128,7 @@ curl -X POST https://logosophe-email.logosophe.com \
 
 ## Common Issues
 
-### 1. OAuth Authentication Issues (Fixed Aug 3-4, 2025)
+### 1. OAuth Authentication Issues
 
 **Symptoms:**
 - Google/Apple sign-in fails with "Authorization Error"
@@ -151,9 +138,9 @@ curl -X POST https://logosophe-email.logosophe.com \
 - Works in development but fails in production
 
 **Root Cause:**
-Environment variables for OAuth providers (Google, Apple, Resend) were not properly configured in Cloudflare Workers. The variables were set as placeholders in `wrangler.jsonc` but the actual secret values were not set via `wrangler secret put`.
+Environment variables for OAuth providers (Google, Apple, Resend) are not properly configured in Cloudflare Workers. The variables need to be set as secrets via `wrangler secret put` rather than as regular environment variables.
 
-For Apple specifically, the JWT client secret was generated with the wrong client ID, causing `invalid_client` errors.
+For Apple specifically, the JWT client secret must be generated with the correct client ID to avoid `invalid_client` errors.
 
 **Solution:**
 
@@ -180,21 +167,21 @@ For Apple specifically, the JWT client secret was generated with the wrong clien
 cd apps/worker
 
 # Set Google OAuth credentials
-echo "YOUR_GOOGLE_CLIENT_ID" | npx wrangler secret put AUTH_GOOGLE_ID
-echo "YOUR_GOOGLE_CLIENT_SECRET" | npx wrangler secret put AUTH_GOOGLE_SECRET
+echo "YOUR_GOOGLE_CLIENT_ID" | yarn wrangler secret put AUTH_GOOGLE_ID
+echo "YOUR_GOOGLE_CLIENT_SECRET" | yarn wrangler secret put AUTH_GOOGLE_SECRET
 
 # Set other OAuth secrets
-echo "YOUR_RESEND_API_KEY" | npx wrangler secret put AUTH_RESEND_KEY
-echo "YOUR_APPLE_CLIENT_ID" | npx wrangler secret put AUTH_APPLE_ID
+echo "YOUR_RESEND_API_KEY" | yarn wrangler secret put AUTH_RESEND_KEY
+echo "YOUR_APPLE_CLIENT_ID" | yarn wrangler secret put AUTH_APPLE_ID
 
 # Generate and set Apple JWT secret (see Apple JWT Generation section below)
-echo "YOUR_APPLE_JWT_SECRET" | npx wrangler secret put AUTH_APPLE_SECRET
+echo "YOUR_APPLE_JWT_SECRET" | yarn wrangler secret put AUTH_APPLE_SECRET
 
 # Set worker URL secrets
-echo "https://logosophe-email.anchorwrite.workers.dev" | npx wrangler secret put EMAIL_WORKER_URL
+echo "https://logosophe-email.logosophe.com" | yarn wrangler secret put EMAIL_WORKER_URL
 
 # Verify secrets are set
-npx wrangler secret list
+yarn wrangler secret list
 ```
 
 **Step 3: Update auth.ts to handle secrets**
@@ -219,7 +206,7 @@ yarn wrangler types --env-interface CloudflareEnv
 
 
 **Verification:**
-- Check that secrets are set: `npx wrangler secret list`
+- Check that secrets are set: `yarn wrangler secret list`
 - Deploy changes: `yarn build && git push origin main`
 - Test Google/Apple sign-in in production
 
@@ -253,7 +240,7 @@ The script `apps/worker/scripts/generate-apple-secret.js` contains:
 sed -i '' 's|AUTH_APPLE_SECRET=".*"|AUTH_APPLE_SECRET="NEW_JWT_SECRET"|' .env.local
 
 # Set production secret
-echo "NEW_JWT_SECRET" | npx wrangler secret put AUTH_APPLE_SECRET
+echo "NEW_JWT_SECRET" | yarn wrangler secret put AUTH_APPLE_SECRET
 ```
 
 **Verify JWT Content:**
@@ -294,7 +281,7 @@ This ensures users see helpful error messages in the correct context without clu
 **Symptoms:**
 - Browser shows 404 errors for JavaScript chunks like:
   ```
-  GET https://www.logosophe.com/_next/static/chunks/main-app-88f0b36266861039.js net::ERR_ABORTED 404 (Not Found)
+  GET https://logosophe.com/_next/static/chunks/main-app-88f0b36266861039.js net::ERR_ABORTED 404 (Not Found)
   ```
 - **Production worker logs show "Ok" for the same requests** (indicating files are being served correctly)
 - Page loads but JavaScript functionality is broken
@@ -330,7 +317,7 @@ Since production worker logs show "Ok" for all requests, this is typically a bro
 **If browser cache clearing doesn't work:**
 The HTML page itself may be cached with old file references. Check if the HTML contains old file hashes:
 ```bash
-curl -s "https://www.logosophe.com/" | grep -o 'main-app-[^"]*\.js'
+curl -s "https://logosophe.com/" | grep -o 'main-app-[^"]*\.js'
 ```
 If the HTML references old hashes, this indicates a **build manifest cache issue** that requires a fresh deployment.
 
@@ -424,19 +411,29 @@ cd packages/database
 ./migrations/apply-migration.sh
 
 # Check migration status
-# (Check your database directly for migration table)
+cd apps/worker
+yarn wrangler d1 execute logosophe --command "SELECT name FROM sqlite_master WHERE type='table';"
+
+# Check specific table structure
+yarn wrangler d1 execute logosophe --command "PRAGMA table_info(SystemLogs);"
 ```
+
+**Database Configuration:**
+- **Database Name**: `logosophe`
+- **Database ID**: `fd7b2b89-eedd-4111-ba68-fdb05cdf2995`
+- **All wrangler commands must be run from `apps/worker/` directory**
 
 ## Deployment Process
 
-### GitHub Actions Deployment (Current Setup)
+### GitHub Actions Deployment (Recommended)
 
-The project uses GitHub Actions for automated deployment. The build cache clearing happens automatically in the CI/CD pipeline.
+The project uses GitHub Actions for automated deployment [[memory:6435589]]. The build cache clearing happens automatically in the CI/CD pipeline.
 
 **Standard Deployment:**
 - Push to main branch triggers automatic deployment
 - Build cache is cleared automatically in the GitHub Actions workflow
 - No manual intervention required
+- Email worker is deployed via GitHub Actions [[memory:7636784]]
 
 **Emergency Deployment (When site is broken):**
 1. Clear GitHub Actions cache:
@@ -466,7 +463,7 @@ yarn workspace worker build
 git push origin main
 
 # 4. Verify deployment
-curl -I https://www.logosophe.com
+curl -I https://logosophe.com
 ```
 
 ## Environment-Specific Issues
@@ -479,7 +476,8 @@ curl -I https://www.logosophe.com
 ### Production Environment
 - Always clear build cache before deployment
 - Verify environment variables in Cloudflare dashboard
-- Check worker logs for errors: `wrangler tail logosophe`
+- Check worker logs for errors: `yarn wrangler tail logosophe`
+- **Note**: All wrangler commands must be run from `apps/worker/` directory
 
 ## Debugging Tools
 
@@ -492,10 +490,10 @@ curl -I https://www.logosophe.com
 ### Worker Logs
 ```bash
 # Real-time worker logs
-wrangler tail logosophe
+yarn wrangler tail logosophe
 
 # Check specific requests
-wrangler tail logosophe --format pretty
+yarn wrangler tail logosophe --format pretty
 ```
 
 ### Build Verification
@@ -524,10 +522,10 @@ cat apps/worker/.open-next/assets/_next/static/*/_buildManifest.js
 git push origin main
 
 # Check deployment status
-curl -I https://www.logosophe.com
+curl -I https://logosophe.com
 
 # View worker logs
-wrangler tail logosophe
+yarn wrangler tail logosophe
 ```
 
 ### Local Development
@@ -552,9 +550,13 @@ Contact the development team if:
 
 ## Notes
 
-- The project uses OpenNext for Cloudflare Workers deployment
+- The project uses OpenNext 1.6.2 for Cloudflare Workers deployment
 - Build artifacts are in `.open-next/` directory
 - Static assets are served from Cloudflare's edge network
 - Database uses D1 with migrations in `packages/database/migrations/`
-- Uses React 18.3.x for compatibility with Radix UI/Themes
-- Uses AuthJS v5 beta for authentication 
+- Uses React 18.3.1 for compatibility with Radix UI/Themes 2.0.3
+- Uses AuthJS v5 (NextAuth 5.0.0-beta.29) for authentication
+- Uses Yarn 4.5.3 with workspaces for package management
+- Features comprehensive RBAC, real-time messaging, and enterprise-grade analytics
+- Multi-tenant architecture with 40+ database tables
+- Internationalization support for 5 languages (EN, DE, ES, FR, NL) 
