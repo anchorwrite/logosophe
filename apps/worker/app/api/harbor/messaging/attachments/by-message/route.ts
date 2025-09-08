@@ -4,8 +4,7 @@ import { auth } from '@/auth';
 import { isSystemAdmin, isTenantAdminFor } from '@/lib/access';
 
 export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ messageId: string }> }
+  request: NextRequest
 ) {
   try {
     const context = await getCloudflareContext({ async: true });
@@ -21,9 +20,19 @@ export async function GET(
     }
 
     const userEmail = session.user.email;
-    const { messageId } = await params;
     const { searchParams } = new URL(request.url);
+    const messageId = searchParams.get('messageId');
     const tenantId = searchParams.get('tenantId');
+
+    if (!messageId) {
+      return new Response(JSON.stringify({ 
+        success: false, 
+        error: 'Missing messageId parameter' 
+      }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
 
     if (!tenantId) {
       return new Response(JSON.stringify({ 

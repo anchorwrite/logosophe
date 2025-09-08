@@ -4,6 +4,7 @@ import '@/globals.css'
 import Providers from '@/providers'
 import { ThemeWrapper } from '@/components/ThemeWrapper'
 import '@radix-ui/themes/styles.css'
+import type { Locale } from '@/types/i18n'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -20,8 +21,9 @@ export default async function InternationalizedLayout({
   params: Promise<{ lang: string }>
 }) {
   const { lang } = await params;
+  const typedLang = lang as Locale;
   return (
-    <Providers lang={lang}>
+    <Providers lang={typedLang}>
       <ThemeWrapper>
         {children}
       </ThemeWrapper>
