@@ -4,9 +4,9 @@
   "main": "index.ts",
   "types": "index.ts",
   "dependencies": {
-    "@cloudflare/workers-types": "^4.20250708.0"
+    "@cloudflare/workers-types": "^4.20250906.0"
   },
   "devDependencies": {
-    "typescript": "^5.8.3"
+    "typescript": "^5.9.2"
   }
 }

@@ -13,7 +13,16 @@ export default async function TenantPage() {
   });
 
   if (!access.hasAccess) {
-    return new Response('Unauthorized', { status: 401 });
+    return (
+      <Container size="3">
+        <Box py="6">
+          <Heading align="center" size="6">Unauthorized</Heading>
+          <Text as="p" align="center" color="gray" mt="2">
+            You do not have permission to access this page.
+          </Text>
+        </Box>
+      </Container>
+    );
   }
 
   const session = await auth();

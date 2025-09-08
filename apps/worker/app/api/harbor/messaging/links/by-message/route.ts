@@ -25,8 +25,7 @@ function extractDomain(url: string): string {
 }
 
 export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ messageId: string }> }
+  request: NextRequest
 ) {
   try {
     const context = await getCloudflareContext({ async: true });
@@ -42,9 +41,19 @@ export async function GET(
     }
 
     const userEmail = session.user.email;
-    const { messageId } = await params;
     const { searchParams } = new URL(request.url);
+    const messageId = searchParams.get('messageId');
     const tenantId = searchParams.get('tenantId');
+
+    if (!messageId) {
+      return new Response(JSON.stringify({ 
+        success: false, 
+        error: 'Missing messageId parameter' 
+      }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
 
     if (!tenantId) {
       return new Response(JSON.stringify({ 
@@ -155,8 +164,7 @@ export async function GET(
 }
 
 export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ messageId: string }> }
+  request: NextRequest
 ) {
   try {
     const context = await getCloudflareContext({ async: true });
@@ -172,16 +180,15 @@ export async function POST(
     }
 
     const userEmail = session.user.email;
-    const { messageId } = await params;
-    const body = await request.json() as { url: string; title?: string; description?: string; thumbnailUrl?: string; tenantId: string };
+    const body = await request.json() as { messageId: string; url: string; title?: string; description?: string; thumbnailUrl?: string; tenantId: string };
     
-    const { url, title, description, thumbnailUrl, tenantId } = body;
+    const { messageId, url, title, description, thumbnailUrl, tenantId } = body;
     
     // Validate required fields
-    if (!url || !tenantId) {
+    if (!messageId || !url || !tenantId) {
       return new Response(JSON.stringify({ 
         success: false, 
-        error: 'Missing required fields: url, tenantId' 
+        error: 'Missing required fields: messageId, url, tenantId' 
       }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' }
@@ -330,8 +337,7 @@ export async function POST(
 }
 
 export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ messageId: string }> }
+  request: NextRequest
 ) {
   try {
     const context = await getCloudflareContext({ async: true });
@@ -347,15 +353,15 @@ export async function DELETE(
     }
 
     const userEmail = session.user.email;
-    const { messageId } = await params;
     const { searchParams } = new URL(request.url);
+    const messageId = searchParams.get('messageId');
     const tenantId = searchParams.get('tenantId');
     const linkId = searchParams.get('linkId');
 
-    if (!tenantId || !linkId) {
+    if (!messageId || !tenantId || !linkId) {
       return new Response(JSON.stringify({ 
         success: false, 
-        error: 'Missing required parameters: tenantId, linkId' 
+        error: 'Missing required parameters: messageId, tenantId, linkId' 
       }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' }

@@ -32,16 +32,15 @@ export const metadata: Metadata = {
   },
 };
 
-type Params = Promise<{ lang: Locale }>;
-
 export default async function HarborLayout({
   children,
   params
 }: {
   children: React.ReactNode;
-  params: Params;
+  params: Promise<{ lang: string }>;
 }) {
   const { lang } = await params;
+  const typedLang = lang as Locale;
 
   return (
     <MessagingProvider>
@@ -60,7 +59,7 @@ export default async function HarborLayout({
             <header>
               <Container size="3">
                 <Box style={{ height: '3.5rem', display: 'flex', alignItems: 'center' }}>
-                  <HarborAppBar lang={lang} />
+                  <HarborAppBar lang={typedLang} />
                 </Box>
               </Container>
             </header>

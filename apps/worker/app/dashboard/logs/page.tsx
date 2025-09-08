@@ -11,7 +11,14 @@ export default async function LogsPage() {
     });
 
     if (!access.hasAccess) {
-        return new Response('Unauthorized', { status: 401 });
+        return (
+            <Container>
+                <Box py="6">
+                    <Heading mb="4">Unauthorized</Heading>
+                    <Text>You do not have permission to access this page.</Text>
+                </Box>
+            </Container>
+        );
     }
 
     return (
