@@ -253,44 +253,14 @@ export function SubscriberMessagingInterface({
 
     // Handle new message event
   const handleNewMessage = (data: SSEMessageNew['data']) => {
-    try {
-      // Only add if it's not from the current user and the current user is a recipient
-      if (data.senderEmail !== userEmail && data.recipients.includes(userEmail)) {
-        const newMessage: RecentMessage = {
-          Id: data.messageId,
-          Subject: data.subject,
-          Body: data.body,
-          SenderEmail: data.senderEmail,
-          SenderName: data.senderEmail, // Will be updated when we fetch the actual message
-          CreatedAt: data.timestamp,
-          IsRead: false,
-          MessageType: 'direct',
-          RecipientCount: data.recipients.length,
-          HasAttachments: data.hasAttachments,
-          AttachmentCount: data.attachmentCount
-        };
-
-        setMessages(prev => {
-          // Check if message already exists to prevent duplicates
-          const messageExists = prev.some(msg => msg.Id === data.messageId);
-          if (messageExists) {
-            return prev;
-          }
-          return [newMessage, ...prev];
-        });
-        
-        setStats(prev => ({
-          ...prev,
-          totalMessages: prev.totalMessages + 1,
-          unreadMessages: prev.unreadMessages + 1
-        }));
-
-        // Show notification
-        setSuccess(t('messaging.newMessageReceived'));
-        setTimeout(() => setSuccess(null), 5000);
-      }
-    } catch (error) {
-      console.error('Error handling new message event:', error, data);
+    // Don't add new messages via SSE - let the SQL query handle it with proper sender names
+    // The SSE data doesn't include sender names, so we rely on the periodic refresh
+    // to get messages with correct sender information from the database
+    
+    // Still show notification for new messages
+    if (data.senderEmail !== userEmail && data.recipients.includes(userEmail)) {
+      setSuccess(t('messaging.newMessageReceived'));
+      setTimeout(() => setSuccess(null), 5000);
     }
   };
 

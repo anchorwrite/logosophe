@@ -75,6 +75,7 @@ export async function GET(request: NextRequest) {
     let baseQuery = `
       FROM Messages m
       INNER JOIN MessageRecipients mr ON m.Id = mr.MessageId
+      LEFT JOIN Subscribers s ON m.SenderEmail = s.Email AND s.Active = TRUE
       WHERE m.TenantId = ? AND mr.RecipientEmail = ? AND m.IsDeleted = FALSE AND mr.IsDeleted = FALSE
       AND NOT EXISTS (
         SELECT 1 FROM UserBlocks ub 
@@ -122,7 +123,7 @@ export async function GET(request: NextRequest) {
 
     // Get messages with pagination (add pagination parameters)
     const messagesQuery = `
-      SELECT DISTINCT m.*, mr.IsRead, mr.ReadAt
+      SELECT DISTINCT m.*, mr.IsRead, mr.ReadAt, s.Name as SenderName
       ${baseQuery}
       ORDER BY m.CreatedAt DESC
       LIMIT ? OFFSET ?
