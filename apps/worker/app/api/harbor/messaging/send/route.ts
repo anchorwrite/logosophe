@@ -223,12 +223,11 @@ export async function POST(request: NextRequest) {
         AND RoleId != 'user'
       `).bind(...tenants, ...individualRecipients).all();
 
-      // Also check UserRoles table for subscribers
+      // Also check UserRoles table for any role (not just subscribers)
       const subscriberValidation = await db.prepare(`
         SELECT Email FROM UserRoles 
         WHERE TenantId IN (${tenants.map(() => '?').join(',')})
-        AND Email IN (${individualRecipients.map(() => '?').join(',')}) 
-        AND RoleId = 'subscriber'
+        AND Email IN (${individualRecipients.map(() => '?').join(',')})
       `).bind(...tenants, ...individualRecipients).all();
 
       // Check if any recipients are system admins (who have global access)
@@ -302,8 +301,25 @@ export async function POST(request: NextRequest) {
     // Insert attachments if any
     const attachmentInserts = [];
     for (const attachment of attachments) {
-      if (attachment.mediaId) {
-        // Get media file info for both media_library and upload types
+      if (attachment.r2Key || attachment.attachmentType === 'upload') {
+        // Handle uploaded files - use data from attachment object
+        attachmentInserts.push(
+          db.prepare(`
+            INSERT INTO MessageAttachments (MessageId, MediaId, AttachmentType, FileName, FileSize, ContentType, R2Key, UploadDate)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+          `).bind(
+            messageId, 
+            null, // No MediaId for uploaded files
+            attachment.attachmentType || 'upload', 
+            attachment.fileName, 
+            attachment.fileSize, 
+            attachment.contentType, 
+            attachment.r2Key,
+            new Date().toISOString()
+          )
+        );
+      } else if (attachment.mediaId && attachment.attachmentType === 'media_library') {
+        // Handle media library files - get info from MediaFiles table
         const mediaFile = await db.prepare(`
           SELECT Id, FileName, FileSize, ContentType, R2Key
           FROM MediaFiles 
@@ -313,9 +329,9 @@ export async function POST(request: NextRequest) {
         if (mediaFile) {
           attachmentInserts.push(
             db.prepare(`
-              INSERT INTO MessageAttachments (MessageId, MediaId, AttachmentType, FileName, FileSize, ContentType)
-              VALUES (?, ?, ?, ?, ?, ?)
-            `).bind(messageId, attachment.mediaId, attachment.attachmentType, mediaFile.FileName, mediaFile.FileSize, mediaFile.ContentType)
+              INSERT INTO MessageAttachments (MessageId, MediaId, AttachmentType, FileName, FileSize, ContentType, R2Key)
+              VALUES (?, ?, ?, ?, ?, ?, ?)
+            `).bind(messageId, attachment.mediaId, attachment.attachmentType, mediaFile.FileName, mediaFile.FileSize, mediaFile.ContentType, mediaFile.R2Key)
           );
         }
       }
