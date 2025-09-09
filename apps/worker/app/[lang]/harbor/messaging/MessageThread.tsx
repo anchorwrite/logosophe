@@ -42,6 +42,8 @@ export function MessageThread({ message, userEmail, tenantId, onClose, onMessage
   const [isLoadingRecipients, setIsLoadingRecipients] = useState(true);
   const [attachments, setAttachments] = useState<MessageAttachment[]>([]);
   const [isLoadingAttachments, setIsLoadingAttachments] = useState(false);
+  const [links, setLinks] = useState<any[]>([]);
+  const [isLoadingLinks, setIsLoadingLinks] = useState(false);
 
   // Debug logging
   console.log('MessageThread received message:', message);
@@ -149,6 +151,48 @@ export function MessageThread({ message, userEmail, tenantId, onClose, onMessage
     }
   }, [message.Id, message.HasAttachments, message.AttachmentCount, message.attachments]);
 
+  // Fetch links for this message
+  useEffect(() => {
+    if (!message?.Id) {
+      console.error('Message ID is undefined, cannot fetch links');
+      return;
+    }
+
+    console.log('MessageThread processing links for message:', message.Id);
+    console.log('Message links array:', message.links);
+
+    // If links are already included in the message, use them
+    if (message.links && message.links.length > 0) {
+      console.log('Using links from message object:', message.links);
+      setLinks(message.links);
+      setIsLoadingLinks(false);
+      return;
+    }
+
+    // Fallback to fetching links if they're not included
+    console.log('Fetching links via API...');
+    const fetchLinks = async () => {
+      setIsLoadingLinks(true);
+      try {
+        const response = await fetch(`/api/harbor/messaging/links/message?messageId=${message.Id}&tenantId=${tenantId}`);
+        if (response.ok) {
+          const data = await response.json() as { links: any[] };
+          console.log('API response for links:', data);
+          setLinks(data.links || []);
+        } else {
+          const errorData = await response.json();
+          console.error('API error fetching links:', errorData);
+        }
+      } catch (error) {
+        console.error('Error fetching links:', error);
+      } finally {
+        setIsLoadingLinks(false);
+      }
+    };
+
+    fetchLinks();
+  }, [message.Id, message.links, tenantId]);
+
   const handleReply = async () => {
     if (!replyBody.trim()) {
       setError(t('messaging.fillAllFields'));
@@ -167,9 +211,9 @@ export function MessageThread({ message, userEmail, tenantId, onClose, onMessage
         body: JSON.stringify({
           subject: `Re: ${message.Subject}`,
           body: replyBody,
-          recipients: [message.SenderEmail],
-          messageType: 'direct',
-          tenantId: tenantId
+          tenants: [tenantId],
+          individualRecipients: [message.SenderEmail],
+          messageType: 'direct'
         }),
       });
 
@@ -189,7 +233,11 @@ export function MessageThread({ message, userEmail, tenantId, onClose, onMessage
       setIsReplying(false);
       setSuccess(t('messaging.replySent'));
       
-      setTimeout(() => setSuccess(null), 3000);
+      // Close the message dialogue after successful reply
+      setTimeout(() => {
+        setSuccess(null);
+        onClose();
+      }, 2000);
     } catch (err) {
       setError(err instanceof Error ? err.message : t('messaging.sendError'));
     } finally {
@@ -280,6 +328,64 @@ export function MessageThread({ message, userEmail, tenantId, onClose, onMessage
                       />
                     ) : (
                       <Text size="3" color="gray">{t('messaging.noAttachmentsFound')}</Text>
+                    )}
+                  </Box>
+                )}
+
+                {/* Links Section */}
+                {links.length > 0 && (
+                  <Box>
+                    <Text size="2" color="gray" mb="2">{t('messaging.links')}</Text>
+                    {isLoadingLinks ? (
+                      <Text size="3" color="gray">{t('messaging.loadingLinks')}</Text>
+                    ) : (
+                      <Flex direction="column" gap="2">
+                        {links.map((link, index) => (
+                          <Box
+                            key={index}
+                            p="3"
+                            style={{
+                              border: '1px solid var(--gray-6)',
+                              borderRadius: 'var(--radius-3)',
+                              backgroundColor: 'var(--gray-1)'
+                            }}
+                          >
+                            <Flex align="center" gap="2" justify="between">
+                              <Flex align="center" gap="2" style={{ flex: 1 }}>
+                                <span className="text-blue-600">🔗</span>
+                                
+                                <Flex direction="column" gap="1" style={{ flex: 1 }}>
+                                  <Text size="2" weight="medium" style={{ color: 'var(--gray-12)' }}>
+                                    {link.title || link.domain}
+                                  </Text>
+                                  <Text size="1" color="gray" style={{ wordBreak: 'break-all' }}>
+                                    {link.url}
+                                  </Text>
+                                  {link.description && (
+                                    <Text size="1" color="gray">
+                                      {link.description}
+                                    </Text>
+                                  )}
+                                </Flex>
+                              </Flex>
+                              
+                              <Flex align="center" gap="2">
+                                <Badge variant="soft" size="1">
+                                  {link.domain}
+                                </Badge>
+                                <Button
+                                  variant="ghost"
+                                  size="1"
+                                  onClick={() => window.open(link.url, '_blank')}
+                                  style={{ color: 'var(--blue-9)' }}
+                                >
+                                  Open
+                                </Button>
+                              </Flex>
+                            </Flex>
+                          </Box>
+                        ))}
+                      </Flex>
                     )}
                   </Box>
                 )}
