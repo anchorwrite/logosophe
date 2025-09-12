@@ -84,7 +84,10 @@ export default function HarborPage({ params }: { params: Params }) {
           <Heading size="7" align="center" mb="4">
             {i18n.isInitialized && i18n.language === lang ? t('harbor.welcome') : 'Welcome to Harbor'}
           </Heading>
-          <SubscriberOptIn email={session.user.email as string} />
+          <SubscriberOptIn 
+            email={session.user.email as string} 
+            onSubscriptionSuccess={() => update()}
+          />
         </Box>
       </Flex>
     );
