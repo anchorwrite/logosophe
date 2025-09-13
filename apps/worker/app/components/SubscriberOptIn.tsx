@@ -7,13 +7,14 @@ import { useTranslation } from 'react-i18next';
 
 interface SubscriberOptInProps {
   email: string;
+  onSubscriptionSuccess?: () => void;
 }
 
 interface ProviderResponse {
   provider: string;
 }
 
-export default function SubscriberOptIn({ email }: SubscriberOptInProps) {
+export default function SubscriberOptIn({ email, onSubscriptionSuccess }: SubscriberOptInProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [verificationSent, setVerificationSent] = useState(false);
   const [provider, setProvider] = useState<string>('');
@@ -55,6 +56,7 @@ export default function SubscriberOptIn({ email }: SubscriberOptInProps) {
     // Map provider to API's expected format
     const providerMap: Record<string, 'Resend' | 'Google' | 'Apple' | 'Test'> = {
       'credentials': 'Resend',
+      'email': 'Resend',
       'google': 'Google',
       'apple': 'Apple',
       'test-credentials': 'Test'
@@ -113,6 +115,11 @@ export default function SubscriberOptIn({ email }: SubscriberOptInProps) {
         content: t('subscriber_opt_in.verification_email_sent_content'),
         type: 'success'
       });
+      
+      // Update session to reflect new subscriber status
+      if (onSubscriptionSuccess) {
+        onSubscriptionSuccess();
+      }
       
       // Don't reload, show verification message instead
       setVerificationSent(true);
