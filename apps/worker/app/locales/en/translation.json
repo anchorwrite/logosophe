@@ -913,7 +913,6 @@
     "uploadFailed": "Failed to upload {fileName}",
     "uploadFailedWithError": "Failed to upload {fileName}: {error}",
     "uploadFailedInvalidResponse": "Failed to upload {fileName}: Invalid response format",
-    "links": "Links",
     "downloadFailed": "Failed to download file",
     "addLink": "Add Link",
     "clickToAttachFiles": "Click to attach files",
