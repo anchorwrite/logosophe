@@ -35,7 +35,11 @@ jobs:
         run: yarn workspace worker tsc --noEmit
       
       - name: Build Worker
-        run: yarn workspace worker build
+        run: |
+          cd apps/worker
+          npx opennextjs-cloudflare build
       
       - name: Build Email Worker
-        run: yarn workspace email-worker build
+        run: |
+          cd apps/email-worker
+          yarn build
