@@ -39,7 +39,7 @@ jobs:
           cd apps/worker
           npx opennextjs-cloudflare build
       
-      - name: Build Email Worker
+      - name: Type Check Email Worker
         run: |
           cd apps/email-worker
-          yarn build
+          yarn tsc --noEmit
