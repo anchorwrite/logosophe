@@ -202,7 +202,7 @@ After setting secrets locally with `wrangler secret put`, you must also update G
 2. **Update GitHub repository secrets:**
    - Go to your repository → **Settings** → **Secrets and variables** → **Actions**
    - Update **`CLOUDFLARE_API_TOKEN`** with your new OAuth token
-   - Update **`CF_WORKERS_SCRIPTS_API_TOKEN`** with the same token (if you have this secret)
+   - Update **`ckea`** with the same token (if you have this secret)
 
 3. **Why this is needed:**
    - `wrangler login` creates an OAuth token with all required permissions
