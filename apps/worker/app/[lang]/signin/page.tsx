@@ -113,7 +113,7 @@ export default async function SignInPage({
             <form
               action={async () => {
                 'use server'
-                await signIn('apple')
+                await signIn('apple', { callbackUrl: `/${lang}/harbor` })
               }}
               style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1rem' }}
             >

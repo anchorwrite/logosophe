@@ -57,7 +57,7 @@ export async function POST(
       
       // User-related tables
       await db.prepare('DELETE FROM UserAvatars WHERE UserId = ?').bind(user.id).run();
-      await db.prepare('DELETE FROM UserRoles WHERE Email = ?').bind(email).run();
+      await db.prepare('DELETE FROM Preferences WHERE Email = ?').bind(email).run();
       
       // Messaging tables
       await db.prepare('DELETE FROM Messages WHERE SenderEmail = ?').bind(email).run();
@@ -71,6 +71,11 @@ export async function POST(
       
       // User management tables - soft delete if exists
       await db.prepare('UPDATE Subscribers SET Active = FALSE, Left = CURRENT_TIMESTAMP, EmailVerified = NULL, VerificationToken = NULL, VerificationExpires = NULL WHERE Email = ?').bind(email).run();
+      
+      // Delete UserRoles first (has foreign key to TenantUsers)
+      await db.prepare('DELETE FROM UserRoles WHERE Email = ?').bind(email).run();
+      
+      // Now delete from TenantUsers
       await db.prepare('DELETE FROM TenantUsers WHERE Email = ?').bind(email).run();
       
       // Content tables (after TenantUsers is deleted)

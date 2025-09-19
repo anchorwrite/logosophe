@@ -133,6 +133,11 @@ export async function DELETE(
         .bind(email)
         .run();
 
+      // Delete from Preferences
+      await db.prepare('DELETE FROM Preferences WHERE Email = ?')
+        .bind(email)
+        .run();
+
       // Delete from TenantUsers
       await db.prepare('DELETE FROM TenantUsers WHERE Email = ?')
         .bind(email)

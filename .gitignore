@@ -102,4 +102,4 @@ Desktop.ini
 
 
 # Cloudflare D1 local database files
-.wrangler/
+apps/worker/.wrangler/
