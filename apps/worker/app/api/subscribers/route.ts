@@ -244,10 +244,10 @@ export async function POST(request: Request) {
         }
 
         // Validate provider
-        const allowedProviders = ['Resend', 'Google', 'Apple'];
+        const allowedProviders = ['Resend', 'Google', 'Apple', 'LinkedIn', 'Microsoft'];
         if (!body.provider || !allowedProviders.includes(body.provider)) {
           return NextResponse.json(
-            { error: "Provider must be one of: Resend, Google, Apple" }, 
+            { error: "Provider must be one of: Resend, Google, Apple, LinkedIn, Microsoft" }, 
             { status: 400 }
           );
         }

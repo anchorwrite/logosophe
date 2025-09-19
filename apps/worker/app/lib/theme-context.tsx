@@ -11,6 +11,8 @@ interface PreferencesResponse {
   theme: Theme;
   language: SupportedLanguageCode;
   isPersistent: boolean;
+  email: string;
+  provider: string | null;
 }
 
 interface ThemeContextType {
@@ -21,6 +23,8 @@ interface ThemeContextType {
   isAuthenticated: boolean;
   isPersistent: boolean;
   isLoading: boolean;
+  userEmail: string | null;
+  userProvider: string | null;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -33,6 +37,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [language, setLanguageState] = useState<SupportedLanguageCode>(DEFAULT_LANGUAGE);
   const [isLoading, setIsLoading] = useState(true);
   const [isPersistent, setIsPersistentState] = useState(false);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [userProvider, setUserProvider] = useState<string | null>(null);
 
   const isAuthenticated = !!session?.user?.email;
 
@@ -48,6 +54,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
             setThemeState(data.theme);
             setLanguageState(data.language);
             setIsPersistentState(data.isPersistent);
+            setUserEmail(data.email);
+            setUserProvider(data.provider);
           } else {
             // Fallback to localStorage
             const storedTheme = localStorage.getItem(THEME_STORAGE_KEY) as Theme;
@@ -178,6 +186,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     isAuthenticated,
     isPersistent,
     isLoading,
+    userEmail,
+    userProvider,
   };
 
   return (

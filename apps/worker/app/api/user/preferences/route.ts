@@ -16,7 +16,7 @@ export async function GET() {
 
     // Get user preferences
     const preferences = await db.prepare(
-      'SELECT Theme, Language FROM Preferences WHERE Email = ?'
+      'SELECT Theme, Language, CurrentProvider FROM Preferences WHERE Email = ?'
     ).bind(session.user.email).first();
 
     if (!preferences) {
@@ -24,14 +24,18 @@ export async function GET() {
       return NextResponse.json({ 
         theme: 'light',
         language: 'en',
-        isPersistent: true 
+        isPersistent: true,
+        email: session.user.email,
+        provider: null
       });
     }
 
     return NextResponse.json({ 
       theme: preferences.Theme,
       language: preferences.Language || 'en',
-      isPersistent: true 
+      isPersistent: true,
+      email: session.user.email,
+      provider: preferences.CurrentProvider
     });
   } catch (error) {
     console.error('Error fetching preferences:', error);

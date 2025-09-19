@@ -193,6 +193,8 @@ export function SubscriberAddForm() {
           <option value="resend">Resend</option>
           <option value="google">Google</option>
           <option value="apple">Apple</option>
+          <option value="linkedin">LinkedIn</option>
+          <option value="microsoft">Microsoft</option>
           <option value="Test">Test</option>
         </select>
       </div>

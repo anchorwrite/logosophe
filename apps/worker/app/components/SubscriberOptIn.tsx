@@ -54,11 +54,13 @@ export default function SubscriberOptIn({ email, onSubscriptionSuccess }: Subscr
     }
 
     // Map provider to API's expected format
-    const providerMap: Record<string, 'Resend' | 'Google' | 'Apple' | 'Test'> = {
+    const providerMap: Record<string, 'Resend' | 'Google' | 'Apple' | 'LinkedIn' | 'Microsoft' | 'Test'> = {
       'credentials': 'Resend',
       'email': 'Resend',
       'google': 'Google',
       'apple': 'Apple',
+      'linkedin': 'LinkedIn',
+      'microsoft-entra-id': 'Microsoft',
       'test-credentials': 'Test'
     };
 
