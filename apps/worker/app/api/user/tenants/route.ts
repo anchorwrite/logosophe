@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { checkAccess } from '@/lib/access-control';
+import { auth } from '@/auth';
 import { isSystemAdmin } from '@/lib/access';
 
 
