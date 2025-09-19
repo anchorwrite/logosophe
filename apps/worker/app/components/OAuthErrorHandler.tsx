@@ -5,7 +5,11 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { useToast } from '@/components/Toast';
 import { useTranslation } from 'react-i18next';
 
-export default function OAuthErrorHandler() {
+interface OAuthErrorHandlerProps {
+  providerInfo?: { provider: string | null; email: string } | null;
+}
+
+export default function OAuthErrorHandler({ providerInfo }: OAuthErrorHandlerProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { showToast } = useToast();
@@ -15,16 +19,8 @@ export default function OAuthErrorHandler() {
     const error = searchParams.get('error');
     
     if (error === 'OAuthAccountNotLinked') {
-      showToast({
-        type: 'error',
-        title: t('signin.errors.accountNotLinked'),
-        content: t('signin.errors.accountNotLinkedDescription'),
-        duration: 8000
-      });
-      // Clean up URL after showing toast
-      const url = new URL(window.location.href);
-      url.searchParams.delete('error');
-      router.replace(url.pathname + url.search);
+      // Don't show toast for OAuthAccountNotLinked - let the lookup component handle it
+      // Don't clean up URL - let the lookup component handle it
     } else if (error === 'Configuration') {
       showToast({
         type: 'error',

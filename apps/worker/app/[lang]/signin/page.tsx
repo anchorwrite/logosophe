@@ -9,6 +9,7 @@ import { handleSignOut } from '@/[lang]/signout/actions'
 import { getDictionary } from '@/lib/dictionary'
 import type { Locale } from '@/types/i18n'
 import OAuthErrorHandler from '@/components/OAuthErrorHandler'
+import OAuthErrorLookup from '@/components/OAuthErrorLookup'
 
 export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
   const { lang } = await params;
@@ -34,8 +35,13 @@ export default async function SignInPage({
   const searchParamsData = await searchParams;
   const errorParam = searchParamsData?.error;
   const error = Array.isArray(errorParam) ? errorParam[0] : errorParam;
+  
+  // Get email parameter if available (Auth.js might provide this for OAuthAccountNotLinked errors)
+  const emailParam = searchParamsData?.email;
+  const email = Array.isArray(emailParam) ? emailParam[0] : emailParam;
 
-
+  // Check if we have an OAuthAccountNotLinked error
+  const hasOAuthError = error === 'OAuthAccountNotLinked';
 
   const session = await auth()
   
@@ -65,6 +71,10 @@ export default async function SignInPage({
     <main style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <OAuthErrorHandler />
       <Container>
+        {/* Show OAuth error lookup if there's an OAuthAccountNotLinked error */}
+        {hasOAuthError && (
+          <OAuthErrorLookup />
+        )}
         {/* User Sign In Card */}
         <Card style={{ width: '320px', marginBottom: '1.5rem' }}>
           <Box style={{ padding: '1rem' }}>

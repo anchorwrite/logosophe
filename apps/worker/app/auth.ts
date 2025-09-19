@@ -243,6 +243,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth(async () => {
       Google({
         clientId: getEnvVar('AUTH_GOOGLE_ID'),
         clientSecret: getEnvVar('AUTH_GOOGLE_SECRET'),
+        authorization: {
+          params: {
+            prompt: "select_account"
+          }
+        }
       }),
       Apple({
         clientId: getEnvVar('AUTH_APPLE_ID'),
@@ -485,7 +490,30 @@ export const { handlers, auth, signIn, signOut } = NextAuth(async () => {
         const adminUser = await db.prepare(
           'SELECT 1 FROM Credentials WHERE Email = ?'
         ).bind(user.email).first();
+        
+        // Only populate CurrentProvider for non-Credentials users
         if (!adminUser) {
+          // Update or create preferences with CurrentProvider for non-Credentials users
+          const provider = account?.provider || 'credentials';
+          const existingPreferences = await db.prepare(
+            'SELECT 1 FROM Preferences WHERE Email = ?'
+          ).bind(user.email).first();
+          
+          if (existingPreferences) {
+            // Update existing preferences with CurrentProvider
+            await db.prepare(`
+              UPDATE Preferences 
+              SET CurrentProvider = ?, UpdatedAt = CURRENT_TIMESTAMP 
+              WHERE Email = ?
+            `).bind(provider, user.email).run();
+          } else {
+            // Create new preferences with CurrentProvider
+            await db.prepare(`
+              INSERT INTO Preferences (Email, Theme, Language, CurrentProvider, CreatedAt, UpdatedAt) 
+              VALUES (?, 'light', 'en', ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            `).bind(user.email, provider).run();
+          }
+          
           const hasTenantRole = await db.prepare(`
             SELECT 1 FROM TenantUsers WHERE Email = ?
           `).bind(user.email).first();

@@ -15,7 +15,7 @@ interface PreferencesModalProps {
 }
 
 export function PreferencesModal({ open, onOpenChange }: PreferencesModalProps) {
-  const { theme, setTheme, language, setLanguage, isAuthenticated, isPersistent, isLoading } = useTheme();
+  const { theme, setTheme, language, setLanguage, isAuthenticated, isPersistent, isLoading, userEmail, userProvider } = useTheme();
   const { t, i18n } = useTranslation('translations');
   const router = useRouter();
   const pathname = usePathname();
@@ -135,6 +135,31 @@ export function PreferencesModal({ open, onOpenChange }: PreferencesModalProps) 
                 </Select.Root>
               </Flex>
             </Box>
+
+            {/* Account Information - Only show for authenticated users */}
+            {isAuthenticated && userEmail && (
+              <Box>
+                <Flex direction="column" gap="2">
+                  <Text size="3" weight="medium" color="gray">
+                    {t('preferences.account.email')}
+                  </Text>
+                  <Text size="2" color="gray">
+                    {userEmail}
+                  </Text>
+                  
+                  {userProvider && (
+                    <>
+                      <Text size="3" weight="medium" color="gray" style={{ marginTop: '0.5rem' }}>
+                        {t('preferences.account.provider')}
+                      </Text>
+                      <Text size="2" color="gray">
+                        {t('preferences.account.signedInWith')} {userProvider}
+                      </Text>
+                    </>
+                  )}
+                </Flex>
+              </Box>
+            )}
 
             {/* Authentication Status */}
             <Box style={{ 
