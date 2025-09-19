@@ -99,3 +99,7 @@ Desktop.ini
 # Temporary files
 *.tmp
 *.temp 
+
+
+# Cloudflare D1 local database files
+.wrangler/
