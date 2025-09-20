@@ -67,7 +67,13 @@ export function getEmailTemplate<T extends 'verification' | 'welcome'>(
   language: SupportedLanguageCode,
   translations: any
 ): T extends 'verification' ? VerificationEmailTemplate : WelcomeEmailTemplate {
-  const emailTranslations = translations.emails?.[templateType];
+  // First try the direct emails path (for fallback translations)
+  let emailTranslations = translations.emails?.[templateType];
+  
+  // If not found, try the subscriber_pages.emails path (for actual translation files)
+  if (!emailTranslations) {
+    emailTranslations = translations.subscriber_pages?.emails?.[templateType];
+  }
   
   if (!emailTranslations) {
     // Fallback to English if translations not found, but prevent infinite recursion
@@ -80,7 +86,8 @@ export function getEmailTemplate<T extends 'verification' | 'welcome'>(
     // Try to load English translations separately
     try {
       const englishTranslations = require(`../locales/en/translation.json`);
-      const englishEmailTranslations = englishTranslations.emails?.[templateType];
+      const englishEmailTranslations = englishTranslations.subscriber_pages?.emails?.[templateType] || 
+                                     englishTranslations.emails?.[templateType];
       
       if (englishEmailTranslations) {
         return buildTemplate(templateType, englishEmailTranslations);
