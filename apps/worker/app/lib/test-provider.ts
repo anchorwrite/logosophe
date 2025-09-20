@@ -37,11 +37,7 @@ export function TestProvider(config: TestProviderConfig): Provider {
       let signedIn = false;
       let optedIn = false;
       
-      if (userNumber >= 101 && userNumber <= 105) {
-        userType = 'unsigned';
-        signedIn = false;
-        optedIn = false;
-      } else if (userNumber >= 201 && userNumber <= 205) {
+      if (userNumber >= 201 && userNumber <= 205) {
         userType = 'signed';
         signedIn = true;
         optedIn = false;
@@ -49,7 +45,7 @@ export function TestProvider(config: TestProviderConfig): Provider {
         userType = 'opted-in';
         signedIn = true;
         optedIn = true;
-      } else if (userNumber >= 410 && userNumber <= 469) {
+      } else if (userNumber >= 410 && userNumber <= 445) {
         userType = 'tenant-subscriber';
         signedIn = true;
         optedIn = true;
@@ -59,7 +55,7 @@ export function TestProvider(config: TestProviderConfig): Provider {
       let role: 'user' | 'subscriber' = 'user';
       if (userNumber >= 301 && userNumber <= 305) {
         role = 'subscriber'; // Opted-in users should be subscribers
-      } else if (userNumber >= 410 && userNumber <= 469) {
+      } else if (userNumber >= 410 && userNumber <= 445) {
         role = 'subscriber'; // Tenant users should be subscribers
       }
 
