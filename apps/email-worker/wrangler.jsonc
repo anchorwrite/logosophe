@@ -8,7 +8,7 @@
   ],
   "vars": {
     "EMAIL_FROM_ADDRESS": "info@logosophe.com",
-    "EMAIL_TO_ADDRESS": "info@anchorwrite.net"
+    "EMAIL_TO_ADDRESS": "logosophe@icloud.com"
   },
   "d1_databases": [
     {
@@ -20,7 +20,7 @@
   "send_email": [
     {
       "name": "EMAIL",
-      "destination_address": "info@anchorwrite.net"
+      "destination_address": "logosophe@icloud.com"
     }
   ],
   "observability": {
