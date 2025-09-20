@@ -5,11 +5,12 @@ This system provides a comprehensive solution for creating and managing test use
 ## Overview
 
 The test user system includes:
-- **50 test users** with various roles and permissions
-- **6 test tenants** for multi-tenant testing
+- **30 test users** with various roles and permissions
+- **4 test tenants** for multi-tenant testing
 - **Custom Auth.js provider** for test user authentication
-- **Database scripts** for creating/deleting test data
+- **Consolidated database scripts** for creating/deleting test data
 - **Web interface** for easy test user sign-in
+- **Session management** with configurable concurrent session limits
 
 ## Quick Start
 
@@ -17,10 +18,10 @@ The test user system includes:
 
 ```bash
 # For local development
-yarn wrangler d1 execute DB --local --file=scripts/create-test-users.sql
+yarn wrangler d1 execute logosophe --file=scripts/create-test-users-consolidated.sql
 
 # For production (not recommended - test users should only be in development)
-yarn wrangler d1 execute DB --remote --file=scripts/create-test-users.sql
+yarn wrangler d1 execute logosophe --remote --file=scripts/create-test-users-consolidated.sql
 ```
 
 ### 2. Access Test User Interface
@@ -30,39 +31,36 @@ Navigate to `/dashboard/test-users` in your application to access the test user 
 ### 3. Sign In as Test User
 
 Use any of the following test user emails:
-- `test-user-101@logosophe.test` (unsigned user)
 - `test-user-201@logosophe.test` (signed user)
 - `test-user-301@logosophe.test` (opted-in user)
-- `test-user-311@logosophe.test` (tenant user)
+- `test-user-411@logosophe.test` (tenant user)
 
 ## Test User Categories
 
-### 1. Unsigned Users (101-105)
-- **5 users** who haven't signed in yet
-- Will be created automatically on first sign-in
-- Have basic 'user' role in default tenant
-
-### 2. Signed Users (201-205)
+### 1. Signed Users (201-205)
 - **5 users** who have signed in but haven't opted in
 - Exist in TenantUsers table with 'user' role
 - Not in Subscribers table
 
-### 3. Opted-in Users (301-310)
-- **10 users** who have signed in and opted in
+### 2. Opted-in Users (301-305)
+- **5 users** who have signed in and opted in
 - Exist in both TenantUsers and Subscribers tables
 - Have 'user' and 'subscriber' roles
 
-### 4. Tenant Users (311-340)
-- **30 users** distributed across 6 test tenants
+### 3. Tenant Users (411-445)
+- **20 users** distributed across 4 test tenants
 - Each tenant has 5 users with various role combinations
 - All have signed in and opted in
+- Follows 4-X-Y pattern: 4 (class) - X (tenant 1-4) - Y (user 1-5)
+- User ranges: 411-415, 421-425, 431-435, 441-445
 
 ## Test Tenants
 
-Six test tenants are created:
-- `test-tenant-1` through `test-tenant-6`
+Four test tenants are created:
+- `test-tenant-1` through `test-tenant-4`
 - Each tenant has 5 users with different role combinations
 - Role combinations include: author, agent, reviewer, editor, and combinations
+- User distribution: 411-415, 421-425, 431-435, 441-445
 
 ## Role Combinations
 
@@ -77,29 +75,58 @@ Test users are created in the following tables:
 - **Subscribers**: For opted-in users
 - **UserRoles**: Additional roles beyond 'user'
 - **Tenants**: Test tenant definitions
+- **Preferences**: User preferences with 'Test' as CurrentProvider
 
 ## Management Commands
 
 ### Create Test Data
 ```bash
-yarn wrangler d1 execute DB --local --file=scripts/manage-test-users.js -- --create
+yarn wrangler d1 execute logosophe --file=scripts/create-test-users-consolidated.sql
 ```
 
 ### Delete Test Data
 ```bash
-yarn wrangler d1 execute DB --local --file=scripts/delete-test-users.sql
+yarn wrangler d1 execute logosophe --file=scripts/delete-test-users-consolidated.sql
 ```
 
 ### Production Commands
-Remove the `--local` flag for production database operations (not recommended for test users).
+Add the `--remote` flag for production database operations (not recommended for test users).
 
 ## Authentication Flow
 
 1. **Test Provider**: Custom Auth.js provider handles test user authentication
 2. **Email Validation**: Only accepts emails ending with `@logosophe.test`
-3. **User Creation**: Automatically creates users in appropriate tables based on user number
-4. **Role Assignment**: Assigns roles based on user category and tenant membership
-5. **Dashboard Access**: Test user management is available at `/dashboard/test-users` (admin only)
+3. **OAuth Bypass**: Test users bypass normal OAuth processing in auth.ts
+4. **User Creation**: Automatically creates users in appropriate tables based on user number
+5. **Role Assignment**: Assigns roles based on user category and tenant membership
+6. **Dashboard Access**: Test user management is available at `/dashboard/test-users` (admin only)
+
+## Session Management
+
+### Concurrent Session Limits
+- **Default limit**: 15 concurrent test sessions
+- **Configurable**: Set via `MAX_CONCURRENT_TEST_SESSIONS` environment variable
+- **Purpose**: Prevents resource overload and ensures system performance
+- **Error handling**: Returns 429 error when limit is exceeded
+
+### Increasing Session Limits
+```bash
+# Set as Cloudflare secret (recommended)
+echo "30" | yarn wrangler secret put MAX_CONCURRENT_TEST_SESSIONS
+
+# Or set in wrangler.jsonc
+{
+  "vars": {
+    "MAX_CONCURRENT_TEST_SESSIONS": "30"
+  }
+}
+```
+
+### Session Monitoring
+- Active sessions are displayed in the dashboard
+- Shows current count vs. maximum limit (e.g., "Sessions: 5/15")
+- Sessions can be terminated individually or all at once
+- Session URLs are generated for easy testing across different browsers/devices
 
 ## Security Considerations
 
@@ -109,6 +136,7 @@ Remove the `--local` flag for production database operations (not recommended fo
 - Test users are clearly identified in the database
 - Test user management is restricted to system administrators only
 - Foreign key constraints have been optimized to prevent insertion issues
+- Session limits prevent abuse of the test system
 
 ## Troubleshooting
 
@@ -124,13 +152,13 @@ Remove the `--local` flag for production database operations (not recommended fo
 
 ```bash
 # Check test users in database
-yarn wrangler d1 execute DB --local --command="SELECT COUNT(*) as count FROM TenantUsers WHERE Email LIKE 'test-user-%@logosophe.test';"
+yarn wrangler d1 execute logosophe --command="SELECT COUNT(*) as count FROM TenantUsers WHERE Email LIKE 'test-user-%@logosophe.test';"
 
 # Check test tenants
-yarn wrangler d1 execute DB --local --command="SELECT * FROM Tenants WHERE Id LIKE 'test-tenant-%';"
+yarn wrangler d1 execute logosophe --command="SELECT * FROM Tenants WHERE Id LIKE 'test-tenant-%';"
 
 # Check user roles
-yarn wrangler d1 execute DB --local --command="SELECT Email, RoleId FROM UserRoles WHERE Email LIKE 'test-user-%@logosophe.test' LIMIT 10;"
+yarn wrangler d1 execute logosophe --command="SELECT Email, RoleId FROM UserRoles WHERE Email LIKE 'test-user-%@logosophe.test' LIMIT 10;"
 ```
 
 ## Integration with Existing System

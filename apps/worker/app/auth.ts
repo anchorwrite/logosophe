@@ -323,8 +323,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth(async () => {
               if (userNumber >= 301 && userNumber <= 305) {
                 // Opted-in users (301-305) should be subscribers
                 session.user.role = 'subscriber';
-              } else if (userNumber >= 410 && userNumber <= 469) {
-                // Tenant users (410-469) should be subscribers
+              } else if (userNumber >= 410 && userNumber <= 445) {
+                // Tenant users (410-445) should be subscribers
                 session.user.role = 'subscriber';
               } else {
                 // Other test users (101-105, 201-205) should be users
