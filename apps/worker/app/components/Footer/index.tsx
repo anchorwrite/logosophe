@@ -58,7 +58,7 @@ const Footer: React.FC = () => {
                       {i18n.isInitialized ? t("Home") : "Home"}
                     </Text>
                   </a>
-                  <a href={`/${currentLang}#about`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                  <a href={`/${currentLang}/about`} style={{ textDecoration: 'none', color: 'inherit' }}>
                     <Text size="2">
                       {i18n.isInitialized ? t("About") : "About"}
                     </Text>
