@@ -22,13 +22,15 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version: '24'
+          package-manager-cache: false
       
       - name: Enable Corepack
         run: corepack enable
       
       - name: Setup Yarn
         run: |
-          yarn set version stable --yarn-path
+          corepack prepare yarn@4.9.4 --activate
+          yarn --version
           yarn install --immutable
       
       - name: Build
