@@ -1,19 +1,23 @@
-on: [push]
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
 jobs:
   deploy-worker:
     runs-on: ubuntu-latest
+    environment: production
     permissions:
       contents: read
       deployments: write
     name: Deploy Worker to Cloudflare
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
-          node-version: '20'
+          node-version: '24'
       
       - name: Enable Corepack
         run: corepack enable
@@ -33,7 +37,6 @@ jobs:
           # Skew protection environment variables
           export CF_WORKER_NAME="logosophe"
           export CF_PREVIEW_DOMAIN="anchorwrite.workers.dev"
-          export CF_WORKERS_SCRIPTS_API_TOKEN="${{ secrets.CF_WORKERS_SCRIPTS_API_TOKEN }}"
           export CF_ACCOUNT_ID="${{ secrets.CLOUDFLARE_ACCOUNT_ID }}"
           
           # Production NextAuth environment variables
@@ -53,7 +56,6 @@ jobs:
           NODE_ENV: production
           CF_WORKER_NAME: logosophe
           CF_PREVIEW_DOMAIN: anchorwrite.workers.dev
-          CF_WORKERS_SCRIPTS_API_TOKEN: ${{ secrets.CF_WORKERS_SCRIPTS_API_TOKEN }}
           CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           NEXTAUTH_URL: https://www.logosophe.com
           AUTH_URL: https://www.logosophe.com

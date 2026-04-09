@@ -11597,7 +11597,6 @@ __metadata:
   dependencies:
     "@auth/core": "npm:^0.40.0"
     "@auth/d1-adapter": "npm:^1.10.0"
-    "@cloudflare/workers-types": "npm:^4.20251205.0"
     "@formatjs/intl-localematcher": "npm:^0.6.1"
     "@next/eslint-plugin-next": "npm:^15.5.2"
     "@opennextjs/cloudflare": "npm:^1.8.0"

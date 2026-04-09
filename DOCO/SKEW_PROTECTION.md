@@ -28,7 +28,7 @@ For skew protection to work, you need to set these environment variables:
 
 - `CF_WORKER_NAME`: The name of your worker (set to "logosophe")
 - `CF_PREVIEW_DOMAIN`: The subdomain for preview deployments (set to "anchorwrite.workers.dev")
-- `CF_WORKERS_SCRIPTS_API_TOKEN`: API token with "Workers Scripts:Read" permission
+- `CF_WORKERS_SCRIPTS_API_TOKEN`: API token with "Workers Scripts:Read" permission (NOTE: as of Apr 8, 2026, this token has expired)
 - `CF_ACCOUNT_ID`: Your Cloudflare account ID
 
 ### Deployment
