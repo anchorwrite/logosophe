@@ -8,7 +8,7 @@
   ],
   "scripts": {
     "dev": "yarn workspace worker dev",
-    "build": "yarn workspace worker build",
+    "build": "yarn workspace worker build && yarn workspace email-worker tsc --noEmit",
     "preview": "yarn workspace worker preview",
     "deploy": "yarn workspace worker deploy",
     "upload": "yarn workspace worker upload",

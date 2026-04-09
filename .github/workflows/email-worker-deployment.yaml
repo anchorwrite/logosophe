@@ -1,23 +1,29 @@
-on: [push]
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
 jobs:
   deploy-email-worker:
     runs-on: ubuntu-latest
+    environment: production
     permissions:
       contents: read
       deployments: write
     name: Deploy Email Worker to Cloudflare
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
-          node-version: '20'
+          node-version: '24'
+          package-manager-cache: false
       - name: Enable Corepack
         run: corepack enable
       - name: Setup Yarn
         run: |
-          yarn set version stable --yarn-path
+          corepack prepare yarn@4.9.4 --activate
+          yarn --version
           yarn install --immutable
       - name: Deploy Email Worker
         run: |
