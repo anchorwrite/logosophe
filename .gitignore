@@ -104,3 +104,10 @@ Desktop.ini
 
 # Cloudflare D1 local database files
 apps/worker/.wrangler/
+
+# Cache
+.cache/
+node_modules/.cache/
+
+# TypeScript
+*.tsbuildinfo
