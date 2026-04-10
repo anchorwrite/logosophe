@@ -22,7 +22,7 @@ function makeSendMagicLink(resendKey: string) {
   }) {
     const verificationUrl = new URL(url);
 
-    await fetch('https://api.resend.com/emails', {
+    const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${resendKey}`,
@@ -69,6 +69,11 @@ function makeSendMagicLink(resendKey: string) {
         text: `Sign in to ${verificationUrl.host}\n${verificationUrl.toString()}\n\n`,
       }),
     });
+
+    if (!res.ok) {
+      const body = await res.text();
+      throw new Error(`Resend API error ${res.status}: ${body}`);
+    }
   };
 }
 
