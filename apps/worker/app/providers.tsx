@@ -2,7 +2,6 @@
 
 import { I18nextProvider } from 'react-i18next'
 import i18n from '@/translation'
-import { SessionProvider } from 'next-auth/react'
 import { ToastProvider } from '@/components/Toast'
 import { ThemeProvider } from '@/lib/theme-context'
 import { usePathname } from 'next/navigation'
@@ -32,15 +31,13 @@ function Providers({ children, lang }: ProvidersProps) {
   }, [detectedLang])
 
   return (
-    <SessionProvider>
-      <I18nextProvider i18n={i18n} defaultNS="translations">
-        <ThemeProvider>
-          <ToastProvider>
-            {children}
-          </ToastProvider>
-        </ThemeProvider>
-      </I18nextProvider>
-    </SessionProvider>
+    <I18nextProvider i18n={i18n} defaultNS="translations">
+      <ThemeProvider>
+        <ToastProvider>
+          {children}
+        </ToastProvider>
+      </ThemeProvider>
+    </I18nextProvider>
   )
 }
 

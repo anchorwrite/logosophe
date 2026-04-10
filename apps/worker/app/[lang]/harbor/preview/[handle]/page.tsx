@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useParams } from 'next/navigation';
 import { Box, Flex, Heading, Text, Card, Container, Separator, Button, Badge } from '@radix-ui/themes';
 import { SubscriberHandle, SubscriberBlogPost } from '@/types/subscriber-pages';
-import { useSession } from 'next-auth/react';
+import { authClient } from '@/lib/auth-client';
 
 interface PreviewHandlePageProps {
   params: Promise<{ lang: string; handle: string }>;
@@ -13,7 +13,7 @@ interface PreviewHandlePageProps {
 
 export default function PreviewHandlePage({ params }: PreviewHandlePageProps) {
   const { t } = useTranslation('translations');
-  const { data: session } = useSession();
+  const { data: session } = authClient.useSession();
   const [handle, setHandle] = useState<SubscriberHandle | null>(null);
   const [blogPosts, setBlogPosts] = useState<SubscriberBlogPost[]>([]);
   const [loading, setLoading] = useState(true);

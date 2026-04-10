@@ -14,37 +14,35 @@ export async function GET(request: NextRequest) {
     const { env } = await getCloudflareContext({async: true});
     const db = env.DB;
 
-    // Check if user is system admin
     const isAdmin = await isSystemAdmin(session.user.email, db);
     if (!isAdmin) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // Get session limit from environment variable
     const maxSessions = parseInt(process.env.MAX_CONCURRENT_TEST_SESSIONS || '15');
-    
-    // Get active sessions count
+
     const activeSessionsResult = await db.prepare(
       'SELECT COUNT(*) as count FROM TestSessions'
     ).first() as { count: number };
 
-    // Get all sessions with active status
     const sessionsResult = await db.prepare(`
-      SELECT 
-        Id, SessionToken, TestUserEmail, CreatedBy, CreatedAt, 
+      SELECT
+        Id, SessionToken, TestUserEmail, CreatedBy, CreatedAt,
         LastAccessed, IpAddress, UserAgent
-      FROM TestSessions 
+      FROM TestSessions
       ORDER BY CreatedAt DESC
     `).all();
 
     const sessions = await Promise.all(sessionsResult.results.map(async (row: any) => {
-      // Check if this test user has an active session in the sessions table
+      // Check if test user has an active session in BA's session table
       const activeSessionResult = await db.prepare(`
-        SELECT COUNT(*) as isActive 
-        FROM sessions s 
-        JOIN users u ON s.userId = u.id 
-        WHERE u.email = ? AND s.expires > datetime('now')
+        SELECT COUNT(*) as isActive
+        FROM "session" s
+        JOIN "user" u ON s.userId = u.id
+        WHERE u.email = ? AND s.expiresAt > datetime('now')
       `).bind(row.TestUserEmail).first() as { isActive: number };
+
+      const baseUrl = process.env.AUTH_URL || process.env.NEXTAUTH_URL || 'https://www.logosophe.com';
 
       return {
         id: row.Id,
@@ -55,7 +53,7 @@ export async function GET(request: NextRequest) {
         lastAccessed: row.LastAccessed,
         ipAddress: row.IpAddress,
         userAgent: row.UserAgent,
-        sessionUrl: `${process.env.NEXTAUTH_URL || 'https:/www.logosophe.com'}/test-signin?token=${row.SessionToken}`,
+        sessionUrl: `${baseUrl}/test-signin?token=${row.SessionToken}`,
         isActive: activeSessionResult.isActive > 0
       };
     }));
@@ -71,4 +69,4 @@ export async function GET(request: NextRequest) {
     console.error('Error listing test sessions:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
-} 
+}

@@ -33,7 +33,7 @@ export default function AuthenticationMessage({ email }: AuthenticationMessagePr
     fetchProvider();
   }, []);
 
-  const capitalizedProvider = provider.charAt(0).toUpperCase() + provider.slice(1).toLowerCase();
+  const capitalizedProvider = provider.charAt(0).toUpperCase() + provider.slice(1);
 
   return (
     <Text size="5" weight="medium" align="center">

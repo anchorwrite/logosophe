@@ -1,6 +1,4 @@
-import { signIn, signOut, auth } from '@/auth'
-import { updateRecord } from '@auth/d1-adapter'
-import { cookies } from "next/headers";
+import { auth } from '@/auth'
 import { revalidatePath } from 'next/cache'
 import ProfileForm from './ProfileForm'
 import { isSystemAdmin } from '@/lib/access'
@@ -18,8 +16,10 @@ async function updateName(formData: FormData) {
     return
   }
 
-  const query = `UPDATE users SET name = $1 WHERE id = $2`
-  await updateRecord(process.env.DB, query, [name, session.user.id])
+  const { env } = await getCloudflareContext({ async: true })
+  await env.DB.prepare('UPDATE "user" SET name = ?, updatedAt = ? WHERE id = ?')
+    .bind(name, new Date().toISOString(), session.user.id)
+    .run()
   await revalidatePath('/dashboard/profile')
   await revalidatePath('/harbor/profile')
 }
@@ -35,8 +35,10 @@ async function updateEmail(formData: FormData) {
     return
   }
 
-  const query = `UPDATE users SET email = $1 WHERE id = $2`
-  await updateRecord(process.env.DB, query, [email, session.user.id])
+  const { env } = await getCloudflareContext({ async: true })
+  await env.DB.prepare('UPDATE "user" SET email = ?, updatedAt = ? WHERE id = ?')
+    .bind(email, new Date().toISOString(), session.user.id)
+    .run()
   await revalidatePath('/dashboard/profile')
   await revalidatePath('/harbor/profile')
 }

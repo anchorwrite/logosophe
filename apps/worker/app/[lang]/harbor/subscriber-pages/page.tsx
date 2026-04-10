@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useSession } from 'next-auth/react';
+import { authClient } from '@/lib/auth-client';
 import { useRouter } from 'next/navigation';
 import { Box, Flex, Heading, Text, Tabs, Container } from '@radix-ui/themes';
 import HandleManager from '@/components/harbor/subscriber-pages/HandleManager';
@@ -16,7 +16,8 @@ type TabType = 'handles' | 'blog' | 'announcements' | 'biography' | 'contact';
 
 export default function SubscriberPagesPage() {
   const { t } = useTranslation();
-  const { data: session, status } = useSession();
+  const { data: session, isPending: status_isPending } = authClient.useSession();
+  const status = status_isPending ? 'loading' : session ? 'authenticated' : 'unauthenticated';
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<TabType>('handles');
 

@@ -3,8 +3,7 @@
 import React, { useEffect, useState, type ChangeEvent, type FormEvent } from 'react';
 import Link from 'next/link'
 import type { NextPage } from 'next';
-import { auth } from "@/auth";
-import { SessionProvider, useSession } from 'next-auth/react';
+import { authClient } from '@/lib/auth-client';
 import { redirect } from 'next/navigation';
 interface CustomerRow {
   Id: string;
@@ -235,12 +234,13 @@ const Home: NextPage = () => {
     }
   };
 
-  const { data: session, status } = useSession({
-    required: true,
-    onUnauthenticated() {
-      redirect('/signin');
-    },
-  });
+  const { data: session, isPending: status_isPending } = authClient.useSession();
+  const status = status_isPending ? 'loading' : session ? 'authenticated' : 'unauthenticated';
+
+  // Redirect if not authenticated
+  if (!status_isPending && !session) {
+    redirect('/signin');
+  }
 
   const handleDelete = async () => {
     try {

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
+import { authClient } from '@/lib/auth-client';
 import { useTranslation } from 'react-i18next';
 import { Box, Card, Text, Button, TextArea, Flex, Badge } from '@radix-ui/themes';
 import { StarFilledIcon, StarIcon } from '@radix-ui/react-icons';
@@ -39,7 +39,7 @@ const BlogRatings: React.FC<BlogRatingsProps> = ({
   handleName, 
   onRatingAdded 
 }) => {
-  const { data: session } = useSession();
+  const { data: session } = authClient.useSession();
   const { t } = useTranslation('translations');
   
   const [ratings, setRatings] = useState<Rating[]>([]);

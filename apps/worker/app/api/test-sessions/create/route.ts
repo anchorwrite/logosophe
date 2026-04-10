@@ -21,7 +21,6 @@ export async function POST(request: NextRequest) {
     const db = env.DB;
     const normalizedLogging = new NormalizedLogging(db);
 
-    // Check if user is system admin
     const isAdmin = await isSystemAdmin(session.user.email, db);
     if (!isAdmin) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
@@ -34,34 +33,31 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid test user email' }, { status: 400 });
     }
 
-    // Get session limit from environment variable
     const maxSessions = parseInt(process.env.MAX_CONCURRENT_TEST_SESSIONS || '15');
-    
-    // Check current active session count
+
     const activeSessionsResult = await db.prepare(
       'SELECT COUNT(*) as count FROM TestSessions'
     ).first() as { count: number };
 
     if (activeSessionsResult.count >= maxSessions) {
-      return NextResponse.json({ 
-        error: `Maximum number of concurrent test sessions (${maxSessions}) reached` 
+      return NextResponse.json({
+        error: `Maximum number of concurrent test sessions (${maxSessions}) reached`
       }, { status: 429 });
     }
 
-    // Generate secure session token using Web Crypto API
+    // Generate secure session token
     const array = new Uint8Array(32);
     crypto.getRandomValues(array);
     const sessionToken = Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
-    
-    // Get request headers for logging
+
     const headersList = await headers();
     const ipAddress = headersList.get('x-forwarded-for') || headersList.get('x-real-ip') || 'unknown';
     const userAgent = headersList.get('user-agent') || 'unknown';
 
-    // Create session in database
+    // Insert into TestSessions
     const result = await db.prepare(`
       INSERT INTO TestSessions (
-        SessionToken, TestUserEmail, CreatedBy, CreatedAt, 
+        SessionToken, TestUserEmail, CreatedBy, CreatedAt,
         IpAddress, UserAgent
       ) VALUES (?, ?, ?, ?, ?, ?)
     `).bind(
@@ -77,7 +73,46 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to create session' }, { status: 500 });
     }
 
-    // Log the session creation
+    // Determine test user number and role
+    const match = testUserEmail.match(/test-user-(\d+)@logosophe\.test/);
+    if (match) {
+      const userNumber = parseInt(match[1], 10);
+      const testUserId = `test-user-${userNumber}`;
+      const n = userNumber;
+      const role = (n >= 301 && n <= 305) || (n >= 410 && n <= 445) ? 'subscriber' : 'user';
+      const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+
+      // Upsert BA user row
+      await db.prepare(`
+        INSERT OR IGNORE INTO "user" (id, name, email, emailVerified, role, createdAt, updatedAt)
+        VALUES (?, ?, ?, 1, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      `).bind(testUserId, `Test User ${userNumber}`, testUserEmail, role).run();
+
+      // Provision TenantUsers + UserRoles if missing
+      const hasTenantRow = await db
+        .prepare('SELECT 1 FROM TenantUsers WHERE Email = ?')
+        .bind(testUserEmail)
+        .first();
+      if (!hasTenantRow) {
+        await db.prepare(
+          "INSERT OR IGNORE INTO TenantUsers (TenantId, Email, RoleId) VALUES ('default', ?, 'user')"
+        ).bind(testUserEmail).run();
+        try {
+          await db.prepare(
+            "INSERT OR IGNORE INTO UserRoles (TenantId, Email, RoleId) VALUES ('default', ?, 'user')"
+          ).bind(testUserEmail).run();
+        } catch {
+          // Ignore FK errors
+        }
+      }
+
+      // Insert BA session row (token matches TestSessions.SessionToken)
+      await db.prepare(`
+        INSERT OR REPLACE INTO "session" (id, userId, token, expiresAt, ipAddress, userAgent, createdAt, updatedAt)
+        VALUES (lower(hex(randomblob(16))), ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      `).bind(testUserId, sessionToken, expiresAt, ipAddress, userAgent).run();
+    }
+
     const { ipAddress: extractedIp, userAgent: extractedUa } = extractRequestContext(request);
     await normalizedLogging.logTestOperations({
       userEmail: session.user.email,
@@ -97,7 +132,8 @@ export async function POST(request: NextRequest) {
       }
     });
 
-    const sessionUrl = `${process.env.NEXTAUTH_URL || 'https:/www.logosophe.com'}/test-signin?token=${sessionToken}`;
+    const baseUrl = process.env.AUTH_URL || process.env.NEXTAUTH_URL || 'https://www.logosophe.com';
+    const sessionUrl = `${baseUrl}/test-signin?token=${sessionToken}`;
 
     return NextResponse.json({
       success: true,
@@ -111,4 +147,4 @@ export async function POST(request: NextRequest) {
     console.error('Error creating test session:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
-} 
+}

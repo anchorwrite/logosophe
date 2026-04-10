@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth, createCustomAdapter } from '@/auth';
+import { auth } from '@/auth';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { isSystemAdmin } from '@/lib/access';
 import { NormalizedLogging, extractRequestContext } from '@/lib/normalized-logging';
@@ -29,10 +29,11 @@ export async function POST(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // Check if user exists in users table (Auth.js v5)
-    const customAdapter = await createCustomAdapter();
-    const user = await customAdapter?.getUserByEmail?.(email);
-    
+    // Check if user exists in BA user table
+    const user = await db.prepare('SELECT id, email FROM "user" WHERE email = ?')
+      .bind(email)
+      .first<{ id: string; email: string }>();
+
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
@@ -49,12 +50,12 @@ export async function POST(
     // Manual deletion approach - delete all related records and then the user
     try {
       // Delete all related records in the correct order
-      
-      // Auth.js v5 tables
-      await db.prepare('DELETE FROM accounts WHERE userId = ?').bind(user.id).run();
-      await db.prepare('DELETE FROM sessions WHERE userId = ?').bind(user.id).run();
-      await db.prepare('DELETE FROM verification_tokens WHERE identifier = ?').bind(email).run();
-      
+
+      // Better Auth tables
+      await db.prepare('DELETE FROM "account" WHERE userId = ?').bind(user.id).run();
+      await db.prepare('DELETE FROM "session" WHERE userId = ?').bind(user.id).run();
+      await db.prepare('DELETE FROM "verification" WHERE identifier = ?').bind(email).run();
+
       // User-related tables
       await db.prepare('DELETE FROM UserAvatars WHERE UserId = ?').bind(user.id).run();
       await db.prepare('DELETE FROM Preferences WHERE Email = ?').bind(email).run();
@@ -81,8 +82,8 @@ export async function POST(
       // Content tables (after TenantUsers is deleted)
       await db.prepare('DELETE FROM PublishedContent WHERE PublisherId = ?').bind(email).run();
       
-      // Finally, delete the user from the users table
-      await db.prepare('DELETE FROM users WHERE id = ?').bind(user.id).run();
+      // Finally, delete the user from the BA user table
+      await db.prepare('DELETE FROM "user" WHERE id = ?').bind(user.id).run();
       
     } catch (cleanupError) {
       console.error('Error during manual deletion:', cleanupError);

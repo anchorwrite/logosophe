@@ -1,10 +1,10 @@
 'use client'
 
-import { Session } from 'next-auth'
+import type { AuthSession } from '@/auth';
 import ProfileForm from '@/components/ProfileForm'
 
 interface ProfilePageClientProps {
-  session: Session | null;
+  session: AuthSession;
   updateName: (formData: FormData) => Promise<void>;
   updateEmail: (formData: FormData) => Promise<void>;
   isAdminUser: boolean;

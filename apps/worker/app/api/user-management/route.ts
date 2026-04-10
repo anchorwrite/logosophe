@@ -81,15 +81,15 @@ export async function GET(request: NextRequest) {
         u.name,
         u.emailVerified,
         u.image,
-        COALESCE(a.provider, 
-          CASE 
+        COALESCE(a.providerId,
+          CASE
             WHEN COALESCE(u.email, user_email) LIKE '%@logosophe.test' THEN 'Test'
             WHEN c.Email IS NOT NULL THEN 'Credentials'
             ELSE 'unknown'
           END
         ) as provider,
-        COALESCE(latest_session.expires, latest_signin.timestamp) as lastLogin,
-        CASE WHEN latest_session.expires > datetime('now') THEN 1 ELSE 0 END as hasActiveSession,
+        COALESCE(latest_session.expiresAt, latest_signin.timestamp) as lastLogin,
+        CASE WHEN latest_session.expiresAt > datetime('now') THEN 1 ELSE 0 END as hasActiveSession,
         sub.Banned as isBlocked,
         CASE WHEN sub.Email IS NOT NULL AND sub.Active = TRUE AND sub.EmailVerified IS NOT NULL THEN 1 ELSE 0 END as isSubscriber,
         CASE WHEN u.email IS NOT NULL THEN 1 ELSE 0 END as hasSignedIn,
@@ -105,18 +105,18 @@ export async function GET(request: NextRequest) {
         WHERE c.Email NOT IN (SELECT Email FROM TenantUsers)
         UNION
         SELECT u.email as user_email, NULL as TenantId
-        FROM users u
+        FROM "user" u
         WHERE u.email NOT IN (SELECT Email FROM TenantUsers)
         AND u.email NOT IN (SELECT Email FROM Credentials)
       ) combined_users
-      LEFT JOIN users u ON combined_users.user_email = u.email
-      LEFT JOIN accounts a ON u.id = a.userId
+      LEFT JOIN "user" u ON combined_users.user_email = u.email
+      LEFT JOIN "account" a ON u.id = a.userId
       LEFT JOIN (
-        SELECT userId, expires
-        FROM sessions s1
-        WHERE expires = (
-          SELECT MAX(expires)
-          FROM sessions s2
+        SELECT userId, expiresAt
+        FROM "session" s1
+        WHERE expiresAt = (
+          SELECT MAX(expiresAt)
+          FROM "session" s2
           WHERE s2.userId = s1.userId
         )
       ) latest_session ON u.id = latest_session.userId
@@ -237,14 +237,14 @@ export async function GET(request: NextRequest) {
         FROM Credentials c
         WHERE c.Email NOT IN (SELECT Email FROM TenantUsers)
       ) combined_users
-      LEFT JOIN users u ON combined_users.user_email = u.email
-      LEFT JOIN accounts a ON u.id = a.userId
+      LEFT JOIN "user" u ON combined_users.user_email = u.email
+      LEFT JOIN "account" a ON u.id = a.userId
       LEFT JOIN (
-        SELECT userId, expires
-        FROM sessions s1
-        WHERE expires = (
-          SELECT MAX(expires)
-          FROM sessions s2
+        SELECT userId, expiresAt
+        FROM "session" s1
+        WHERE expiresAt = (
+          SELECT MAX(expiresAt)
+          FROM "session" s2
           WHERE s2.userId = s1.userId
         )
       ) latest_session ON u.id = latest_session.userId

@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'next/navigation';
-import { useSession } from 'next-auth/react';
+import { authClient } from '@/lib/auth-client';
 import { Box, Flex, Heading, Text, Card, Container, Separator, Button, Badge } from '@radix-ui/themes';
 import { SubscriberHandle, SubscriberBlogPost, SubscriberAnnouncement, SubscriberBiography, SubscriberContactInfo } from '@/types/subscriber-pages';
 import SubscriberPagesAppBar from '@/components/SubscriberPagesAppBar';
@@ -32,7 +32,7 @@ export default function PublicHandlePage({ params }: PublicHandlePageProps) {
   const [showOptIn, setShowOptIn] = useState(false);
   const [subscriberStatusChecked, setSubscriberStatusChecked] = useState(false);
   const [commentRefreshKey, setCommentRefreshKey] = useState(0);
-  const { data: session } = useSession();
+  const { data: session } = authClient.useSession();
 
   useEffect(() => {
     const loadPageData = async () => {

@@ -27,33 +27,40 @@ export async function GET() {
       });
     }
 
-    // For other users, get the provider from the database
-    const account = await db.prepare(
-      'SELECT provider FROM accounts WHERE userId = ?'
-    ).bind(session?.user?.id).first() as { provider: string } | null;
+    // Check Preferences.CurrentProvider first — set by the session hook on every sign-in
+    const prefs = await db.prepare(
+      'SELECT CurrentProvider FROM Preferences WHERE Email = ?'
+    ).bind(access.email).first() as { CurrentProvider: string | null } | null;
 
-    let provider = account?.provider || 'unknown';
-    
-    // If no account found, check for other authentication methods
-    if (!account) {
-      // Check if user is in Credentials table (admin/tenant users)
-      const credUser = await db.prepare(
-        'SELECT * FROM Credentials WHERE Email = ?'
-      ).bind(access.email).first();
-      
-      if (credUser) {
-        provider = 'credentials';
+    let rawProvider = prefs?.CurrentProvider;
+
+    if (!rawProvider) {
+      // Fallback: check for a recently-updated account row (OAuth updates it immediately
+      // before session creation; magic link leaves it untouched)
+      const fifteenSecondsAgo = new Date(Date.now() - 15_000).toISOString();
+      const account = await db.prepare(
+        'SELECT providerId FROM "account" WHERE userId = ? AND updatedAt >= ? ORDER BY updatedAt DESC LIMIT 1'
+      ).bind(session?.user?.id, fifteenSecondsAgo).first() as { providerId: string } | null;
+
+      if (account?.providerId) {
+        rawProvider = account.providerId;
       } else {
-        // Check if user has emailVerified (Resend magic link users)
-        const user = await db.prepare(
-          'SELECT emailVerified FROM users WHERE id = ?'
-        ).bind(session?.user?.id).first() as { emailVerified: string | null } | null;
-        
-        if (user?.emailVerified) {
-          provider = 'email';
-        }
+        const credUser = await db.prepare(
+          'SELECT 1 FROM Credentials WHERE Email = ?'
+        ).bind(access.email).first();
+        rawProvider = credUser ? 'credential' : 'magic-link';
       }
     }
+
+    const friendlyNames: Record<string, string> = {
+      'magic-link': 'Email',
+      'credential': 'Credentials',
+      'google': 'Google',
+      'apple': 'Apple',
+      'linkedin': 'LinkedIn',
+      'microsoft': 'Microsoft',
+    };
+    const provider = friendlyNames[rawProvider.toLowerCase()] ?? (rawProvider.charAt(0).toUpperCase() + rawProvider.slice(1).toLowerCase());
 
     return NextResponse.json({
       success: true,

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useSession } from 'next-auth/react';
+import { authClient } from '@/lib/auth-client';
 import { 
   Box, 
   Card, 
@@ -32,7 +32,7 @@ const AnnouncementManager: React.FC<AnnouncementManagerProps> = ({
 }) => {
   const { t } = useTranslation('translations');
   const { showToast } = useToast();
-  const { data: session } = useSession();
+  const { data: session } = authClient.useSession();
   const [announcements, setAnnouncements] = useState<SubscriberAnnouncement[]>([]);
   const [loading, setLoading] = useState(false);
   const [showCreateDialog, setShowCreateDialog] = useState(false);

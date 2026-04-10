@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useSession } from 'next-auth/react';
+import { authClient } from '@/lib/auth-client';
 
 // Singleton SSE connection to prevent multiple connections
 let globalEventSource: EventSource | null = null;
@@ -23,7 +23,8 @@ interface UnreadCountResponse {
 }
 
 export function useUnreadMessageCount() {
-  const { data: session, status } = useSession();
+  const { data: session, isPending: status_isPending } = authClient.useSession();
+  const status = status_isPending ? 'loading' : session ? 'authenticated' : 'unauthenticated';
   const [unreadCount, setUnreadCount] = useState<number>(0);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);

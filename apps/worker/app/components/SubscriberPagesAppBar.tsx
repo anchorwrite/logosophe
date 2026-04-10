@@ -4,7 +4,7 @@ import Link from "next/link";
 import { SvgIcon } from "@/common/SvgIcon";
 import { Button, Flex, Box } from "@radix-ui/themes";
 import { useTranslation } from 'react-i18next';
-import { useSession } from "next-auth/react";
+import { authClient } from '@/lib/auth-client';
 import { PreferencesButton } from "@/components/PreferencesButton";
 import type { Locale } from '@/types/i18n';
 
@@ -14,7 +14,7 @@ interface SubscriberPagesAppBarProps {
 
 export default function SubscriberPagesAppBar({ lang }: SubscriberPagesAppBarProps) {
   const { t } = useTranslation('translations');
-  const { data: session } = useSession();
+  const { data: session } = authClient.useSession();
 
   return (
     <Flex justify="between" align="center" style={{ width: '100%' }}>

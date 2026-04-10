@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import { useSession } from 'next-auth/react';
+import { authClient } from '@/lib/auth-client';
 
 interface WorkflowMessagingContextType {
   unreadCount: number;
@@ -20,7 +20,7 @@ let globalWorkflowConnectionCount = 0;
 let globalWorkflowConnectionTenantId: string | null = null;
 
 export function WorkflowMessagingProvider({ children }: { children: React.ReactNode }) {
-  const { data: session } = useSession();
+  const { data: session } = authClient.useSession();
   const [unreadCount, setUnreadCount] = useState(0);
   const [sseConnected, setSseConnected] = useState(false);
   const [isLoading, setIsLoading] = useState(true);

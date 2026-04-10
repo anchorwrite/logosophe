@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
+import { authClient } from '@/lib/auth-client';
 import { useTranslation } from 'react-i18next';
 
 interface Workflow {
@@ -31,7 +31,7 @@ interface WorkflowApiResponse {
 }
 
 export default function WorkflowInterface() {
-  const { data: session } = useSession();
+  const { data: session } = authClient.useSession();
   const { t } = useTranslation('translations');
   const [workflows, setWorkflows] = useState<Workflow[]>([]);
   const [selectedWorkflow, setSelectedWorkflow] = useState<Workflow | null>(null);

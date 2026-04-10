@@ -1,115 +1,64 @@
 'use server'
 
-import { signOut, auth } from '@/auth'
+import { createAuth, auth } from '@/auth'
 import { NormalizedLogging } from '@/lib/normalized-logging'
 import { headers } from 'next/headers'
-import { getCloudflareContext } from "@opennextjs/cloudflare";
+import { getCloudflareContext } from '@opennextjs/cloudflare'
 
-interface TenantResult {
-  TenantId: string;
-}
-
-interface UserResult {
-  id: string;
-  email: string;
-}
-
-export async function handleSignOut(redirectTo?: string) {
+export async function handleSignOut() {
   try {
-    const context = await getCloudflareContext({async: true});
-    const db = context.env.DB;
-    const headersList = await headers();
-    
-    // Get the current session
-    const session = await auth();
-    
-    if (session?.user?.id) {
+    const context = await getCloudflareContext({ async: true })
+    const db = context.env.DB
+    const headersList = await headers()
+    const session = await auth()
+
+    if (session?.user?.email) {
       try {
-        // Get user information
-        const user = await db.prepare(
-          'SELECT * FROM users WHERE id = ?'
-        ).bind(session.user.id).first() as UserResult | null;
+        const email = session.user.email
 
-        // Use email from database or fall back to session
-        const userEmail = user?.email || session.user?.email;
-        
-        if (userEmail) {
-          
-          // Get the account information to determine provider
-          const account = await db.prepare(
-            'SELECT provider FROM accounts WHERE userId = ?'
-          ).bind(session.user.id).first() as { provider: string } | null;
-          
-          // Determine provider based on account or user role
-          let provider = account?.provider || 'unknown';
-          
-          // If no account found, check for other authentication methods
-          if (!account) {
-            // Check if user is in Credentials table (admin/tenant)
-            const credUser = await db.prepare(
-              'SELECT * FROM Credentials WHERE email = ?'
-            ).bind(userEmail).first();
-            
-            if (credUser) {
-              provider = 'credentials';
-            } else {
-              // Check if user has emailVerified (Resend magic link users)
-              const userWithEmailVerified = await db.prepare(
-                'SELECT emailVerified FROM users WHERE id = ?'
-              ).bind(session.user.id).first() as { emailVerified: string | null } | null;
-              
-              if (userWithEmailVerified?.emailVerified) {
-                provider = 'resend'; // Use 'resend' to match signin event
-              }
-            }
-          }
+        // Determine provider from BA account table
+        const accountRow = await db
+          .prepare('SELECT providerId FROM "account" WHERE userId = ? LIMIT 1')
+          .bind(session.user.id)
+          .first<{ providerId: string }>()
+        const provider = accountRow?.providerId || 'credential'
 
-          // Calculate session duration using session creation time
-          const sessionStartTime = new Date(session.expires);
-          sessionStartTime.setDate(sessionStartTime.getDate() - 30); // Subtract 30 days to get creation time
-          const endTime = new Date();
-          const sessionDuration = Math.round((endTime.getTime() - sessionStartTime.getTime()) / 1000); // Duration in seconds
+        // Approximate session start time (30 days before expiry)
+        const sessionStartTime = new Date(session.expires)
+        sessionStartTime.setDate(sessionStartTime.getDate() - 30)
+        const endTime = new Date()
+        const sessionDuration = Math.round(
+          (endTime.getTime() - sessionStartTime.getTime()) / 1000
+        )
 
-          // Log the signout action using NormalizedLogging
-          const normalizedLogging = new NormalizedLogging(db);
-          
-          await normalizedLogging.logAuthentication({
-            userEmail: userEmail,
-            userId: session.user.id,
-            provider,
-            activityType: 'signout',
-            accessType: 'auth',
-            targetId: userEmail,
-            targetName: `${userEmail} (${provider})`,
-            ipAddress: headersList.get('x-forwarded-for') || headersList.get('x-real-ip') || 'unknown',
-            userAgent: headersList.get('user-agent') || 'unknown',
-            metadata: {
-              sessionDuration,
-              sessionStartTime: sessionStartTime.toISOString(),
-              sessionEndTime: endTime.toISOString()
-            }
-          });
-        }
-      } catch (error) {
-        // If logging fails, just log the error but don't fail the sign-out
-        console.error('Error during sign-out logging:', error);
+        const normalizedLogging = new NormalizedLogging(db)
+        await normalizedLogging.logAuthentication({
+          userEmail: email,
+          userId: session.user.id,
+          provider,
+          activityType: 'signout',
+          accessType: 'auth',
+          targetId: email,
+          targetName: `${email} (${provider})`,
+          ipAddress: headersList.get('x-forwarded-for') || headersList.get('x-real-ip') || 'unknown',
+          userAgent: headersList.get('user-agent') || 'unknown',
+          metadata: {
+            sessionDuration,
+            sessionStartTime: sessionStartTime.toISOString(),
+            sessionEndTime: endTime.toISOString(),
+          },
+        })
+      } catch (err) {
+        console.error('Error during sign-out logging:', err)
       }
     }
 
-    // Use provided redirectTo or default to main page
-    if (redirectTo === undefined) {
-      // For regular sign out, redirect to main page
-      await signOut()
-    } else {
-      await signOut()
-    }
+    const authInstance = await createAuth()
+    await authInstance.api.signOut({ headers: await headers() })
   } catch (error) {
-    // Only log real errors, not redirects
     if (!(error instanceof Error && error.message === 'NEXT_REDIRECT')) {
       console.error('Signout error:', error)
       throw error
     }
-    // Don't re-throw redirect errors - they're expected and handled by Next.js
-    return
   }
-} 
+}

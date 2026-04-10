@@ -26,10 +26,10 @@ export async function POST(request: NextRequest) {
     const ipAddress = headersList.get('x-forwarded-for') || headersList.get('x-real-ip') || 'unknown';
     const userAgent = headersList.get('user-agent') || 'unknown';
 
-    // Validate token and get session details
+    // Validate token against TestSessions (primary source of truth for test sessions)
     const sessionResult = await db.prepare(`
       SELECT Id, SessionToken, TestUserEmail, CreatedBy, CreatedAt, LastAccessed
-      FROM TestSessions 
+      FROM TestSessions
       WHERE SessionToken = ?
     `).bind(token).first() as any;
 

@@ -31,11 +31,10 @@ export async function GET(request: Request) {
       // Fall back to users table if not found in Subscribers
       currentUser = await db.prepare(`
         SELECT name, email, image 
-        FROM users 
+        FROM "user"
         WHERE id = ?
       `).bind(session.user.id).first();
       
-      console.log('Users table fallback result:', currentUser);
     }
 
     if (!currentUser) {
@@ -78,7 +77,7 @@ export async function PUT(request: Request) {
     // Get current user data for logging
     const currentUser = await db.prepare(`
       SELECT name, email, image 
-      FROM users 
+      FROM "user"
       WHERE id = ?
     `).bind(session.user.id).first();
 
@@ -90,7 +89,7 @@ export async function PUT(request: Request) {
 
     // Update user's profile information
     const result = await db.prepare(`
-      UPDATE users 
+      UPDATE "user"
       SET name = ?, 
           email = ?
       WHERE id = ?

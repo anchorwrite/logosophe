@@ -1,17 +1,18 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@/auth';
+import { auth, AuthSession } from '@/auth';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { isSystemAdmin } from '@/lib/access';
 import { NormalizedLogging, extractRequestContext, createNormalizedMetadata } from '@/lib/normalized-logging';
 import { D1Database } from '@cloudflare/workers-types';
-import type { Session } from 'next-auth';
+import bcrypt from 'bcryptjs';
+import { generateId } from 'better-auth';
 
 
 type Role = 'admin' | 'tenant';
 
 interface AdminAccess {
   db: D1Database;
-  session: Session;
+  session: NonNullable<AuthSession>;
 }
 
 interface CreateAdminUserRequest {
@@ -62,12 +63,34 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: 'User already exists' }, { status: 409 });
     }
 
-    // Create new user
+    // Create new user in Credentials table
     const result = await db.prepare(`
       INSERT INTO Credentials (Email, Password, Role, CreatedAt, UpdatedAt)
       VALUES (?, ?, ?, datetime('now'), datetime('now'))
       RETURNING *
     `).bind(body.email, body.password, body.role).first();
+
+    // Provision BA user + credential account so the user can sign in via emailAndPassword
+    const passwordHash = await bcrypt.hash(body.password, 10);
+    const userId = generateId();
+    const now = new Date().toISOString();
+
+    await db.prepare(`
+      INSERT INTO "user" (id, name, email, emailVerified, role, createdAt, updatedAt)
+      VALUES (?, ?, ?, 0, ?, ?, ?)
+      ON CONFLICT(email) DO NOTHING
+    `).bind(userId, body.email.split('@')[0], body.email, body.role, now, now).run();
+
+    // Get actual user id (in case row already existed)
+    const baUser = await db.prepare('SELECT id FROM "user" WHERE email = ?')
+      .bind(body.email).first<{ id: string }>();
+    const baUserId = baUser!.id;
+
+    await db.prepare(`
+      INSERT INTO "account" (id, userId, providerId, accountId, password, createdAt, updatedAt)
+      VALUES (?, ?, 'credential', ?, ?, ?, ?)
+      ON CONFLICT(providerId, accountId) DO UPDATE SET password = excluded.password
+    `).bind(generateId(), baUserId, body.email, passwordHash, now, now).run();
 
     // If this is a tenant admin and tenant assignments are provided, create the assignments
     if (body.role === 'tenant' && body.tenantIds && body.tenantIds.length > 0) {
