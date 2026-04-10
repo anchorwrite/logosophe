@@ -35,7 +35,6 @@ export async function GET(request: Request) {
         WHERE id = ?
       `).bind(session.user.id).first();
       
-      console.log('Users table fallback result:', currentUser);
     }
 
     if (!currentUser) {

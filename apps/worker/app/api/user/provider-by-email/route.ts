@@ -18,13 +18,11 @@ export async function GET(request: Request) {
       'SELECT CurrentProvider FROM Preferences WHERE Email = ?'
     ).bind(email).first() as { CurrentProvider: string | null } | null;
 
-    console.log('Preferences lookup for email:', email, 'result:', preferences);
 
     let provider = 'unknown';
 
     if (preferences?.CurrentProvider) {
       provider = preferences.CurrentProvider;
-      console.log('Found provider from Preferences:', provider);
     } else {
       // Fallback: Check if user exists in the BA user table to get their ID
       const userRecord = await db.prepare(
@@ -73,8 +71,6 @@ export async function GET(request: Request) {
     };
 
     const userFriendlyProvider = userFriendlyProviderMap[provider.toLowerCase()] || provider;
-
-    console.log('Final provider result:', { provider, userFriendlyProvider });
 
     return NextResponse.json({
       success: true,
