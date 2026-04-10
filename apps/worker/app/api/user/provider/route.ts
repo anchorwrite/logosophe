@@ -35,10 +35,12 @@ export async function GET() {
     let rawProvider = prefs?.CurrentProvider;
 
     if (!rawProvider) {
-      // Fallback: look up the most recent account row
+      // Fallback: check for a recently-updated account row (OAuth updates it immediately
+      // before session creation; magic link leaves it untouched)
+      const fifteenSecondsAgo = new Date(Date.now() - 15_000).toISOString();
       const account = await db.prepare(
-        'SELECT providerId FROM "account" WHERE userId = ? ORDER BY createdAt DESC LIMIT 1'
-      ).bind(session?.user?.id).first() as { providerId: string } | null;
+        'SELECT providerId FROM "account" WHERE userId = ? AND updatedAt >= ? ORDER BY updatedAt DESC LIMIT 1'
+      ).bind(session?.user?.id, fifteenSecondsAgo).first() as { providerId: string } | null;
 
       if (account?.providerId) {
         rawProvider = account.providerId;
