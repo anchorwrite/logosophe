@@ -91,18 +91,24 @@ export async function GET(
 
     // Mark email as verified, activate subscriber, and clear verification token
     const updateResult = await db.prepare(`
-      UPDATE Subscribers 
-      SET EmailVerified = CURRENT_TIMESTAMP, 
+      UPDATE Subscribers
+      SET EmailVerified = CURRENT_TIMESTAMP,
           Active = true,
-          VerificationToken = NULL, 
+          VerificationToken = NULL,
           VerificationExpires = NULL,
-          UpdatedAt = CURRENT_TIMESTAMP 
+          UpdatedAt = CURRENT_TIMESTAMP
       WHERE Email = ?
     `).bind(subscriber.Email).run();
 
     if ((updateResult as any).changes === 0) {
       return NextResponse.json({ error: 'Failed to verify email' }, { status: 500 });
     }
+
+    // Update BA "user" table role so authClient.useSession() reflects the new role immediately
+    // (The session hook only runs at sign-in; we must update the role here too)
+    await db.prepare(`
+      UPDATE "user" SET role = 'subscriber', updatedAt = ? WHERE email = ?
+    `).bind(new Date().toISOString(), subscriber.Email).run();
 
     // NOW add the subscriber role after successful verification
     try {

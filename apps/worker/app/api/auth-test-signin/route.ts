@@ -57,16 +57,27 @@ export async function GET(request: NextRequest) {
   );
   const signatureBuffer = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(token));
   const signatureB64 = btoa(String.fromCharCode(...new Uint8Array(signatureBuffer)));
-  const signedValue = encodeURIComponent(`${token}.${signatureB64}`);
+  // BA's signCookieValue does: encodeURIComponent(`${value}.${signature}`)
+  // Set-Cookie header must contain this encoded value directly — do NOT use
+  // NextResponse.cookies.set() which calls encodeURIComponent again (double-encode).
+  const cookieValue = encodeURIComponent(`${token}.${signatureB64}`);
+
+  const httpOnly = cookieAttributes.httpOnly ?? true;
+  const secure = cookieAttributes.secure ?? true;
+  const sameSite = (cookieAttributes.sameSite as string) ?? 'lax';
+  const path = cookieAttributes.path ?? '/';
+  const maxAge = 30 * 24 * 60 * 60;
+
+  const sameSiteStr = sameSite.charAt(0).toUpperCase() + sameSite.slice(1);
+  const cookieParts = [`${cookieName}=${cookieValue}`];
+  if (httpOnly) cookieParts.push('HttpOnly');
+  if (secure) cookieParts.push('Secure');
+  cookieParts.push(`SameSite=${sameSiteStr}`);
+  cookieParts.push(`Path=${path}`);
+  cookieParts.push(`Max-Age=${maxAge}`);
 
   const redirectResponse = NextResponse.redirect(new URL(callbackUrl, baseURL));
-  redirectResponse.cookies.set(cookieName, signedValue, {
-    httpOnly: cookieAttributes.httpOnly ?? true,
-    sameSite: (cookieAttributes.sameSite as 'lax' | 'strict' | 'none') ?? 'lax',
-    secure: cookieAttributes.secure ?? true,
-    path: cookieAttributes.path ?? '/',
-    maxAge: 30 * 24 * 60 * 60,
-  });
+  redirectResponse.headers.append('set-cookie', cookieParts.join('; '));
 
   return redirectResponse;
 }

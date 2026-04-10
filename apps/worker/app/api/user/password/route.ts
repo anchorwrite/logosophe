@@ -64,12 +64,18 @@ export async function PUT(request: Request) {
     const salt = bcrypt.genSaltSync(10);
     const hashedPassword = bcrypt.hashSync(body.newPassword, salt);
 
-    // Update password using direct SQL query
+    // Update password in both Credentials and BA account tables
     await db.prepare(`
-      UPDATE Credentials 
+      UPDATE Credentials
       SET Password = ?, UpdatedAt = datetime('now')
       WHERE Email = ?
     `).bind(hashedPassword, session.user.email).run();
+
+    await db.prepare(`
+      UPDATE "account"
+      SET password = ?, updatedAt = ?
+      WHERE providerId = 'credential' AND accountId = ?
+    `).bind(hashedPassword, new Date().toISOString(), session.user.email).run();
 
     // Log the activity with all required fields
     const normalizedLogging = new NormalizedLogging(db);
