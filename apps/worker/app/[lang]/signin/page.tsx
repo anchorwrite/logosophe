@@ -4,7 +4,7 @@ import { Card, Text, Flex, Box, Heading, Container } from '@radix-ui/themes'
 import { redirect } from 'next/navigation'
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { auth, createAuth } from '@/auth'
-import { headers, cookies } from 'next/headers'
+import { headers } from 'next/headers'
 import { getDictionary } from '@/lib/dictionary'
 import type { Locale } from '@/types/i18n'
 import OAuthErrorHandler from '@/components/OAuthErrorHandler'
@@ -188,59 +188,11 @@ export default async function SignInPage({
           </Box>
           <Box style={{ padding: '1rem' }}>
             <form
-              action={async (formData) => {
-                'use server'
-                const emailInput = formData.get('email') as string
-                const passwordInput = formData.get('password') as string
-
-                try {
-                  // Determine redirect target from Credentials table
-                  const context = await getCloudflareContext({async: true});
-                  const db = context.env.DB;
-                  const isAdmin = await db.prepare(
-                    'SELECT 1 FROM Credentials WHERE Email = ?'
-                  ).bind(emailInput).first();
-
-                  const baAuth = await createAuth()
-                  const response = await baAuth.api.signInEmail({
-                    body: { email: emailInput, password: passwordInput },
-                    headers: await headers(),
-                    asResponse: true,
-                  })
-
-                  if (!response.ok) {
-                    redirect(`/${lang}/signin?error=CredentialsSignin`)
-                  }
-
-                  // Forward BA's Set-Cookie headers to the browser
-                  const cookieStore = await cookies();
-                  response.headers.getSetCookie?.().forEach((cookieStr) => {
-                    const [nameVal, ...attrs] = cookieStr.split(';').map(s => s.trim());
-                    const eqIdx = nameVal.indexOf('=');
-                    const name = nameVal.slice(0, eqIdx);
-                    const value = nameVal.slice(eqIdx + 1);
-                    const attrsObj: Record<string, string | boolean> = {};
-                    attrs.forEach(attr => {
-                      const [k, v] = attr.split('=').map(s => s.trim());
-                      attrsObj[k.toLowerCase()] = v ?? true;
-                    });
-                    cookieStore.set(name, value, {
-                      httpOnly: attrsObj['httponly'] === true,
-                      secure: attrsObj['secure'] === true,
-                      sameSite: (attrsObj['samesite'] as 'lax' | 'strict' | 'none') || 'lax',
-                      path: (attrsObj['path'] as string) || '/',
-                      ...(attrsObj['max-age'] ? { maxAge: parseInt(attrsObj['max-age'] as string) } : {}),
-                    });
-                  });
-
-                  redirect(isAdmin ? '/dashboard' : `/${lang}/harbor`)
-                } catch (error) {
-                  if (error instanceof Error && error.message === 'NEXT_REDIRECT') throw error
-                  redirect(`/${lang}/signin?error=CredentialsSignin`)
-                }
-              }}
+              method="POST"
+              action="/api/auth-credentials"
               style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}
             >
+              <input type="hidden" name="callbackUrl" value="/dashboard" />
               <input
                 type="email"
                 name="email"
