@@ -4,7 +4,7 @@ import { Card, Text, Flex, Box, Heading, Container } from '@radix-ui/themes'
 import { redirect } from 'next/navigation'
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { auth, createAuth } from '@/auth'
-import { headers } from 'next/headers'
+import { headers, cookies } from 'next/headers'
 import { getDictionary } from '@/lib/dictionary'
 import type { Locale } from '@/types/i18n'
 import OAuthErrorHandler from '@/components/OAuthErrorHandler'
@@ -211,6 +211,27 @@ export default async function SignInPage({
                   if (!response.ok) {
                     redirect(`/${lang}/signin?error=CredentialsSignin`)
                   }
+
+                  // Forward BA's Set-Cookie headers to the browser
+                  const cookieStore = await cookies();
+                  response.headers.getSetCookie?.().forEach((cookieStr) => {
+                    const [nameVal, ...attrs] = cookieStr.split(';').map(s => s.trim());
+                    const eqIdx = nameVal.indexOf('=');
+                    const name = nameVal.slice(0, eqIdx);
+                    const value = nameVal.slice(eqIdx + 1);
+                    const attrsObj: Record<string, string | boolean> = {};
+                    attrs.forEach(attr => {
+                      const [k, v] = attr.split('=').map(s => s.trim());
+                      attrsObj[k.toLowerCase()] = v ?? true;
+                    });
+                    cookieStore.set(name, value, {
+                      httpOnly: attrsObj['httponly'] === true,
+                      secure: attrsObj['secure'] === true,
+                      sameSite: (attrsObj['samesite'] as 'lax' | 'strict' | 'none') || 'lax',
+                      path: (attrsObj['path'] as string) || '/',
+                      ...(attrsObj['max-age'] ? { maxAge: parseInt(attrsObj['max-age'] as string) } : {}),
+                    });
+                  });
 
                   redirect(isAdmin ? '/dashboard' : `/${lang}/harbor`)
                 } catch (error) {
