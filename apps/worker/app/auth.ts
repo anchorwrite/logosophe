@@ -220,13 +220,16 @@ export async function createAuth() {
               if (isCredentialsUser) return;
 
               // 4. Determine provider
+              // Magic link sign-ins don't create an "account" row in BA.
+              // Check the BA session to determine if this was triggered by a magic-link token:
+              // no account row + no Credentials entry = magic-link.
               const accountRow = await hookDb
                 .prepare(
                   'SELECT providerId FROM "account" WHERE userId = ? ORDER BY createdAt DESC LIMIT 1'
                 )
                 .bind(session.userId)
                 .first<{ providerId: string }>();
-              const provider = accountRow?.providerId || 'credential';
+              const provider = accountRow?.providerId ?? 'magic-link';
 
               // 5. Upsert Preferences (CurrentProvider)
               const existingPrefs = await hookDb

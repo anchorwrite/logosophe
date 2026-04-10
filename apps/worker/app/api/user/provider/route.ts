@@ -27,33 +27,38 @@ export async function GET() {
       });
     }
 
-    // For other users, get the provider from the BA account table
-    const account = await db.prepare(
-      'SELECT providerId FROM "account" WHERE userId = ? ORDER BY createdAt DESC LIMIT 1'
-    ).bind(session?.user?.id).first() as { providerId: string } | null;
+    // Check Preferences.CurrentProvider first — set by the session hook on every sign-in
+    const prefs = await db.prepare(
+      'SELECT CurrentProvider FROM Preferences WHERE Email = ?'
+    ).bind(access.email).first() as { CurrentProvider: string | null } | null;
 
-    let provider = account?.providerId || 'unknown';
+    let rawProvider = prefs?.CurrentProvider;
 
-    // If no account found, check for other authentication methods
-    if (!account) {
-      // Check if user is in Credentials table (admin/tenant users)
-      const credUser = await db.prepare(
-        'SELECT 1 FROM Credentials WHERE Email = ?'
-      ).bind(access.email).first();
+    if (!rawProvider) {
+      // Fallback: look up the most recent account row
+      const account = await db.prepare(
+        'SELECT providerId FROM "account" WHERE userId = ? ORDER BY createdAt DESC LIMIT 1'
+      ).bind(session?.user?.id).first() as { providerId: string } | null;
 
-      if (credUser) {
-        provider = 'credentials';
+      if (account?.providerId) {
+        rawProvider = account.providerId;
       } else {
-        // Check if user has emailVerified (magic link users)
-        const user = await db.prepare(
-          'SELECT emailVerified FROM "user" WHERE id = ?'
-        ).bind(session?.user?.id).first() as { emailVerified: string | null } | null;
-
-        if (user?.emailVerified) {
-          provider = 'email';
-        }
+        const credUser = await db.prepare(
+          'SELECT 1 FROM Credentials WHERE Email = ?'
+        ).bind(access.email).first();
+        rawProvider = credUser ? 'credential' : 'magic-link';
       }
     }
+
+    const friendlyNames: Record<string, string> = {
+      'magic-link': 'Email',
+      'credential': 'Credentials',
+      'google': 'Google',
+      'apple': 'Apple',
+      'linkedin': 'LinkedIn',
+      'microsoft': 'Microsoft',
+    };
+    const provider = friendlyNames[rawProvider.toLowerCase()] ?? (rawProvider.charAt(0).toUpperCase() + rawProvider.slice(1).toLowerCase());
 
     return NextResponse.json({
       success: true,
