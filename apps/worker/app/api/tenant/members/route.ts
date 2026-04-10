@@ -34,7 +34,7 @@ export async function GET(request: Request) {
             t.Name as tenantName
           FROM UserRoles ur
           JOIN Subscribers s ON ur.Email = s.Email
-          LEFT JOIN users u ON ur.Email = u.email
+          LEFT JOIN "user" u ON ur.Email = u.email
           JOIN Roles r ON ur.RoleId = r.Id
           JOIN Tenants t ON ur.TenantId = t.Id
           WHERE ur.TenantId = ?
@@ -51,7 +51,7 @@ export async function GET(request: Request) {
             t.Name as tenantName
           FROM UserRoles ur
           JOIN Subscribers s ON ur.Email = s.Email
-          LEFT JOIN users u ON ur.Email = u.email
+          LEFT JOIN "user" u ON ur.Email = u.email
           JOIN Roles r ON ur.RoleId = r.Id
           JOIN Tenants t ON ur.TenantId = t.Id
           ORDER BY t.Name, r.Name, s.Name
@@ -80,7 +80,7 @@ export async function GET(request: Request) {
             t.Name as tenantName
           FROM UserRoles ur
           JOIN Subscribers s ON ur.Email = s.Email
-          LEFT JOIN users u ON ur.Email = u.email
+          LEFT JOIN "user" u ON ur.Email = u.email
           JOIN Roles r ON ur.RoleId = r.Id
           JOIN Tenants t ON ur.TenantId = t.Id
           WHERE ur.TenantId = ?
@@ -98,7 +98,7 @@ export async function GET(request: Request) {
             t.Name as tenantName
           FROM UserRoles ur
           JOIN Subscribers s ON ur.Email = s.Email
-          LEFT JOIN users u ON ur.Email = u.email
+          LEFT JOIN "user" u ON ur.Email = u.email
           JOIN Roles r ON ur.RoleId = r.Id
           JOIN Tenants t ON ur.TenantId = t.Id
           WHERE ur.Email IN (

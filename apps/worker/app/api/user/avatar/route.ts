@@ -49,7 +49,7 @@ export async function PUT(request: Request) {
     const baseUrl = request.headers.get('origin') || 'https:/local-dev.logosophe.com';
     const imageUrl = `${baseUrl}/api/avatars/${data.avatarId}/preview`;
     await db.prepare(`
-      UPDATE users 
+      UPDATE "user"
       SET image = ?
       WHERE id = ?
     `).bind(imageUrl, session.user.id).run();

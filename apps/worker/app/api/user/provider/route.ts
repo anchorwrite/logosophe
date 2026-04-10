@@ -27,28 +27,28 @@ export async function GET() {
       });
     }
 
-    // For other users, get the provider from the database
+    // For other users, get the provider from the BA account table
     const account = await db.prepare(
-      'SELECT provider FROM accounts WHERE userId = ?'
-    ).bind(session?.user?.id).first() as { provider: string } | null;
+      'SELECT providerId FROM "account" WHERE userId = ? ORDER BY createdAt DESC LIMIT 1'
+    ).bind(session?.user?.id).first() as { providerId: string } | null;
 
-    let provider = account?.provider || 'unknown';
-    
+    let provider = account?.providerId || 'unknown';
+
     // If no account found, check for other authentication methods
     if (!account) {
       // Check if user is in Credentials table (admin/tenant users)
       const credUser = await db.prepare(
-        'SELECT * FROM Credentials WHERE Email = ?'
+        'SELECT 1 FROM Credentials WHERE Email = ?'
       ).bind(access.email).first();
-      
+
       if (credUser) {
         provider = 'credentials';
       } else {
-        // Check if user has emailVerified (Resend magic link users)
+        // Check if user has emailVerified (magic link users)
         const user = await db.prepare(
-          'SELECT emailVerified FROM users WHERE id = ?'
+          'SELECT emailVerified FROM "user" WHERE id = ?'
         ).bind(session?.user?.id).first() as { emailVerified: string | null } | null;
-        
+
         if (user?.emailVerified) {
           provider = 'email';
         }

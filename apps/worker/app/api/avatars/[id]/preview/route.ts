@@ -49,7 +49,7 @@ export async function GET(
         SELECT 1 FROM TenantUsers tu1
         JOIN TenantUsers tu2 ON tu1.TenantId = tu2.TenantId
         WHERE tu1.Email = ? AND tu2.Email = (
-          SELECT email FROM users WHERE id = ?
+          SELECT email FROM "user" WHERE id = ?
         )
       `).bind(session.user.email, avatar.UserId).first();
 

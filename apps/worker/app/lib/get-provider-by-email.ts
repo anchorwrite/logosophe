@@ -19,37 +19,37 @@ export async function getProviderByEmail(email: string): Promise<{ provider: str
       };
     }
 
-    // Get user from users table
+    // Get user from BA user table
     const user = await db.prepare(
-      'SELECT id FROM users WHERE email = ?'
+      'SELECT id FROM "user" WHERE email = ?'
     ).bind(email).first() as { id: string } | null;
 
     if (!user) {
       return null;
     }
 
-    // Get the provider from accounts table
+    // Get the provider from BA account table
     const account = await db.prepare(
-      'SELECT provider FROM accounts WHERE userId = ?'
-    ).bind(user.id).first() as { provider: string } | null;
+      'SELECT providerId FROM "account" WHERE userId = ? ORDER BY createdAt DESC LIMIT 1'
+    ).bind(user.id).first() as { providerId: string } | null;
 
-    let provider = account?.provider || 'unknown';
-    
+    let provider = account?.providerId || 'unknown';
+
     // If no account found, check for other authentication methods
     if (!account) {
       // Check if user is in Credentials table (admin/tenant users)
       const credUser = await db.prepare(
-        'SELECT * FROM Credentials WHERE Email = ?'
+        'SELECT 1 FROM Credentials WHERE Email = ?'
       ).bind(email).first();
-      
+
       if (credUser) {
-        provider = 'credentials';
+        provider = 'credential';
       } else {
-        // Check if user has emailVerified (Resend magic link users)
+        // Check if user has emailVerified (magic link users)
         const userWithEmailVerified = await db.prepare(
-          'SELECT emailVerified FROM users WHERE email = ?'
+          'SELECT emailVerified FROM "user" WHERE email = ?'
         ).bind(email).first() as { emailVerified: string | null } | null;
-        
+
         if (userWithEmailVerified?.emailVerified) {
           provider = 'email';
         }

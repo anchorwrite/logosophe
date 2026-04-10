@@ -26,25 +26,25 @@ export async function GET(request: Request) {
       provider = preferences.CurrentProvider;
       console.log('Found provider from Preferences:', provider);
     } else {
-      // Fallback: Check if user exists in the 'users' table to get their ID
+      // Fallback: Check if user exists in the BA user table to get their ID
       const userRecord = await db.prepare(
-        'SELECT id FROM users WHERE email = ?'
+        'SELECT id FROM "user" WHERE email = ?'
       ).bind(email).first() as { id: string } | null;
 
       if (userRecord?.id) {
-        // Try to get provider from 'accounts' table for OAuth users
+        // Try to get provider from BA account table for OAuth users
         const account = await db.prepare(
-          'SELECT provider FROM accounts WHERE userId = ?'
-        ).bind(userRecord.id).first() as { provider: string } | null;
+          'SELECT providerId FROM "account" WHERE userId = ? ORDER BY createdAt DESC LIMIT 1'
+        ).bind(userRecord.id).first() as { providerId: string } | null;
 
-        if (account?.provider) {
-          provider = account.provider;
+        if (account?.providerId) {
+          provider = account.providerId;
         } else {
-          // If no account found, check for emailVerified (Resend magic link users)
+          // If no account found, check for emailVerified (magic link users)
           const userWithEmailVerified = await db.prepare(
-            'SELECT emailVerified FROM users WHERE id = ?'
+            'SELECT emailVerified FROM "user" WHERE id = ?'
           ).bind(userRecord.id).first() as { emailVerified: string | null } | null;
-          
+
           if (userWithEmailVerified?.emailVerified) {
             provider = 'email';
           }
@@ -63,13 +63,13 @@ export async function GET(request: Request) {
 
     // Map internal provider names to user-friendly names
     const userFriendlyProviderMap: Record<string, string> = {
-      'credentials': 'Resend (Admin/Tenant)',
+      'credential': 'Credentials',
       'email': 'Email (Magic Link)',
       'google': 'Google',
       'apple': 'Apple',
       'linkedin': 'LinkedIn',
-      'microsoft-entra-id': 'Microsoft',
-      'test-credentials': 'Test'
+      'microsoft': 'Microsoft',
+      'test': 'Test'
     };
 
     const userFriendlyProvider = userFriendlyProviderMap[provider.toLowerCase()] || provider;

@@ -32,7 +32,7 @@ export async function POST(
 
     // Get user ID from email
     const user = await db.prepare(
-      'SELECT id FROM users WHERE email = ?'
+      'SELECT id FROM "user" WHERE email = ?'
     ).bind(email).first() as { id: string } | null;
 
     if (!user) {
@@ -41,7 +41,7 @@ export async function POST(
 
     // Delete all active sessions for this user
     const result = await db.prepare(
-      'DELETE FROM sessions WHERE userId = ? AND expires > datetime("now")'
+      'DELETE FROM "session" WHERE userId = ? AND expiresAt > datetime("now")'
     ).bind(user.id).run();
 
     // Log the action
