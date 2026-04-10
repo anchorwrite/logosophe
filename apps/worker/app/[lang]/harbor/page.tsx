@@ -7,7 +7,7 @@ import AuthenticationMessage from "@/components/AuthenticationMessage";
 import { Box, Flex, Heading, Text } from "@radix-ui/themes";
 import { useTranslation } from 'react-i18next';
 import { useEffect, useState } from 'react';
-import { useSession } from "next-auth/react";
+import { authClient } from '@/lib/auth-client';
 import type { Locale } from '@/types/i18n';
 
 type Params = Promise<{ lang: Locale }>;
@@ -16,7 +16,9 @@ export default function HarborPage({ params }: { params: Params }) {
   const { t, i18n } = useTranslation('translations');
   const [isLoading, setIsLoading] = useState(true);
   const [lang, setLang] = useState<Locale>('en');
-  const { data: session, status, update } = useSession();
+  const { data: session, isPending: status_isPending, refetch: refetchSession } = authClient.useSession();
+  const status = status_isPending ? 'loading' : session ? 'authenticated' : 'unauthenticated';
+  const update = refetchSession;
 
   // Force session refresh if status is unauthenticated but we expect to be authenticated
   useEffect(() => {

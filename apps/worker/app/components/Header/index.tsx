@@ -9,12 +9,13 @@ import Link from "next/link";
 import { Flex, Box, Button, Text, Container } from "@radix-ui/themes";
 import * as Dialog from "@radix-ui/react-dialog";
 import { PreferencesButton } from '@/components/PreferencesButton';
-import { useSession } from "next-auth/react";
+import { authClient } from '@/lib/auth-client';
 
 const Header: React.FC = () => {
   const { t, i18n } = useTranslation('translations');
   const router = useRouter();
-  const { data: session, status } = useSession();
+  const { data: session, isPending: status_isPending } = authClient.useSession();
+  const status = status_isPending ? 'loading' : session ? 'authenticated' : 'unauthenticated';
   const [isOpen, setIsOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [isLoading, setIsLoading] = useState(true);

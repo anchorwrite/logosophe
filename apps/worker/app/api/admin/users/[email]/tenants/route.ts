@@ -1,10 +1,9 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@/auth';
+import { auth, AuthSession } from '@/auth';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { isSystemAdmin } from '@/lib/access';
 import { NormalizedLogging, extractRequestContext } from '@/lib/normalized-logging';
 import { D1Database } from '@cloudflare/workers-types';
-import type { Session } from 'next-auth';
 
 
 type TenantAssignmentRequest = {
@@ -17,7 +16,7 @@ type TenantAssignmentResponse = {
   assigned: boolean;
 };
 
-async function checkAdminAccess(): Promise<{ db: D1Database; session: Session } | { error: string }> {
+async function checkAdminAccess(): Promise<{ db: D1Database; session: NonNullable<AuthSession> } | { error: string }> {
   const session = await auth();
   if (!session?.user?.email) {
     return { error: 'Unauthorized' };

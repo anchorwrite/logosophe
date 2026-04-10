@@ -1,10 +1,9 @@
 import { NextResponse } from 'next/server';
-import { auth, createCustomAdapter } from '@/auth';
+import { auth, AuthSession } from '@/auth';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { isSystemAdmin } from '@/lib/access';
 import { NormalizedLogging, extractRequestContext } from '@/lib/normalized-logging';
 import { D1Database } from '@cloudflare/workers-types';
-import type { Session } from 'next-auth';
 
 
 
@@ -12,7 +11,7 @@ type Role = 'admin' | 'tenant';
 
 interface AdminAccess {
   db: D1Database;
-  session: Session;
+  session: NonNullable<AuthSession>;
 }
 
 async function checkAdminAccess(): Promise<AdminAccess | { error: string }> {
@@ -101,53 +100,28 @@ export async function DELETE(
   try {
     const { email } = await params;
 
-    // Check if user exists in Users table
-    const customAdapter = await createCustomAdapter();
-    const user = await customAdapter?.getUserByEmail?.(email);
-    
+    // Check if user exists in BA user table
+    const user = await db.prepare('SELECT id FROM "user" WHERE email = ?')
+      .bind(email)
+      .first<{ id: string }>();
+
     if (user) {
       // Delete related records first to handle foreign key constraints
-      
-      // Delete from accounts table (AuthJS)
-      await db.prepare('DELETE FROM accounts WHERE userId = ?')
-        .bind(user.id)
-        .run();
 
-      // Delete from sessions table (AuthJS)
-      await db.prepare('DELETE FROM sessions WHERE userId = ?')
-        .bind(user.id)
-        .run();
+      // Better Auth tables
+      await db.prepare('DELETE FROM "account" WHERE userId = ?').bind(user.id).run();
+      await db.prepare('DELETE FROM "session" WHERE userId = ?').bind(user.id).run();
+      await db.prepare('DELETE FROM "verification" WHERE identifier = ?').bind(email).run();
 
-      // Delete from verification_tokens table (AuthJS)
-      await db.prepare('DELETE FROM verification_tokens WHERE identifier = ?')
-        .bind(email)
-        .run();
-
-      // Delete from UserAvatars
-      await db.prepare('DELETE FROM UserAvatars WHERE UserId = ?')
-        .bind(user.id)
-        .run();
-
-      // Delete from UserRoles
-      await db.prepare('DELETE FROM UserRoles WHERE Email = ?')
-        .bind(email)
-        .run();
-
-      // Delete from Preferences
-      await db.prepare('DELETE FROM Preferences WHERE Email = ?')
-        .bind(email)
-        .run();
-
-      // Delete from TenantUsers
-      await db.prepare('DELETE FROM TenantUsers WHERE Email = ?')
-        .bind(email)
-        .run();
+      // App tables
+      await db.prepare('DELETE FROM UserAvatars WHERE UserId = ?').bind(user.id).run();
+      await db.prepare('DELETE FROM UserRoles WHERE Email = ?').bind(email).run();
+      await db.prepare('DELETE FROM Preferences WHERE Email = ?').bind(email).run();
+      await db.prepare('DELETE FROM TenantUsers WHERE Email = ?').bind(email).run();
 
       // Note: SystemLogs are intentionally NOT deleted to preserve audit trail
-      // SystemLogs records will remain for historical purposes
 
-      // Now delete from Users table using the adapter
-      await customAdapter?.deleteUser?.(user.id);
+      await db.prepare('DELETE FROM "user" WHERE id = ?').bind(user.id).run();
     }
 
     // Delete from Credentials table

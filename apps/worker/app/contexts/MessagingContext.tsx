@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
-import { useSession } from 'next-auth/react';
+import { authClient } from '@/lib/auth-client';
 
 interface MessagingContextType {
   unreadCount: number;
@@ -20,7 +20,8 @@ interface MessagingProviderProps {
 }
 
 export function MessagingProvider({ children }: MessagingProviderProps) {
-  const { data: session, status } = useSession();
+  const { data: session, isPending: status_isPending } = authClient.useSession();
+  const status = status_isPending ? 'loading' : session ? 'authenticated' : 'unauthenticated';
   const [unreadCount, setUnreadCount] = useState<number>(0);
   const [sseConnected, setSseConnected] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);

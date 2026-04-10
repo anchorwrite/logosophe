@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'next/navigation';
-import { useSession } from 'next-auth/react';
+import { authClient } from '@/lib/auth-client';
 import { Box, Flex, Heading, Text, Card, Container, Separator, Button, Badge } from '@radix-ui/themes';
 import { SubscriberBlogPost } from '@/types/subscriber-pages';
 import SubscriberPagesAppBar from '@/components/SubscriberPagesAppBar';
@@ -17,7 +17,7 @@ interface BlogPostDetailPageProps {
 
 export default function BlogPostDetailPage({ params }: BlogPostDetailPageProps) {
   const { t } = useTranslation('translations');
-  const { data: session } = useSession();
+  const { data: session } = authClient.useSession();
   
   const [lang, setLang] = useState<string>('en');
   const [handle, setHandle] = useState<string>('');

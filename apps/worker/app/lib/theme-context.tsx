@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { useSession } from 'next-auth/react';
+import { authClient } from '@/lib/auth-client';
 import { D1Database } from '@cloudflare/workers-types';
 import { SupportedLanguageCode, isValidLanguageCode, DEFAULT_LANGUAGE } from './languages';
 
@@ -32,7 +32,8 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 const THEME_STORAGE_KEY = 'logosophe-theme';
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const { data: session, status } = useSession();
+  const { data: session, isPending: status_isPending } = authClient.useSession();
+  const status = status_isPending ? 'loading' : session ? 'authenticated' : 'unauthenticated';
   const [theme, setThemeState] = useState<Theme>('light');
   const [language, setLanguageState] = useState<SupportedLanguageCode>(DEFAULT_LANGUAGE);
   const [isLoading, setIsLoading] = useState(true);

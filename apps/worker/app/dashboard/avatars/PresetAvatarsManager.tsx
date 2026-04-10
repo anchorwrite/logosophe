@@ -5,7 +5,7 @@ import { Box, Button, Card, Flex, Grid, Heading, Text } from '@radix-ui/themes';
 import '@radix-ui/themes/styles.css';
 import { useToast } from '@/components/Toast';
 import { D1Result } from '@cloudflare/workers-types';
-import { Session } from 'next-auth';
+import type { AuthSession } from '@/auth';
 
 interface PresetAvatar {
   Id: number;
@@ -25,7 +25,7 @@ interface PresetAvatarResponse {
 }
 
 interface PresetAvatarsManagerProps {
-  session: Session;
+  session: AuthSession;
 }
 
 export default function PresetAvatarsManager({ session }: PresetAvatarsManagerProps) {

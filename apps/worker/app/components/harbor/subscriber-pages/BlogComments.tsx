@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useSession } from 'next-auth/react';
+import { authClient } from '@/lib/auth-client';
 import { 
   Box, 
   Flex, 
@@ -43,7 +43,7 @@ const BlogComments: React.FC<BlogCommentsProps> = ({
   onCommentAdded 
 }) => {
   const { t } = useTranslation('translations');
-  const { data: session } = useSession();
+  const { data: session } = authClient.useSession();
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(false);
   const [newComment, setNewComment] = useState('');

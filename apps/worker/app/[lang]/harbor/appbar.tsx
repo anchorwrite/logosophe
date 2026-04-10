@@ -5,7 +5,7 @@ import { SvgIcon } from "@/common/SvgIcon";
 import { Button, Flex, Box, Badge } from "@radix-ui/themes";
 import { useTranslation } from 'react-i18next';
 import { useEffect, useState } from 'react';
-import { useSession } from "next-auth/react";
+import { authClient } from '@/lib/auth-client';
 import type { Locale } from '@/types/i18n';
 import SubscriberOptIn from "@/components/SubscriberOptIn";
 import SubscriberOptOut from "@/components/SubscriberOptOut";
@@ -30,7 +30,7 @@ function HarborAppBar({ lang }: { lang: Locale }) {
   const { unreadCount: workflowUnreadCount } = useWorkflowMessaging();
 
 
-  const { data: session } = useSession();
+  const { data: session } = authClient.useSession();
 
   useEffect(() => {
     const fetchProvider = async () => {

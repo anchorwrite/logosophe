@@ -17,62 +17,37 @@ export async function DELETE(request: NextRequest) {
     const db = env.DB;
     const normalizedLogging = new NormalizedLogging(db);
 
-    // Check if user is system admin
     const isAdmin = await isSystemAdmin(session.user.email, db);
     if (!isAdmin) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // Get all sessions before clearing for logging
     const activeSessionsResult = await db.prepare(`
       SELECT Id, SessionToken, TestUserEmail, CreatedBy, CreatedAt
-      FROM TestSessions 
+      FROM TestSessions
     `).all();
 
     if (activeSessionsResult.results.length === 0) {
-      return NextResponse.json({
-        success: true,
-        message: 'No sessions to clear'
-      });
+      return NextResponse.json({ success: true, message: 'No sessions to clear' });
     }
 
-    // Get all test user emails to clear their active sessions
-    const testUserEmails = activeSessionsResult.results.map((row: any) => row.TestUserEmail);
-
-    // Clear active sessions for these test users
-    let activeSessionsCleared = 0;
-    for (const email of testUserEmails) {
-      const activeSessionResult = await db.prepare(`
-        SELECT s.sessionToken
-        FROM sessions s 
-        JOIN users u ON s.userId = u.id 
-        WHERE u.email = ? AND s.expires > datetime('now')
-      `).bind(email).first() as any;
-
-      if (activeSessionResult) {
-        await db.prepare(`
-          DELETE FROM sessions 
-          WHERE sessionToken = ?
-        `).bind(activeSessionResult.sessionToken).run();
-        activeSessionsCleared++;
-      }
+    // Delete matching BA session rows
+    const tokens = activeSessionsResult.results.map((row: any) => row.SessionToken);
+    for (const token of tokens) {
+      await db.prepare('DELETE FROM "session" WHERE token = ?').bind(token).run();
     }
 
     // Delete all test sessions
-    const result = await db.prepare(`
-      DELETE FROM TestSessions 
-    `).run();
+    const result = await db.prepare('DELETE FROM TestSessions').run();
 
     if (!result.success) {
       return NextResponse.json({ error: 'Failed to clear sessions' }, { status: 500 });
     }
 
-    // Get request headers for logging
     const headersList = await headers();
     const ipAddress = headersList.get('x-forwarded-for') || headersList.get('x-real-ip') || 'unknown';
     const userAgent = headersList.get('user-agent') || 'unknown';
 
-    // Log the bulk session termination
     const { ipAddress: extractedIp, userAgent: extractedUa } = extractRequestContext(request);
     await normalizedLogging.logTestOperations({
       userEmail: session.user.email,
@@ -85,7 +60,6 @@ export async function DELETE(request: NextRequest) {
       userAgent: extractedUa,
       metadata: {
         sessionsCleared: activeSessionsResult.results.length,
-        activeSessionsCleared,
         sessionDetails: activeSessionsResult.results.map((row: any) => ({
           sessionId: row.Id,
           testUserEmail: row.TestUserEmail,
@@ -105,4 +79,4 @@ export async function DELETE(request: NextRequest) {
     console.error('Error clearing test sessions:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
-} 
+}

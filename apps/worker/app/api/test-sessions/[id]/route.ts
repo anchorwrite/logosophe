@@ -21,14 +21,12 @@ export async function DELETE(
     const db = env.DB;
     const normalizedLogging = new NormalizedLogging(db);
 
-    // Check if user is system admin
     const isAdmin = await isSystemAdmin(session.user.email, db);
     if (!isAdmin) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const resolvedParams = await params;
-    const sessionId = parseInt(resolvedParams.id);
+    const sessionId = parseInt(id);
     if (isNaN(sessionId)) {
       return NextResponse.json({ error: 'Invalid session ID' }, { status: 400 });
     }
@@ -36,7 +34,7 @@ export async function DELETE(
     // Get session details before deletion for logging
     const sessionResult = await db.prepare(`
       SELECT SessionToken, TestUserEmail, CreatedBy, CreatedAt
-      FROM TestSessions 
+      FROM TestSessions
       WHERE Id = ?
     `).bind(sessionId).first() as any;
 
@@ -44,17 +42,9 @@ export async function DELETE(
       return NextResponse.json({ error: 'Session not found' }, { status: 404 });
     }
 
-    // Check if there's an active session for this test user
-    const activeSessionResult = await db.prepare(`
-      SELECT s.sessionToken, s.userId, u.email
-      FROM sessions s 
-      JOIN users u ON s.userId = u.id 
-      WHERE u.email = ? AND s.expires > datetime('now')
-    `).bind(sessionResult.TestUserEmail).first() as any;
-
     // Delete the test session
     const result = await db.prepare(`
-      DELETE FROM TestSessions 
+      DELETE FROM TestSessions
       WHERE Id = ?
     `).bind(sessionId).run();
 
@@ -62,20 +52,16 @@ export async function DELETE(
       return NextResponse.json({ error: 'Failed to terminate session' }, { status: 500 });
     }
 
-    // If there's an active session, also delete it
-    if (activeSessionResult) {
-      await db.prepare(`
-        DELETE FROM sessions 
-        WHERE sessionToken = ?
-      `).bind(activeSessionResult.sessionToken).run();
-    }
+    // Delete the matching BA session row (token = TestSessions.SessionToken)
+    const baDeleteResult = await db.prepare(`
+      DELETE FROM "session"
+      WHERE token = ?
+    `).bind(sessionResult.SessionToken).run();
 
-    // Get request headers for logging
     const headersList = await headers();
     const ipAddress = headersList.get('x-forwarded-for') || headersList.get('x-real-ip') || 'unknown';
     const userAgent = headersList.get('user-agent') || 'unknown';
 
-    // Log the session termination
     const { ipAddress: extractedIp, userAgent: extractedUa } = extractRequestContext(request);
     await normalizedLogging.logTestOperations({
       userEmail: session.user.email,
@@ -91,8 +77,7 @@ export async function DELETE(
         testUserEmail: sessionResult.TestUserEmail,
         originalCreatedBy: sessionResult.CreatedBy,
         sessionCreatedAt: sessionResult.CreatedAt,
-        activeSessionTerminated: !!activeSessionResult,
-        activeSessionToken: activeSessionResult?.sessionToken || null
+        baSessionDeleted: baDeleteResult.success,
       }
     });
 
@@ -105,4 +90,4 @@ export async function DELETE(
     console.error('Error terminating test session:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
-} 
+}

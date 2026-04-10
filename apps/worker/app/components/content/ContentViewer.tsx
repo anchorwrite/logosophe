@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { Box, Card, Text, Button, Flex, Badge, Heading } from '@radix-ui/themes';
 import { ArrowLeft, Download, Eye, Info } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
+import { authClient } from '@/lib/auth-client';
 import { ContentAboutModal } from './ContentAboutModal';
 
 interface PublishedContent {
@@ -76,7 +76,7 @@ function formatDate(dateString: string): string {
 export function ContentViewer({ token, lang }: ContentViewerProps) {
   const { t } = useTranslation('translations');
   const router = useRouter();
-  const { data: session } = useSession();
+  const { data: session } = authClient.useSession();
   const [content, setContent] = useState<ContentViewResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

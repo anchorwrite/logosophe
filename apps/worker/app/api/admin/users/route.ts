@@ -1,17 +1,16 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@/auth';
+import { auth, AuthSession } from '@/auth';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { isSystemAdmin } from '@/lib/access';
 import { NormalizedLogging, extractRequestContext, createNormalizedMetadata } from '@/lib/normalized-logging';
 import { D1Database } from '@cloudflare/workers-types';
-import type { Session } from 'next-auth';
 
 
 type Role = 'admin' | 'tenant';
 
 interface AdminAccess {
   db: D1Database;
-  session: Session;
+  session: NonNullable<AuthSession>;
 }
 
 interface CreateAdminUserRequest {

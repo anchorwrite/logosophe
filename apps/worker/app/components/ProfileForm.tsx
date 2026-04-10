@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Button, TextField, Text, Box, Card, Flex, Grid, Tabs, Avatar, Dialog } from '@radix-ui/themes';
-import type { Session } from 'next-auth';
+import type { AuthSession } from '@/auth';
 import { useToast } from '@/components/Toast';
 import { useTranslation } from 'react-i18next';
 import EmailPreferencesManager from './harbor/EmailPreferencesManager';
@@ -31,7 +31,7 @@ interface PasswordResponse {
 }
 
 interface ProfileFormProps {
-  session: Session | null;
+  session: AuthSession;
   updateName: (formData: FormData) => Promise<void>;
   updateEmail: (formData: FormData) => Promise<void>;
   isAdminUser: boolean;
