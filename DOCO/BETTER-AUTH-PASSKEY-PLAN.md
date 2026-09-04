@@ -4,6 +4,8 @@ Add **WebAuthn / passkey** support on top of the existing **Better Auth v1** sta
 
 **Created:** 2026-09-04  
 **Status:** Planning (docs only; implementation not started)  
+**Tracking issue:** [anchorwrite/logosophe#11](https://github.com/anchorwrite/logosophe/issues/11)  
+**PR:** [anchorwrite/logosophe#12](https://github.com/anchorwrite/logosophe/pull/12)  
 **Approver:** baudouinalbert  
 **Reference:** [Better Auth Passkey plugin](https://www.better-auth.com/docs/plugins/passkey) (SimpleWebAuthn under the hood)
 
@@ -13,7 +15,7 @@ Add **WebAuthn / passkey** support on top of the existing **Better Auth v1** sta
 
 | Stage | Status | PR | Notes |
 |---|---|---|---|
-| 0 — Planning doc | In progress | — | This file |
+| 0 — Planning doc | In review | [#12](https://github.com/anchorwrite/logosophe/pull/12) | This file; closes [#11](https://github.com/anchorwrite/logosophe/issues/11) |
 | 1 — D1 `passkey` table migration | Pending | — | Local + remote D1 |
 | 2 — Install plugin + server/client wiring | Pending | — | `@better-auth/passkey` |
 | 3 — Manage passkeys (signed-in users) | Pending | — | Add / list / rename / delete UI |
