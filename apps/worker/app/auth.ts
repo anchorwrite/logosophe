@@ -3,6 +3,7 @@ import { magicLink, admin } from 'better-auth/plugins';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { headers as nextHeaders } from 'next/headers';
 import { NormalizedLogging, createNormalizedMetadata } from '@/lib/normalized-logging';
+import { buildTrustedOrigins } from '@/lib/auth-trusted-origins';
 import bcrypt from 'bcryptjs';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -131,12 +132,14 @@ export async function createAuth() {
     database: db,
     secret: getEnvVar('AUTH_SECRET'),
     baseURL: getEnvVar('AUTH_URL') || 'https://www.logosophe.com',
-    trustedOrigins: [
-      'https://www.logosophe.com',
-      'https://local-dev.logosophe.com',
-      'http://localhost:3001',
-      'http://localhost:3000',
-    ],
+    // Include http+https for each host: local wrangler/tunnel can present
+    // Origin as http://www.logosophe.com even on the HTTPS tunnel URL.
+    trustedOrigins: (request) =>
+      buildTrustedOrigins({
+        authUrl: getEnvVar('AUTH_URL'),
+        appBaseUrl: getEnvVar('APP_BASE_URL'),
+        request,
+      }),
     session: {
       expiresIn: 60 * 60 * 24 * 30, // 30 days
       updateAge: 60 * 60 * 24,       // refresh if older than 1 day
