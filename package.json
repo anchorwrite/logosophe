@@ -18,10 +18,10 @@
     "tunnel:logosophe-preview": "bash -c 'cp ~/.cloudflared/config-logosophe-preview.yml ~/.cloudflared/config.yml && cloudflared tunnel run local-dev'"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20251205.0",
-    "@opennextjs/cloudflare": "^1.8.0",
+    "@cloudflare/workers-types": "^5.20260926.1",
+    "@opennextjs/cloudflare": "^1.20.7",
     "esbuild": "^0.20.2",
-    "wrangler": "^4.34.0"
+    "wrangler": "^4.143.0"
   },
   "installConfig": {
     "hoistingLimits": "workspaces"
