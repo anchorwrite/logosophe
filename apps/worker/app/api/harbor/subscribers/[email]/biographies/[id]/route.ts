@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { D1Database } from '@cloudflare/workers-types';
 import { logAnnouncementAction } from '@/lib/subscriber-pages-logging';
+import { requireSubscriberSelf } from '@/lib/subscriber-route-access';
 
 export async function PUT(
   request: NextRequest,
@@ -9,6 +10,9 @@ export async function PUT(
 ) {
   try {
     const { email, id } = await params;
+    const denied = await requireSubscriberSelf(email);
+    if (denied) return denied;
+
     const biographyId = parseInt(id, 10);
     const body = await request.json() as { handleId: number; bio: string; isPublic: boolean; language: string };
     const { handleId, bio, isPublic, language } = body;
@@ -102,6 +106,9 @@ export async function DELETE(
 ) {
   try {
     const { email, id } = await params;
+    const denied = await requireSubscriberSelf(email);
+    if (denied) return denied;
+
     const biographyId = parseInt(id, 10);
 
     const context = await getCloudflareContext({ async: true });

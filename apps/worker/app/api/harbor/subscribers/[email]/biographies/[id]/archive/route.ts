@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { D1Database } from '@cloudflare/workers-types';
+import { requireSubscriberSelf } from '@/lib/subscriber-route-access';
 
 export async function PATCH(
   request: NextRequest,
@@ -8,6 +9,9 @@ export async function PATCH(
 ) {
   try {
     const { email, id } = await params;
+    const denied = await requireSubscriberSelf(email);
+    if (denied) return denied;
+
     const body = await request.json() as { isActive: boolean };
     const { isActive } = body;
 
