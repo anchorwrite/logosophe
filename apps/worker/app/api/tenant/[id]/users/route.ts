@@ -35,6 +35,14 @@ export async function GET(
     const db = await getDB();
     const { id } = await params;
 
+    // Tenant admins may only list members of tenants they administer (system admins: any)
+    if (!access.email || !(await isTenantAdminFor(access.email, id))) {
+      return NextResponse.json({
+        error: "Forbidden",
+        message: "You do not administer this tenant."
+      }, { status: 403 });
+    }
+
     const result = await db.prepare(`
       SELECT 
         ur.Email,
@@ -85,19 +93,13 @@ export async function POST(
     // Check if user is a system admin
     const isAdmin = await isSystemAdmin(session.user.email, db);
 
-    // For non-admin users, verify they have access to the tenant
-    if (!isAdmin) {
-      const tenantAccess = await db.prepare(`
-        SELECT 1 FROM TenantUsers 
-        WHERE Email = ? AND TenantId = ?
-      `).bind(session.user.email, id).first();
-
-      if (!tenantAccess) {
-        return NextResponse.json({ 
-          error: "Forbidden",
-          message: "You do not have access to this tenant."
-        }, { status: 403 });
-      }
+    // Only system admins and admins of this tenant may add members or roles
+    // (membership alone is not enough: members could otherwise grant themselves roles)
+    if (!isAdmin && !(await isTenantAdminFor(session.user.email, id))) {
+      return NextResponse.json({ 
+        error: "Forbidden",
+        message: "You do not administer this tenant."
+      }, { status: 403 });
     }
 
     // Check if the target user is a credentials user

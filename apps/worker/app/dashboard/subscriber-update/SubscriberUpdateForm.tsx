@@ -1,10 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button, TextField, Text, Box, Checkbox, Flex } from '@radix-ui/themes';
 import { useToast } from '@/components/Toast';
-import { ChevronDown } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import {
+  BASE_TENANT_ROLE,
+  NON_TENANT_ROLES,
+  planTenantRoleChanges,
+  type TenantRoleMap,
+} from '@/lib/tenant-membership';
 
 interface Subscriber {
   Email: string;
@@ -27,18 +32,19 @@ interface Tenant {
   Name: string;
 }
 
+interface Role {
+  Id: string;
+  Name: string;
+}
+
+/** GET /api/tenant: tenants this admin may manage (all for system admins). */
 interface TenantsResponse {
-  tenants: Tenant[];
+  results?: Tenant[];
 }
 
-interface SubscriberTenant {
-  TenantId: string;
-  TenantName: string;
-  RoleId: string;
-}
-
-interface SubscriberTenantsResponse {
-  results: SubscriberTenant[];
+/** GET /api/tenant/[id]/users: one row per member role (UserRoles). */
+interface TenantUsersResponse {
+  results?: { Email: string; RoleId: string }[];
 }
 
 export function SubscriberUpdateForm({ subscriber, onUpdateComplete }: SubscriberUpdateFormProps) {
@@ -46,8 +52,11 @@ export function SubscriberUpdateForm({ subscriber, onUpdateComplete }: Subscribe
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [tenants, setTenants] = useState<Tenant[]>([]);
-  const [selectedTenants, setSelectedTenants] = useState<string[]>([]);
-  const [isOpen, setIsOpen] = useState(false);
+  const [roles, setRoles] = useState<Role[]>([]);
+  const [tenantsLoading, setTenantsLoading] = useState(true);
+  // Roles per tenant as loaded (current) and as edited (desired); absent tenant = not a member
+  const [currentRoles, setCurrentRoles] = useState<TenantRoleMap>({});
+  const [desiredRoles, setDesiredRoles] = useState<TenantRoleMap>({});
   const [formData, setFormData] = useState<Subscriber>({
     Email: subscriber.Email,
     Name: subscriber.Name,
@@ -59,47 +68,63 @@ export function SubscriberUpdateForm({ subscriber, onUpdateComplete }: Subscribe
     Track: subscriber.Track
   });
 
-  const fetchData = async () => {
+  // Load the tenants this admin manages, the assignable roles, and the subscriber's roles per tenant
+  const loadMemberships = async () => {
+    setTenantsLoading(true);
     try {
-      // Fetch tenants
-      const tenantsResponse = await fetch('/api/tenant');
-      if (!tenantsResponse.ok) {
-        throw new Error('Failed to fetch tenants');
-      }
-      const tenantsData = await tenantsResponse.json() as TenantsResponse;
-      setTenants(tenantsData.tenants || []);
+      const [tenantsResponse, rolesResponse] = await Promise.all([fetch('/api/tenant'), fetch('/api/roles')]);
+      if (!tenantsResponse.ok) throw new Error('Failed to fetch tenants');
+      if (!rolesResponse.ok) throw new Error('Failed to fetch roles');
+      const tenantList = ((await tenantsResponse.json()) as TenantsResponse).results || [];
+      const roleList = ((await rolesResponse.json()) as { results?: Role[] }).results || [];
+      setTenants(tenantList);
+      setRoles(roleList.filter((r) => !NON_TENANT_ROLES.includes(r.Id) && r.Id !== BASE_TENANT_ROLE));
 
-      // Fetch subscriber tenants
-      const subscriberTenantsResponse = await fetch(`/api/subscriber-tenants?email=${encodeURIComponent(subscriber.Email)}`);
-      if (!subscriberTenantsResponse.ok) {
-        throw new Error('Failed to fetch subscriber tenants');
-      }
-      const subscriberTenantsData = await subscriberTenantsResponse.json() as SubscriberTenantsResponse;
-      setSelectedTenants(subscriberTenantsData.results?.map(tu => tu.TenantId) || []);
+      const email = subscriber.Email.toLowerCase();
+      const memberships: TenantRoleMap = {};
+      await Promise.all(tenantList.map(async (tenant) => {
+        const response = await fetch(`/api/tenant/${encodeURIComponent(tenant.Id)}/users`);
+        if (!response.ok) throw new Error(`Failed to load members of ${tenant.Name}`);
+        const rows = ((await response.json()) as TenantUsersResponse).results || [];
+        const mine = rows.filter((row) => row.Email?.toLowerCase() === email).map((row) => row.RoleId);
+        if (mine.length > 0) memberships[tenant.Id] = mine;
+      }));
+      setCurrentRoles(memberships);
+      setDesiredRoles(memberships);
     } catch (error) {
-      console.error('Error fetching data:', error);
+      console.error('Error loading tenant memberships:', error);
       showToast({
         title: 'Error',
-        content: 'Failed to load data',
+        content: error instanceof Error ? error.message : 'Failed to load tenants',
         type: 'error'
       });
+    } finally {
+      setTenantsLoading(false);
     }
   };
 
-  // Call fetchData when the dropdown is opened
-  const handleDropdownClick = () => {
-    if (!isOpen && tenants.length === 0) {
-      fetchData();
-    }
-    setIsOpen(!isOpen);
+  useEffect(() => {
+    void loadMemberships();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [subscriber.Email]);
+
+  const setMembership = (tenantId: string, member: boolean) => {
+    setDesiredRoles((prev) => {
+      const next = { ...prev };
+      if (member) next[tenantId] = currentRoles[tenantId] || [BASE_TENANT_ROLE];
+      else delete next[tenantId];
+      return next;
+    });
   };
 
-  const handleTenantSelect = (tenantId: string, checked: boolean) => {
-    const newSelectedTenants = checked
-      ? [...selectedTenants, tenantId]
-      : selectedTenants.filter(id => id !== tenantId);
-    
-    setSelectedTenants(newSelectedTenants);
+  const setTenantRole = (tenantId: string, roleId: string, on: boolean) => {
+    setDesiredRoles((prev) => {
+      const roles = prev[tenantId] || [BASE_TENANT_ROLE];
+      return {
+        ...prev,
+        [tenantId]: on ? [...new Set([...roles, roleId])] : roles.filter((r) => r !== roleId),
+      };
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -107,11 +132,7 @@ export function SubscriberUpdateForm({ subscriber, onUpdateComplete }: Subscribe
     setIsLoading(true);
 
     try {
-      console.log('Starting subscriber update...', {
-        email: subscriber.Email,
-        formData,
-        selectedTenants
-      });
+      console.log('Starting subscriber update...', { email: subscriber.Email });
 
       // Update subscriber
       const response = await fetch('/api/subscribers', {
@@ -133,67 +154,36 @@ export function SubscriberUpdateForm({ subscriber, onUpdateComplete }: Subscribe
 
       console.log('Subscriber basic info updated successfully');
 
-      // First, get existing tenant assignments
-      const existingAssignmentsResponse = await fetch('/api/subscriber-tenants?email=' + encodeURIComponent(subscriber.Email));
-      if (!existingAssignmentsResponse.ok) {
-        const errorData = await existingAssignmentsResponse.json() as { error?: string };
-        throw new Error(`Failed to fetch existing tenant assignments: ${errorData.error || existingAssignmentsResponse.statusText}`);
+      // Apply tenant membership and role changes through the tenant members API
+      const { addRoles, removeRoles, removeMemberships } = planTenantRoleChanges(currentRoles, desiredRoles);
+      const usersUrl = (tenantId: string) => `/api/tenant/${encodeURIComponent(tenantId)}/users`;
+      const memberUrl = (tenantId: string) => `${usersUrl(tenantId)}/${encodeURIComponent(subscriber.Email)}`;
+      const failure = async (response: Response, what: string) => {
+        const data = await response.json().catch(() => ({})) as { error?: string; message?: string };
+        return new Error(`${what}: ${data.message || data.error || response.statusText}`);
+      };
+
+      for (const tenantId of removeMemberships) {
+        const response = await fetch(memberUrl(tenantId), { method: 'DELETE' });
+        if (!response.ok) throw await failure(response, `Failed to remove tenant ${tenantId}`);
       }
-
-      const existingAssignments = await existingAssignmentsResponse.json() as { results: SubscriberTenant[] };
-      console.log('Existing tenant assignments:', existingAssignments);
-
-      // Calculate which assignments to add and remove
-      const existingTenantIds = existingAssignments.results?.map(tu => tu.TenantId) || [];
-      const tenantsToAdd = selectedTenants.filter(id => !existingTenantIds.includes(id));
-      const tenantsToRemove = existingTenantIds.filter(id => !selectedTenants.includes(id));
-
-      console.log('Tenants to add:', tenantsToAdd);
-      console.log('Tenants to remove:', tenantsToRemove);
-
-      // Remove assignments that are no longer needed
-      for (const tenantId of tenantsToRemove) {
-        console.log('Removing tenant assignment for:', tenantId);
-        const deleteResponse = await fetch('/api/tenant-users', {
+      for (const { tenantId, roleId } of removeRoles) {
+        const response = await fetch(`${memberUrl(tenantId)}/roles/${encodeURIComponent(roleId)}`, { method: 'DELETE' });
+        if (!response.ok) throw await failure(response, `Failed to remove ${roleId} in ${tenantId}`);
+      }
+      for (const { tenantId, roleId } of addRoles) {
+        const response = await fetch(usersUrl(tenantId), {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            op: 'delete',
-            Email: subscriber.Email,
-            delId: tenantId
-          }),
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ Email: subscriber.Email, RoleId: roleId }),
         });
-
-        if (!deleteResponse.ok) {
-          const errorData = await deleteResponse.json() as { error?: string };
-          throw new Error(`Failed to remove tenant assignment for ${tenantId}: ${errorData.error || deleteResponse.statusText}`);
+        // A new membership already includes the base role
+        if (!response.ok && !(roleId === BASE_TENANT_ROLE && response.status === 400)) {
+          throw await failure(response, `Failed to add ${roleId} in ${tenantId}`);
         }
       }
 
-      // Add new assignments
-      for (const tenantId of tenantsToAdd) {
-        console.log('Adding tenant assignment for:', tenantId);
-        const tenantResponse = await fetch('/api/tenant-users', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            op: 'insert',
-            Email: subscriber.Email,
-            TenantId: tenantId,
-            RoleId: 'user'
-          }),
-        });
-
-        if (!tenantResponse.ok) {
-          const errorData = await tenantResponse.json() as { error?: string };
-          throw new Error(`Failed to add tenant assignment for ${tenantId}: ${errorData.error || tenantResponse.statusText}`);
-        }
-      }
-
+      setCurrentRoles(desiredRoles);
       console.log('All tenant assignments updated successfully');
       showToast({
         title: 'Success',
@@ -302,43 +292,42 @@ export function SubscriberUpdateForm({ subscriber, onUpdateComplete }: Subscribe
           <Text as="label" size="2" weight="bold" mb="1">
             Tenants
           </Text>
-          <div className="relative">
-            <div
-              onClick={handleDropdownClick}
-              className="flex items-center justify-between w-full px-3 py-2 text-sm border rounded-md cursor-pointer hover:bg-gray-50"
-            >
-              <Text size="2" color="gray">
-                {selectedTenants.length > 0
-                  ? `${selectedTenants.length} tenant${selectedTenants.length === 1 ? '' : 's'} selected`
-                  : 'Select tenants'}
-              </Text>
-              <ChevronDown className="w-4 h-4 text-gray-500" />
+          {tenantsLoading ? (
+            <Text size="2" color="gray">Loading tenants…</Text>
+          ) : tenants.length === 0 ? (
+            <Text size="2" color="gray">No tenants you can manage.</Text>
+          ) : (
+            <div className="space-y-3">
+              {tenants.map((tenant) => {
+                const tenantRoles = desiredRoles[tenant.Id];
+                const isMember = tenantRoles !== undefined;
+                return (
+                  <Box key={tenant.Id}>
+                    <Flex align="center" gap="2">
+                      <Checkbox
+                        checked={isMember}
+                        onCheckedChange={(checked) => setMembership(tenant.Id, checked === true)}
+                      />
+                      <Text size="2" weight="medium">{tenant.Name}</Text>
+                    </Flex>
+                    {isMember && (
+                      <Flex wrap="wrap" gap="3" ml="5" mt="1">
+                        {roles.map((role) => (
+                          <Flex key={role.Id} align="center" gap="1">
+                            <Checkbox
+                              checked={tenantRoles.includes(role.Id)}
+                              onCheckedChange={(checked) => setTenantRole(tenant.Id, role.Id, checked === true)}
+                            />
+                            <Text size="1">{role.Name}</Text>
+                          </Flex>
+                        ))}
+                      </Flex>
+                    )}
+                  </Box>
+                );
+              })}
             </div>
-            {isOpen && (
-              <>
-                <div 
-                  className="fixed inset-0 z-40"
-                  onClick={() => setIsOpen(false)}
-                />
-                <div className="absolute z-50 w-full mt-1 bg-white border rounded-md shadow-lg">
-                  <div className="max-h-60 overflow-auto">
-                    {tenants.map((tenant) => (
-                      <div
-                        key={tenant.Id}
-                        className="flex items-center px-3 py-2 text-sm hover:bg-gray-50 cursor-pointer"
-                      >
-                        <Checkbox
-                          checked={selectedTenants.includes(tenant.Id)}
-                          onCheckedChange={(checked) => handleTenantSelect(tenant.Id, checked as boolean)}
-                        />
-                        <Text size="2" className="ml-2">{tenant.Name}</Text>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
+          )}
         </Box>
       </div>
 
