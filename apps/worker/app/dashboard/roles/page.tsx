@@ -1,5 +1,7 @@
 import { auth } from "@/auth";
 import { redirect } from 'next/navigation';
+import { isSystemAdmin } from '@/lib/access';
+import { getDB } from '@/lib/request-context';
 import { DataTable } from '@/components/table';
 import type { TableConfig } from '@/types/table';
 
@@ -38,8 +40,12 @@ const rolePermissionsConfig: TableConfig = {
 export default async function RolesPage() {
   const session = await auth();
   
-  if (!session) {
+  if (!session?.user?.email) {
     redirect('/signin');
+  }
+  // Editing roles is for system admins only (the API enforces the same)
+  if (!(await isSystemAdmin(session.user.email, await getDB()))) {
+    redirect('/dashboard');
   }
 
   return (

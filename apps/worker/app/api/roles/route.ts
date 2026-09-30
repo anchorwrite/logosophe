@@ -1,6 +1,7 @@
 import { auth } from '@/auth';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { NextResponse } from 'next/server';
+import { isSystemAdmin } from '@/lib/access';
 
 
 export async function GET(request: Request) {
@@ -49,6 +50,11 @@ export async function POST(request: Request) {
     delId?: string;
   };
   const operation = body.op || 'select';
+
+  // Only system admins may change the Roles table (it underpins RBAC for every tenant)
+  if (operation !== 'select' && !(await isSystemAdmin(session.user.email, db))) {
+    return new NextResponse('Forbidden', { status: 403 });
+  }
 
   try {
     switch (operation) {
