@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { D1Database } from '@cloudflare/workers-types';
 import { logAnnouncementAction } from '@/lib/subscriber-pages-logging';
+import { requireSubscriberSelf } from '@/lib/subscriber-route-access';
 
 export async function GET(
   request: NextRequest,
@@ -9,6 +10,9 @@ export async function GET(
 ) {
   try {
     const { email } = await params;
+    const denied = await requireSubscriberSelf(email);
+    if (denied) return denied;
+
     const context = await getCloudflareContext({ async: true });
     const db = context.env.DB;
 
@@ -92,6 +96,9 @@ export async function POST(
 ) {
   try {
     const { email } = await params;
+    const denied = await requireSubscriberSelf(email);
+    if (denied) return denied;
+
     const body = await request.json() as { handleId: number; bio: string; isPublic: boolean; language: string };
     const { handleId, bio, isPublic, language } = body;
 
