@@ -23,19 +23,10 @@ interface MediaFile {
 
 type Params = Promise<{ id: string }>
 
-// Handle OPTIONS requests for CORS preflight
-export async function OPTIONS(request: NextRequest) {
-  const origin = request.headers.get('origin') || 'https:/www.logosophe.com';
-  return new Response(null, {
-    headers: {
-      'Access-Control-Allow-Origin': origin,
-      'Access-Control-Allow-Methods': 'GET, OPTIONS',
-      'Access-Control-Allow-Headers': 'Range, Content-Type',
-      'Access-Control-Allow-Credentials': 'true',
-      'Access-Control-Max-Age': '86400', // 24 hours
-      'Vary': 'Origin',
-    },
-  });
+// No cross-origin access: previews are only loaded by this site's own pages. Reflecting the
+// request Origin with Allow-Credentials let any website read a signed-in user's media.
+export async function OPTIONS() {
+  return new Response(null, { status: 204, headers: { Allow: 'GET, OPTIONS' } });
 }
 
 export async function GET(
@@ -46,7 +37,6 @@ export async function GET(
     const { env } = await getCloudflareContext({async: true});
     const db = env.DB;
     const { id: mediaId } = await params;
-    const origin = request.headers.get('origin') || 'https:/www.logosophe.com';
 
     // Debug logging
     console.log('=== Media Preview Request Debug ===');
@@ -178,13 +168,9 @@ export async function GET(
           headers.set('Content-Disposition', `inline; filename="${media.FileName}"`);
         }
         
-        headers.set('Access-Control-Allow-Origin', origin);
-        headers.set('Access-Control-Allow-Methods', 'GET, OPTIONS');
-        headers.set('Access-Control-Allow-Headers', 'Range, Content-Type, Accept-Encoding');
-        headers.set('Access-Control-Allow-Credentials', 'true');
-        headers.set('Vary', 'Origin, Accept-Encoding');
+        headers.set('Vary', 'Accept-Encoding');
         headers.set('Accept-Ranges', 'bytes');
-        headers.set('Cache-Control', 'public, max-age=31536000');
+        headers.set('Cache-Control', shareToken ? 'private, no-store' : 'private, max-age=3600');
 
         // Handle range requests
         const range = request.headers.get('range');
@@ -320,13 +306,9 @@ export async function GET(
         headers.set('Content-Disposition', `inline; filename="${media.FileName}"`);
       }
       
-      headers.set('Access-Control-Allow-Origin', origin);
-      headers.set('Access-Control-Allow-Methods', 'GET, OPTIONS');
-      headers.set('Access-Control-Allow-Headers', 'Range, Content-Type, Accept-Encoding');
-      headers.set('Access-Control-Allow-Credentials', 'true');
-      headers.set('Vary', 'Origin, Accept-Encoding');
+      headers.set('Vary', 'Accept-Encoding');
       headers.set('Accept-Ranges', 'bytes');
-      headers.set('Cache-Control', 'public, max-age=31536000');
+      headers.set('Cache-Control', shareToken ? 'private, no-store' : 'private, max-age=3600');
 
       // Handle range requests
       const range = request.headers.get('range');

@@ -185,7 +185,10 @@ export async function handleAccessControl(options: AccessControlOptions) {
     }
   }
 
-  return access;
+  // Fail closed. checkAccess reports role: null when it denies access, so the branches
+  // above rarely fire, and returning here let denied users render the page (e.g. every
+  // signed-in user could open /dashboard/*).
+  redirect(access.email ? `/${lang}/harbor` : '/signin');
 }
 
 export async function getTenantData(email: string) {
