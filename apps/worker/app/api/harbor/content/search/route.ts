@@ -9,8 +9,9 @@ export async function GET(request: NextRequest) {
     
     const { searchParams } = new URL(request.url);
     const query = searchParams.get('q') || '';
-    const limit = parseInt(searchParams.get('limit') || '20');
-    const offset = parseInt(searchParams.get('offset') || '0');
+    // Public endpoint: bound the page size
+    const limit = Math.min(Math.max(parseInt(searchParams.get('limit') || '20', 10) || 20, 1), 50);
+    const offset = Math.max(parseInt(searchParams.get('offset') || '0', 10) || 0, 0);
 
     // Search published content by title, description, form, or genre
     let sql = `
@@ -68,9 +69,9 @@ export async function GET(request: NextRequest) {
         language: item.Language,
         form: item.FormName,
         genre: item.GenreName,
+        // Public endpoint: show a display name, never the publisher's email address
         publisher: {
-          email: item.PublisherId, // PublisherId is the email
-          name: item.PublisherId.split('@')[0] // Extract name from email
+          name: item.PublisherId.split('@')[0]
         },
         publishedAt: item.PublishedAt,
         accessToken: item.AccessToken

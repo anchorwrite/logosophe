@@ -21,7 +21,7 @@ export async function GET(request: Request) {
 
     let provider = 'unknown';
 
-    if (preferences?.CurrentProvider) {
+    if (preferences?.CurrentProvider && !['credentials', 'credential'].includes(preferences.CurrentProvider.toLowerCase())) {
       provider = preferences.CurrentProvider;
     } else {
       // Fallback: Check if user exists in the BA user table to get their ID
@@ -35,7 +35,7 @@ export async function GET(request: Request) {
           'SELECT providerId FROM "account" WHERE userId = ? ORDER BY createdAt DESC LIMIT 1'
         ).bind(userRecord.id).first() as { providerId: string } | null;
 
-        if (account?.providerId) {
+        if (account?.providerId && account.providerId.toLowerCase() !== 'credential') {
           provider = account.providerId;
         } else {
           // If no account found, check for emailVerified (magic link users)
@@ -47,21 +47,13 @@ export async function GET(request: Request) {
             provider = 'email';
           }
         }
-      } else {
-        // If no user record in 'users' table, check 'Credentials' table
-        const credUser = await db.prepare(
-          'SELECT 1 FROM Credentials WHERE Email = ?'
-        ).bind(email).first();
-        
-        if (credUser) {
-          provider = 'credentials';
-        }
       }
+      // Admin/tenant password accounts (Credentials) are deliberately not reported: this
+      // public lookup must not single them out as targets.
     }
 
     // Map internal provider names to user-friendly names
     const userFriendlyProviderMap: Record<string, string> = {
-      'credential': 'Credentials',
       'email': 'Email (Magic Link)',
       'google': 'Google',
       'apple': 'Apple',

@@ -56,7 +56,7 @@ export async function GET(
     // Return the image for preview
     const headers = new Headers();
     headers.set('Content-Type', attachment.ContentType);
-    headers.set('Cache-Control', 'public, max-age=3600'); // Cache for 1 hour
+    headers.set('Cache-Control', 'private, max-age=3600'); // Auth-gated: browser cache only, never shared caches
 
     return new Response(object.body, {
       status: 200,

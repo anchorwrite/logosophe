@@ -6,11 +6,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { createAuth } from '@/auth';
+import { safeRedirectPath } from '@/lib/safe-redirect';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const token = searchParams.get('token');
-  const callbackUrl = searchParams.get('callbackUrl') || '/en/harbor';
+  // Same-site paths only (an absolute or // URL here made this an open redirect)
+  const callbackUrl = safeRedirectPath(searchParams.get('callbackUrl'));
 
   const { env } = await getCloudflareContext({ async: true });
 

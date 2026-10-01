@@ -6,12 +6,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAuth } from '@/auth';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
+import { safeRedirectPath } from '@/lib/safe-redirect';
 
 export async function POST(request: NextRequest) {
   const formData = await request.formData();
   const email = formData.get('email') as string;
   const password = formData.get('password') as string;
-  const callbackUrl = (formData.get('callbackUrl') as string) || '/dashboard';
+  // Same-site paths only (the form value is user-controlled)
+  const callbackUrl = safeRedirectPath(formData.get('callbackUrl') as string | null, '/dashboard');
 
   const { env } = await getCloudflareContext({ async: true });
   const baseURL =

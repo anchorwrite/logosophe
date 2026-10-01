@@ -273,7 +273,8 @@ export async function canSendMessage(
     return { 
       allowed: false, 
       blockedRecipients: [], 
-      error: `Invalid recipients: ${invalidRecipients.join(', ')}` 
+      // Don't echo the addresses: that would reveal who is (not) a member
+      error: `${invalidRecipients.length} recipient(s) cannot receive messages in this tenant` 
     };
   }
   

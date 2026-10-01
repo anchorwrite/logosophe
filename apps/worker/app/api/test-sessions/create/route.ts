@@ -119,13 +119,13 @@ export async function POST(request: NextRequest) {
       tenantId: 'system',
       activityType: 'create_test_session',
       accessType: 'write',
-      targetId: sessionToken,
+      // Never log the session token: it is a live sign-in credential
+      targetId: String(result.meta.last_row_id),
       targetName: testUserEmail,
       ipAddress: extractedIp,
       userAgent: extractedUa,
       metadata: {
         testUserEmail,
-        sessionToken,
         sessionId: result.meta.last_row_id,
         sessionLimit: maxSessions,
         currentSessionCount: activeSessionsResult.count + 1
