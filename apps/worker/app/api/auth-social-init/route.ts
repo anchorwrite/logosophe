@@ -4,11 +4,12 @@
 
 import { createAuth } from '@/auth';
 import { NextRequest, NextResponse } from 'next/server';
+import { safeRedirectPath } from '@/lib/safe-redirect';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const provider = searchParams.get('provider');
-  const callbackUrl = searchParams.get('callbackUrl') || '/harbor';
+  const callbackUrl = safeRedirectPath(searchParams.get('callbackUrl'));
 
   if (!provider) {
     return new Response('Missing provider', { status: 400 });

@@ -71,20 +71,52 @@ export async function POST(request: NextRequest) {
       } as SendMessageResponse, { status: 403 });
     }
 
-    // Validate attachments if provided
-    if (attachments.length > 0) {
+    // Validate attachments: each must exist and be the sender's own upload or media shared
+    // with this tenant (otherwise any media ID, including another tenant's, could be attached)
+    const attachmentIds = [...new Set(attachments)];
+    if (attachmentIds.length > 0) {
       const validAttachments = await db.prepare(`
-        SELECT Id FROM MediaFiles WHERE Id IN (${attachments.map(() => '?').join(',')}) AND IsDeleted = 0
-      `).bind(...attachments).all();
-      
-      const validAttachmentIds = validAttachments.results?.map(a => a.Id) || [];
-      const invalidAttachments = attachments.filter(a => !validAttachmentIds.includes(a));
-      
-      if (invalidAttachments.length > 0) {
+        SELECT m.Id FROM MediaFiles m
+        WHERE m.Id IN (${attachmentIds.map(() => '?').join(',')}) AND m.IsDeleted = 0
+          AND (m.UploadedBy = ? OR EXISTS (
+            SELECT 1 FROM MediaAccess ma
+            WHERE ma.MediaId = m.Id AND ma.TenantId = ?
+              AND (ma.ExpiresAt IS NULL OR ma.ExpiresAt > datetime('now'))
+          ))
+      `).bind(...attachmentIds, access.email, tenantId).all();
+
+      const validAttachmentIds = new Set((validAttachments.results ?? []).map(a => String(a.Id)));
+      if (attachmentIds.some(a => !validAttachmentIds.has(String(a)))) {
         return NextResponse.json({
           success: false,
-          error: `Invalid attachment IDs: ${invalidAttachments.join(', ')}`
+          error: 'One or more attachments are not available to this tenant'
         } as SendMessageResponse, { status: 400 });
+      }
+    }
+
+    // Validate the reply target before writing anything (it used to be checked after the
+    // message and recipients were inserted, leaving orphan messages on failure)
+    if (replyToMessageId) {
+      const parentMessage = await db.prepare(`
+        SELECT m.MessageType FROM Messages m
+        WHERE m.Id = ? AND m.IsDeleted = FALSE AND m.TenantId = ?
+          AND (m.SenderEmail = ? OR EXISTS (
+            SELECT 1 FROM MessageRecipients r WHERE r.MessageId = m.Id AND r.RecipientEmail = ?
+          ))
+      `).bind(replyToMessageId, tenantId, access.email, access.email).first() as { MessageType: string } | null;
+
+      if (!parentMessage) {
+        return NextResponse.json({
+          success: false,
+          error: 'Parent message not found'
+        } as SendMessageResponse, { status: 404 });
+      }
+
+      if (parentMessage.MessageType !== 'direct') {
+        return NextResponse.json({
+          success: false,
+          error: `Cannot reply to ${parentMessage.MessageType} messages. Only direct messages allow replies.`
+        } as SendMessageResponse, { status: 403 });
       }
     }
 
@@ -105,34 +137,15 @@ export async function POST(request: NextRequest) {
     }
 
     // Add attachments if provided
-    for (const mediaId of attachments) {
+    for (const mediaId of attachmentIds) {
       await db.prepare(`
         INSERT INTO MessageAttachments (MessageId, MediaId)
         VALUES (?, ?)
       `).bind(messageId, mediaId).run();
     }
 
-    // Create thread if this is a reply
+    // Create thread if this is a reply (validated above)
     if (replyToMessageId) {
-      // Check if the parent message allows replies
-      const parentMessage = await db.prepare(`
-        SELECT MessageType FROM Messages WHERE Id = ? AND IsDeleted = FALSE
-      `).bind(replyToMessageId).first() as any;
-      
-      if (!parentMessage) {
-        return NextResponse.json({
-          success: false,
-          error: 'Parent message not found'
-        } as SendMessageResponse, { status: 404 });
-      }
-      
-      if (parentMessage.MessageType !== 'direct') {
-        return NextResponse.json({
-          success: false,
-          error: `Cannot reply to ${parentMessage.MessageType} messages. Only direct messages allow replies.`
-        } as SendMessageResponse, { status: 403 });
-      }
-      
       await db.prepare(`
         INSERT INTO MessageThreads (ParentMessageId, ChildMessageId)
         VALUES (?, ?)

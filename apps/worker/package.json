@@ -3,7 +3,7 @@
   "scripts": {
     "dev": "next dev -p 3001",
     "build": "next build",
-    "test:unit": "node --experimental-strip-types --test app/lib/tenant-membership.test.ts",
+    "test:unit": "node --experimental-strip-types --test app/lib/tenant-membership.test.ts app/lib/safe-redirect.test.ts",
     "start": "next start",
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview --port 8789",
     "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
