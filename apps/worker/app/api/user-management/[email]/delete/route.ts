@@ -54,7 +54,9 @@ export async function POST(
       // Better Auth tables
       await db.prepare('DELETE FROM "account" WHERE userId = ?').bind(user.id).run();
       await db.prepare('DELETE FROM "session" WHERE userId = ?').bind(user.id).run();
-      await db.prepare('DELETE FROM "verification" WHERE identifier = ?').bind(email).run();
+      await db.prepare(`DELETE FROM "verification" WHERE identifier = ?
+        OR CASE WHEN json_valid(value) THEN lower(json_extract(value, '$.email')) END = lower(?)`)
+        .bind(email, email).run();
 
       // User-related tables
       await db.prepare('DELETE FROM UserAvatars WHERE UserId = ?').bind(user.id).run();
